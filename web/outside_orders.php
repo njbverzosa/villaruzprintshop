@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -785,6 +786,23 @@ $encodedMonthYear = urlencode($monthYear);
                 font-size: 14px;
             }
         }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+            }
+
+
+            .dashboard-header {
+                padding: 20px 30px;
+                border-radius: 10px;
+            }
+
+            .welcome h1 {
+                font-size: 18px;
+            }
+
+        }
     </style>
 </head>
 
@@ -912,7 +930,7 @@ $encodedMonthYear = urlencode($monthYear);
         // ====== ADDED: MonthYear for redirect ======
         const monthYear = '<?= htmlspecialchars($monthYear) ?>';
         const encodedMonthYear = '<?= $encodedMonthYear ?>';
-        
+
         let isEditMode = false;
         let originalData = new Map(); // Store original data for each row
         let isProcessing = false;
@@ -981,12 +999,27 @@ $encodedMonthYear = urlencode($monthYear);
             excelData.push(['', '', '', '', '', totalAmount]);
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
-            ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
+            ws['!cols'] = [{
+                wch: 5
+            }, {
+                wch: 10
+            }, {
+                wch: 35
+            }, {
+                wch: 10
+            }, {
+                wch: 12
+            }, {
+                wch: 15
+            }];
 
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let row = range.s.r; row <= range.e.r; row++) {
                 for (let col = range.s.c; col <= range.e.c; col++) {
-                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                    const cellAddress = XLSX.utils.encode_cell({
+                        r: row,
+                        c: col
+                    });
                     if (!ws[cellAddress]) continue;
                     ws[cellAddress].s = {
                         alignment: {
@@ -998,23 +1031,46 @@ $encodedMonthYear = urlencode($monthYear);
             }
 
             for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+                const cellAddress = XLSX.utils.encode_cell({
+                    r: 0,
+                    c: col
+                });
                 if (ws[cellAddress]) {
                     ws[cellAddress].s = {
-                        font: { bold: true, color: { rgb: "FFFFFF" } },
-                        fill: { fgColor: { rgb: "4CAF50" } },
-                        alignment: { horizontal: "center", vertical: "center" }
+                        font: {
+                            bold: true,
+                            color: {
+                                rgb: "FFFFFF"
+                            }
+                        },
+                        fill: {
+                            fgColor: {
+                                rgb: "4CAF50"
+                            }
+                        },
+                        alignment: {
+                            horizontal: "center",
+                            vertical: "center"
+                        }
                     };
                 }
             }
 
             const totalRowIndex = excelData.length - 1;
             for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: totalRowIndex, c: col });
+                const cellAddress = XLSX.utils.encode_cell({
+                    r: totalRowIndex,
+                    c: col
+                });
                 if (ws[cellAddress]) {
                     ws[cellAddress].s = {
-                        font: { bold: true },
-                        alignment: { horizontal: "center", vertical: "center" }
+                        font: {
+                            bold: true
+                        },
+                        alignment: {
+                            horizontal: "center",
+                            vertical: "center"
+                        }
                     };
                 }
             }

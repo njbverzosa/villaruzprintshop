@@ -1011,7 +1011,8 @@ $csrfToken = $_SESSION['csrf_token'];
             }
 
             .dashboard-header {
-                padding: 12px 15px;
+                padding: 20px 30px;
+                border-radius: 10px;
             }
 
             .welcome h1 {
@@ -1134,7 +1135,9 @@ $csrfToken = $_SESSION['csrf_token'];
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h1>Shop Stock</h1>
+                    <h4>
+                        Shop
+                    </h4>
                 </div>
             </div>
 

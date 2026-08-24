@@ -783,6 +783,23 @@ $encodedMonthYear = urlencode($monthYear);
                 font-size: 14px;
             }
         }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            
+            .dashboard-header {
+                padding: 20px 30px;
+                border-radius: 10px;
+            }
+
+            .welcome h1 {
+                font-size: 18px;
+            }
+
+        }
     </style>
 </head>
 

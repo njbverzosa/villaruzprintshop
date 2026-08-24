@@ -10,10 +10,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -91,21 +92,22 @@ foreach ($customers as $customer) {
 // ==============================================
 // FUNCTION TO DETERMINE ONLINE STATUS - UPDATED THRESHOLDS
 // ==============================================
-function getOnlineStatus($onlineTime) {
+function getOnlineStatus($onlineTime)
+{
     if (empty($onlineTime)) {
         return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
     }
-    
+
     // Parse the stored time (format: g:i A)
     $storedTimestamp = strtotime($onlineTime);
     if ($storedTimestamp === false) {
         return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
     }
-    
+
     $currentTimestamp = time();
     $diffSeconds = $currentTimestamp - $storedTimestamp;
     $diffMinutes = floor($diffSeconds / 60); // Convert to minutes
-    
+
     // Green: 1-2 minutes (Online - Recently Active)
     if ($diffMinutes >= 1 && $diffMinutes <= 2) {
         return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'label' => 'Active'];
@@ -150,10 +152,18 @@ function getOnlineStatus($onlineTime) {
             flex-direction: column;
         }
 
+        /* Main content wrapper (no sidebar) */
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
         }
 
         .main-content {
@@ -174,9 +184,9 @@ function getOnlineStatus($onlineTime) {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        .welcome h4 {
-            font-size: 20px;
-            font-weight: 600;
+        .welcome h1 {
+            font-size: 28px;
+            font-weight: 700;
             color: #0f172a;
         }
 
@@ -331,8 +341,8 @@ function getOnlineStatus($onlineTime) {
         .stat-icon {
             font-size: 32px;
             background: linear-gradient(145deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            --webkit-background-clip: text;
+            --webkit-text-fill-color: transparent;
             margin-bottom: 12px;
         }
 
@@ -351,7 +361,7 @@ function getOnlineStatus($onlineTime) {
         /* Table Styles */
         .merchandise-section {
             background: #ffffff;
-            border-radius: 20px;
+            border-radius: 10px;
             border: 1px solid #e2e8f0;
             overflow-x: auto;
             margin-top: 30px;
@@ -379,8 +389,8 @@ function getOnlineStatus($onlineTime) {
 
         .section-header h5 i {
             background: linear-gradient(145deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            --webkit-background-clip: text;
+            --webkit-text-fill-color: transparent;
         }
 
         .inventory-table {
@@ -455,7 +465,7 @@ function getOnlineStatus($onlineTime) {
         /* ==============================================
            ONLINE STATUS INDICATORS - UPDATED COLORS
            ============================================== */
-        
+
         /* Green - Online (1-2 minutes) */
         .status-online {
             color: #10b981;
@@ -498,10 +508,13 @@ function getOnlineStatus($onlineTime) {
         }
 
         @keyframes pulse-green {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 1;
                 transform: scale(1);
             }
+
             50% {
                 opacity: 0.6;
                 transform: scale(1.2);
@@ -509,10 +522,13 @@ function getOnlineStatus($onlineTime) {
         }
 
         @keyframes pulse-away {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 1;
                 transform: scale(1);
             }
+
             50% {
                 opacity: 0.5;
                 transform: scale(1.1);
@@ -568,6 +584,7 @@ function getOnlineStatus($onlineTime) {
                 transform: translateX(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
@@ -579,6 +596,7 @@ function getOnlineStatus($onlineTime) {
                 transform: translateX(0);
                 opacity: 1;
             }
+
             to {
                 transform: translateX(100%);
                 opacity: 0;
@@ -637,12 +655,11 @@ function getOnlineStatus($onlineTime) {
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h4>REGISTERED CUSTOMERS</h4>
+                    <h4>Customers</h4>
                 </div>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="stats-grid">
+            <!-- <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-users"></i></div>
                     <div class="stat-value"><?php echo $totalCustomers; ?></div>
@@ -658,7 +675,7 @@ function getOnlineStatus($onlineTime) {
                     <div class="stat-value"><?php echo $inactiveCustomers; ?></div>
                     <div class="stat-label">Inactive Email</div>
                 </div>
-            </div>
+            </div> -->
 
             <div class="merchandise-section">
                 <div class="section-header">
@@ -684,7 +701,7 @@ function getOnlineStatus($onlineTime) {
                                     <td colspan="8" style="text-align: center; padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($customers as $customer): 
+                                <?php foreach ($customers as $customer):
                                     $onlineStatus = getOnlineStatus($customer['online_time'] ?? '');
                                 ?>
                                     <tr data-id="<?php echo $customer['id']; ?>"
@@ -775,7 +792,7 @@ function getOnlineStatus($onlineTime) {
             });
         });
 
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeMenu();
             }
@@ -836,26 +853,26 @@ function getOnlineStatus($onlineTime) {
         // ==============================================
         function refreshOnlineStatus() {
             fetch(window.location.href, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newStatuses = doc.querySelectorAll('.status-cell');
-                const currentStatuses = document.querySelectorAll('.status-cell');
-                
-                if (newStatuses.length === currentStatuses.length) {
-                    currentStatuses.forEach((cell, index) => {
-                        if (newStatuses[index]) {
-                            cell.innerHTML = newStatuses[index].innerHTML;
-                        }
-                    });
-                }
-            })
-            .catch(error => console.error('Error refreshing status:', error));
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newStatuses = doc.querySelectorAll('.status-cell');
+                    const currentStatuses = document.querySelectorAll('.status-cell');
+
+                    if (newStatuses.length === currentStatuses.length) {
+                        currentStatuses.forEach((cell, index) => {
+                            if (newStatuses[index]) {
+                                cell.innerHTML = newStatuses[index].innerHTML;
+                            }
+                        });
+                    }
+                })
+                .catch(error => console.error('Error refreshing status:', error));
         }
 
         // Refresh every 60 seconds (1 minute)

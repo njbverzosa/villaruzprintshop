@@ -1204,7 +1204,9 @@ try {
 
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h4>Cart</h4>
+                    <h4>
+                        Purchase Cart
+                    </h4>
                 </div>
             </div>
 

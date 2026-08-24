@@ -162,15 +162,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             flex-direction: column;
         }
 
+        /* Main content wrapper (no sidebar) */
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
         }
 
+        /* Main content */
         .main-content {
             flex: 1;
-            padding: 20px;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
             overflow-y: auto;
         }
 
@@ -181,21 +189,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             margin-bottom: 30px;
             background: #ffffff;
             padding: 20px 30px;
-            border-radius: 10px;
+            border-radius: 20px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        .welcome h4 {
-            font-size: 16px;
-            font-weight: 600;
+        .welcome h1 {
+            font-size: 28px;
+            font-weight: 700;
             color: #0f172a;
         }
 
-        .welcome h4 i {
-            color: #3b82f6;
-            margin-right: 8px;
-        }
 
         .user-info {
             font-size: 13px;
@@ -732,7 +736,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
 
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h4><i class="fas fa-comment-dots"></i> Live Chat Centre</h4>
+                    <h4>Live Chat Support</h4>
                 </div>
             </div>
 

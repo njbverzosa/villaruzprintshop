@@ -809,7 +809,9 @@ $allProducts = $stmt->fetchAll();
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h3>Shop <i class="fas fa-boxes"></i></h3>
+                    <h4>
+                        Purchase Order
+                    </h4>
                 </div>
             </div>
 

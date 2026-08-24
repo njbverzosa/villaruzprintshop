@@ -390,6 +390,23 @@ foreach ($distinctMonths as $monthYear) {
                 font-size: 14px;
             }
         }
+         @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            
+            .dashboard-header {
+                padding: 20px 30px;
+                border-radius: 10px;
+            }
+
+            .welcome h1 {
+                font-size: 18px;
+            }
+
+        }
+
     </style>
 </head>
 
@@ -410,6 +427,7 @@ foreach ($distinctMonths as $monthYear) {
             include 'admin_sidebar.php';
         }
         ?>
+
 
         <main class="main-content">
             <div class="dashboard-header">

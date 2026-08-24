@@ -202,10 +202,18 @@ foreach ($tables as $table => $displayName) {
             flex-direction: column;
         }
 
+        /* Main content wrapper (no sidebar) */
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
         }
 
         .main-content {
@@ -647,7 +655,7 @@ foreach ($tables as $table => $displayName) {
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h4>ADMIN SETTINGS</h4>
+                    <h4>SQL CMD</h4>
                 </div>
             </div>
 
