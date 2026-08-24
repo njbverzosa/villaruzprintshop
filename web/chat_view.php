@@ -903,14 +903,6 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         }
 
         @media (max-width: 480px) {
-            .dashboard-header {
-                padding: 10px 12px;
-                border-radius: 10px;
-            }
-
-            .dashboard-header .welcome h4 {
-                font-size: 13px;
-            }
 
             .chat-container {
                 border-radius: 10px;
@@ -964,6 +956,23 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                 padding: 8px 12px;
                 font-size: 13px;
             }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            
+            .dashboard-header {
+                padding: 20px 30px;
+                border-radius: 20px;
+            }
+
+            .welcome h1 {
+                font-size: 18px;
+            }
+
         }
     </style>
 </head>

@@ -644,13 +644,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         }
 
         @media (max-width: 480px) {
-            .main-content {
-                padding: 10px;
+           .main-content {
+                padding: 15px;
             }
 
+            
             .dashboard-header {
-                padding: 10px 12px;
-                border-radius: 10px;
+                padding: 20px 30px;
+                border-radius: 20px;
+            }
+
+            .welcome h1 {
+                font-size: 18px;
             }
 
             .stats-grid {
@@ -709,6 +714,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
                 border-radius: 10px;
             }
         }
+
+       
     </style>
 </head>
 
