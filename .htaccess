@@ -1,0 +1,133 @@
+# ==============================================
+# .htaccess for Villaruz Print Shop
+# Prevent directory listing & Remove .php extension
+# ==============================================
+
+# Enable Rewrite Engine
+RewriteEngine On
+
+# ==============================================
+# FORCE TRAILING /index FOR ROOT DOMAIN
+# ==============================================
+
+# Redirect root domain exactly to /index (without .php)
+RewriteCond %{REQUEST_URI} ^/?$ [NC]
+RewriteRule ^$ /index [R=301,L]
+
+# ==============================================
+# HOMEPAGE - Ensure root domain stays as /
+# ==============================================
+
+# Explicitly handle the homepage - serve index.php internally but keep URL as /
+RewriteRule ^$ index.php [L]
+
+# Prevent any redirect that would show index.php in URL
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/index\.php [NC]
+RewriteRule ^index\.php$ / [R=301,L,NC]
+
+# ==============================================
+# CUSTOM ERROR PAGES - Redirect all errors to error.php
+# ==============================================
+ErrorDocument 400 /error.php
+ErrorDocument 401 /error.php
+ErrorDocument 403 /error.php
+ErrorDocument 404 /error.php
+ErrorDocument 500 /error.php
+ErrorDocument 502 /error.php
+ErrorDocument 503 /error.php
+
+# ==============================================
+# IMPORTANT: Allow API access (DO NOT BLOCK)
+# ==============================================
+# Skip all rewrite rules for API directories
+RewriteRule ^API/ - [L,NC]
+RewriteRule ^Customer_API/ - [L,NC]
+
+# ==============================================
+# RECEIPT PAGES - Allow direct access with query parameters
+# ==============================================
+
+# Allow delivery_receipt and billing_receipt to work with query parameters
+RewriteRule ^delivery_receipt$ delivery_receipt.php [L,QSA]
+RewriteRule ^billing_receipt$ billing_receipt.php [L,QSA]
+
+# Also allow with .php extension
+RewriteRule ^delivery_receipt\.php$ - [L,NC]
+RewriteRule ^billing_receipt\.php$ - [L,NC]
+
+# ==============================================
+# SECURITY: Prevent directory listing
+# ==============================================
+Options -Indexes
+Options -MultiViews
+
+# ==============================================
+# SECURITY: Block specific folders and files
+# ==============================================
+
+# Block sensitive folders - Using stronger blocking
+RewriteCond %{REQUEST_URI} ^/DB_Conn/ [NC,OR]
+RewriteCond %{REQUEST_URI} ^/Mail/ [NC]
+RewriteRule .* - [F,L]
+
+# Block specific files
+RewriteRule ^logo\.(jpg|jpeg|png|gif|svg|webp)$ - [F,L,NC]
+RewriteRule ^\.htaccess$ - [F,L]
+
+# Block SQL files anywhere
+RewriteRule \.sql$ - [F,L,NC]
+
+# ==============================================
+# URL REWRITING: Remove .php extension
+# ==============================================
+
+# Redirect to remove .php from URL (for SEO & cleaner URLs)
+# Skip receipt pages, API directories, and homepage
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.]+)\.php [NC]
+RewriteCond %{REQUEST_URI} !^/(API|Customer_API)/ [NC]
+RewriteCond %{REQUEST_URI} !^/(delivery_receipt|billing_receipt)\.php [NC]
+RewriteCond %{REQUEST_URI} !^/index\.php [NC]
+RewriteCond %1 !^$ [NC]
+RewriteRule ^ %1 [R=301,L,NC]
+
+# Internally add .php back when accessing without extension
+# Skip this rule for API directories, receipt pages, and empty requests
+RewriteCond %{REQUEST_URI} !^/(API|Customer_API|GE_API)/ [NC]
+RewriteCond %{REQUEST_URI} !^/(delivery_receipt|billing_receipt)\.php [NC]
+RewriteCond %{REQUEST_URI} !^/$ [NC]
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.*?)/?$ $1.php [L,QSA]
+
+# Handle index pages (only for actual index.php files in subdirectories)
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^(.*)/$ $1/index.php [L]
+
+# ==============================================
+# MAIN PAGE CLEAN URLs
+# ==============================================
+
+# ==============================================
+# CANONICAL URL - Force www or non-www (choose one)
+# ==============================================
+
+# Force non-www (remove www) - Uncomment if you want
+# RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+# RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+# Force HTTPS (if you have SSL) - Uncomment if you want
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# ==============================================
+# CACHE CONTROL FOR STATIC FILES
+# ==============================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+

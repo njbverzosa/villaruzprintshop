@@ -2,85 +2,82 @@
 // web/cart.php
 session_start();
 
-// ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
-// ==============================================
-require_once __DIR__ . '/../DB_Conn/config.php';
-
-// ==============================================
-// 2. CHECK LOGIN STATUS
-// ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+try {
+    require_once __DIR__ . '/../DB_Conn/config.php';
+    
+    // Validate session
+    function isLoggedIn() {
+        return isset($_SESSION['user_role'], $_SESSION['user_id'], $_SESSION['acc_number']);
+    }
+    
+    if (!isLoggedIn()) {
+        $_SESSION['login_error'] = 'Please login first to access the shop.';
+        header('Location: ../login.php');
+        exit;
+    }
+    
+    // Validate and sanitize session data
+    $userRole = filter_var($_SESSION['user_role'], FILTER_SANITIZE_STRING);
+    $userId = filter_var($_SESSION['user_id'], FILTER_VALIDATE_INT);
+    $accNumber = filter_var($_SESSION['acc_number'], FILTER_SANITIZE_STRING);
+    
+    if ($userId === false || empty($accNumber)) {
+        throw new Exception('Invalid session data');
+    }
+    
+    // Fetch user details with proper error handling
+    $userData = null;
+    if ($userRole === 'Admin') {
+        $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+        $stmt->execute([$userId]);
+        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+    } elseif ($userRole === 'Customer') {
+        $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
+        $stmt->execute([$userId]);
+        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    if (!$userData) {
+        session_destroy();
+        header('Location: ../login.php');
+        exit;
+    }
+    
+    $user = $userData;
+    
+    // Fetch cart items with verification that acc_number matches
+    $stmt = $pdo->prepare("SELECT * FROM cart WHERE acc_number = ? ORDER BY id ASC");
+    $stmt->execute([$accNumber]);
+    $cartItems = $stmt->fetchAll();
+    
+    // Calculate totals
+    $totalItems = 0;
+    $totalAmount = 0;
+    foreach ($cartItems as $item) {
+        $totalItems += (int)$item['pieces'];
+        $totalAmount += (float)$item['total_amount'];
+    }
+    
+    // CSRF token
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    $csrfToken = $_SESSION['csrf_token'];
+    
+    // Get cart item count - FIXED PARAMETER
+    $cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
+    $cartCountStmt->execute([$accNumber]); // ✅ Fixed
+    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
+    $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
+    
+} catch (PDOException $e) {
+    // Log error and show user-friendly message
+    error_log("Database error: " . $e->getMessage());
+    die("An error occurred. Please try again later.");
+} catch (Exception $e) {
+    error_log("Error: " . $e->getMessage());
+    die("An error occurred. Please try again later.");
 }
-
-// Redirect to login if not logged in
-if (!isLoggedIn()) {
-    $_SESSION['login_error'] = 'Please login first to access the shop.';
-    header('Location: ../login.php');
-    exit;
-}
-
-// ==============================================
-// 3. GET USER DATA FROM SESSION
-// ==============================================
-$userRole = $_SESSION['user_role'];
-$userId = $_SESSION['user_id'];
-$accNumber = $_SESSION['acc_number'];
-
-// Fetch user details from database
-$userData = null;
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
-if (!$userData) {
-    // User not found in database, logout
-    session_destroy();
-    header('Location: ../login.php');
-    exit;
-}
-
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
-$user = $userData;
-
-
-
-// Fetch ALL cart items for current user, ordered by id
-$stmt = $pdo->prepare("SELECT * FROM cart WHERE acc_number = ? ORDER BY id ASC");
-$stmt->execute([$accNumber]);
-$cartItems = $stmt->fetchAll();
-
-// Calculate cart totals
-$totalItems = 0;
-$totalAmount = 0;
-foreach ($cartItems as $item) {
-    $totalItems += $item['pieces'];
-    $totalAmount += $item['total_amount'];
-}
-
-
-// Generate CSRF token if not exists
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrfToken = $_SESSION['csrf_token'];
-
-// Get cart item count for bottom nav badge
-$cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
-$cartCountStmt->execute([$userAccNumber]);
-$cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
-$cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
