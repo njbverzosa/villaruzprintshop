@@ -1,5 +1,5 @@
 <?php
-// web/chat_view.php - Chat View (Admin View) - FIXED
+// web/chat_view.php - Chat View (Admin View) - REAL-TIME
 
 session_start();
 
@@ -98,12 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     $action = $_POST['action'] ?? '';
 
     // ==============================================
-    // GET MESSAGES
+    // GET MESSAGES - REAL-TIME
     // ==============================================
     if ($action === 'get_messages') {
         $lastId = intval($_POST['last_id'] ?? 0);
-        $limit = 50;
 
+        // Get only new messages since last ID
         $stmt = $pdo->prepare("
             SELECT cc.*, 
                    DATE_FORMAT(cc.created_at, '%b %d, %Y %h:%i %p') as formatted_time
@@ -111,26 +111,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             WHERE (cc.acc_number = ? OR cc.receiver_acc = ?)
               AND cc.id > ?
             ORDER BY cc.created_at ASC
-            LIMIT ?
         ");
-        $stmt->execute([$targetAcc, $targetAcc, $lastId, $limit]);
+        $stmt->execute([$targetAcc, $targetAcc, $lastId]);
         $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Mark messages as read (messages sent by customer to admin)
-        $stmt = $pdo->prepare("
-            UPDATE chat_conversation 
-            SET status = 1 
-            WHERE acc_number = ? AND receiver_acc = ? AND status = 0
-        ");
-        $stmt->execute([$targetAcc, $accNumber]);
+        // Mark messages as read if there are new ones
+        if (!empty($messages)) {
+            // Mark messages sent by customer to admin as read
+            $stmt = $pdo->prepare("
+                UPDATE chat_conversation 
+                SET status = 1 
+                WHERE acc_number = ? AND receiver_acc = ? AND status = 0
+            ");
+            $stmt->execute([$targetAcc, $accNumber]);
 
-        // Mark messages as read (messages sent by admin to customer)
-        $stmt2 = $pdo->prepare("
-            UPDATE chat_conversation 
-            SET status = 1 
-            WHERE acc_number = ? AND receiver_acc = ? AND status = 0
-        ");
-        $stmt2->execute([$accNumber, $targetAcc]);
+            // Mark messages sent by admin to customer as read
+            $stmt2 = $pdo->prepare("
+                UPDATE chat_conversation 
+                SET status = 1 
+                WHERE acc_number = ? AND receiver_acc = ? AND status = 0
+            ");
+            $stmt2->execute([$accNumber, $targetAcc]);
+        }
 
         // Get sender info for each message
         foreach ($messages as &$msg) {
@@ -152,13 +154,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         echo json_encode([
             'success' => true,
             'messages' => $messages,
-            'target_acc' => $targetAcc
+            'target_acc' => $targetAcc,
+            'last_id' => !empty($messages) ? $messages[count($messages) - 1]['id'] : $lastId
         ]);
         exit();
     }
 
     // ==============================================
-    // SEND MESSAGE - FIXED
+    // SEND MESSAGE
     // ==============================================
     if ($action === 'send_message') {
         $message = trim($_POST['message'] ?? '');
@@ -180,8 +183,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             }
 
             // Insert message with correct sender and receiver
-            // acc_number = admin's account (sender)
-            // receiver_acc = customer's account (receiver)
             $stmt = $pdo->prepare("
                 INSERT INTO chat_conversation 
                 (acc_number, receiver_acc, message, sender_type, status, created_at, time, date) 
@@ -243,10 +244,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     }
 
     // ==============================================
-    // TYPING INDICATOR
+    // CHECK FOR NEW MESSAGES (LONG POLLING)
     // ==============================================
-    if ($action === 'typing') {
-        echo json_encode(['success' => true]);
+    if ($action === 'check_new') {
+        $lastId = intval($_POST['last_id'] ?? 0);
+        
+        // Check if there are new messages
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as new_count
+            FROM chat_conversation 
+            WHERE (acc_number = ? OR receiver_acc = ?)
+              AND id > ?
+        ");
+        $stmt->execute([$targetAcc, $targetAcc, $lastId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'has_new' => ($result['new_count'] ?? 0) > 0,
+            'count' => $result['new_count'] ?? 0
+        ]);
         exit();
     }
 }
@@ -264,6 +281,12 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$targetAcc, $targetAcc]);
 $initialMessages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get the highest message ID for tracking
+$maxId = 0;
+if (!empty($initialMessages)) {
+    $maxId = $initialMessages[count($initialMessages) - 1]['id'];
+}
 
 // Mark initial messages as read
 $stmt = $pdo->prepare("
@@ -444,7 +467,7 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
             font-weight: 500;
         }
 
-        /* ========== CHAT MESSAGES ========== */
+        /* ========== CHAT MESSAGES - HIDDEN SCROLLBAR ========== */
         .chat-messages {
             flex: 1;
             padding: 20px;
@@ -454,6 +477,18 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
             flex-direction: column;
             gap: 8px;
             min-height: 300px;
+            scroll-behavior: smooth;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .chat-messages::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .chat-messages {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
 
         /* ========== MESSAGE BUBBLES ========== */
@@ -903,7 +938,6 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         }
 
         @media (max-width: 480px) {
-
             .chat-container {
                 border-radius: 10px;
             }
@@ -957,32 +991,34 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                 font-size: 13px;
             }
         }
-
-        @media (max-width: 480px) {
-            .main-content {
-                padding: 15px;
-            }
-
-            
-            .dashboard-header {
-                padding: 20px 30px;
-                border-radius: 20px;
-            }
-
-            .welcome h1 {
-                font-size: 18px;
-            }
-
-        }
     </style>
 </head>
 
 <body>
     <div class="app-wrapper">
+        <!-- Burger Button -->
+        <div class="burger-btn" id="burgerBtn">
+            <i class="fas fa-bars"></i>
+        </div>
+
+        <!-- Overlay for menu background -->
+        <div class="menu-overlay" id="menuOverlay"></div>
+
+        <?php
+        if ($user['authorize_access'] == 0) {
+            include 'system_sidebar.php';
+        } elseif ($user['authorize_access'] == 1) {
+            include 'owner_sidebar.php';
+        } elseif ($user['authorize_access'] == 2) {
+            include 'admin_sidebar.php';
+        }
+        ?>
+
         <main class="main-content">
             <input type="hidden" id="csrfToken" value="<?php echo $csrfToken; ?>">
             <input type="hidden" id="targetAcc" value="<?php echo htmlspecialchars($targetAcc); ?>">
             <input type="hidden" id="myAcc" value="<?php echo htmlspecialchars($accNumber); ?>">
+            <input type="hidden" id="lastMessageId" value="<?php echo $maxId; ?>">
 
             <!-- Dashboard Header -->
             <div class="dashboard-header">
@@ -1027,8 +1063,6 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                         </div>
                     <?php else: ?>
                         <?php foreach ($initialMessages as $msg):
-                            $isAdmin = $msg['sender_type'] === 'admin';
-                            $senderName = $isAdmin ? 'You' : ($customerInfo['f_name'] ?? 'Customer');
                             $isMine = ($msg['acc_number'] == $accNumber);
                         ?>
                             <div class="message <?php echo $isMine ? 'admin' : 'customer'; ?>" data-id="<?php echo $msg['id']; ?>">
@@ -1065,15 +1099,17 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         const csrfToken = document.getElementById('csrfToken').value;
         const targetAcc = document.getElementById('targetAcc').value;
         const myAcc = document.getElementById('myAcc').value;
+        let lastMessageId = parseInt(document.getElementById('lastMessageId').value) || 0;
 
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const typingIndicator = document.getElementById('typingIndicator');
 
-        let lastMessageId = 0;
         let isFetching = false;
         let isSending = false;
+        let isUserScrolling = false;
+        let shouldAutoScroll = true;
 
         // ==============================================
         // BURGER MENU
@@ -1130,19 +1166,32 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         // SCROLL TO BOTTOM
         // ==============================================
         function scrollToBottom() {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            if (shouldAutoScroll) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
         }
 
         // ==============================================
-        // LOAD MESSAGES
+        // SCROLL DETECTION
         // ==============================================
-        function loadMessages(lastId = 0) {
+        chatMessages.addEventListener('scroll', function() {
+            const atBottom = this.scrollHeight - this.scrollTop - this.clientHeight < 10;
+            if (atBottom) {
+                shouldAutoScroll = true;
+            } else {
+                shouldAutoScroll = false;
+            }
+        });
+
+        // ==============================================
+        // CHECK FOR NEW MESSAGES (EVERY 1 SECOND)
+        // ==============================================
+        function checkForNewMessages() {
             if (isFetching) return;
-            isFetching = true;
 
             const formData = new FormData();
             formData.append('action', 'get_messages');
-            formData.append('last_id', lastId);
+            formData.append('last_id', lastMessageId);
             formData.append('csrf_token', csrfToken);
 
             fetch(window.location.href, {
@@ -1154,13 +1203,11 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success && data.messages.length > 0) {
+                    if (data.success && data.messages && data.messages.length > 0) {
                         const emptyState = chatMessages.querySelector('.empty-chat');
                         if (emptyState) emptyState.remove();
 
-                        const typing = document.getElementById('typingIndicator');
-                        if (typing) typing.style.display = 'none';
-
+                        // Add each new message
                         data.messages.forEach(msg => {
                             const isMine = msg.is_mine === true;
                             const senderName = isMine ? 'You' : msg.sender_name;
@@ -1177,17 +1224,23 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                                 </span>
                             `;
                             chatMessages.appendChild(div);
+                            
+                            // Update last message ID
+                            if (msg.id > lastMessageId) {
+                                lastMessageId = msg.id;
+                            }
                         });
 
-                        if (data.messages.length > 0) {
-                            lastMessageId = data.messages[data.messages.length - 1].id;
-                        }
+                        // Update the hidden input with the latest ID
+                        document.getElementById('lastMessageId').value = lastMessageId;
 
-                        setTimeout(scrollToBottom, 100);
+                        // Auto-scroll if user is near bottom
+                        scrollToBottom();
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading messages:', error);
+                    // Silently fail - no user notification for polling errors
+                    console.debug('Polling error:', error);
                 })
                 .finally(() => {
                     isFetching = false;
@@ -1204,6 +1257,8 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
             isSending = true;
             sendBtn.disabled = true;
             messageInput.disabled = true;
+            const originalBtnHTML = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
             const formData = new FormData();
             formData.append('action', 'send_message');
@@ -1235,7 +1290,12 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                             <span class="msg-time">${escapeHtml(msg.formatted_time)} <span class="msg-status delivered"><i class="fas fa-check"></i></span></span>
                         `;
                         chatMessages.appendChild(div);
-                        lastMessageId = msg.id;
+                        
+                        if (msg.id > lastMessageId) {
+                            lastMessageId = msg.id;
+                        }
+                        document.getElementById('lastMessageId').value = lastMessageId;
+                        
                         scrollToBottom();
                     } else {
                         showToast(data.message || 'Failed to send message', 'error');
@@ -1249,6 +1309,7 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                     isSending = false;
                     sendBtn.disabled = false;
                     messageInput.disabled = false;
+                    sendBtn.innerHTML = originalBtnHTML;
                     messageInput.focus();
                 });
         }
@@ -1268,7 +1329,7 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                     },
                     body: formData
                 })
-                .catch(error => console.error('Error marking messages as read:', error));
+                .catch(error => console.debug('Error marking messages as read:', error));
         }
 
         // ==============================================
@@ -1282,15 +1343,6 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
 
         function nl2br(text) {
             return text.replace(/\n/g, '<br>');
-        }
-
-        // ==============================================
-        // AUTO-REFRESH
-        // ==============================================
-        function autoRefresh() {
-            if (!document.hidden) {
-                loadMessages(lastMessageId);
-            }
         }
 
         // ==============================================
@@ -1313,24 +1365,43 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         const existingMessages = chatMessages.querySelectorAll('.message');
         if (existingMessages.length > 0) {
             const lastMsg = existingMessages[existingMessages.length - 1];
-            lastMessageId = parseInt(lastMsg.getAttribute('data-id')) || 0;
+            const lastId = parseInt(lastMsg.getAttribute('data-id'));
+            if (lastId > lastMessageId) {
+                lastMessageId = lastId;
+            }
         }
+        document.getElementById('lastMessageId').value = lastMessageId;
+        
         scrollToBottom();
         markAsRead();
-        setInterval(autoRefresh, 5000);
 
+        // ==============================================
+        // REAL-TIME POLLING - EVERY 1 SECOND
+        // ==============================================
+        // Initial check after 500ms
+        setTimeout(() => {
+            checkForNewMessages();
+        }, 500);
+
+        // Then check every 1 second (1000ms)
+        setInterval(() => {
+            checkForNewMessages();
+        }, 1000);
+
+        // Also check when tab becomes visible again
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                loadMessages(lastMessageId);
+                checkForNewMessages();
                 markAsRead();
             }
         });
 
         typingIndicator.style.display = 'none';
 
-        console.log('💬 Chat view loaded for: ' + targetAcc);
-        console.log('👤 Current user: ' + myAcc);
-        console.log('📨 Total messages: ' + existingMessages.length);
+        console.log('💬 Real-time Chat loaded');
+        console.log('👤 Target: ' + targetAcc);
+        console.log('📨 Last message ID: ' + lastMessageId);
+        console.log('🔄 Polling every 1 second');
     </script>
 </body>
 

@@ -4,6 +4,11 @@
 session_start();
 header('Content-Type: application/json');
 
+// ==============================================
+// 0. SET TIMEZONE TO ASIA/MANILA
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+
 require_once __DIR__ . '/../DB_Conn/config.php';
 
 // ==============================================
@@ -73,11 +78,13 @@ function getOrCreateChatAccount($pdo, $accNumber) {
         return $account;
     }
     
+    // Use Asia/Manila time for insertion
+    $currentDateTime = date('Y-m-d H:i:s');
     $stmt = $pdo->prepare("
         INSERT INTO chat_account (acc_number, chat_sent, status) 
-        VALUES (?, NOW(), 1)
+        VALUES (?, ?, 1)
     ");
-    $stmt->execute([$accNumber]);
+    $stmt->execute([$accNumber, $currentDateTime]);
     
     return [
         'id' => $pdo->lastInsertId(),
@@ -113,19 +120,18 @@ try {
                 exit();
             }
             
-            // ✅ FIX: Get ALL messages where this customer is sender OR receiver
+            // Get ALL messages where this customer is sender OR receiver
             $stmt = $pdo->prepare("
                 SELECT 
                     id,
                     acc_number,
                     message,
-                    TIME_FORMAT(time, '%h:%i %p') as time,
-                    DATE_FORMAT(date, '%b %d, %Y') as date_formatted,
-                    DATE_FORMAT(created_at, '%b %d, %Y %h:%i %p') as formatted_time,
+                    time,
+                    date,
+                    created_at,
                     status,
                     sender_type,
-                    receiver_acc,
-                    created_at
+                    receiver_acc
                 FROM chat_conversation 
                 WHERE acc_number = ? OR receiver_acc = ?
                 ORDER BY created_at ASC 
@@ -134,7 +140,33 @@ try {
             $stmt->execute([$accNumber, $accNumber]);
             $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // ✅ FIX: Mark messages as read for this user
+            // Format dates using PHP with Asia/Manila timezone - format: j F Y g:i A
+            foreach ($messages as &$msg) {
+                // Format time
+                if (!empty($msg['time'])) {
+                    $timeObj = DateTime::createFromFormat('H:i:s', $msg['time']);
+                    if ($timeObj) {
+                        $msg['time'] = $timeObj->format('g:i A');
+                    }
+                }
+                
+                // Format date
+                if (!empty($msg['date'])) {
+                    $dateObj = DateTime::createFromFormat('Y-m-d', $msg['date']);
+                    if ($dateObj) {
+                        $msg['date_formatted'] = $dateObj->format('j F Y');
+                    }
+                }
+                
+                // Format created_at - format: j F Y g:i A
+                if (!empty($msg['created_at'])) {
+                    $createdObj = new DateTime($msg['created_at']);
+                    $createdObj->setTimezone(new DateTimeZone('Asia/Manila'));
+                    $msg['formatted_time'] = $createdObj->format('j F Y g:i A');
+                }
+            }
+            
+            // Mark messages as read for this user
             // Mark messages received by this user (from admin)
             $stmt = $pdo->prepare("
                 UPDATE chat_conversation 
@@ -156,7 +188,8 @@ try {
                 'messages' => $messages,
                 'acc_number' => $accNumber,
                 'account_status' => $account['status'],
-                'total_messages' => count($messages)
+                'total_messages' => count($messages),
+                'timezone' => 'Asia/Manila'
             ]);
             break;
 
@@ -183,9 +216,14 @@ try {
                 exit();
             }
             
-            // ✅ FIX: Customer sends to admin (RECEIVER_ACCOUNT)
+            // Customer sends to admin (RECEIVER_ACCOUNT)
             $senderType = 'customer';
             $receiverAcc = RECEIVER_ACCOUNT;
+            
+            // Get current Asia/Manila time
+            $currentTime = date('H:i:s');
+            $currentDate = date('Y-m-d');
+            $currentDateTime = date('Y-m-d H:i:s');
             
             $stmt = $pdo->prepare("
                 INSERT INTO chat_conversation (
@@ -197,45 +235,65 @@ try {
                     sender_type, 
                     receiver_acc,
                     created_at
-                ) VALUES (?, ?, CURRENT_TIME, CURRENT_DATE, 0, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, 0, ?, ?, ?)
             ");
-            $stmt->execute([$accNumber, $message, $senderType, $receiverAcc]);
+            $stmt->execute([$accNumber, $message, $currentTime, $currentDate, $senderType, $receiverAcc, $currentDateTime]);
             
-            // ✅ Get the inserted message ID for logging
+            // Get the inserted message ID for logging
             $messageId = $pdo->lastInsertId();
             
-            // Update chat_sent timestamp for this customer
+            // Update chat_sent timestamp for this customer with Asia/Manila time
             $stmt = $pdo->prepare("
                 UPDATE chat_account 
-                SET chat_sent = NOW() 
+                SET chat_sent = ? 
                 WHERE acc_number = ?
             ");
-            $stmt->execute([$accNumber]);
+            $stmt->execute([$currentDateTime, $accNumber]);
             
-            // ✅ Return the new message data
+            // Return the new message data
             $stmt = $pdo->prepare("
                 SELECT 
                     id,
                     acc_number,
                     message,
-                    TIME_FORMAT(time, '%h:%i %p') as time,
-                    DATE_FORMAT(created_at, '%b %d, %Y %h:%i %p') as formatted_time,
+                    time,
+                    date,
+                    created_at,
                     status,
                     sender_type,
-                    receiver_acc,
-                    created_at
+                    receiver_acc
                 FROM chat_conversation 
                 WHERE id = ?
             ");
             $stmt->execute([$messageId]);
             $newMessage = $stmt->fetch(PDO::FETCH_ASSOC);
             
+            // Format the new message time - format: j F Y g:i A
+            if (!empty($newMessage['created_at'])) {
+                $createdObj = new DateTime($newMessage['created_at']);
+                $createdObj->setTimezone(new DateTimeZone('Asia/Manila'));
+                $newMessage['formatted_time'] = $createdObj->format('j F Y g:i A');
+            }
+            if (!empty($newMessage['time'])) {
+                $timeObj = DateTime::createFromFormat('H:i:s', $newMessage['time']);
+                if ($timeObj) {
+                    $newMessage['time'] = $timeObj->format('g:i A');
+                }
+            }
+            if (!empty($newMessage['date'])) {
+                $dateObj = DateTime::createFromFormat('Y-m-d', $newMessage['date']);
+                if ($dateObj) {
+                    $newMessage['date_formatted'] = $dateObj->format('j F Y');
+                }
+            }
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'Message sent',
                 'acc_number' => $accNumber,
                 'receiver_acc' => $receiverAcc,
-                'message_data' => $newMessage
+                'message_data' => $newMessage,
+                'timezone' => 'Asia/Manila'
             ]);
             break;
 
@@ -248,7 +306,7 @@ try {
                 exit();
             }
             
-            // ✅ FIX: Get all unique customers with their chat info
+            // Get all unique customers with their chat info
             $stmt = $pdo->prepare("
                 SELECT 
                     ca.acc_number,
@@ -260,10 +318,9 @@ try {
                     (SELECT message FROM chat_conversation 
                      WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number 
                      ORDER BY created_at DESC LIMIT 1) as last_message,
-                    (SELECT DATE_FORMAT(created_at, '%b %d, %Y %h:%i %p') 
-                     FROM chat_conversation 
+                    (SELECT created_at FROM chat_conversation 
                      WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number 
-                     ORDER BY created_at DESC LIMIT 1) as last_message_time,
+                     ORDER BY created_at DESC LIMIT 1) as last_message_raw,
                     (SELECT COUNT(*) FROM chat_conversation 
                      WHERE acc_number = ca.acc_number AND receiver_acc = ? AND status = 0) as unread_count,
                     (SELECT COUNT(*) FROM chat_conversation 
@@ -276,10 +333,25 @@ try {
             $stmt->execute([RECEIVER_ACCOUNT, RECEIVER_ACCOUNT]);
             $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            // Format dates using PHP with Asia/Manila timezone - format: j F Y g:i A
+            foreach ($conversations as &$conv) {
+                if (!empty($conv['last_message_raw'])) {
+                    $dateObj = new DateTime($conv['last_message_raw']);
+                    $dateObj->setTimezone(new DateTimeZone('Asia/Manila'));
+                    $conv['last_message_time'] = $dateObj->format('j F Y g:i A');
+                }
+                if (!empty($conv['chat_sent'])) {
+                    $dateObj = new DateTime($conv['chat_sent']);
+                    $dateObj->setTimezone(new DateTimeZone('Asia/Manila'));
+                    $conv['chat_sent'] = $dateObj->format('j F Y g:i A');
+                }
+            }
+            
             echo json_encode([
                 'success' => true,
                 'conversations' => $conversations,
-                'total' => count($conversations)
+                'total' => count($conversations),
+                'timezone' => 'Asia/Manila'
             ]);
             break;
 
@@ -308,7 +380,8 @@ try {
             
             echo json_encode([
                 'success' => true,
-                'unread_count' => intval($result['total_unread'] ?? 0)
+                'unread_count' => intval($result['total_unread'] ?? 0),
+                'timezone' => 'Asia/Manila'
             ]);
             break;
 
@@ -339,7 +412,8 @@ try {
             echo json_encode([
                 'success' => true,
                 'message' => $blockStatus == 0 ? 'User blocked' : 'User unblocked',
-                'status' => $blockStatus
+                'status' => $blockStatus,
+                'timezone' => 'Asia/Manila'
             ]);
             break;
 
@@ -352,7 +426,8 @@ try {
             echo json_encode([
                 'success' => true,
                 'status' => $account['status'],
-                'is_blocked' => $account['status'] == 0
+                'is_blocked' => $account['status'] == 0,
+                'timezone' => 'Asia/Manila'
             ]);
             break;
 

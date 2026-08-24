@@ -229,7 +229,7 @@ $csrfToken = $_SESSION['csrf_token'];
             }
         }
 
-        /* Chat Messages Area */
+        /* Chat Messages Area - HIDDEN SCROLLBAR */
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -239,6 +239,18 @@ $csrfToken = $_SESSION['csrf_token'];
             flex-direction: column;
             gap: 6px;
             min-height: 200px;
+            scroll-behavior: smooth;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .chat-messages::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .chat-messages {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
         .chat-messages .message {
@@ -567,7 +579,7 @@ $csrfToken = $_SESSION['csrf_token'];
             }
 
             .chat-container {
-                height: 650px;
+                height: 710px;
                 max-height: calc(100vh - 180px);
                 border-radius: 10px;
             }
@@ -801,7 +813,7 @@ $csrfToken = $_SESSION['csrf_token'];
                         if (isBlocked) {
                             document.getElementById('chatInput').disabled = true;
                             document.getElementById('sendBtn').disabled = true;
-                            
+
                             const container = document.getElementById('chatMessages');
                             container.innerHTML = `
                         <div class="chat-empty">
