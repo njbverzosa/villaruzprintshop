@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <?php
 // public/shop.php
 
@@ -1617,7 +1616,6 @@ if (empty($_SESSION['csrf_token'])) {
 </body>
 
 </html>
-=======
 <?php
 // public/shop.php
 
@@ -2800,7 +2798,7 @@ $allProducts = $stmt->fetchAll();
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-        <a href="closed.php" class="nav-item">
+        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>

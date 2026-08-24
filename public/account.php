@@ -606,7 +606,7 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-        <a href="logout.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>

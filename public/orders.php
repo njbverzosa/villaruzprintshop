@@ -769,7 +769,6 @@ function getOrderProducts($pdo, $deliveryNumber)
                 <i class="fas fa-shopping-bag"></i>
                 <h3>No orders yet</h3>
                 <p>Start shopping to see your orders here!</p>
-                <a href="shop.php" class="shop-now-btn"><i class="fas fa-store"></i> Shop Now</a>
             </div>
         <?php else: ?>
             <?php foreach ($deliveries as $delivery):
@@ -912,7 +911,7 @@ function getOrderProducts($pdo, $deliveryNumber)
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-        <a href="logout.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+       <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>
