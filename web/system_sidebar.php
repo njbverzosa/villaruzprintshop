@@ -402,10 +402,7 @@
                     <i class="fas fa-user-friends"></i>
                     <span>Customers</span>
                 </a>
-                <a href="assigned_admin.php" class="nav-dropdown-item">
-                    <i class="fas fa-address-card"></i>
-                    <span>Admin</span>
-                </a>
+               
                 <!-- Chat Centre with chat icon -->
                 <a href="chat.php" class="nav-dropdown-item">
                     <i class="fas fa-comment-dots"></i>

@@ -1,5 +1,5 @@
 <?php
-// Customer_API/chat.php - Backend for Customer (MULTI-CUSTOMER FIXED)
+// API/chat_api.php - Backend for Admin
 
 session_start();
 header('Content-Type: application/json');
@@ -30,6 +30,7 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
 // 3. CREATE TABLES IF NOT EXISTS
 // ==============================================
 function createChatTables($pdo) {
+    // Table: chat_account - stores user chat accounts
     $pdo->exec("
     CREATE TABLE IF NOT EXISTS chat_account (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -40,6 +41,7 @@ function createChatTables($pdo) {
         INDEX idx_status (status)
     )");
 
+    // Table: chat_conversation - stores all messages
     $pdo->exec("
     CREATE TABLE IF NOT EXISTS chat_conversation (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -59,12 +61,14 @@ function createChatTables($pdo) {
     )");
 }
 
+// Create tables
 createChatTables($pdo);
 
 // ==============================================
 // 4. GET OR CREATE CHAT ACCOUNT
 // ==============================================
 function getOrCreateChatAccount($pdo, $accNumber) {
+    // Check if account exists
     $stmt = $pdo->prepare("SELECT id, status FROM chat_account WHERE acc_number = ?");
     $stmt->execute([$accNumber]);
     $account = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -73,6 +77,7 @@ function getOrCreateChatAccount($pdo, $accNumber) {
         return $account;
     }
     
+    // Create new account
     $stmt = $pdo->prepare("
         INSERT INTO chat_account (acc_number, chat_sent, status) 
         VALUES (?, NOW(), 1)
@@ -86,9 +91,9 @@ function getOrCreateChatAccount($pdo, $accNumber) {
 }
 
 // ==============================================
-// 5. FIXED RECEIVER ACCOUNT (ADMIN)
+// 5. FIXED RECEIVER ACCOUNT - YOUR ACCOUNT NUMBER
 // ==============================================
-define('RECEIVER_ACCOUNT', '4819');
+define('RECEIVER_ACCOUNT', '4819'); // YOUR ACCOUNT NUMBER
 
 // ==============================================
 // 6. GET ACTION
@@ -98,22 +103,23 @@ $action = $_POST['action'] ?? '';
 try {
     switch ($action) {
         // ==============================================
-        // GET MESSAGES - FIXED: Get ALL messages for this customer
+        // GET MESSAGES - FIXED
         // ==============================================
         case 'get_messages':
-            // Get or create chat account for this customer
+            // Get or create chat account
             $account = getOrCreateChatAccount($pdo, $accNumber);
             
+            // Check if user is blocked
             if ($account['status'] == 0) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'Your account has been blocked from chat.',
+                    'message' => 'Your account has been blocked from chat. Please contact support.',
                     'blocked' => true
                 ]);
                 exit();
             }
             
-            // ✅ FIX: Get ALL messages where this customer is sender OR receiver
+            // ✅ FIX: Get ALL messages where user is sender OR receiver
             $stmt = $pdo->prepare("
                 SELECT 
                     id,
@@ -125,17 +131,21 @@ try {
                     status,
                     sender_type,
                     receiver_acc,
-                    created_at
+                    created_at,
+                    CASE 
+                        WHEN acc_number = ? THEN 'sent'
+                        ELSE 'received'
+                    END as direction
                 FROM chat_conversation 
                 WHERE acc_number = ? OR receiver_acc = ?
                 ORDER BY created_at ASC 
                 LIMIT 200
             ");
-            $stmt->execute([$accNumber, $accNumber]);
+            $stmt->execute([$accNumber, $accNumber, $accNumber]);
             $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // ✅ FIX: Mark messages as read for this user
-            // Mark messages received by this user (from admin)
+            // ✅ Mark ALL messages as read for this user (both sent to them and sent by them)
+            // Mark messages received by this user
             $stmt = $pdo->prepare("
                 UPDATE chat_conversation 
                 SET status = 1 
@@ -161,7 +171,7 @@ try {
             break;
 
         // ==============================================
-        // SEND MESSAGE - FIXED: Customer sends to admin
+        // SEND MESSAGE - FIXED RECEIVER
         // ==============================================
         case 'send_message':
             $message = trim($_POST['message'] ?? '');
@@ -171,22 +181,36 @@ try {
                 exit();
             }
             
-            // Get or create chat account for this customer
+            // Get or create chat account
             $account = getOrCreateChatAccount($pdo, $accNumber);
             
+            // Check if user is blocked
             if ($account['status'] == 0) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'Your account has been blocked from chat.',
+                    'message' => 'Your account has been blocked from chat. Please contact support.',
                     'blocked' => true
                 ]);
                 exit();
             }
             
-            // ✅ FIX: Customer sends to admin (RECEIVER_ACCOUNT)
-            $senderType = 'customer';
-            $receiverAcc = RECEIVER_ACCOUNT;
+            // Determine sender type and receiver
+            if ($userRole === 'Admin') {
+                // Admin sending to customer - receiver should be the customer's account
+                $senderType = 'admin';
+                $receiverAcc = $_POST['receiver_acc'] ?? '';
+                
+                if (empty($receiverAcc)) {
+                    echo json_encode(['success' => false, 'message' => 'Receiver account required']);
+                    exit();
+                }
+            } else {
+                // ✅ Customer sending to admin - ALWAYS send to YOUR account (4819)
+                $senderType = 'customer';
+                $receiverAcc = RECEIVER_ACCOUNT; // YOUR ACCOUNT NUMBER (4819)
+            }
             
+            // ✅ Insert message with proper fields
             $stmt = $pdo->prepare("
                 INSERT INTO chat_conversation (
                     acc_number, 
@@ -201,10 +225,7 @@ try {
             ");
             $stmt->execute([$accNumber, $message, $senderType, $receiverAcc]);
             
-            // ✅ Get the inserted message ID for logging
-            $messageId = $pdo->lastInsertId();
-            
-            // Update chat_sent timestamp for this customer
+            // Update chat_sent for the account
             $stmt = $pdo->prepare("
                 UPDATE chat_account 
                 SET chat_sent = NOW() 
@@ -212,7 +233,8 @@ try {
             ");
             $stmt->execute([$accNumber]);
             
-            // ✅ Return the new message data
+            // ✅ Get the inserted message
+            $messageId = $pdo->lastInsertId();
             $stmt = $pdo->prepare("
                 SELECT 
                     id,
@@ -240,7 +262,7 @@ try {
             break;
 
         // ==============================================
-        // GET CONVERSATIONS (for admin only)
+        // GET CONVERSATIONS (for admin)
         // ==============================================
         case 'get_conversations':
             if ($userRole !== 'Admin') {
@@ -248,26 +270,19 @@ try {
                 exit();
             }
             
-            // ✅ FIX: Get all unique customers with their chat info
+            // Get all unique conversations with latest message
             $stmt = $pdo->prepare("
                 SELECT 
                     ca.acc_number,
                     ca.chat_sent,
                     ca.status as account_status,
+                    (SELECT message FROM chat_conversation WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number ORDER BY created_at DESC LIMIT 1) as last_message,
+                    (SELECT DATE_FORMAT(created_at, '%b %d, %Y %h:%i %p') FROM chat_conversation WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number ORDER BY created_at DESC LIMIT 1) as last_message_time,
+                    (SELECT COUNT(*) FROM chat_conversation WHERE receiver_acc = ? AND acc_number = ca.acc_number AND status = 0) as unread_count,
+                    (SELECT COUNT(*) FROM chat_conversation WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number) as total_messages,
                     c.f_name as customer_name,
                     c.email as customer_email,
-                    c.phone_number as customer_phone,
-                    (SELECT message FROM chat_conversation 
-                     WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number 
-                     ORDER BY created_at DESC LIMIT 1) as last_message,
-                    (SELECT DATE_FORMAT(created_at, '%b %d, %Y %h:%i %p') 
-                     FROM chat_conversation 
-                     WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number 
-                     ORDER BY created_at DESC LIMIT 1) as last_message_time,
-                    (SELECT COUNT(*) FROM chat_conversation 
-                     WHERE acc_number = ca.acc_number AND receiver_acc = ? AND status = 0) as unread_count,
-                    (SELECT COUNT(*) FROM chat_conversation 
-                     WHERE acc_number = ca.acc_number OR receiver_acc = ca.acc_number) as total_messages
+                    c.phone_number as customer_phone
                 FROM chat_account ca
                 LEFT JOIN customers c ON ca.acc_number = c.acc_number
                 WHERE ca.acc_number != ?
@@ -288,7 +303,7 @@ try {
         // ==============================================
         case 'get_unread_count':
             if ($userRole === 'Admin') {
-                // Admin sees all unread messages from all customers
+                // Admin sees all unread messages from customers
                 $stmt = $pdo->prepare("
                     SELECT COUNT(*) as total_unread 
                     FROM chat_conversation 
@@ -356,6 +371,9 @@ try {
             ]);
             break;
 
+        // ==============================================
+        // DEFAULT
+        // ==============================================
         default:
             echo json_encode(['success' => false, 'message' => 'Invalid action']);
             break;

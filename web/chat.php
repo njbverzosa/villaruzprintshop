@@ -10,10 +10,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -173,14 +174,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             overflow-y: auto;
         }
 
-        /* ========== SMALLER HEADER WITH 10px RADIUS ========== */
         .dashboard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             background: #ffffff;
-            padding: 12px 20px;
+            padding: 20px 30px;
             border-radius: 10px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -374,14 +374,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             background: #dbeafe;
             color: #3b82f6;
         }
+
         .stat-icon.green {
             background: #d1fae5;
             color: #10b981;
         }
+
         .stat-icon.red {
             background: #fee2e2;
             color: #ef4444;
         }
+
         .stat-icon.yellow {
             background: #fef3c7;
             color: #f59e0b;
@@ -562,50 +565,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             cursor: not-allowed;
         }
 
-        /* ========== TOAST ========== */
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 500;
-            z-index: 2000;
-            animation: slideIn 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .toast-success {
-            background: #10b981;
-        }
-
-        .toast-error {
-            background: #ef4444;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .main-content {
@@ -613,7 +572,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             }
 
             .dashboard-header {
-                padding: 10px 15px;
+                padding: 12px 16px;
+                border-radius: 10px;
             }
 
             .welcome h4 {
@@ -631,12 +591,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
 
             .stat-card {
                 padding: 12px 14px;
+                border-radius: 10px;
             }
 
             .stat-icon {
                 font-size: 22px;
                 width: 40px;
                 height: 40px;
+                border-radius: 10px;
             }
 
             .stat-value {
@@ -671,11 +633,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             .section-header h5 {
                 font-size: 14px;
             }
+
+            .merchandise-section {
+                border-radius: 10px;
+            }
         }
 
         @media (max-width: 480px) {
             .main-content {
                 padding: 10px;
+            }
+
+            .dashboard-header {
+                padding: 10px 12px;
+                border-radius: 10px;
             }
 
             .stats-grid {
@@ -685,12 +656,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
 
             .stat-card {
                 padding: 10px 12px;
+                border-radius: 10px;
             }
 
             .stat-icon {
                 font-size: 18px;
                 width: 32px;
                 height: 32px;
+                border-radius: 10px;
             }
 
             .stat-value {
@@ -727,6 +700,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             .section-header h5 {
                 font-size: 13px;
             }
+
+            .merchandise-section {
+                border-radius: 10px;
+            }
         }
     </style>
 </head>
@@ -752,45 +729,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         ?>
 
         <main class="main-content">
-            <!-- Smaller Header with 10px Radius -->
+
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h4><i class="fas fa-comment-dots"></i> Chat Centre</h4>
-                </div>
-                <div class="user-info">
-                    <i class="fas fa-user"></i> <?php echo htmlspecialchars($user['f_name'] ?? 'Admin'); ?>
-                    (<?php echo htmlspecialchars($_SESSION['acc_number']); ?>)
+                    <h4><i class="fas fa-comment-dots"></i> Live Chat Centre</h4>
                 </div>
             </div>
 
-            <!-- Stats Cards - 2 Column Grid, 10px Radius -->
+            <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                    <div class="stat-icon blue">
+                        <i class="fas fa-users"></i>
+                    </div>
                     <div class="stat-info">
                         <div class="stat-value"><?php echo $totalAccounts; ?></div>
-                        <div class="stat-label">Total Chat Users</div>
+                        <div class="stat-label">Total Conversations</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value"><?php echo $activeAccounts; ?></div>
-                        <div class="stat-label">Active Users</div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-comment"></i>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon red"><i class="fas fa-user-slash"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value"><?php echo $blockedAccounts; ?></div>
-                        <div class="stat-label">Blocked Users</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon yellow"><i class="fas fa-envelope"></i></div>
                     <div class="stat-info">
                         <div class="stat-value"><?php echo $totalUnread; ?></div>
-                        <div class="stat-label">Total Unread Messages</div>
+                        <div class="stat-label">Unread Messages</div>
                     </div>
                 </div>
             </div>
@@ -808,11 +771,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
                         <thead>
                             <tr>
                                 <th>Account #</th>
-                                <th>Last Message</th>
                                 <th>Last Active</th>
                                 <th>Messages</th>
                                 <th>Unread</th>
-                                <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -825,27 +786,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
                                     </td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($chatAccounts as $account): 
+                                <?php foreach ($chatAccounts as $account):
                                     $lastSender = $account['last_sender'] ?? '';
                                     $lastSenderLabel = $lastSender == 'admin' ? 'You' : 'Customer';
                                     $lastSenderClass = $lastSender == 'admin' ? 'badge-admin' : 'badge-customer';
                                 ?>
-                                    <tr class="clickable-row" 
+                                    <tr class="clickable-row"
                                         onclick="window.location.href='chat_view.php?acc=<?php echo urlencode($account['acc_number']); ?>'"
                                         data-acc="<?php echo htmlspecialchars($account['acc_number']); ?>">
                                         <td>
                                             <strong><?php echo htmlspecialchars($account['acc_number']); ?></strong>
                                         </td>
-                                        <td>
-                                            <?php if ($account['last_message']): ?>
-                                                <span class="badge-status <?php echo $lastSenderClass; ?>">
-                                                    <?php echo $lastSenderLabel; ?>:
-                                                </span>
-                                                <?php echo htmlspecialchars(substr($account['last_message'], 0, 50)) . (strlen($account['last_message']) > 50 ? '...' : ''); ?>
-                                            <?php else: ?>
-                                                <span style="color: #94a3b8;">No messages yet</span>
-                                            <?php endif; ?>
-                                        </td>
+                                       
                                         <td>
                                             <?php if ($account['last_message_time']): ?>
                                                 <?php echo htmlspecialchars($account['last_message_time']); ?>
@@ -863,14 +815,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
                                                 <span style="color: #94a3b8;">0</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <span class="badge-status <?php echo ($account['account_status'] == 1) ? 'badge-active' : 'badge-blocked'; ?>">
-                                                <?php echo ($account['account_status'] == 1) ? 'Active' : 'Blocked'; ?>
-                                            </span>
-                                        </td>
+                                        
                                         <td>
                                             <button class="toggle-btn <?php echo ($account['account_status'] == 1) ? 'block' : 'unblock'; ?>"
-                                                    onclick="event.stopPropagation(); toggleBlock('<?php echo htmlspecialchars($account['acc_number']); ?>', <?php echo ($account['account_status'] == 1) ? '0' : '1'; ?>, this)">
+                                                onclick="event.stopPropagation(); toggleBlock('<?php echo htmlspecialchars($account['acc_number']); ?>', <?php echo ($account['account_status'] == 1) ? '0' : '1'; ?>, this)">
                                                 <?php echo ($account['account_status'] == 1) ? 'Block' : 'Unblock'; ?>
                                             </button>
                                         </td>
@@ -931,20 +879,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         });
 
         // ==============================================
-        // TOAST FUNCTION
-        // ==============================================
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // ==============================================
         // TOGGLE BLOCK/UNBLOCK
         // ==============================================
         async function toggleBlock(accNumber, blockStatus, button) {
@@ -970,12 +904,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast(data.message, 'success');
-                    
                     // Update button and status badge
                     const row = button.closest('tr');
                     const statusBadge = row.querySelector('.badge-status:not(.badge-unread):not(.badge-customer):not(.badge-admin)');
-                    
+
                     if (blockStatus === 0) {
                         // User blocked
                         button.textContent = 'Unblock';
@@ -1001,12 +933,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
                             statusBadge.className = 'badge-status badge-active';
                         }
                     }
-                } else {
-                    showToast(data.message || 'Failed to update status', 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
-                showToast('Network error. Please try again.', 'error');
             } finally {
                 button.classList.remove('loading');
                 // Restore button text if not changed
@@ -1021,26 +950,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         // ==============================================
         function refreshChatTable() {
             fetch(window.location.href, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newTable = doc.querySelector('#chatTable tbody');
-                const currentTable = document.querySelector('#chatTable tbody');
-                
-                if (newTable && currentTable) {
-                    const newHtml = newTable.innerHTML;
-                    const currentHtml = currentTable.innerHTML;
-                    if (newHtml !== currentHtml) {
-                        currentTable.innerHTML = newHtml;
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
-                }
-            })
-            .catch(error => console.error('Error refreshing table:', error));
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newTable = doc.querySelector('#chatTable tbody');
+                    const currentTable = document.querySelector('#chatTable tbody');
+
+                    if (newTable && currentTable) {
+                        const newHtml = newTable.innerHTML;
+                        const currentHtml = currentTable.innerHTML;
+                        if (newHtml !== currentHtml) {
+                            currentTable.innerHTML = newHtml;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error refreshing table:', error));
         }
 
         // Refresh every 30 seconds

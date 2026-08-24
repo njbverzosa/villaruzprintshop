@@ -1129,7 +1129,7 @@ $allProducts = $stmt->fetchAll();
                     if (qtySpan) {
                         qtySpan.textContent = '0';
                     }
-                    showToast(`${quantity} × ${productName} added to cart!`, 'success');
+                    showToast(`An item(s) added to cart!`, 'success');
                     return true;
                 } else {
                     showToast(data.message || 'Error adding to cart', 'error');

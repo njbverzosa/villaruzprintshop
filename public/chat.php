@@ -1,5 +1,5 @@
 <?php
-// public/chat.php - Live Chat Page
+// public/chat.php - Customer Chat View (No Toasts)
 
 session_start();
 
@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -217,8 +218,15 @@ $csrfToken = $_SESSION['csrf_token'];
         }
 
         @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
         }
 
         /* Chat Messages Area */
@@ -240,7 +248,7 @@ $csrfToken = $_SESSION['csrf_token'];
             font-size: 14px;
             line-height: 1.5;
             word-wrap: break-word;
-            animation: none;
+            animation: fadeIn 0.3s ease;
         }
 
         .chat-messages .message.sent {
@@ -274,6 +282,18 @@ $csrfToken = $_SESSION['csrf_token'];
             color: #94a3b8;
         }
 
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Typing Indicator */
         .typing-indicator {
             display: none;
@@ -302,15 +322,20 @@ $csrfToken = $_SESSION['csrf_token'];
         .typing-indicator .dot:nth-child(2) {
             animation-delay: 0.2s;
         }
+
         .typing-indicator .dot:nth-child(3) {
             animation-delay: 0.4s;
         }
 
         @keyframes typingDot {
-            0%, 60%, 100% {
+
+            0%,
+            60%,
+            100% {
                 transform: translateY(0);
                 opacity: 0.4;
             }
+
             30% {
                 transform: translateY(-8px);
                 opacity: 1;
@@ -374,6 +399,11 @@ $csrfToken = $_SESSION['csrf_token'];
             background: #ffffff;
         }
 
+        .chat-input-area input:disabled {
+            background: #f1f5f9;
+            cursor: not-allowed;
+        }
+
         .chat-input-area .send-btn {
             padding: 12px 28px;
             border-radius: 24px;
@@ -390,7 +420,7 @@ $csrfToken = $_SESSION['csrf_token'];
             flex-shrink: 0;
         }
 
-        .chat-input-area .send-btn:hover {
+        .chat-input-area .send-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
@@ -465,55 +495,6 @@ $csrfToken = $_SESSION['csrf_token'];
             min-width: 12px;
             text-align: center;
             line-height: 14px;
-        }
-
-        /* ========== TOAST NOTIFICATION ========== */
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 14px 20px;
-            border-radius: 12px;
-            color: white;
-            font-weight: 500;
-            z-index: 2000;
-            animation: slideIn 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            font-size: 14px;
-        }
-
-        .toast-success {
-            background: #10b981;
-        }
-
-        .toast-error {
-            background: #ef4444;
-        }
-
-        .toast-info {
-            background: #3b82f6;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
         }
 
         /* ========== RESPONSIVE ========== */
@@ -723,7 +704,7 @@ $csrfToken = $_SESSION['csrf_token'];
 
         <!-- Chat Container -->
         <div class="chat-container">
-          
+
             <!-- Chat Messages -->
             <div class="chat-messages" id="chatMessages">
                 <div class="chat-empty">
@@ -785,46 +766,44 @@ $csrfToken = $_SESSION['csrf_token'];
         </a>
     </nav>
 
-   <script>
-    // ==============================================
-    // CHAT SYSTEM - UPDATED FOR NEW BACKEND
-    // ==============================================
-    
-    const csrfToken = document.getElementById('csrfToken').value;
-    const userId = document.getElementById('userId').value;
-    const userRole = document.getElementById('userRole').value;
-    const userAccNumber = document.getElementById('userAccNumber').value;
+    <script>
+        // ==============================================
+        // CHAT SYSTEM
+        // ==============================================
 
-    let chatInterval = null;
-    let isTyping = false;
-    let typingTimeout = null;
-    let lastMessageCount = 0;
-    let isFirstLoad = true;
-    let isBlocked = false;
+        const csrfToken = document.getElementById('csrfToken').value;
+        const userId = document.getElementById('userId').value;
+        const userRole = document.getElementById('userRole').value;
+        const userAccNumber = document.getElementById('userAccNumber').value;
 
-    // ==============================================
-    // CHECK ACCOUNT STATUS
-    // ==============================================
-    function checkAccountStatus() {
-        const formData = new FormData();
-        formData.append('action', 'check_status');
-        formData.append('csrf_token', csrfToken);
+        let chatInterval = null;
+        let lastMessageId = 0;
+        let isFirstLoad = true;
+        let isBlocked = false;
+        let isSending = false;
 
-        fetch('../Customer_API/chat.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                isBlocked = data.is_blocked;
-                if (isBlocked) {
-                    document.getElementById('chatInput').disabled = true;
-                    document.getElementById('sendBtn').disabled = true;
-                    showToast('Your account has been blocked from chat. Please contact support.', 'error');
-                    
-                    const container = document.getElementById('chatMessages');
-                    container.innerHTML = `
+        // ==============================================
+        // CHECK ACCOUNT STATUS
+        // ==============================================
+        function checkAccountStatus() {
+            const formData = new FormData();
+            formData.append('action', 'check_status');
+            formData.append('csrf_token', csrfToken);
+
+            fetch('../Customer_API/chat.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        isBlocked = data.is_blocked;
+                        if (isBlocked) {
+                            document.getElementById('chatInput').disabled = true;
+                            document.getElementById('sendBtn').disabled = true;
+                            
+                            const container = document.getElementById('chatMessages');
+                            container.innerHTML = `
                         <div class="chat-empty">
                             <i class="fas fa-ban" style="color: #ef4444;"></i>
                             <h4 style="color: #ef4444;">Account Blocked</h4>
@@ -832,55 +811,64 @@ $csrfToken = $_SESSION['csrf_token'];
                             <p style="font-size: 12px; margin-top: 8px; color: #94a3b8;">Please contact support for assistance.</p>
                         </div>
                     `;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error checking status:', error));
+        }
+
+        // ==============================================
+        // LOAD MESSAGES
+        // ==============================================
+        function loadMessages() {
+            if (!userId || !userRole || isBlocked) return;
+
+            const formData = new FormData();
+            formData.append('action', 'get_messages');
+            formData.append('csrf_token', csrfToken);
+
+            fetch('../Customer_API/chat.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const messages = data.messages || [];
+                        renderMessages(messages);
+                        updateLastMessageId(messages);
+                    } else if (data.blocked) {
+                        isBlocked = true;
+                        document.getElementById('chatInput').disabled = true;
+                        document.getElementById('sendBtn').disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error loading messages:', error);
+                });
+        }
+
+        // ==============================================
+        // UPDATE LAST MESSAGE ID
+        // ==============================================
+        function updateLastMessageId(messages) {
+            if (messages.length > 0) {
+                const lastMsg = messages[messages.length - 1];
+                if (lastMsg && lastMsg.id) {
+                    lastMessageId = lastMsg.id;
                 }
             }
-        })
-        .catch(error => console.error('Error checking status:', error));
-    }
+        }
 
-    // ==============================================
-    // LOAD MESSAGES
-    // ==============================================
-    function loadMessages() {
-        if (!userId || !userRole || isBlocked) return;
+        // ==============================================
+        // RENDER MESSAGES
+        // ==============================================
+        function renderMessages(messages) {
+            const container = document.getElementById('chatMessages');
 
-        const formData = new FormData();
-        formData.append('action', 'get_messages');
-        formData.append('csrf_token', csrfToken);
-
-        fetch('../Customer_API/chat.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const messages = data.messages || [];
-                
-                // Only re-render if message count changed or first load
-                if (messages.length !== lastMessageCount || isFirstLoad) {
-                    lastMessageCount = messages.length;
-                    isFirstLoad = false;
-                    renderMessages(messages);
-                }
-            } else if (data.blocked) {
-                isBlocked = true;
-                document.getElementById('chatInput').disabled = true;
-                document.getElementById('sendBtn').disabled = true;
-                showToast(data.message, 'error');
-            }
-        })
-        .catch(error => console.error('Error loading messages:', error));
-    }
-
-    // ==============================================
-    // RENDER MESSAGES
-    // ==============================================
-    function renderMessages(messages) {
-        const container = document.getElementById('chatMessages');
-        
-        if (!messages || messages.length === 0) {
-            container.innerHTML = `
+            if (!messages || messages.length === 0) {
+                if (!container.querySelector('.message')) {
+                    container.innerHTML = `
                 <div class="chat-empty">
                     <i class="fas fa-comment-alt"></i>
                     <h4>Hello! 👋</h4>
@@ -888,192 +876,174 @@ $csrfToken = $_SESSION['csrf_token'];
                     <p style="font-size: 12px; margin-top: 8px; color: #94a3b8;">Our support team is here to assist you.</p>
                 </div>
             `;
-            return;
+                }
+                return;
+            }
+
+            // Remove empty state
+            const emptyState = container.querySelector('.chat-empty');
+            if (emptyState) emptyState.remove();
+
+            // Get existing message IDs
+            const existingIds = new Set();
+            container.querySelectorAll('.message').forEach(el => {
+                const id = el.getAttribute('data-id');
+                if (id) existingIds.add(id);
+            });
+
+            let hasNewMessages = false;
+
+            messages.forEach((msg) => {
+                const msgId = String(msg.id);
+
+                // Skip if message already exists
+                if (existingIds.has(msgId)) return;
+
+                // Determine if sent or received based on acc_number
+                const isSent = msg.acc_number === userAccNumber;
+
+                const time = msg.time || (msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '');
+
+                const div = document.createElement('div');
+                div.className = `message ${isSent ? 'sent' : 'received'}`;
+                div.setAttribute('data-id', msgId);
+                div.innerHTML = `
+            ${escapeHtml(msg.message)}
+            <span class="time">${time}</span>
+        `;
+                container.appendChild(div);
+                hasNewMessages = true;
+            });
+
+            if (hasNewMessages || isFirstLoad) {
+                isFirstLoad = false;
+                scrollToBottom();
+            }
         }
 
-        let html = '';
-        messages.forEach((msg, index) => {
-            // Check if message is from this user (sent) or received
-            const isSent = msg.acc_number === userAccNumber && msg.sender_type === 'customer';
-            const time = msg.time || new Date(msg.created_at).toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            
-            // Only animate the newest message
-            const isNew = index === messages.length - 1 && !isFirstLoad;
-            const animStyle = isNew ? 'animation: messageIn 0.3s ease;' : '';
-            
-            html += `
-                <div class="message ${isSent ? 'sent' : 'received'}" style="${animStyle}">
-                    ${escapeHtml(msg.message)}
-                    <span class="time">${time}</span>
-                </div>
-            `;
+        // ==============================================
+        // SCROLL TO BOTTOM
+        // ==============================================
+        function scrollToBottom() {
+            const container = document.getElementById('chatMessages');
+            if (container) {
+                requestAnimationFrame(() => {
+                    container.scrollTop = container.scrollHeight;
+                });
+            }
+        }
+
+        // ==============================================
+        // SEND MESSAGE
+        // ==============================================
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+            if (isBlocked) {
+                return;
+            }
+            if (isSending) return;
+            if (!userId || !userRole) {
+                return;
+            }
+
+            isSending = true;
+            input.disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'send_message');
+            formData.append('message', message);
+            formData.append('csrf_token', csrfToken);
+
+            fetch('../Customer_API/chat.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        input.value = '';
+                        isFirstLoad = true;
+                        loadMessages();
+                    } else if (data.blocked) {
+                        isBlocked = true;
+                        input.disabled = true;
+                        document.getElementById('sendBtn').disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending message:', error);
+                })
+                .finally(() => {
+                    isSending = false;
+                    input.disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                    input.focus();
+                });
+        }
+
+        // ==============================================
+        // ESCAPE HTML
+        // ==============================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ==============================================
+        // EVENT LISTENERS
+        // ==============================================
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+            }
         });
 
-        container.innerHTML = html;
-        scrollToBottom();
-    }
-
-    // ==============================================
-    // SCROLL TO BOTTOM
-    // ==============================================
-    function scrollToBottom() {
-        const container = document.getElementById('chatMessages');
-        if (container) {
-            requestAnimationFrame(() => {
-                container.scrollTop = container.scrollHeight;
-            });
-        }
-    }
-
-    // ==============================================
-    // SEND MESSAGE
-    // ==============================================
-    function sendMessage() {
-        const input = document.getElementById('chatInput');
-        const message = input.value.trim();
-        
-        if (!message) return;
-        if (isBlocked) {
-            showToast('You are blocked from sending messages.', 'error');
-            return;
-        }
-        if (!userId || !userRole) {
-            showToast('Please login to send messages', 'error');
-            return;
-        }
-
-        input.disabled = true;
-        document.getElementById('sendBtn').disabled = true;
-
-        const formData = new FormData();
-        formData.append('action', 'send_message');
-        formData.append('message', message);
-        formData.append('csrf_token', csrfToken);
-
-        fetch('../Customer_API/chat.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                input.value = '';
-                isFirstLoad = true;
-                loadMessages();
-            } else if (data.blocked) {
-                isBlocked = true;
-                input.disabled = true;
-                document.getElementById('sendBtn').disabled = true;
-                showToast(data.message, 'error');
-            } else {
-                showToast(data.message || 'Failed to send message', 'error');
+        // ==============================================
+        // CLEANUP
+        // ==============================================
+        window.addEventListener('beforeunload', function() {
+            if (chatInterval) {
+                clearInterval(chatInterval);
             }
-        })
-        .catch(error => {
-            console.error('Error sending message:', error);
-            showToast('Network error. Please try again.', 'error');
-        })
-        .finally(() => {
-            input.disabled = false;
-            document.getElementById('sendBtn').disabled = false;
-            input.focus();
         });
-    }
 
-    // ==============================================
-    // SHOW TOAST
-    // ==============================================
-    function showToast(message, type = 'success') {
-        const toast = document.createElement('div');
-        toast.className = `toast-notification toast-${type}`;
-        const icon = type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-circle';
-        toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
+        // ==============================================
+        // INITIALIZE CHAT
+        // ==============================================
+        function initChat() {
+            if (userId && userRole) {
+                checkAccountStatus();
 
-    // ==============================================
-    // ESCAPE HTML
-    // ==============================================
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+                setTimeout(() => {
+                    loadMessages();
+                }, 500);
 
-    // ==============================================
-    // EVENT LISTENERS
-    // ==============================================
-    document.getElementById('sendBtn').addEventListener('click', sendMessage);
-    document.getElementById('chatInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-
-    // ==============================================
-    // CLEANUP
-    // ==============================================
-    window.addEventListener('beforeunload', function() {
-        if (chatInterval) {
-            clearInterval(chatInterval);
-        }
-    });
-
-    // ==============================================
-    // ADD ANIMATION STYLES
-    // ==============================================
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes messageIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
+                chatInterval = setInterval(() => {
+                    loadMessages();
+                }, 3000);
             }
         }
-    `;
-    document.head.appendChild(style);
 
-    // ==============================================
-    // INITIALIZE CHAT
-    // ==============================================
-    function initChat() {
-        if (userId && userRole) {
-            // Check account status first
-            checkAccountStatus();
-            
-            // Load messages
-            setTimeout(() => {
-                loadMessages();
-            }, 500);
-            
-            // Set up polling
-            chatInterval = setInterval(() => {
-                loadMessages();
-            }, 3000);
-        }
-    }
+        // Start the chat
+        initChat();
 
-    // Start the chat
-    initChat();
-
-    console.log('💬 Live Chat initialized');
-    console.log('👤 User ID:', userId);
-    console.log('👤 User Role:', userRole);
-    console.log('📧 Account:', userAccNumber);
-</script>
+        console.log('💬 Live Chat initialized');
+        console.log('👤 User ID:', userId);
+        console.log('👤 User Role:', userRole);
+        console.log('📧 Account:', userAccNumber);
+    </script>
 
 </body>
+
 </html>
