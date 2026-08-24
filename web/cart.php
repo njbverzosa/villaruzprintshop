@@ -1598,7 +1598,7 @@ try {
                     formData.append('cart_id', cartId);
                     formData.append('csrf_token', csrfToken);
 
-                    const response = await fetch('../Customer_API/cart_operations.php', {
+                    const response = await fetch('../API/cart_operations.php', {
                         method: 'POST',
                         body: formData
                     });
@@ -1630,7 +1630,7 @@ try {
                     formData.append('acc_number', accNum);
                     formData.append('csrf_token', csrfToken);
 
-                    const response = await fetch('../Customer_API/cart_operations.php', {
+                    const response = await fetch('../API/cart_operations.php', {
                         method: 'POST',
                         body: formData
                     });
@@ -1694,7 +1694,7 @@ try {
                         formData.append('csrf_token', csrfToken);
                         formData.append('existing_delivery_number', existingDeliveryNumber);
 
-                        const response = await fetch('../Customer_API/cart_operations.php', {
+                        const response = await fetch('../API/cart_operations.php', {
                             method: 'POST',
                             body: formData
                         });
@@ -1764,7 +1764,7 @@ try {
                     formData.append('csrf_token', csrfToken);
                     formData.append('update_customer_address', 'true');
 
-                    const response = await fetch('../Customer_API/cart_operations.php', {
+                    const response = await fetch('../API/cart_operations.php', {
                         method: 'POST',
                         body: formData
                     });

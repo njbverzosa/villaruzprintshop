@@ -231,6 +231,7 @@ try {
             $userAccNumber = $_POST['acc_number'] ?? '';
             $deliveryDateRaw = $_POST['delivery_date'] ?? '';
             $existingDeliveryNumber = $_POST['existing_delivery_number'] ?? '';
+            $deliveryAddress = $_POST['delivery_address'] ?? '';  // ✅ Add this
 
             if (empty($customerName) || empty($deliveryDateRaw)) {
                 echo json_encode(['success' => false, 'message' => 'Missing required fields']);
@@ -242,30 +243,12 @@ try {
                 exit();
             }
 
-            // Get user's address details from customers table
-            $stmt = $pdo->prepare("SELECT street, barangay, land_mark FROM customers WHERE acc_number = ?");
-            $stmt->execute([$userAccNumber]);
-            $userAddressData = $stmt->fetch(PDO::FETCH_ASSOC);
+            // ✅ For Admin: Use the delivery address from the form
+            $fullAddress = trim($deliveryAddress);
 
-            if (!$userAddressData) {
-                echo json_encode(['success' => false, 'message' => 'User not found']);
+            if (empty($fullAddress)) {
+                echo json_encode(['success' => false, 'message' => 'Delivery address is required']);
                 exit();
-            }
-
-            $street = $userAddressData['street'] ?? '';
-            $barangay = $userAddressData['barangay'] ?? '';
-            $landMark = $userAddressData['land_mark'] ?? '';
-
-            // Check if user has complete address
-            if (empty($street) || empty($barangay)) {
-                echo json_encode(['success' => false, 'message' => 'Please complete your address (Street and Barangay are required)']);
-                exit();
-            }
-
-            // Combine address fields
-            $fullAddress = trim($street . ', ' . $barangay);
-            if (!empty($landMark)) {
-                $fullAddress .= ', ' . $landMark;
             }
 
             // Get cart items for this user
@@ -278,20 +261,15 @@ try {
                 exit();
             }
 
-            // Calculate subtotal amount from cart items with proper decimal handling
+            // Calculate subtotal
             $subtotalAmount = 0;
             foreach ($cartItems as $item) {
-                // Ensure we're using proper decimal values
                 $itemTotal = floatval($item['total_amount']);
                 $subtotalAmount += $itemTotal;
             }
-
-            // Round subtotal to 2 decimal places
             $subtotalAmount = round($subtotalAmount, 2);
 
-            // ============================================================
-            // CALCULATE DELIVERY CHARGE BASED ON BARANGAY (FREE FOR ₱500+)
-            // ============================================================
+            // ✅ For Admin: No delivery charge (or set to 0)
             $deliveryCharge = 0;
 
             // Check if subtotal is ₱500 or more -> FREE DELIVERY
@@ -609,4 +587,3 @@ try {
     error_log("Cart Operations Error: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 }
-?>

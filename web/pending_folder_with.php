@@ -1,13 +1,11 @@
 <?php
 // web/pending_folder_with.php
-
 session_start();
 
 // ==============================================
 // 1. FIX PATHS - config.php is in DB_Conn folder at root level
 // ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
-session_start();
 
 // ==============================================
 // 2. CHECK LOGIN STATUS
