@@ -174,7 +174,6 @@ try {
             display: block;
         }
 
-        /* ========== BURGER BUTTON (FIXED) ========== */
         .burger-btn {
             position: fixed;
             top: 20px;
@@ -1072,6 +1071,22 @@ try {
                 gap: 8px;
             }
 
+            .burger-btn {
+                width: 50px;
+                height: 50px;
+                top: 12px;
+                right: 12px;
+            }
+
+            .burger-btn i {
+                font-size: 20px;
+            }
+
+            .dashboard-header {
+                padding: 20px 30px;
+                border-radius: 10px;
+            }
+          
             .cart-item-left .product-name {
                 font-size: 14px;
             }

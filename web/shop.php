@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -87,21 +88,18 @@ $allProducts = $stmt->fetchAll();
             flex-direction: column;
         }
 
-        /* Main content wrapper (no sidebar) */
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
         }
 
-        /* Main content */
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
         }
 
-        /* Dashboard header */
         .dashboard-header {
             display: flex;
             justify-content: space-between;
@@ -114,17 +112,12 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        .welcome h3 {
-            font-size: 22px;
+        .welcome h1 {
+            font-size: 28px;
             font-weight: 700;
             color: #0f172a;
         }
 
-        .welcome span {
-            color: #3b82f6;
-        }
-
-        /* ========== BURGER BUTTON (FIXED) ========== */
         .burger-btn {
             position: fixed;
             top: 20px;
@@ -152,6 +145,7 @@ $allProducts = $stmt->fetchAll();
             font-size: 24px;
             color: #3b82f6;
         }
+
 
         /* ========== RIGHT SIDE MENU (OVERLAY) ========== */
         .side-menu {
@@ -700,7 +694,7 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-       
+
 
         ::-webkit-scrollbar {
             width: 8px;
@@ -782,6 +776,34 @@ $allProducts = $stmt->fetchAll();
             .desc-modal-header h3 {
                 font-size: 18px;
             }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+            }
+
+
+            .dashboard-header {
+                padding: 20px 30px;
+                border-radius: 10px;
+            }
+
+            .welcome h1 {
+                font-size: 18px;
+            }
+
+            .burger-btn {
+                width: 50px;
+                height: 50px;
+                top: 12px;
+                right: 12px;
+            }
+
+            .burger-btn i {
+                font-size: 20px;
+            }
+
         }
     </style>
 </head>
@@ -988,7 +1010,7 @@ $allProducts = $stmt->fetchAll();
         });
 
         // Close on Escape key
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && descModal.style.display === 'flex') {
                 closeDescriptionModal();
             }
@@ -1028,7 +1050,7 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeMenu();
             }
@@ -1058,7 +1080,7 @@ $allProducts = $stmt->fetchAll();
 
         function escapeHtml(str) {
             if (!str) return '';
-            return String(str).replace(/[&<>]/g, function (m) {
+            return String(str).replace(/[&<>]/g, function(m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -1148,7 +1170,7 @@ $allProducts = $stmt->fetchAll();
 
         // ========== QUANTITY CONTROL EVENT LISTENERS ==========
         document.querySelectorAll('.decrement-card').forEach(btn => {
-            btn.addEventListener('click', function (e) {
+            btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtySpan = document.getElementById(`qty-${productId}`);
@@ -1161,7 +1183,7 @@ $allProducts = $stmt->fetchAll();
         });
 
         document.querySelectorAll('.increment-card').forEach(btn => {
-            btn.addEventListener('click', function (e) {
+            btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtySpan = document.getElementById(`qty-${productId}`);
@@ -1173,7 +1195,7 @@ $allProducts = $stmt->fetchAll();
 
         // ========== ADD TO CART BUTTON EVENT LISTENERS ==========
         document.querySelectorAll('.add-to-cart-card').forEach(btn => {
-            btn.addEventListener('click', function (e) {
+            btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const productName = this.dataset.name;
@@ -1187,7 +1209,7 @@ $allProducts = $stmt->fetchAll();
 
         // ========== DESCRIPTION BUTTON EVENT LISTENERS ==========
         document.querySelectorAll('.desc-btn').forEach(btn => {
-            btn.addEventListener('click', function (e) {
+            btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const productName = this.dataset.name;
                 const productUnit = this.dataset.unit;
@@ -1209,7 +1231,7 @@ $allProducts = $stmt->fetchAll();
 
         let searchTimeout;
         if (searchInput) {
-            searchInput.addEventListener('input', function () {
+            searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(performLiveSearch, 300);
             });
