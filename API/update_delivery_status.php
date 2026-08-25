@@ -58,7 +58,7 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
  */
 function isValidStatus($status)
 {
-    $allowedStatuses = ['PENDING', 'PAID', 'CANCELLED', 'CREDIT'];
+    $allowedStatuses = ['PENDING', 'PAID', 'CANCELLED', 'CREDIT', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED'];
     return in_array($status, $allowedStatuses);
 }
 

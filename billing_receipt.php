@@ -75,7 +75,7 @@ if (!empty($qrData)) {
         body {
             background: #e2e8f0;
             font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
-            padding: 1.5rem 1rem;
+            padding: 2rem 1rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -85,18 +85,18 @@ if (!empty($qrData)) {
 
         .button-container {
             position: fixed;
-            top: 15px;
-            right: 15px;
+            top: 20px;
+            right: 20px;
             z-index: 1000;
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
         
         .download-btn {
             color: white;
             border: none;
-            padding: 10px 22px;
-            font-size: 0.85rem;
+            padding: 12px 28px;
+            font-size: 0.9rem;
             font-family: 'Courier New', monospace;
             font-weight: bold;
             border-radius: 30px;
@@ -118,49 +118,49 @@ if (!empty($qrData)) {
         }
 
         .bill-container {
-            max-width: 750px;
+            max-width: 820px;
             width: 100%;
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.15);
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2);
             overflow: hidden;
             transition: all 0.2s;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .bill-paper {
-            padding: 1.5rem 1.8rem 1.2rem 1.8rem;
+            padding: 2rem 2rem 1.5rem 2rem;
         }
 
         .shop-header {
             text-align: center;
             border-bottom: 2px solid #1e3a5f;
-            margin-bottom: 0.8rem;
-            padding-bottom: 0.6rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
         }
 
         .shop-name {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 700;
-            letter-spacing: -0.2px;
+            letter-spacing: -0.3px;
             color: #0a2f44;
             text-transform: uppercase;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.25rem;
         }
 
         .shop-address {
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             color: #2c3e4e;
             font-weight: 500;
             background: #f1f5f9;
             display: inline-block;
-            padding: 0.1rem 0.8rem;
+            padding: 0.1rem 1rem;
             border-radius: 30px;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.25rem;
         }
 
         .vat-row {
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             color: #4a627a;
             margin-top: 0.1rem;
             font-weight: 500;
@@ -168,60 +168,60 @@ if (!empty($qrData)) {
 
         .doc-title {
             text-align: center;
-            margin: 0.4rem 0 0.8rem 0;
+            margin: 0.5rem 0 1rem 0;
         }
 
         .doc-title h3 {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             font-weight: 700;
             color: #1e3a5f;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             border-bottom: 2px dotted #cbd5e1;
             display: inline-block;
-            padding-bottom: 0.2rem;
+            padding-bottom: 0.25rem;
         }
 
         .info-grid {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 0.6rem;
+            gap: 0.8rem;
             background: #f8fafc;
-            padding: 0.6rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.8rem;
+            padding: 0.8rem 1.2rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
             border: 1px solid #e2edf2;
         }
 
         .client-box p, .date-box p {
-            margin: 0.15rem 0;
-            line-height: 1.3;
+            margin: 0.2rem 0;
+            line-height: 1.4;
         }
 
         .client-label, .date-label {
             font-weight: 700;
             color: #0f3b5c;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
         }
 
         .client-name {
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             color: #1e293b;
         }
 
         .client-address {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: #334155;
         }
 
         .date-value {
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             background: white;
-            padding: 0.15rem 0.6rem;
+            padding: 0.15rem 0.8rem;
             border-radius: 30px;
             display: inline-block;
             margin-top: 0.1rem;
@@ -231,15 +231,15 @@ if (!empty($qrData)) {
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
-            margin-bottom: 0.8rem;
+            font-size: 11px;
+            margin-bottom: 1rem;
         }
 
         .items-table th {
             background-color: #1e3a5f;
             color: white;
             font-weight: 600;
-            padding: 5px 4px;
+            padding: 5px 3px;
             text-align: center;
             border: 1px solid #2c5282;
             font-size: 9px;
@@ -249,42 +249,42 @@ if (!empty($qrData)) {
 
         .items-table td {
             border: 1px solid #cbd5e6;
-            padding: 5px 6px;
+            padding: 5px 3px;
             text-align: center;
             vertical-align: middle;
             background-color: white;
-            font-size: 9.5px;
+            font-size: 10px;
         }
 
         .items-table td:first-child, .items-table th:first-child {
             text-align: left;
-            padding-left: 8px;
+            padding-left: 6px;
         }
 
-        /* Column widths */
+        /* SMALLER COLUMN WIDTHS */
         .items-table th:nth-child(1),
         .items-table td:nth-child(1) {
-            width: 40%;
+            width: 38%;
         }
 
         .items-table th:nth-child(2),
         .items-table td:nth-child(2) {
-            width: 10%;
+            width: 8%;
         }
 
         .items-table th:nth-child(3),
         .items-table td:nth-child(3) {
-            width: 12%;
+            width: 10%;
         }
 
         .items-table th:nth-child(4),
         .items-table td:nth-child(4) {
-            width: 19%;
+            width: 22%;
         }
 
         .items-table th:nth-child(5),
         .items-table td:nth-child(5) {
-            width: 19%;
+            width: 22%;
         }
 
         .items-table tr:hover td {
@@ -295,38 +295,38 @@ if (!empty($qrData)) {
             font-weight: 600;
             font-family: 'Courier New', 'SF Mono', monospace;
             letter-spacing: 0.2px;
-            font-size: 9.5px;
+            font-size: 10px;
         }
 
         /* ========== TOTALS ========== */
         .totals-section {
             display: flex;
             justify-content: flex-end;
-            margin: 0.4rem 0 0.8rem 0;
+            margin: 0.5rem 0 1rem 0;
         }
 
         .totals-card {
-            width: 260px;
+            width: 280px;
             background: #fef9e3;
-            border-radius: 4px;
-            padding: 5px 10px;
+            border-radius: 5px;
+            padding: 6px 12px;
             border: 1px solid #fdebb3;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            padding: 0.3rem 0;
-            font-size: 9.5px;
+            padding: 0.35rem 0;
+            font-size: 10px;
             border-bottom: 1px dashed #e2d5b6;
         }
 
         .total-row:last-child {
             border-bottom: none;
             font-weight: 800;
-            font-size: 0.9rem;
-            margin-top: 0.15rem;
-            padding-top: 0.35rem;
+            font-size: 0.95rem;
+            margin-top: 0.2rem;
+            padding-top: 0.4rem;
             color: #0f2c3d;
         }
 
@@ -334,7 +334,7 @@ if (!empty($qrData)) {
             font-weight: 700;
             font-family: monospace;
             letter-spacing: 0.3px;
-            font-size: 10px;
+            font-size: 10.5px;
         }
 
         .tax-line {
@@ -342,10 +342,10 @@ if (!empty($qrData)) {
         }
 
         .signature-block {
-            margin-top: 0.8rem;
+            margin-top: 1rem;
             text-align: right;
             border-top: 1px solid #e2e8f0;
-            padding-top: 0.7rem;
+            padding-top: 0.8rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -354,34 +354,34 @@ if (!empty($qrData)) {
 
         .owner-info {
             text-align: center;
-            width: 180px;
+            width: 200px;
         }
 
         .owner-name {
             font-weight: 800;
-            font-size: 8.5px;
+            font-size: 9px;
             letter-spacing: 0.5px;
-            margin-top: 0.2rem;
+            margin-top: 0.25rem;
             color: #1e3a5f;
             border-top: 2px dotted #9bb6c9;
             display: inline-block;
-            padding-top: 0.2rem;
+            padding-top: 0.25rem;
         }
 
         .sign-label {
-            font-size: 0.55rem;
+            font-size: 0.6rem;
             color: #4a5568;
             text-transform: uppercase;
             font-weight: 500;
         }
 
         .qr-code {
-            margin-top: 5px;
+            margin-top: 6px;
             text-align: center;
         }
         .qr-code img {
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             border: 1px solid #ddd;
             padding: 3px;
             background: white;
@@ -395,11 +395,11 @@ if (!empty($qrData)) {
 
         .receiver-info {
             text-align: center;
-            width: 180px;
+            width: 200px;
         }
 
         .receiver-line {
-            margin-top: 0.2rem;
+            margin-top: 0.25rem;
             border-bottom: 1px solid #9bb6c9;
             width: 100%;
             padding-bottom: 0.15rem;
@@ -423,7 +423,7 @@ if (!empty($qrData)) {
                 break-inside: avoid;
             }
             .bill-paper {
-                padding: 0.2in;
+                padding: 0.25in;
             }
             .items-table th {
                 -webkit-print-color-adjust: exact;
@@ -444,7 +444,7 @@ if (!empty($qrData)) {
                 padding: 1rem;
             }
             .shop-name {
-                font-size: 13px;
+                font-size: 15px;
             }
             
             .items-table {
@@ -453,33 +453,33 @@ if (!empty($qrData)) {
             
             .items-table th,
             .items-table td {
-                padding: 3px 3px;
-                font-size: 7.5px;
+                padding: 3px 2px;
+                font-size: 7px;
             }
             
             .items-table th:nth-child(1),
             .items-table td:nth-child(1) {
-                width: 33%;
+                width: 32%;
             }
             
             .items-table th:nth-child(2),
             .items-table td:nth-child(2) {
-                width: 12%;
+                width: 10%;
             }
             
             .items-table th:nth-child(3),
             .items-table td:nth-child(3) {
-                width: 14%;
+                width: 12%;
             }
             
             .items-table th:nth-child(4),
             .items-table td:nth-child(4) {
-                width: 20%;
+                width: 23%;
             }
             
             .items-table th:nth-child(5),
             .items-table td:nth-child(5) {
-                width: 21%;
+                width: 23%;
             }
             
             .totals-section {
@@ -490,7 +490,7 @@ if (!empty($qrData)) {
             }
             .info-grid {
                 flex-direction: column;
-                gap: 0.3rem;
+                gap: 0.4rem;
             }
             .button-container {
                 position: static;
@@ -508,7 +508,7 @@ if (!empty($qrData)) {
                 max-width: 100%;
             }
             .doc-title h3 {
-                font-size: 1rem;
+                font-size: 1.1rem;
             }
         }
     </style>
@@ -543,7 +543,7 @@ if (!empty($qrData)) {
             <div class="date-box">
                 <div class="date-label">DATE & TIME</div>
                 <div class="date-value"><?php echo $fullFormattedDate; ?></div>
-                <div style="font-size: 0.6rem; color: #64748b; margin-top: 1px;">
+                <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">
                     <?php echo $formattedTime; ?>
                 </div>
             </div>
@@ -568,11 +568,11 @@ if (!empty($qrData)) {
                 <?php else: ?>
                     <?php foreach ($items as $item): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-                            <td><?php echo intval($item['pieces']); ?></td>
-                            <td><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
-                            <td class="amount-cell">₱ <?php echo number_format($item['selling_price']); ?></td>
-                            <td class="amount-cell">₱ <?php echo number_format($item['total_amount']); ?></td>
+                            <td style="font-size: 15px;"><?php echo htmlspecialchars($item['product_name']); ?></td>
+                            <td style="font-size: 15px;"><?php echo intval($item['pieces']); ?></td>
+                            <td style="font-size: 15px;"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
+                            <td class="amount-cell" style="font-size: 15px;">₱ <?php echo number_format($item['selling_price']); ?></td>
+                            <td class="amount-cell" style="font-size: 15px;">₱ <?php echo number_format($item['total_amount']); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -591,8 +591,8 @@ if (!empty($qrData)) {
                     <span class="total-amount">- ₱ <?php echo number_format($withholdingTax, 2); ?></span>
                 </div>
                 <div class="total-row">
-                    <span style="font-weight: 700; font-size: 11px;">TOTAL AMOUNT DUE</span>
-                    <span style="font-weight: 700; font-size: 11px; color: #1e3a5f;">₱ <?php echo number_format($amountDue, 2); ?></span>
+                    <span style="font-weight: 700; font-size: 12px;">TOTAL AMOUNT DUE</span>
+                    <span style="font-weight: 700; font-size: 12px; color: #1e3a5f;">₱ <?php echo number_format($amountDue, 2); ?></span>
                 </div>
             </div>
         </div>
@@ -601,7 +601,7 @@ if (!empty($qrData)) {
             <div class="owner-info">
                 <div class="sign-label">Prepared by:</div>
                 <div class="owner-name">JOSEPH M. VILLARUZ</div>
-                <div class="sign-label" style="margin-top: 2px; font-size: 0.5rem;">Owner</div>
+                <div class="sign-label" style="margin-top: 2px; font-size: 0.55rem;">Owner</div>
                 <?php if (!empty($qrImageUrl)): ?>
                     <div class="qr-code">
                         <img src="<?php echo $qrImageUrl; ?>" alt="Delivery QR Code">
@@ -617,7 +617,7 @@ if (!empty($qrData)) {
             <div class="receiver-info">
                 <div class="sign-label">Received by:</div><br>
                 <div class="receiver-line"></div>
-                <div class="sign-label" style="margin-top: 2px; font-size: 0.5rem;">Signature over printed name</div>
+                <div class="sign-label" style="margin-top: 2px; font-size: 0.55rem;">Signature over printed name</div>
             </div>
         </div>
     </div>

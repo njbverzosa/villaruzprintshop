@@ -57,7 +57,7 @@ $user = $userData;
 
 
 // Fetch distinct delivery_y_m values from for_deliveries table where status is PENDING
-$stmt = $pdo->prepare("SELECT delivery_m_y FROM for_deliveries WHERE delivery_m_y IS NOT NULL AND delivery_m_y != '' AND status = 'PENDING' AND total_amount < 500 ORDER BY id DESC");
+$stmt = $pdo->prepare("SELECT delivery_m_y FROM for_deliveries WHERE delivery_m_y IS NOT NULL AND delivery_m_y != '' AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED') AND total_amount < 500 ORDER BY id DESC");
 $stmt->execute();
 $distinctMonths = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
@@ -455,6 +455,7 @@ foreach ($distinctMonths as $monthYear) {
             </div>
         </main>
     </div>
+
 
     <?php
         include '../footer.php';

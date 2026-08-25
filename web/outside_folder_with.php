@@ -31,6 +31,7 @@ $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
+
 // Fetch user details from database
 $userData = null;
 if ($userRole === 'Admin') {
@@ -66,7 +67,7 @@ if (empty($selectedMonth)) {
 }
 
 // Fetch deliveries for the selected delivery_m_y with status PENDING
-$stmt = $pdo->prepare("SELECT * FROM for_deliveries WHERE delivery_m_y = ? AND status = 'PENDING' AND total_amount < 500 ORDER BY id DESC");
+$stmt = $pdo->prepare("SELECT * FROM for_deliveries WHERE delivery_m_y = ? AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED') AND total_amount < 500 ORDER BY id DESC");
 $stmt->execute([$selectedMonth]);
 $allDeliveries = $stmt->fetchAll();
 
@@ -865,7 +866,7 @@ if (!empty($selectedMonth)) {
             <div class="dashboard-header">
                 <div class="welcome">
                     <h4>
-                        <a href="pending_folder.php"><i class="fas fa-folder-open"></i> Outsider Folders </a>
+                        <a href="outside_folder.php"><i class="fas fa-folder-open"></i> Outsider Folders </a>
                         <?php if ($selectedMonth): ?>
                             <i class="fas fa-chevron-right"></i> <i class="fas fa-folder-open"></i>
                             <?= htmlspecialchars($selectedMonth) ?>
@@ -903,7 +904,7 @@ if (!empty($selectedMonth)) {
                         <i class="fas fa-coins"></i>
                     </div>
                     <div class="folder-name">
-                        Total Pending
+                        Total Outside
                     </div>
                 </div>
 

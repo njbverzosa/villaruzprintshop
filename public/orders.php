@@ -65,7 +65,7 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 // 6. FIXED: Fetch deliveries using $accNumber
 // ==============================================
 // Fetch all deliveries for this user from for_deliveries table
-$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PROCESSING', 'SHIPPED', 'OFD') ORDER BY id DESC");
+$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED') ORDER BY id DESC");
 $stmt->execute([$accNumber]);
 $deliveries = $stmt->fetchAll();
 

@@ -56,8 +56,6 @@ if (!$userData) {
 // ==============================================
 $user = $userData;
 
-
-
 // Get delivery_number from URL
 $selectedDeliveryNumber = isset($_GET['delivery_number']) ? $_GET['delivery_number'] : '';
 
@@ -107,7 +105,8 @@ if (!$deliveryInfo && !empty($orderItems)) {
         'ordered_by' => $firstItem['ordered_by'] ?? ($firstItem['customer_name'] ?? 'Unknown Customer'),
         'delivery_m_y' => $firstItem['delivery_m_y'] ?? '',
         'status' => $firstItem['status'] ?? 'PENDING',
-        'delivery_number' => $selectedDeliveryNumber
+        'delivery_number' => $selectedDeliveryNumber,
+        'total_amount' => 0
     ];
 }
 
@@ -117,7 +116,8 @@ if (!$deliveryInfo) {
         'ordered_by' => 'Customer Information Not Found',
         'delivery_m_y' => '',
         'status' => 'PENDING',
-        'delivery_number' => $selectedDeliveryNumber
+        'delivery_number' => $selectedDeliveryNumber,
+        'total_amount' => 0
     ];
 }
 
@@ -138,10 +138,27 @@ $monthYear = $deliveryInfo['delivery_m_y'] ?? '';
 $deliveryNumber = $deliveryInfo['delivery_number'] ?? $selectedDeliveryNumber;
 $currentStatus = $deliveryInfo['status'] ?? 'PENDING';
 
-// Calculate total amount
+// ==============================================
+// CALCULATE TOTAL AMOUNT - FIXED
+// ==============================================
 $totalAmount = 0;
+
+// First, calculate from order items
 foreach ($orderItems as $item) {
     $totalAmount += floatval($item['total_amount'] ?? 0);
+}
+
+// If deliveryInfo has a total_amount and it's greater than 0, use it
+if ($deliveryInfo && isset($deliveryInfo['total_amount']) && floatval($deliveryInfo['total_amount']) > 0) {
+    $totalAmount = floatval($deliveryInfo['total_amount']);
+} elseif ($totalAmount > 0) {
+    // If we calculated a total but deliveryInfo doesn't have it, update the database
+    try {
+        $updateStmt = $pdo->prepare("UPDATE for_deliveries SET total_amount = ? WHERE delivery_number = ?");
+        $updateStmt->execute([$totalAmount, $selectedDeliveryNumber]);
+    } catch (Exception $e) {
+        error_log("Failed to update delivery total: " . $e->getMessage());
+    }
 }
 
 // Encode monthYear for JavaScript
@@ -828,10 +845,10 @@ $encodedMonthYear = urlencode($monthYear);
             <div class="dashboard-header">
                 <div class="welcome">
                     <h4>
-                        <a href="pending_folder.php"><i class="fas fa-folder-open"></i> Outsider Folders </a>
+                        <a href="outside_folder.php"><i class="fas fa-folder-open"></i> Outsider Folders </a>
                         <?php if ($monthYear): ?>
                             <i class="fas fa-chevron-right"></i>
-                            <a href="pending_folder_with.php?month=<?= urlencode($monthYear) ?>">
+                            <a href="outside_folder_with.php?month=<?= urlencode($monthYear) ?>">
                                 <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
                             </a>
                         <?php endif; ?>
@@ -893,9 +910,6 @@ $encodedMonthYear = urlencode($monthYear);
                             <button class="receipt-btn delivery-receipt" onclick="generateReceipt('delivery')">
                                 <i class="fas fa-truck"></i> Delivery Receipt
                             </button>
-                            <button class="receipt-btn billing-receipt" onclick="generateReceipt('billing')">
-                                <i class="fas fa-file-invoice-dollar"></i> Billing Receipt
-                            </button>
                             <button class="receipt-btn download-excel" id="download-excel-btn">
                                 <i class="fas fa-file-excel"></i> Download Excel
                             </button>
@@ -911,6 +925,10 @@ $encodedMonthYear = urlencode($monthYear);
                                     <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
                                     <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>CANCELLED</option>
                                     <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
+                                    <option value="PACKING" <?= $currentStatus == 'PACKING' ? 'selected' : '' ?>>PACKING</option>
+                                    <option value="SHIPPED" <?= $currentStatus == 'SHIPPED' ? 'selected' : '' ?>>SHIPPED</option>
+                                    <option value="OFD" <?= $currentStatus == 'OFD' ? 'selected' : '' ?>>OFD</option>
+                                    <option value="DELIVERED" <?= $currentStatus == 'DELIVERED' ? 'selected' : '' ?>>DELIVERED</option>
                                 </select>
                             </div>
                         </div>
@@ -920,6 +938,7 @@ $encodedMonthYear = urlencode($monthYear);
         </main>
     </div>
 
+    
     <?php
     include '../footer.php';
     ?>
@@ -954,7 +973,7 @@ $encodedMonthYear = urlencode($monthYear);
 
         function generateReceipt(type) {
             if (type === 'delivery') {
-                window.location.href = '../delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
+                window.location.href = '../receit.php?delivery_number=' + encodeURIComponent(deliveryNumber);
             } else if (type === 'billing') {
                 window.location.href = '../billing_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
             }
@@ -1201,9 +1220,9 @@ $encodedMonthYear = urlencode($monthYear);
         // ========== HELPER: Redirect to pending_folder_with with month ==========
         function redirectToPendingFolderWith() {
             if (monthYear) {
-                window.location.href = 'pending_folder_with.php?month=' + encodeURIComponent(monthYear);
+                window.location.href = 'outside_folder_with.php?month=' + encodeURIComponent(monthYear);
             } else {
-                window.location.href = 'pending_folder.php';
+                window.location.href = 'outside_folder.php';
             }
         }
 
