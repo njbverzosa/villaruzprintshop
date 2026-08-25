@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -29,7 +30,7 @@ if (!isLoggedIn()) {
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
-$accNumber = $_SESSION['acc_number']; // ← THIS IS THE SESSION VARIABLE
+$accNumber = $_SESSION['acc_number'];
 
 // Fetch user details from database
 $userData = null;
@@ -44,28 +45,12 @@ if ($userRole === 'Admin') {
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
-$user = $userData; // Keep this for compatibility with existing code
-
-
-// ==============================================
-// 5. Cart badge for bottom bar
-// ==============================================
-   $cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
-    $cartCountStmt->execute([$user['acc_number']]);
-    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
-    $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
-    
-    
-    
+$user = $userData;
 
 $userAccNumber = $user['acc_number'] ?? '';
 $userFullName = $user['f_name'] ?? '';
@@ -119,6 +104,34 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 // Check if address exists (both street and barangay must be present)
 $hasAddress = $hasCompleteAddress;
 $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Saved Address';
+
+// ==============================================
+// CALCULATE DELIVERY FEE BASED ON BARANGAY
+// ==============================================
+$deliveryFee = 0;
+$barangay = $userBarangay ?? '';
+
+if (!empty($barangay)) {
+    $barangayLower = strtolower(trim($barangay));
+    $barangay15 = ['poblacion'];
+    $barangay30 = ['bobonot', 'amalbalan', 'gais-guipe', 'gaisguipe', 'hermosa', 'petal'];
+
+    if (in_array($barangayLower, $barangay15)) {
+        $deliveryFee = 15;
+    } elseif (in_array($barangayLower, $barangay30)) {
+        $deliveryFee = 30;
+    } else {
+        $deliveryFee = 50;
+    }
+}
+
+// Free delivery for orders ₱500 and above
+if ($totalAmount >= 500 && !empty($barangay)) {
+    $deliveryFee = 0;
+}
+
+// Calculate total with delivery fee
+$totalWithDelivery = $totalAmount + $deliveryFee;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -241,6 +254,7 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
             padding: 16px 0;
             transition: 0.2s;
             gap: 15px;
+            border-bottom: 1px solid #f1f5f9;
         }
 
         .cart-item:last-child {
@@ -289,6 +303,11 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
             justify-content: center;
         }
 
+        .cart-item-center .qty-btn:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
         .cart-item-center .qty-value {
             font-size: 15px;
             font-weight: 600;
@@ -319,6 +338,10 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
             padding: 6px;
             transition: 0.2s;
             font-size: 16px;
+        }
+
+        .cart-item-right .remove-btn:hover {
+            color: #ef4444;
         }
 
         .cart-summary {
@@ -1380,24 +1403,32 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
                             <span>Subtotal:</span>
                             <span id="subtotal">₱ <?php echo number_format($totalAmount, 2); ?></span>
                         </div>
+                        <div class="summary-row" id="deliveryFeeRow">
+                            <span>Delivery Fee:</span>
+                            <span id="deliveryFeeDisplay">
+                                <?php if ($deliveryFee > 0): ?>
+                                    ₱ <?php echo number_format($deliveryFee, 2); ?>
+                                <?php else: ?>
+                                    <span style="color: #10b981;">FREE</span>
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                        
                         <div class="summary-row total">
                             <span>Total:</span>
-                            <span id="totalAmountDisplay">₱ <?php echo number_format($totalAmount, 2); ?></span>
+                            <span id="totalAmountDisplay">₱ <?php echo number_format($totalWithDelivery, 2); ?></span>
                         </div>
 
                         <!-- Checkout Button - Conditional based on delivery address -->
                         <?php
-                        // Check if user has both street and barangay set
                         $hasDeliveryAddress = !empty($userStreet) && !empty($userBarangay);
                         ?>
 
                         <?php if (!$hasDeliveryAddress): ?>
-                            <!-- Show Setup Account button if no delivery address -->
                             <button class="setup-btn" id="setupAccountBtn" onclick="window.location.href='account-details.php'">
                                 <i class="fas fa-times-circle"></i> Setup your account
                             </button>
                         <?php else: ?>
-                            <!-- Show Submit Order button if delivery address exists -->
                             <button class="checkout-btn" id="checkoutBtn">
                                 <i class="fas fa-check-circle"></i> Submit Order
                             </button>
@@ -1411,7 +1442,6 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
         </div>
     </main>
 
-    
     <nav class="bottom-nav">
         <a href="shop.php" class="nav-item">
             <i class="fas fa-store"></i>
@@ -1468,6 +1498,7 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
             const accNum = '<?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>';
             const subtotalAmount = <?php echo $totalAmount; ?>;
             const hasItems = <?php echo json_encode(!empty($cartItems)); ?>;
+            const barangay = '<?php echo htmlspecialchars($barangay); ?>';
 
             const checkoutBtn = document.getElementById('checkoutBtn');
             const deliveryAddressInput = document.getElementById('deliveryAddress');
@@ -1543,6 +1574,94 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
                 }
 
                 validateDeliveryInputs();
+            }
+
+            // ============================================================
+            // UPDATE TOTALS WITH DELIVERY FEE
+            // ============================================================
+            function updateTotalsWithDelivery(subtotal, barangay) {
+                let deliveryFee = 0;
+
+                if (subtotal < 500 && barangay) {
+                    const barangayLower = barangay.toLowerCase().trim();
+                    const barangay15 = ['poblacion'];
+                    const barangay30 = ['bobonot', 'amalbalan', 'gais-guipe', 'gaisguipe', 'hermosa', 'petal'];
+
+                    if (barangay15.includes(barangayLower)) {
+                        deliveryFee = 15;
+                    } else if (barangay30.includes(barangayLower)) {
+                        deliveryFee = 30;
+                    } else {
+                        deliveryFee = 50;
+                    }
+                }
+
+                const total = subtotal + deliveryFee;
+
+                const subtotalDisplay = document.getElementById('subtotal');
+                if (subtotalDisplay) {
+                    subtotalDisplay.textContent = '₱ ' + subtotal.toFixed(2);
+                }
+
+                const deliveryFeeDisplay = document.getElementById('deliveryFeeDisplay');
+                if (deliveryFeeDisplay) {
+                    deliveryFeeDisplay.textContent = deliveryFee > 0 ? '₱ ' + deliveryFee.toFixed(2) : 'FREE';
+                    if (deliveryFee === 0) {
+                        deliveryFeeDisplay.style.color = '#10b981';
+                    } else {
+                        deliveryFeeDisplay.style.color = '';
+                    }
+                }
+
+                const totalDisplay = document.getElementById('totalAmountDisplay');
+                if (totalDisplay) {
+                    totalDisplay.textContent = '₱ ' + total.toFixed(2);
+                }
+
+                return { subtotal, deliveryFee, total };
+            }
+
+            // ============================================================
+            // UPDATE TOTALS AFTER REMOVAL
+            // ============================================================
+            function updateTotalsAfterRemoval() {
+                const items = document.querySelectorAll('.cart-item');
+                let totalItems = 0;
+                let totalAmount = 0;
+
+                items.forEach(item => {
+                    const qty = parseInt(item.querySelector('.qty-value').textContent) || 0;
+                    const priceText = item.querySelector('.item-total').textContent.replace('₱ ', '').replace(/,/g, '');
+                    const price = parseFloat(priceText) || 0;
+                    totalItems += qty;
+                    totalAmount += price;
+                });
+
+                document.getElementById('totalItems').textContent = totalItems;
+                
+                // Update delivery fee and total
+                updateTotalsWithDelivery(totalAmount, barangay);
+
+                const badge = document.getElementById('cartBadge');
+                if (badge) {
+                    badge.textContent = totalItems;
+                    badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                }
+
+                if (items.length === 0) {
+                    const container = document.getElementById('cartItemsContainer');
+                    container.innerHTML = `
+                        <div class="empty-cart">
+                            <i class="fas fa-shopping-bag"></i>
+                            <p>Looks like you haven't added any items to your cart yet.</p>
+                            <a href="shop.php" class="shop-now-btn">Shop Now</a>
+                        </div>
+                    `;
+                    const summaries = document.querySelectorAll('.cart-summary');
+                    summaries.forEach(sum => sum.style.display = 'none');
+                    const deliveryDetails = document.querySelector('.cart-summary[style*="margin-bottom: 20px;"]');
+                    if (deliveryDetails) deliveryDetails.style.display = 'none';
+                }
             }
 
             // ============================================================
@@ -1696,21 +1815,86 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
                         method: 'POST',
                         body: formData
                     });
-                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error('Server returned ' + response.status);
+                    }
+
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        setTimeout(() => location.reload(), 500);
+                        return;
+                    }
 
                     if (data.success) {
                         showToast(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
+                        setTimeout(() => location.reload(), 800);
                     } else {
-                        showToast(data.message || 'Error updating cart', 'error');
+                        showToast(data.message || 'Operation failed', 'error');
+                        hideLoading();
                     }
                 } catch (err) {
                     console.error('Error:', err);
-                    showToast('Network error. Please try again.', 'error');
-                } finally {
-                    hideLoading();
+                    setTimeout(() => location.reload(), 500);
                 }
             }
+
+            // ============================================================
+            // REMOVE ITEM - WITH IMMEDIATE FEEDBACK
+            // ============================================================
+            document.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const cartId = this.dataset.id;
+                    if (!confirm('Remove this item from cart?')) return;
+
+                    const itemElement = this.closest('.cart-item');
+                    if (itemElement) {
+                        itemElement.style.transition = 'opacity 0.3s';
+                        itemElement.style.opacity = '0.5';
+                    }
+
+                    showLoading();
+
+                    const formData = new FormData();
+                    formData.append('action', 'remove');
+                    formData.append('cart_id', cartId);
+                    formData.append('csrf_token', csrfToken);
+
+                    fetch('../Customer_API/cart_operations.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Server error');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.success) {
+                            if (itemElement) {
+                                setTimeout(() => {
+                                    itemElement.remove();
+                                    updateTotalsAfterRemoval();
+                                    hideLoading();
+                                }, 300);
+                            }
+                            showToast('Item removed from cart', 'success');
+                        } else {
+                            showToast(data?.message || 'Error removing item', 'error');
+                            hideLoading();
+                            setTimeout(() => location.reload(), 1000);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        setTimeout(() => location.reload(), 500);
+                    });
+                });
+            });
 
             async function clearCart() {
                 if (!confirm('Are you sure you want to clear your entire cart?')) return;
@@ -1748,7 +1932,6 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
             async function proceedToCheckout() {
                 const existingDeliveryNumber = existingDeliveryNumberInput ? existingDeliveryNumberInput.value.trim() : '';
 
-                // If adding to existing order
                 if (existingOrderData && existingOrderData.exists) {
                     if (existingOrderData.status && existingOrderData.status.toUpperCase() === 'PAID') {
                         showToast('This order has already been paid/delivered. You cannot add items to it.', 'error');
@@ -1892,22 +2075,14 @@ $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Sa
             // EVENT LISTENERS
             // ============================================================
             document.querySelectorAll('.decrement').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    updateCartItem(btn.dataset.id, 'decrement');
+                btn.addEventListener('click', function() {
+                    updateCartItem(this.dataset.id, 'decrement');
                 });
             });
 
             document.querySelectorAll('.increment').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    updateCartItem(btn.dataset.id, 'increment');
-                });
-            });
-
-            document.querySelectorAll('.remove-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (confirm('Remove this item from cart?')) {
-                        updateCartItem(btn.dataset.id, 'remove');
-                    }
+                btn.addEventListener('click', function() {
+                    updateCartItem(this.dataset.id, 'increment');
                 });
             });
 

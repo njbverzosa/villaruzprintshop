@@ -6,6 +6,25 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 header('Content-Type: application/json');
 
 // ==============================================
+// 0. DEFINE THE UPDATE ONLINE TIME FUNCTION
+// ==============================================
+function updateOnlineTime($pdo, $userRole, $userAccNumber) {
+    $currentDateTime = date('D, j M Y g:i A');
+    try {
+        if ($userRole === 'Customer') {
+            $stmt = $pdo->prepare("UPDATE customers SET last_login_date = ? WHERE acc_number = ?");
+            $stmt->execute([$currentDateTime, $userAccNumber]);
+        } elseif ($userRole === 'Admin') {
+            $stmt = $pdo->prepare("UPDATE admins SET last_login_date = ? WHERE acc_number = ?");
+            $stmt->execute([$currentDateTime, $userAccNumber]);
+        }
+    } catch (Exception $e) {
+        // Silently fail - don't break the main operation
+        error_log("Failed to update online time: " . $e->getMessage());
+    }
+}
+
+// ==============================================
 // 1. CHECK IF USER IS LOGGED IN
 // ==============================================
 if (!isset($_SESSION['user_role']) || !isset($_SESSION['user_id']) || !isset($_SESSION['acc_number'])) {
@@ -52,7 +71,6 @@ try {
             $stmt = $pdo->prepare("UPDATE cart SET pieces = ?, total_amount = ? WHERE id = ?");
             $stmt->execute([$newPieces, $newTotal, $cartId]);
 
-            // Update online time
             updateOnlineTime($pdo, $userRole, $userAccNumber);
 
             echo json_encode(['success' => true, 'message' => 'Quantity increased']);
@@ -77,7 +95,6 @@ try {
                 $stmt = $pdo->prepare("UPDATE cart SET pieces = ?, total_amount = ? WHERE id = ?");
                 $stmt->execute([$newPieces, $newTotal, $cartId]);
 
-                // Update online time
                 updateOnlineTime($pdo, $userRole, $userAccNumber);
 
                 echo json_encode(['success' => true, 'message' => 'Quantity decreased']);
@@ -85,7 +102,6 @@ try {
                 $stmt = $pdo->prepare("DELETE FROM cart WHERE id = ?");
                 $stmt->execute([$cartId]);
 
-                // Update online time
                 updateOnlineTime($pdo, $userRole, $userAccNumber);
 
                 echo json_encode(['success' => true, 'message' => 'Item removed from cart']);
@@ -98,7 +114,6 @@ try {
             $stmt = $pdo->prepare("DELETE FROM cart WHERE id = ?");
             $stmt->execute([$cartId]);
 
-            // Update online time
             updateOnlineTime($pdo, $userRole, $userAccNumber);
 
             echo json_encode(['success' => true, 'message' => 'Item removed from cart']);

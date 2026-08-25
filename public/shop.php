@@ -44,19 +44,15 @@ if ($userRole === 'Admin') {
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
 $user = $userData;
 
 // ==============================================
-// 5. Cart badge for bottom bar
+// 4. CART BADGE FOR BOTTOM BAR
 // ==============================================
 $cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
 $cartCountStmt->execute([$user['acc_number']]);
@@ -68,7 +64,7 @@ $stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
 
-// Get product_name from URL parameter - DECODE URL ENCODED VALUES
+// Get product_name from URL parameter
 $productNameFromUrl = isset($_GET['product_name']) ? rawurldecode(trim($_GET['product_name'])) : '';
 
 // Generate CSRF token if not exists
@@ -106,7 +102,6 @@ if (empty($_SESSION['csrf_token'])) {
             -ms-user-select: none;
         }
 
-        /* Allow specific elements to be copyable if needed (e.g., input fields) */
         input,
         textarea,
         [contenteditable="true"] {
@@ -229,6 +224,7 @@ if (empty($_SESSION['csrf_token'])) {
             margin-bottom: 12px;
         }
 
+        /* ========== QUANTITY SELECTOR ========== */
         .quantity-selector {
             display: flex;
             align-items: center;
@@ -238,10 +234,26 @@ if (empty($_SESSION['csrf_token'])) {
             width: 100%;
         }
 
-        .quantity-selector label {
-            font-size: 11px;
-            color: #64748b;
-            font-weight: 500;
+        .qty-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            color: #3b82f6;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-btn:hover {
+            background: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
         }
 
         .quantity-input {
@@ -264,6 +276,7 @@ if (empty($_SESSION['csrf_token'])) {
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
+        /* ========== BUTTONS ========== */
         .card-add-btn {
             background: #3b82f6;
             border: none;
@@ -315,7 +328,7 @@ if (empty($_SESSION['csrf_token'])) {
             transform: scale(0.97);
         }
 
-        /* ========== SEARCH BAR WITH CLEAR BUTTON INSIDE ========== */
+        /* ========== SEARCH BAR ========== */
         .search-section {
             padding: 10px 0 5px 0;
         }
@@ -339,7 +352,6 @@ if (empty($_SESSION['csrf_token'])) {
             transform: translateY(-50%);
             color: #94a3b8;
             font-size: 16px;
-            transition: all 0.3s ease;
             pointer-events: none;
             z-index: 1;
         }
@@ -361,11 +373,6 @@ if (empty($_SESSION['csrf_token'])) {
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        .search-input input:focus+.search-icon {
-            color: #3b82f6;
-        }
-
-        /* Clear button inside search input */
         .search-input .clear-btn {
             position: absolute;
             right: 12px;
@@ -378,9 +385,7 @@ if (empty($_SESSION['csrf_token'])) {
             cursor: pointer;
             padding: 4px 8px;
             border-radius: 50%;
-            transition: all 0.3s ease;
             display: none;
-            /* Hidden by default */
             z-index: 2;
         }
 
@@ -399,15 +404,10 @@ if (empty($_SESSION['csrf_token'])) {
                 opacity: 0;
                 transform: translateY(-50%) scale(0.8);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(-50%) scale(1);
             }
-        }
-
-        .search-input .clear-btn i {
-            font-size: 16px;
         }
 
         .search-info {
@@ -416,7 +416,7 @@ if (empty($_SESSION['csrf_token'])) {
             margin-top: 6px;
         }
 
-        /* ========== BOTTOM NAVIGATION (Shopee Style) ========== */
+        /* ========== BOTTOM NAVIGATION ========== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -449,14 +449,11 @@ if (empty($_SESSION['csrf_token'])) {
 
         .bottom-nav .nav-item i {
             font-size: 25px;
-            transition: all 0.3s ease;
         }
 
         .bottom-nav .nav-item span {
             font-size: 15px;
             font-weight: 500;
-            letter-spacing: 0.3px;
-            transition: all 0.3s ease;
         }
 
         .bottom-nav .nav-item:hover {
@@ -482,7 +479,7 @@ if (empty($_SESSION['csrf_token'])) {
             line-height: 14px;
         }
 
-        /* ========== MODALS & TOASTS ========== */
+        /* ========== MODALS ========== */
         .desc-modal {
             display: none;
             position: fixed;
@@ -505,7 +502,6 @@ if (empty($_SESSION['csrf_token'])) {
             animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            margin-bottom: 30px;
         }
 
         @keyframes modalSlideUp {
@@ -513,7 +509,6 @@ if (empty($_SESSION['csrf_token'])) {
                 opacity: 0;
                 transform: translateY(30px) scale(0.95);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -532,22 +527,15 @@ if (empty($_SESSION['csrf_token'])) {
         .desc-modal-header h3 {
             font-size: 20px;
             font-weight: 600;
-            margin: 0;
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        .desc-modal-header h3 i {
-            font-size: 24px;
         }
 
         .close-desc-modal {
             font-size: 28px;
             font-weight: 300;
             cursor: pointer;
-            transition: all 0.2s;
-            line-height: 1;
             opacity: 0.8;
         }
 
@@ -566,7 +554,6 @@ if (empty($_SESSION['csrf_token'])) {
             padding: 16px 18px;
             margin-bottom: 16px;
             border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .product-detail-row {
@@ -592,19 +579,10 @@ if (empty($_SESSION['csrf_token'])) {
             color: #8b5cf6;
         }
 
-        .product-detail-icon i {
-            font-size: 16px;
-        }
-
-        .product-detail-text {
-            flex: 1;
-        }
-
         .product-detail-label {
             font-size: 10px;
             color: #94a3b8;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             font-weight: 500;
         }
 
@@ -612,7 +590,6 @@ if (empty($_SESSION['csrf_token'])) {
             font-size: 14px;
             font-weight: 600;
             color: #0f172a;
-            margin-top: 1px;
         }
 
         .description-section {
@@ -666,7 +643,6 @@ if (empty($_SESSION['csrf_token'])) {
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -676,284 +652,6 @@ if (empty($_SESSION['csrf_token'])) {
         .close-desc-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
-        }
-
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 14px 20px;
-            border-radius: 12px;
-            color: white;
-            font-weight: 500;
-            z-index: 2000;
-            animation: slideIn 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            font-size: 14px;
-        }
-
-        .toast-success {
-            background: #10b981;
-        }
-
-        .toast-error {
-            background: #ef4444;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-
-        footer {
-            display: none;
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .loading-spinner {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .loading-spinner i {
-            font-size: 36px;
-            color: #3b82f6;
-            animation: spin 1s linear infinite;
-        }
-
-        .loading-spinner p {
-            margin-top: 8px;
-            font-size: 14px;
-            color: #64748b;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ============================================================
-           RESPONSIVE
-           ============================================================ */
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 15px 15px 20px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                gap: 14px;
-                padding: 8px 0 15px;
-            }
-
-            .dashboard-header {
-                padding: 14px 18px;
-                flex-direction: row;
-                flex-wrap: wrap;
-                gap: 8px;
-
-            }
-
-            .welcome h3 {
-                font-size: 17px;
-            }
-
-            .user-badge .name {
-                font-size: 12px;
-            }
-
-
-            .search-input input {
-                padding: 10px 42px 10px 38px;
-                font-size: 14px;
-            }
-
-            .search-input .search-icon {
-                font-size: 15px;
-                left: 12px;
-            }
-
-            .search-input .clear-btn {
-                right: 10px;
-                font-size: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .main-content {
-                padding: 12px 12px 16px;
-            }
-
-            body {
-                padding-bottom: 60px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-                gap: 12px;
-            }
-
-            .product-card {
-                padding: 14px 10px;
-                border-radius: 14px;
-            }
-
-            .product-title {
-                font-size: 13px;
-            }
-
-            .product-price {
-                font-size: 16px;
-            }
-
-            .quantity-input {
-                width: 50px;
-                font-size: 12px;
-                padding: 5px;
-            }
-
-            .card-add-btn,
-            .card-desc-btn {
-                font-size: 11px;
-                padding: 8px 0;
-            }
-
-            .dashboard-header {
-                padding: 12px 14px;
-                border-radius: 5px;
-            }
-
-            .welcome h3 {
-                font-size: 15px;
-            }
-
-            .user-badge .avatar {
-                width: 28px;
-                height: 28px;
-                font-size: 12px;
-            }
-
-            .user-badge .name {
-                font-size: 11px;
-            }
-
-            .bottom-nav {
-                padding: 4px 0 8px;
-                height: 56px;
-            }
-
-            .bottom-nav .nav-item {
-                padding: 2px 6px;
-                min-width: 36px;
-            }
-
-            .bottom-nav .nav-item i {
-                font-size: 18px;
-            }
-
-            .bottom-nav .nav-item span {
-                font-size: 9px;
-            }
-
-            .bottom-nav .nav-item .badge {
-                font-size: 10px;
-                min-width: 14px;
-                line-height: 14px;
-                top: -2px;
-                right: 0px;
-                padding: 0 5px;
-                background-color: lightgreen;
-                color: black;
-            }
-
-            .desc-modal-content {
-                width: 95%;
-                border-radius: 20px;
-            }
-
-            .desc-modal-header h3 {
-                font-size: 17px;
-            }
-
-            .search-input input {
-                font-size: 13px;
-                padding: 9px 38px 9px 34px;
-                border-radius: 24px;
-            }
-
-            .search-input .search-icon {
-                font-size: 14px;
-                left: 10px;
-            }
-
-            .search-input .clear-btn {
-                right: 8px;
-                font-size: 14px;
-            }
-
-            .search-info {
-                font-size: 12px;
-            }
-        }
-
-        /* Safe area for iPhone notch */
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .bottom-nav {
-                padding-bottom: calc(12px + env(safe-area-inset-bottom));
-            }
         }
 
         /* ========== IMAGE MODAL ========== */
@@ -969,14 +667,12 @@ if (empty($_SESSION['csrf_token'])) {
             z-index: 9999;
             justify-content: center;
             align-items: center;
-            animation: fadeIn 0.3s ease;
         }
 
         .image-modal-content {
             position: relative;
             max-width: 90%;
             max-height: 90%;
-            animation: zoomIn 0.3s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1003,19 +699,16 @@ if (empty($_SESSION['csrf_token'])) {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            z-index: 10;
         }
 
         .image-modal-close:hover {
             background: #ffffff;
             transform: scale(1.1) rotate(90deg);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
 
         .image-modal-caption {
@@ -1052,33 +745,204 @@ if (empty($_SESSION['csrf_token'])) {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
-        @keyframes fadeIn {
+        /* ========== TOAST ========== */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 14px;
+        }
+
+        .toast-success {
+            background: #10b981;
+        }
+
+        .toast-error {
+            background: #ef4444;
+        }
+
+        @keyframes slideIn {
             from {
+                transform: translateX(100%);
                 opacity: 0;
             }
-
             to {
+                transform: translateX(0);
                 opacity: 1;
             }
         }
 
-        @keyframes zoomIn {
+        @keyframes slideOut {
             from {
-                transform: scale(0.8);
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
                 opacity: 0;
             }
+        }
 
-            to {
-                transform: scale(1);
-                opacity: 1;
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .loading-spinner i {
+            font-size: 36px;
+            color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px 15px 20px;
+            }
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 14px;
+                padding: 8px 0 15px;
+            }
+            .dashboard-header {
+                padding: 14px 18px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .welcome h3 {
+                font-size: 17px;
+            }
+            .user-badge .name {
+                font-size: 12px;
+            }
+            .search-input input {
+                padding: 10px 42px 10px 38px;
+                font-size: 14px;
             }
         }
 
         @media (max-width: 480px) {
-            .image-modal-content {
-                max-width: 95%;
+            .main-content {
+                padding: 12px 12px 16px;
             }
-
+            body {
+                padding-bottom: 60px;
+            }
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: 12px;
+            }
+            .product-card {
+                padding: 14px 10px;
+                border-radius: 14px;
+            }
+            .product-title {
+                font-size: 13px;
+            }
+            .product-price {
+                font-size: 16px;
+            }
+            .quantity-input {
+                width: 50px;
+                font-size: 12px;
+                padding: 5px;
+            }
+            .card-add-btn,
+            .card-desc-btn {
+                font-size: 11px;
+                padding: 8px 0;
+            }
+            .dashboard-header {
+                padding: 12px 14px;
+                border-radius: 5px;
+            }
+            .welcome h3 {
+                font-size: 15px;
+            }
+            .user-badge .avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            .user-badge .name {
+                font-size: 11px;
+            }
+            .bottom-nav {
+                padding: 4px 0 8px;
+                height: 56px;
+            }
+            .bottom-nav .nav-item {
+                padding: 2px 6px;
+                min-width: 36px;
+            }
+            .bottom-nav .nav-item i {
+                font-size: 18px;
+            }
+            .bottom-nav .nav-item span {
+                font-size: 9px;
+            }
+            .bottom-nav .nav-item .badge {
+                font-size: 10px;
+                min-width: 14px;
+                line-height: 14px;
+                top: -2px;
+                right: 0px;
+                padding: 0 5px;
+            }
+            .desc-modal-content {
+                width: 95%;
+                border-radius: 20px;
+            }
+            .desc-modal-header h3 {
+                font-size: 17px;
+            }
+            .search-input input {
+                font-size: 13px;
+                padding: 9px 38px 9px 34px;
+                border-radius: 24px;
+            }
+            .search-input .search-icon {
+                font-size: 14px;
+                left: 10px;
+            }
+            .search-input .clear-btn {
+                right: 8px;
+                font-size: 14px;
+            }
+            .search-info {
+                font-size: 12px;
+            }
             .image-modal-close {
                 top: -35px;
                 right: 25px;
@@ -1086,13 +950,18 @@ if (empty($_SESSION['csrf_token'])) {
                 height: 20px;
                 font-size: 20px;
             }
-
             .image-modal-caption {
                 bottom: -38px;
                 font-size: 13px;
                 white-space: normal;
                 max-width: 90%;
                 padding: 4px 14px;
+            }
+        }
+
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .bottom-nav {
+                padding-bottom: calc(12px + env(safe-area-inset-bottom));
             }
         }
     </style>
@@ -1114,7 +983,7 @@ if (empty($_SESSION['csrf_token'])) {
             </div>
         </div>
 
-        <!-- Search Bar with Clear Button Inside -->
+        <!-- Search Bar -->
         <div class="search-section">
             <div class="search-wrapper">
                 <div class="search-input">
@@ -1150,9 +1019,9 @@ if (empty($_SESSION['csrf_token'])) {
                     <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
 
                     <div class="quantity-selector">
-                        <label>Qty:</label>
-                        <input type="number" class="quantity-input" id="qty-<?php echo $product['id']; ?>" value="1" min="1"
-                            max="999">
+                        <button class="qty-btn decrement" data-id="<?php echo $product['id']; ?>">-</button>
+                        <input type="number" class="quantity-input" id="qty-<?php echo $product['id']; ?>" value="1" min="1" max="999">
+                        <button class="qty-btn increment" data-id="<?php echo $product['id']; ?>">+</button>
                     </div>
 
                     <button class="card-add-btn add-to-cart-card" data-id="<?php echo $product['id']; ?>"
@@ -1174,6 +1043,7 @@ if (empty($_SESSION['csrf_token'])) {
         </div>
     </main>
 
+    <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <a href="shop.php" class="nav-item active">
             <i class="fas fa-store"></i>
@@ -1200,14 +1070,13 @@ if (empty($_SESSION['csrf_token'])) {
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-
-<a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
-    <i class="fas fa-sign-out-alt"></i>
-    <span>Logout</span>
-</a>
+        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
     </nav>
 
-    <!-- ========== DESCRIPTION MODAL ========== -->
+    <!-- Description Modal -->
     <div id="descriptionModal" class="desc-modal">
         <div class="desc-modal-content">
             <div class="desc-modal-header">
@@ -1249,7 +1118,7 @@ if (empty($_SESSION['csrf_token'])) {
         </div>
     </div>
 
-    <!-- ========== IMAGE MODAL ========== -->
+    <!-- Image Modal -->
     <div id="imageModal" class="image-modal" onclick="closeImageModal()">
         <div class="image-modal-content" onclick="event.stopPropagation()">
             <img id="imageModalImg" src="" alt="Product Image">
@@ -1258,7 +1127,7 @@ if (empty($_SESSION['csrf_token'])) {
         </div>
     </div>
 
-    <!-- ========== LOADING OVERLAY ========== -->
+    <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">
             <i class="fas fa-spinner"></i>
@@ -1270,6 +1139,37 @@ if (empty($_SESSION['csrf_token'])) {
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
         const accNum = '<?php echo htmlspecialchars($accNumber); ?>';
         const productNameFromUrl = <?php echo json_encode($productNameFromUrl); ?>;
+
+        // ============================================================
+        // QUANTITY CONTROLS
+        // ============================================================
+        document.querySelectorAll('.decrement').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const productId = this.dataset.id;
+                const qtyInput = document.getElementById(`qty-${productId}`);
+                if (qtyInput) {
+                    let currentQty = parseInt(qtyInput.value) || 1;
+                    if (currentQty > 1) {
+                        qtyInput.value = currentQty - 1;
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.increment').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const productId = this.dataset.id;
+                const qtyInput = document.getElementById(`qty-${productId}`);
+                if (qtyInput) {
+                    let currentQty = parseInt(qtyInput.value) || 1;
+                    if (currentQty < 999) {
+                        qtyInput.value = currentQty + 1;
+                    }
+                }
+            });
+        });
 
         // ============================================================
         // SEARCH WITH CLEAR BUTTON
@@ -1302,9 +1202,7 @@ if (empty($_SESSION['csrf_token'])) {
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
-            searchTimeout = setTimeout(function() {
-                filterProducts();
-            }, 300);
+            searchTimeout = setTimeout(filterProducts, 300);
         });
 
         clearBtn.addEventListener('click', function(e) {
@@ -1320,6 +1218,63 @@ if (empty($_SESSION['csrf_token'])) {
         });
 
         toggleClearButton();
+
+        // ============================================================
+        // SEARCH FILTER FUNCTION
+        // ============================================================
+        const searchInfo = document.getElementById('searchInfo');
+        const productsGrid = document.getElementById('productsGrid');
+
+        function filterProducts() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const cards = productsGrid.querySelectorAll('.product-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const productName = card.getAttribute('data-fullname') || '';
+                const match = searchTerm === '' || productName.toLowerCase().includes(searchTerm);
+                card.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+
+            if (searchTerm === '') {
+                searchInfo.innerHTML = `<i class="fas fa-info-circle"></i> Showing all ${visibleCount} products`;
+            } else {
+                searchInfo.innerHTML = `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // ============================================================
+        // TOAST NOTIFICATION
+        // ============================================================
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
 
         // ============================================================
         // DESCRIPTION MODAL FUNCTIONS
@@ -1349,13 +1304,11 @@ if (empty($_SESSION['csrf_token'])) {
             document.body.style.overflow = '';
         }
 
-        if (closeDescModalBtn) closeDescModalBtn.addEventListener('click', closeDescriptionModal);
-        if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
+        closeDescModalBtn.addEventListener('click', closeDescriptionModal);
+        closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
 
         window.addEventListener('click', (e) => {
-            if (e.target === descModal) {
-                closeDescriptionModal();
-            }
+            if (e.target === descModal) closeDescriptionModal();
         });
 
         document.addEventListener('keydown', function(e) {
@@ -1365,77 +1318,7 @@ if (empty($_SESSION['csrf_token'])) {
         });
 
         // ============================================================
-        // TOAST NOTIFICATION
-        // ============================================================
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function showLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) overlay.style.display = 'flex';
-        }
-
-        function hideLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) overlay.style.display = 'none';
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
-        // ============================================================
-        // SEARCH FILTER FUNCTION
-        // ============================================================
-        const searchInfo = document.getElementById('searchInfo');
-        const productsGrid = document.getElementById('productsGrid');
-
-        function filterProducts() {
-            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-            const cards = productsGrid.querySelectorAll('.product-card');
-            let visibleCount = 0;
-
-            cards.forEach(card => {
-                const productName = card.getAttribute('data-fullname') || '';
-                const productNameLower = productName.toLowerCase();
-
-                let searchMatch = true;
-                if (searchTerm !== '') {
-                    searchMatch = productNameLower.includes(searchTerm);
-                }
-
-                if (searchMatch) {
-                    card.style.display = '';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            if (searchTerm === '') {
-                searchInfo.innerHTML = `<i class="fas fa-info-circle"></i> Showing all ${visibleCount} products`;
-            } else {
-                searchInfo.innerHTML =
-                    `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
-            }
-        }
-
-        // ============================================================
-        // ADD TO CART FUNCTION - FIXED
+        // ADD TO CART FUNCTION
         // ============================================================
         async function addToCart(productId, productName, price, unit, quantity) {
             if (quantity <= 0) {
@@ -1443,7 +1326,7 @@ if (empty($_SESSION['csrf_token'])) {
                 return false;
             }
 
-            if (!accNum || accNum === '') {
+            if (!accNum) {
                 showToast('User not authenticated. Please login again.', 'error');
                 return false;
             }
@@ -1465,21 +1348,15 @@ if (empty($_SESSION['csrf_token'])) {
                 const data = await response.json();
 
                 if (data.success) {
-                    const qtyInput = document.getElementById(`qty-${productId}`);
-                    if (qtyInput) {
-                        qtyInput.value = '1';
-                    }
+                    document.getElementById(`qty-${productId}`).value = '1';
                     showToast(`An item(s) added to cart`, 'success');
 
-                    // Update cart badge
                     const badge = document.getElementById('cartBadge');
                     if (badge) {
                         const currentCount = parseInt(badge.textContent) || 0;
-                        const newCount = currentCount + quantity;
-                        badge.textContent = newCount;
+                        badge.textContent = currentCount + quantity;
                         badge.style.display = 'inline-block';
                     }
-
                     return true;
                 } else {
                     showToast(data.message || 'Error adding to cart', 'error');
@@ -1514,10 +1391,24 @@ if (empty($_SESSION['csrf_token'])) {
         }
 
         // ============================================================
+        // IMAGE MODAL FUNCTIONS
+        // ============================================================
+        function openImageModal(imageSrc, productName) {
+            const modal = document.getElementById('imageModal');
+            document.getElementById('imageModalImg').src = imageSrc;
+            document.getElementById('imageModalCaption').textContent = productName;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // ============================================================
         // EVENT LISTENERS
         // ============================================================
-
-        // Add to Cart buttons
         document.querySelectorAll('.add-to-cart-card').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1531,7 +1422,6 @@ if (empty($_SESSION['csrf_token'])) {
             });
         });
 
-        // Description buttons
         document.querySelectorAll('.desc-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1547,9 +1437,7 @@ if (empty($_SESSION['csrf_token'])) {
         // AUTO-SEARCH FROM URL PARAMETER
         // ============================================================
         if (productNameFromUrl && productNameFromUrl.trim() !== '') {
-            // Set the search input value
             searchInput.value = productNameFromUrl;
-            
             setTimeout(function() {
                 filterProducts();
                 toggleClearButton();
@@ -1564,47 +1452,12 @@ if (empty($_SESSION['csrf_token'])) {
             filterProducts();
         }
 
-        // Update cart badge
         updateCartBadge();
 
-        // ============================================================
-        // IMAGE MODAL FUNCTIONS
-        // ============================================================
-        function openImageModal(imageSrc, productName) {
-            const modal = document.getElementById('imageModal');
-            const img = document.getElementById('imageModalImg');
-            const caption = document.getElementById('imageModalCaption');
-
-            img.src = imageSrc;
-            img.alt = productName;
-            caption.textContent = productName;
-
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeImageModal() {
-            const modal = document.getElementById('imageModal');
-            modal.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                const imageModal = document.getElementById('imageModal');
-                if (imageModal && imageModal.style.display === 'flex') {
-                    closeImageModal();
-                }
-            }
-        });
-
         console.log('🛍️ Villaruz Print Shop - Customer Dashboard');
-        console.log('📱 Bottom navigation like Shopee app');
-        console.log('🔍 Search with inline clear (X) button - Active search working');
-        console.log('🛒 Cart badge auto-updates');
         console.log('👤 Account number:', accNum);
         if (productNameFromUrl) {
-            console.log('🔍 Auto-searching for: ' + productNameFromUrl);
+            console.log('🔍 Auto-searching for:', productNameFromUrl);
         }
     </script>
 
