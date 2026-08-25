@@ -10,10 +10,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -89,7 +90,7 @@ foreach ($allProducts as $product) {
                 $restockDate = new DateTime($product['last_restocked']);
             }
             $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
-            
+
             if ($daysDiff <= 7) {
                 $recentlyRestocked[] = $product;
             } else {
@@ -532,6 +533,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 opacity: 0;
                 transform: translateY(30px) scale(0.95);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -730,6 +732,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 transform: scale(0.95);
                 opacity: 0;
             }
+
             to {
                 transform: scale(1);
                 opacity: 1;
@@ -859,6 +862,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 transform: translateX(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
@@ -870,6 +874,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 transform: translateX(0);
                 opacity: 1;
             }
+
             to {
                 transform: translateX(100%);
                 opacity: 0;
@@ -907,7 +912,8 @@ $csrfToken = $_SESSION['csrf_token'];
             }
 
             .products-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+                grid-template-columns: repeat(2, 1fr);
+                /* 2 columns on tablet */
                 gap: 15px;
             }
 
@@ -958,7 +964,8 @@ $csrfToken = $_SESSION['csrf_token'];
             }
 
             .products-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+                grid-template-columns: repeat(2, 1fr);
+                /* 2 columns on mobile */
                 gap: 12px;
             }
 
@@ -1111,6 +1118,77 @@ $csrfToken = $_SESSION['csrf_token'];
                 padding: 4px 0;
             }
         }
+
+        /* ========== COPY ICON STYLES ========== */
+
+        .product-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.3;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            font-size: 14px;
+            color: #94a3b8;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border-radius: 4px;
+        }
+
+        .copy-btn:hover {
+            color: #3b82f6;
+            background: #f1f5f9;
+        }
+
+        .copy-btn.copied {
+            color: #10b981;
+        }
+
+        .copy-btn .copy-icon {
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn .check-icon {
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn.copied .copy-icon {
+            display: none;
+        }
+
+        .copy-btn.copied .check-icon {
+            display: inline-block;
+            animation: checkPop 0.3s ease;
+        }
+
+        @keyframes checkPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.3);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -1122,7 +1200,7 @@ $csrfToken = $_SESSION['csrf_token'];
 
         <div class="menu-overlay" id="menuOverlay"></div>
 
-      <?php
+        <?php
         if ($user['authorize_access'] == 0) {
             include 'system_sidebar.php';
         } elseif ($user['authorize_access'] == 1) {
@@ -1169,9 +1247,14 @@ $csrfToken = $_SESSION['csrf_token'];
                             data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>"
                             data-qty="<?php echo number_format($product['qty_on_hand']); ?>">
-                            
-                            <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
-                            
+
+                            <!-- Clickable title (copies URL) -->
+                            <div class="product-title-wrapper">
+                                <div class="product-title" onclick="copyProductName(event, '<?php echo htmlspecialchars(addslashes($product['product_name'])); ?>', this)" title="Copy product link">
+                                    <?php echo htmlspecialchars($product['product_name']); ?> 📋
+                                </div>
+                            </div>
+
                             <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                             <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
 
@@ -1183,7 +1266,7 @@ $csrfToken = $_SESSION['csrf_token'];
 
                             <div class="card-actions">
                                 <button class="desc-btn" data-id="<?php echo $product['id']; ?>">
-                                    <i class="fas fa-info-circle"></i> DESCRIPTION 
+                                    <i class="fas fa-info-circle"></i> DESCRIPTION
                                 </button>
                             </div>
                             <div class="card-actions" style="margin-top: 4px;">
@@ -1696,7 +1779,10 @@ $csrfToken = $_SESSION['csrf_token'];
                 formData.append('description', description);
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/update_product.php', { method: 'POST', body: formData });
+                const response = await fetch('../API/update_product.php', {
+                    method: 'POST',
+                    body: formData
+                });
                 const data = await response.json();
 
                 if (data.success) {
@@ -1767,7 +1853,10 @@ $csrfToken = $_SESSION['csrf_token'];
                 formData.append('description', description);
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/add_product.php', { method: 'POST', body: formData });
+                const response = await fetch('../API/add_product.php', {
+                    method: 'POST',
+                    body: formData
+                });
                 const data = await response.json();
 
                 if (data.success) {
@@ -1783,6 +1872,68 @@ $csrfToken = $_SESSION['csrf_token'];
                 confirmAdd.disabled = false;
             }
         });
+
+        // ============================================================
+        // COPY PRODUCT NAME FROM TITLE CLICK
+        // ============================================================
+        function copyProductName(event, productName, element) {
+            // Stop event from bubbling
+            event.stopPropagation();
+
+            // Construct the full URL
+            const baseUrl = window.location.origin + '/public/shop';
+            const encodedProductName = encodeURIComponent(productName);
+            const fullUrl = baseUrl + '?product_name=' + encodedProductName;
+
+            // Copy the full URL to clipboard
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(fullUrl)
+                    .then(() => {
+                        showCopiedFeedbackTitle(element);
+                    })
+                    .catch(() => {
+                        fallbackCopyTextTitle(fullUrl, element);
+                    });
+            } else {
+                fallbackCopyTextTitle(fullUrl, element);
+            }
+        }
+
+        function fallbackCopyTextTitle(text, element) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            tempInput.setSelectionRange(0, 99999);
+
+            try {
+                document.execCommand('copy');
+                showCopiedFeedbackTitle(element);
+            } catch (err) {
+                element.style.color = '#ef4444';
+                setTimeout(() => {
+                    element.style.color = '';
+                }, 1500);
+            }
+
+            document.body.removeChild(tempInput);
+        }
+
+        function showCopiedFeedbackTitle(element) {
+            // Save the original text (remove any existing emojis)
+            let originalText = element.textContent;
+            // Remove all emoji characters (📋, ✅, ⭕, ☑️, etc.)
+            originalText = originalText.replace(/[📋✅⭕☑️🔵🟢✔️✓]/g, '').trim();
+
+            // Show circle checkmark (you can use ✅, ⭕, or ☑️)
+            element.innerHTML = originalText + ' ✔️';
+
+            // Reset after 2.5 seconds back to copy icon
+            setTimeout(() => {
+                element.innerHTML = originalText + ' 📋';
+                element.style.color = '';
+            }, 2500);
+        }
 
         console.log('📦 Shop Stock Management loaded');
         console.log('🔄 Auto-refresh on update/add');

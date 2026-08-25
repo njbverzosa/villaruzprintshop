@@ -30,13 +30,6 @@ if ($userRole === 'Admin') {
     if ($user) {
         $userName = $user['f_name'];
     }
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT f_name FROM customers WHERE id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($user) {
-        $userName = $user['f_name'];
-    }
 }
 
 // Get first name only

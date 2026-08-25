@@ -72,20 +72,6 @@ try {
         exit();
     }
     
-    // ==============================================
-    // 5. UPDATE USER ONLINE TIME (EVERY ADD TO CART)
-    // ==============================================
-    date_default_timezone_set('Asia/Manila');
-    $currentTime = date('g:i A'); // Format: 9:50 AM
-    
-    // Update online_time - this runs EVERY TIME user adds to cart
-    if ($userRole === 'Customer') {
-        $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE acc_number = ?");
-        $updateStmt->execute([$currentTime, $userAccNumber]);
-    } elseif ($userRole === 'Admin') {
-        $updateStmt = $pdo->prepare("UPDATE admins SET online_time = ? WHERE acc_number = ?");
-        $updateStmt->execute([$currentTime, $userAccNumber]);
-    }
     
     // ==============================================
     // 6. GET OR CREATE ORDER NUMBER FOR TODAY

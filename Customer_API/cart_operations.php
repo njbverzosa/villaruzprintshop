@@ -30,22 +30,6 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
     exit();
 }
 
-// ==============================================
-// 3. UPDATE ONLINE TIME (RUNS ON EVERY ACTION)
-// ==============================================
-function updateOnlineTime($pdo, $userRole, $userAccNumber) {
-    date_default_timezone_set('Asia/Manila');
-    $currentTime = date('g:i A'); // Format: 9:50 AM
-    
-    if ($userRole === 'Customer') {
-        $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE acc_number = ?");
-        $updateStmt->execute([$currentTime, $userAccNumber]);
-    } elseif ($userRole === 'Admin') {
-        $updateStmt = $pdo->prepare("UPDATE admins SET online_time = ? WHERE acc_number = ?");
-        $updateStmt->execute([$currentTime, $userAccNumber]);
-    }
-}
-
 $action = $_POST['action'] ?? '';
 
 try {
