@@ -294,6 +294,36 @@ function getOrderProducts($pdo, $deliveryNumber)
             color: #1e40af;
         }
 
+        /* View Status Button */
+        .view-status-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            background: #f79a30;
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .view-status-btn:hover {
+            background: #f1720a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            color: white;
+        }
+
+        .view-status-btn:active {
+            transform: scale(0.97);
+        }
+
         /* ========== STATUS TRACKER ========== */
         .status-tracker {
             display: flex;
@@ -716,6 +746,11 @@ function getOrderProducts($pdo, $deliveryNumber)
                 padding: 12px 14px;
             }
 
+            .view-status-btn {
+                font-size: 12px;
+                padding: 5px 14px;
+            }
+
             .order-footer {
                 padding: 10px 14px;
                 flex-direction: column;
@@ -853,6 +888,10 @@ function getOrderProducts($pdo, $deliveryNumber)
                 width: 14px;
                 height: 14px;
                 border-width: 2px;
+            }
+             .view-status-btn {
+                font-size: 11px;
+                padding: 5px 12px;
             }
         }
 
@@ -994,6 +1033,10 @@ function getOrderProducts($pdo, $deliveryNumber)
                                 </div>
                             <?php endif; ?>
                         </div>
+                        <a href="my_orders.php?delivery_number=<?php echo urlencode($delivery['delivery_number']); ?>" 
+                           class="view-status-btn">
+                            <i class="fas fa-eye"></i> Cancel Order
+                        </a>
                     </div>
 
                     <!-- Delivery Address -->

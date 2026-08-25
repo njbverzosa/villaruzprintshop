@@ -338,13 +338,16 @@
         </a>
 
         <!-- Orders Dropdown -->
+        <?php 
+        $ordersActive = in_array($currentPage, ['outside_folder.php', 'pending_folder.php', 'paid_folder.php', 'outside_orders.php', 'pending_folder_with.php', 'paid_folder_with.php']);
+        ?>
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('ordersDropdown')">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Orders</span>
-                <i class="fas fa-chevron-down dropdown-arrow" id="ordersArrow"></i>
+                <i class="fas fa-chevron-down dropdown-arrow <?php echo $ordersActive ? 'rotated' : ''; ?>" id="ordersArrow"></i>
             </div>
-            <div class="nav-dropdown-menu" id="ordersDropdown">
+            <div class="nav-dropdown-menu <?php echo $ordersActive ? 'show' : ''; ?>" id="ordersDropdown">
                 <a href="outside_folder.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'outside_folder.php' ? 'active_outside' : ''; ?>">
                     <i class="fas fa-shopping-bag"></i>
@@ -364,13 +367,16 @@
         </div>
 
         <!-- Purchase Order Dropdown -->
+        <?php 
+        $poActive = in_array($currentPage, ['shop.php', 'cart.php']);
+        ?>
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('addOrderDropdown')">
                 <i class="fas fa-plus-circle"></i>
                 <span>Purchase Order</span>
-                <i class="fas fa-chevron-down dropdown-arrow" id="addOrderArrow"></i>
+                <i class="fas fa-chevron-down dropdown-arrow <?php echo $poActive ? 'rotated' : ''; ?>" id="addOrderArrow"></i>
             </div>
-            <div class="nav-dropdown-menu" id="addOrderDropdown">
+            <div class="nav-dropdown-menu <?php echo $poActive ? 'show' : ''; ?>" id="addOrderDropdown">
                 <a href="shop.php" class="nav-dropdown-item <?php echo $currentPage == 'shop.php' ? 'active' : ''; ?>">
                     <i class="fas fa-store"></i>
                     <span>Shop</span>
@@ -383,28 +389,31 @@
         </div>
 
         <!-- Settings Dropdown -->
+        <?php 
+        $settingsActive = in_array($currentPage, ['admin.php', 'database_manager.php', 'registered_customers.php', 'chat.php']);
+        ?>
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('settingsDropdown')">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
-                <i class="fas fa-chevron-down dropdown-arrow" id="settingsArrow"></i>
+                <i class="fas fa-chevron-down dropdown-arrow <?php echo $settingsActive ? 'rotated' : ''; ?>" id="settingsArrow"></i>
             </div>
-            <div class="nav-dropdown-menu" id="settingsDropdown">
-                <a href="admin.php" class="nav-dropdown-item">
+            <div class="nav-dropdown-menu <?php echo $settingsActive ? 'show' : ''; ?>" id="settingsDropdown">
+                <a href="admin.php" class="nav-dropdown-item <?php echo $currentPage == 'admin.php' ? 'active' : ''; ?>">
                     <i class="fas fa-database"></i>
                     <span>SQL</span>
                 </a>
-                <a href="database_manager.php" class="nav-dropdown-item">
+                <a href="database_manager.php" class="nav-dropdown-item <?php echo $currentPage == 'database_manager.php' ? 'active' : ''; ?>">
                     <i class="fas fa-database"></i>
                     <span>Database</span>
                 </a>
-                <a href="registered_customers.php" class="nav-dropdown-item">
+                <a href="registered_customers.php" class="nav-dropdown-item <?php echo $currentPage == 'registered_customers.php' ? 'active' : ''; ?>">
                     <i class="fas fa-user-friends"></i>
                     <span>Customers</span>
                 </a>
                
                 <!-- Chat Centre with chat icon -->
-                <a href="chat.php" class="nav-dropdown-item">
+                <a href="chat.php" class="nav-dropdown-item <?php echo $currentPage == 'chat.php' ? 'active' : ''; ?>">
                     <i class="fas fa-comment-dots"></i>
                     <span>Chat Centre</span>
                 </a>
@@ -428,21 +437,6 @@
         const arrow = document.getElementById(arrowId);
 
         if (dropdown && arrow) {
-            // Close other dropdowns first
-            const allDropdowns = document.querySelectorAll('.nav-dropdown-menu');
-            const allArrows = document.querySelectorAll('.dropdown-arrow');
-
-            allDropdowns.forEach(d => {
-                if (d.id !== dropdownId && d.classList.contains('show')) {
-                    d.classList.remove('show');
-                }
-            });
-            allArrows.forEach(a => {
-                if (a.id !== arrowId && a.classList.contains('rotated')) {
-                    a.classList.remove('rotated');
-                }
-            });
-
             // Toggle the clicked dropdown
             dropdown.classList.toggle('show');
             arrow.classList.toggle('rotated');
@@ -455,6 +449,12 @@
         const isDropdownMenu = event.target.closest('.nav-dropdown-menu');
         
         if (!isDropdownToggle && !isDropdownMenu) {
+            // Don't close if the dropdown has an active child
+            const activeDropdown = document.querySelector('.nav-dropdown-menu.show');
+            if (activeDropdown && activeDropdown.querySelector('.active, .active_paid, .active_pending, .active_outside, .active_credit')) {
+                return;
+            }
+            
             document.querySelectorAll('.nav-dropdown-menu.show').forEach(dropdown => {
                 dropdown.classList.remove('show');
             });
@@ -462,6 +462,28 @@
                 arrow.classList.remove('rotated');
             });
         }
+    });
+
+    // Initialize dropdowns - keep open if child is active
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if any dropdown has an active child
+        document.querySelectorAll('.nav-dropdown-menu').forEach(menu => {
+            const activeItem = menu.querySelector('.active, .active_paid, .active_pending, .active_outside, .active_credit');
+            if (activeItem) {
+                // Find the parent dropdown
+                const dropdown = menu.closest('.nav-dropdown');
+                if (dropdown) {
+                    const menuId = menu.id;
+                    const arrowId = menuId.replace('Dropdown', 'Arrow');
+                    const arrow = document.getElementById(arrowId);
+                    
+                    menu.classList.add('show');
+                    if (arrow) {
+                        arrow.classList.add('rotated');
+                    }
+                }
+            }
+        });
     });
 
     console.log('📱 Sidebar menu loaded');
