@@ -1,5 +1,5 @@
 <?php
-// public/orders.php 
+// public/my_orders.php
 
 session_start();
 
@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -65,7 +66,7 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 // 6. FIXED: Fetch deliveries using $accNumber
 // ==============================================
 // Fetch all deliveries for this user from for_deliveries table
-$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PROCESSING', 'SHIPPED', 'OFD') ORDER BY id DESC");
+$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PROCESSING', 'SHIPPED', 'OFD', 'DELIVERED') ORDER BY id DESC");
 $stmt->execute([$accNumber]);
 $deliveries = $stmt->fetchAll();
 
@@ -249,7 +250,161 @@ function getOrderProducts($pdo, $deliveryNumber)
             color: #94a3b8;
         }
 
-        /* Order Body - Products */
+        /* Order Status Badge */
+        .order-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .order-status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .order-status.processing {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .order-status.delivered {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .order-status.paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .order-status.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .order-status.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .order-status.shipped {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* ========== STATUS TRACKER ========== */
+        .status-tracker {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            margin: 0;
+        }
+
+        .status-tracker .status-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            position: relative;
+        }
+
+        .status-tracker .status-step .dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid #e2e8f0;
+            background: #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .status-tracker .status-step .dot.active {
+            border-color: #3b82f6;
+            background: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .status-tracker .status-step .dot.completed {
+            border-color: #10b981;
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-tracker .status-step .dot.shipped {
+            border-color: #3b82f6;
+            background: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .status-tracker .status-step .dot.out-for-delivery {
+            border-color: #10b981;
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-tracker .status-step .label {
+            font-size: 10px;
+            color: #94a3b8;
+            font-weight: 500;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-tracker .status-step .label.active {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .status-tracker .status-step .label.completed {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .status-tracker .status-step .label.shipped {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .status-tracker .status-step .label.out-for-delivery {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .status-tracker .status-line {
+            flex: 1;
+            height: 2px;
+            background: #e2e8f0;
+            margin: 0 4px;
+            position: relative;
+            top: -10px;
+        }
+
+        .status-tracker .status-line.active {
+            background: #3b82f6;
+        }
+
+        .status-tracker .status-line.completed {
+            background: #10b981;
+        }
+
+        .status-tracker .status-line.shipped {
+            background: #3b82f6;
+        }
+
+        .status-tracker .status-line.out-for-delivery {
+            background: #10b981;
+        }
+
+        /* ========== ORDER BODY ========== */
         .order-body {
             padding: 16px 18px;
         }
@@ -259,6 +414,11 @@ function getOrderProducts($pdo, $deliveryNumber)
             align-items: center;
             gap: 14px;
             padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .order-product-item:last-child {
+            border-bottom: none;
         }
 
         .order-product-item .product-icon {
@@ -295,65 +455,6 @@ function getOrderProducts($pdo, $deliveryNumber)
             white-space: nowrap;
         }
 
-        /* More products */
-        .more-products {
-            text-align: center;
-            padding: 10px 0 4px 0;
-            margin-top: 4px;
-        }
-
-        .view-more-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 24px;
-            border: none;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #3b82f6;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            background: #f1f5f9;
-        }
-
-        .view-more-btn:hover {
-            background: #e2e8f0;
-            transform: scale(1.02);
-        }
-
-        .view-more-btn .chevron-icon {
-            transition: transform 0.3s ease;
-        }
-
-        .view-more-btn .chevron-icon.rotated {
-            transform: rotate(180deg);
-        }
-
-        .hidden-products {
-            display: none;
-            padding-top: 8px;
-            margin-top: 8px;
-            border-top: 1px dashed #e2e8f0;
-            animation: slideDown 0.3s ease;
-        }
-
-        .hidden-products.open {
-            display: block;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         /* Order Footer */
         .order-footer {
             display: flex;
@@ -364,12 +465,6 @@ function getOrderProducts($pdo, $deliveryNumber)
             background: #fafafa;
             flex-wrap: wrap;
             gap: 10px;
-        }
-
-        .order-footer-left {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
         }
 
         .order-footer .total-amount {
@@ -388,41 +483,12 @@ function getOrderProducts($pdo, $deliveryNumber)
             display: flex;
             align-items: center;
             gap: 5px;
+            margin-top: 2px;
         }
 
         .order-footer .shipping-note i {
             color: #f59e0b;
             font-size: 12px;
-        }
-
-        /* View Status Button */
-        .view-status-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 16px;
-            background: #3b82f6;
-            color: white;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .view-status-btn:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            color: white;
-        }
-
-        .view-status-btn:active {
-            transform: scale(0.97);
         }
 
         /* Empty state */
@@ -652,6 +718,9 @@ function getOrderProducts($pdo, $deliveryNumber)
 
             .order-footer {
                 padding: 10px 14px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
             }
 
             .order-footer .total-amount {
@@ -666,9 +735,19 @@ function getOrderProducts($pdo, $deliveryNumber)
                 font-size: 13px;
             }
 
-            .view-status-btn {
-                font-size: 12px;
-                padding: 5px 14px;
+            .status-tracker {
+                padding: 12px 14px;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+
+            .status-tracker .status-step .label {
+                font-size: 8px;
+            }
+
+            .status-tracker .status-step .dot {
+                width: 16px;
+                height: 16px;
             }
         }
 
@@ -707,19 +786,13 @@ function getOrderProducts($pdo, $deliveryNumber)
 
             .order-footer {
                 padding: 10px 14px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
             }
 
             .order-footer .total-amount {
                 font-size: 13px;
-            }
-
-            .order-footer .shipping-note {
-                font-size: 10px;
-            }
-
-            .view-status-btn {
-                font-size: 11px;
-                padding: 5px 12px;
             }
 
             .dashboard-header {
@@ -768,9 +841,18 @@ function getOrderProducts($pdo, $deliveryNumber)
                 padding: 0 5px;
             }
 
-            .view-more-btn {
-                font-size: 12px;
-                padding: 6px 18px;
+            .status-tracker {
+                padding: 10px 8px;
+            }
+
+            .status-tracker .status-step .label {
+                font-size: 7px;
+            }
+
+            .status-tracker .status-step .dot {
+                width: 14px;
+                height: 14px;
+                border-width: 2px;
             }
         }
 
@@ -792,7 +874,7 @@ function getOrderProducts($pdo, $deliveryNumber)
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="welcome">
-                <h3><i class="fas fa-boxes"></i> Orders</h3>
+                <h3><i class="fas fa-boxes"></i> My Orders</h3>
             </div>
             <div class="user-badge">
                 <div class="avatar">
@@ -812,10 +894,11 @@ function getOrderProducts($pdo, $deliveryNumber)
             <?php foreach ($deliveries as $delivery):
                 $products = getOrderProducts($pdo, $delivery['delivery_number']);
                 $productCount = count($products);
-                $firstProduct = $productCount > 0 ? $products[0] : null;
-                $remainingProducts = $productCount > 0 ? array_slice($products, 1) : [];
-                $remainingCount = count($remainingProducts);
                 $shippingFee = floatval($delivery['charge'] ?? 0);
+
+                // Determine status class
+                $statusClass = strtolower($delivery['status']);
+                $statusDisplay = ucfirst(strtolower($delivery['status']));
             ?>
                 <div class="order-card" data-delivery-number="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
                     <!-- Order Header -->
@@ -840,63 +923,64 @@ function getOrderProducts($pdo, $deliveryNumber)
                         </div>
                     </div>
 
-                    <!-- Order Body - Products -->
+                    <!-- Order Body - Products (All products displayed) -->
                     <div class="order-body">
-                        <?php if ($firstProduct): ?>
+                        <?php foreach ($products as $product): ?>
                             <div class="order-product-item">
                                 <div class="product-icon">
                                     <i class="fas fa-box"></i>
                                 </div>
                                 <div class="product-details">
-                                    <div class="product-name"><?php echo htmlspecialchars($firstProduct['product_name']); ?></div>
+                                    <div class="product-name"><?php echo htmlspecialchars($product['product_name']); ?></div>
                                     <div class="product-meta">
-                                        <?php echo htmlspecialchars($firstProduct['pieces']); ?> ×
-                                        <?php echo htmlspecialchars($firstProduct['unit'] ?? 'Pcs'); ?>
+                                        <?php echo htmlspecialchars($product['pieces']); ?> ×
+                                        <?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>
                                     </div>
                                 </div>
                                 <div class="product-price">
-                                    ₱ <?php echo number_format($firstProduct['total_amount'] ?? 0, 2); ?>
+                                    ₱ <?php echo number_format($product['total_amount'] ?? 0, 2); ?>
                                 </div>
                             </div>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
 
-                        <!-- Hidden Products (Dropdown) -->
-                        <?php if ($remainingCount > 0): ?>
-                            <div class="hidden-products"
-                                id="hidden-products-<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
-                                <?php foreach ($remainingProducts as $product): ?>
-                                    <div class="order-product-item">
-                                        <div class="product-icon">
-                                            <i class="fas fa-box"></i>
-                                        </div>
-                                        <div class="product-details">
-                                            <div class="product-name"><?php echo htmlspecialchars($product['product_name']); ?></div>
-                                            <div class="product-meta">
-                                                <?php echo htmlspecialchars($product['pieces']); ?> ×
-                                                <?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>
-                                            </div>
-                                        </div>
-                                        <div class="product-price">
-                                            ₱ <?php echo number_format($product['total_amount'] ?? 0, 2); ?>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
+                    <?php
+                    // Define status steps
+                    $statusSteps = [
+                        'pending' => ['label' => 'Pending', 'color' => '#f59e0b'],
+                        'processing' => ['label' => 'Processing', 'color' => '#3b82f6'],
+                        'shipped' => ['label' => 'Shipped', 'color' => '#3b82f6'],
+                        'ofd' => ['label' => 'Out for Delivery', 'color' => '#10b981'],
+                        'delivered' => ['label' => 'Delivered', 'color' => '#10b981']
+                    ];
 
-                            <div class="more-products">
-                                <button class="view-more-btn"
-                                    onclick="toggleProducts('<?php echo htmlspecialchars($delivery['delivery_number']); ?>', this)">
-                                    <span class="btn-text">View <?php echo $remainingCount; ?> more
-                                        product<?php echo $remainingCount > 1 ? 's' : ''; ?></span>
-                                    <i class="fas fa-chevron-down chevron-icon"></i>
-                                </button>
+                    $currentStatus = strtolower($delivery['status']);
+                    $statusKeys = array_keys($statusSteps);
+                    $currentIndex = array_search($currentStatus, $statusKeys);
+                    if ($currentIndex === false) $currentIndex = 0;
+                    ?>
+                    <div class="status-tracker">
+                        <?php foreach ($statusSteps as $key => $step):
+                            $stepIndex = array_search($key, $statusKeys);
+                            $isActive = $stepIndex <= $currentIndex;
+                            $isCurrent = $stepIndex == $currentIndex;
+                            $isCompleted = $stepIndex < $currentIndex;
+                            $statusClass = $isCompleted ? 'completed' : ($isCurrent ? 'active' : '');
+                            $lineClass = $isActive ? 'active' : '';
+                        ?>
+                            <div class="status-step">
+                                <div class="dot <?php echo $statusClass; ?>"></div>
+                                <span class="label <?php echo $statusClass; ?>"><?php echo $step['label']; ?></span>
                             </div>
-                        <?php endif; ?>
+                            <?php if ($stepIndex < count($statusSteps) - 1): ?>
+                                <div class="status-line <?php echo $lineClass; ?>"></div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
                     </div>
 
                     <!-- Order Footer -->
                     <div class="order-footer">
-                        <div class="order-footer-left">
+                        <div>
                             <div class="total-amount">
                                 Total: <span><?php echo formatAmount($delivery['total_amount']); ?></span>
                             </div>
@@ -910,10 +994,6 @@ function getOrderProducts($pdo, $deliveryNumber)
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <a href="my_orders.php?delivery_number=<?php echo urlencode($delivery['delivery_number']); ?>" 
-                           class="view-status-btn">
-                            <i class="fas fa-eye"></i> View Status
-                        </a>
                     </div>
 
                     <!-- Delivery Address -->
@@ -926,7 +1006,6 @@ function getOrderProducts($pdo, $deliveryNumber)
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
-
     </main>
 
     <!-- ========== BOTTOM NAVIGATION ========== -->
@@ -960,31 +1039,12 @@ function getOrderProducts($pdo, $deliveryNumber)
         </a>
     </nav>
 
+    <!-- Copy Toast -->
+    <div class="copy-toast" id="copyToast">📋 Copied!</div>
+
     <script>
         const csrfToken = document.getElementById('csrfToken').value;
         const userAccNumber = document.getElementById('userAccNumber').value;
-
-        // ============================================================
-        // TOGGLE PRODUCTS DROPDOWN
-        // ============================================================
-        function toggleProducts(deliveryNumber, button) {
-            const hiddenProducts = document.getElementById(`hidden-products-${deliveryNumber}`);
-            const chevron = button.querySelector('.chevron-icon');
-            const btnText = button.querySelector('.btn-text');
-
-            if (!hiddenProducts) return;
-
-            if (hiddenProducts.classList.contains('open')) {
-                hiddenProducts.classList.remove('open');
-                chevron.classList.remove('rotated');
-                const count = hiddenProducts.querySelectorAll('.order-product-item').length;
-                btnText.textContent = `View ${count} more product${count > 1 ? 's' : ''}`;
-            } else {
-                hiddenProducts.classList.add('open');
-                chevron.classList.add('rotated');
-                btnText.textContent = 'Show less';
-            }
-        }
 
         // ============================================================
         // COPY DELIVERY NUMBER FUNCTION
