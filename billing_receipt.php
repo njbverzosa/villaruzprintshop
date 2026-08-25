@@ -55,7 +55,7 @@ $qrImageUrl = '';
 $qrData = $order['qr_code'] ?? '';
 if (!empty($qrData)) {
     $qrDataEncoded = urlencode($qrData);
-    $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=" . $qrDataEncoded;
+    $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . $qrDataEncoded;
 }
 ?>
 <!DOCTYPE html>
@@ -95,8 +95,8 @@ if (!empty($qrData)) {
         .download-btn {
             color: white;
             border: none;
-            padding: 8px 18px;
-            font-size: 0.75rem;
+            padding: 10px 22px;
+            font-size: 0.85rem;
             font-family: 'Courier New', monospace;
             font-weight: bold;
             border-radius: 30px;
@@ -118,7 +118,7 @@ if (!empty($qrData)) {
         }
 
         .bill-container {
-            max-width: 650px;
+            max-width: 750px;
             width: 100%;
             background: white;
             border-radius: 16px;
@@ -129,38 +129,38 @@ if (!empty($qrData)) {
         }
 
         .bill-paper {
-            padding: 1rem 1.2rem 0.8rem 1.2rem;
+            padding: 1.5rem 1.8rem 1.2rem 1.8rem;
         }
 
         .shop-header {
             text-align: center;
-            border-bottom: 1.5px solid #1e3a5f;
-            margin-bottom: 0.6rem;
-            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #1e3a5f;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.6rem;
         }
 
         .shop-name {
-            font-size: 13px;
+            font-size: 16px;
             font-weight: 700;
             letter-spacing: -0.2px;
             color: #0a2f44;
             text-transform: uppercase;
-            margin-bottom: 0.15rem;
+            margin-bottom: 0.2rem;
         }
 
         .shop-address {
-            font-size: 0.6rem;
+            font-size: 0.7rem;
             color: #2c3e4e;
             font-weight: 500;
             background: #f1f5f9;
             display: inline-block;
-            padding: 0.05rem 0.6rem;
+            padding: 0.1rem 0.8rem;
             border-radius: 30px;
-            margin-bottom: 0.15rem;
+            margin-bottom: 0.2rem;
         }
 
         .vat-row {
-            font-size: 0.55rem;
+            font-size: 0.6rem;
             color: #4a627a;
             margin-top: 0.1rem;
             font-weight: 500;
@@ -168,97 +168,123 @@ if (!empty($qrData)) {
 
         .doc-title {
             text-align: center;
-            margin: 0.3rem 0 0.6rem 0;
+            margin: 0.4rem 0 0.8rem 0;
         }
 
         .doc-title h3 {
-            font-size: 1rem;
+            font-size: 1.2rem;
             font-weight: 700;
             color: #1e3a5f;
             letter-spacing: 0.5px;
-            border-bottom: 1.5px dotted #cbd5e1;
+            border-bottom: 2px dotted #cbd5e1;
             display: inline-block;
-            padding-bottom: 0.15rem;
+            padding-bottom: 0.2rem;
         }
 
         .info-grid {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 0.4rem;
+            gap: 0.6rem;
             background: #f8fafc;
-            padding: 0.4rem 0.8rem;
+            padding: 0.6rem 1rem;
             border-radius: 8px;
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.8rem;
             border: 1px solid #e2edf2;
         }
 
         .client-box p, .date-box p {
-            margin: 0.1rem 0;
-            line-height: 1.2;
+            margin: 0.15rem 0;
+            line-height: 1.3;
         }
 
         .client-label, .date-label {
             font-weight: 700;
             color: #0f3b5c;
-            font-size: 0.55rem;
+            font-size: 0.6rem;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
         .client-name {
             font-weight: 700;
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             color: #1e293b;
         }
 
         .client-address {
-            font-size: 0.6rem;
+            font-size: 0.7rem;
             color: #334155;
         }
 
         .date-value {
             font-weight: 600;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             background: white;
-            padding: 0.1rem 0.4rem;
+            padding: 0.15rem 0.6rem;
             border-radius: 30px;
             display: inline-block;
             margin-top: 0.1rem;
         }
 
-        /* ========== COMPACT TABLE ========== */
+        /* ========== TABLE STYLES ========== */
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8.5px;
-            margin-bottom: 0.6rem;
+            font-size: 10px;
+            margin-bottom: 0.8rem;
         }
 
         .items-table th {
             background-color: #1e3a5f;
             color: white;
             font-weight: 600;
-            padding: 3px 3px;
+            padding: 5px 4px;
             text-align: center;
             border: 1px solid #2c5282;
-            font-size: 7.5px;
+            font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.3px;
         }
 
         .items-table td {
             border: 1px solid #cbd5e6;
-            padding: 3px 4px;
+            padding: 5px 6px;
             text-align: center;
             vertical-align: middle;
             background-color: white;
-            font-size: 8px;
+            font-size: 9.5px;
         }
 
         .items-table td:first-child, .items-table th:first-child {
             text-align: left;
-            padding-left: 5px;
+            padding-left: 8px;
+        }
+
+        /* Column widths */
+        .items-table th:nth-child(1),
+        .items-table td:nth-child(1) {
+            width: 40%;
+        }
+
+        .items-table th:nth-child(2),
+        .items-table td:nth-child(2) {
+            width: 10%;
+        }
+
+        .items-table th:nth-child(3),
+        .items-table td:nth-child(3) {
+            width: 12%;
+        }
+
+        .items-table th:nth-child(4),
+        .items-table td:nth-child(4) {
+            width: 19%;
+        }
+
+        .items-table th:nth-child(5),
+        .items-table td:nth-child(5) {
+            width: 19%;
         }
 
         .items-table tr:hover td {
@@ -268,47 +294,47 @@ if (!empty($qrData)) {
         .amount-cell {
             font-weight: 600;
             font-family: 'Courier New', 'SF Mono', monospace;
-            letter-spacing: 0.1px;
-            font-size: 8px;
+            letter-spacing: 0.2px;
+            font-size: 9.5px;
         }
 
-        /* ========== COMPACT TOTALS ========== */
+        /* ========== TOTALS ========== */
         .totals-section {
             display: flex;
             justify-content: flex-end;
-            margin: 0.3rem 0 0.6rem 0;
+            margin: 0.4rem 0 0.8rem 0;
         }
 
         .totals-card {
-            width: 220px;
+            width: 260px;
             background: #fef9e3;
-            border-radius: 3px;
-            padding: 3px 6px;
+            border-radius: 4px;
+            padding: 5px 10px;
             border: 1px solid #fdebb3;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            padding: 0.2rem 0;
-            font-size: 8px;
+            padding: 0.3rem 0;
+            font-size: 9.5px;
             border-bottom: 1px dashed #e2d5b6;
         }
 
         .total-row:last-child {
             border-bottom: none;
             font-weight: 800;
-            font-size: 0.75rem;
-            margin-top: 0.1rem;
-            padding-top: 0.25rem;
+            font-size: 0.9rem;
+            margin-top: 0.15rem;
+            padding-top: 0.35rem;
             color: #0f2c3d;
         }
 
         .total-amount {
             font-weight: 700;
             font-family: monospace;
-            letter-spacing: 0.2px;
-            font-size: 9px;
+            letter-spacing: 0.3px;
+            font-size: 10px;
         }
 
         .tax-line {
@@ -316,10 +342,10 @@ if (!empty($qrData)) {
         }
 
         .signature-block {
-            margin-top: 0.6rem;
+            margin-top: 0.8rem;
             text-align: right;
             border-top: 1px solid #e2e8f0;
-            padding-top: 0.5rem;
+            padding-top: 0.7rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -328,55 +354,55 @@ if (!empty($qrData)) {
 
         .owner-info {
             text-align: center;
-            width: 150px;
+            width: 180px;
         }
 
         .owner-name {
             font-weight: 800;
-            font-size: 7px;
-            letter-spacing: 0.3px;
-            margin-top: 0.15rem;
+            font-size: 8.5px;
+            letter-spacing: 0.5px;
+            margin-top: 0.2rem;
             color: #1e3a5f;
-            border-top: 1.5px dotted #9bb6c9;
+            border-top: 2px dotted #9bb6c9;
             display: inline-block;
-            padding-top: 0.15rem;
+            padding-top: 0.2rem;
         }
 
         .sign-label {
-            font-size: 0.5rem;
+            font-size: 0.55rem;
             color: #4a5568;
             text-transform: uppercase;
             font-weight: 500;
         }
 
         .qr-code {
-            margin-top: 4px;
+            margin-top: 5px;
             text-align: center;
         }
         .qr-code img {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border: 1px solid #ddd;
-            padding: 2px;
+            padding: 3px;
             background: white;
             border-radius: 4px;
         }
         .qr-label {
-            font-size: 9px;
+            font-size: 10px;
             color: #4a5568;
-            margin-top: 1px;
+            margin-top: 2px;
         }
 
         .receiver-info {
             text-align: center;
-            width: 150px;
+            width: 180px;
         }
 
         .receiver-line {
-            margin-top: 0.15rem;
+            margin-top: 0.2rem;
             border-bottom: 1px solid #9bb6c9;
             width: 100%;
-            padding-bottom: 0.1rem;
+            padding-bottom: 0.15rem;
         }
 
         @media print {
@@ -397,7 +423,7 @@ if (!empty($qrData)) {
                 break-inside: avoid;
             }
             .bill-paper {
-                padding: 0.15in;
+                padding: 0.2in;
             }
             .items-table th {
                 -webkit-print-color-adjust: exact;
@@ -415,15 +441,47 @@ if (!empty($qrData)) {
 
         @media (max-width: 640px) {
             .bill-paper {
-                padding: 0.8rem;
+                padding: 1rem;
             }
             .shop-name {
-                font-size: 11px;
+                font-size: 13px;
             }
-            .items-table th, .items-table td {
-                font-size: 6.5px;
-                padding: 2px 2px;
+            
+            .items-table {
+                font-size: 8px;
             }
+            
+            .items-table th,
+            .items-table td {
+                padding: 3px 3px;
+                font-size: 7.5px;
+            }
+            
+            .items-table th:nth-child(1),
+            .items-table td:nth-child(1) {
+                width: 33%;
+            }
+            
+            .items-table th:nth-child(2),
+            .items-table td:nth-child(2) {
+                width: 12%;
+            }
+            
+            .items-table th:nth-child(3),
+            .items-table td:nth-child(3) {
+                width: 14%;
+            }
+            
+            .items-table th:nth-child(4),
+            .items-table td:nth-child(4) {
+                width: 20%;
+            }
+            
+            .items-table th:nth-child(5),
+            .items-table td:nth-child(5) {
+                width: 21%;
+            }
+            
             .totals-section {
                 justify-content: center;
             }
@@ -432,7 +490,7 @@ if (!empty($qrData)) {
             }
             .info-grid {
                 flex-direction: column;
-                gap: 0.2rem;
+                gap: 0.3rem;
             }
             .button-container {
                 position: static;
@@ -443,11 +501,14 @@ if (!empty($qrData)) {
             }
             .signature-block {
                 flex-direction: column;
-                gap: 0.8rem;
+                gap: 1rem;
                 align-items: center;
             }
             .bill-container {
                 max-width: 100%;
+            }
+            .doc-title h3 {
+                font-size: 1rem;
             }
         }
     </style>
@@ -482,21 +543,21 @@ if (!empty($qrData)) {
             <div class="date-box">
                 <div class="date-label">DATE & TIME</div>
                 <div class="date-value"><?php echo $fullFormattedDate; ?></div>
-                <div style="font-size: 0.55rem; color: #64748b; margin-top: 1px;">
+                <div style="font-size: 0.6rem; color: #64748b; margin-top: 1px;">
                     <?php echo $formattedTime; ?>
                 </div>
             </div>
         </div>
 
-        <!-- COMPACT TABLE -->
+        <!-- TABLE -->
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 38%;">Description</th>
-                    <th style="width: 10%;">Qty</th>
-                    <th style="width: 12%;">Unit</th>
-                    <th style="width: 20%;">Unit Price</th>
-                    <th style="width: 20%;">Amount</th>
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Unit</th>
+                    <th>Unit Price</th>
+                    <th>Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -518,7 +579,7 @@ if (!empty($qrData)) {
             </tbody>
         </table>
 
-        <!-- COMPACT TOTALS -->
+        <!-- TOTALS -->
         <div class="totals-section">
             <div class="totals-card">
                 <div class="total-row">
@@ -530,8 +591,8 @@ if (!empty($qrData)) {
                     <span class="total-amount">- ₱ <?php echo number_format($withholdingTax, 2); ?></span>
                 </div>
                 <div class="total-row">
-                    <span style="font-weight: 700; font-size: 10px;">TOTAL AMOUNT DUE</span>
-                    <span style="font-weight: 700; font-size: 10px; color: #1e3a5f;">₱ <?php echo number_format($amountDue, 2); ?></span>
+                    <span style="font-weight: 700; font-size: 11px;">TOTAL AMOUNT DUE</span>
+                    <span style="font-weight: 700; font-size: 11px; color: #1e3a5f;">₱ <?php echo number_format($amountDue, 2); ?></span>
                 </div>
             </div>
         </div>
@@ -540,15 +601,15 @@ if (!empty($qrData)) {
             <div class="owner-info">
                 <div class="sign-label">Prepared by:</div>
                 <div class="owner-name">JOSEPH M. VILLARUZ</div>
-                <div class="sign-label" style="margin-top: 2px; font-size: 0.45rem;">Owner</div>
+                <div class="sign-label" style="margin-top: 2px; font-size: 0.5rem;">Owner</div>
                 <?php if (!empty($qrImageUrl)): ?>
                     <div class="qr-code">
                         <img src="<?php echo $qrImageUrl; ?>" alt="Delivery QR Code">
-                        <div class="qr-label">Scan QR</div>
+                        <div class="qr-label">Scan QR for verification</div>
                     </div>
                 <?php else: ?>
                     <div class="qr-code">
-                        <div class="qr-label" style="color:#999; font-size: 8px;">(QR not available)</div>
+                        <div class="qr-label" style="color:#999; font-size: 9px;">(QR not available)</div>
                     </div>
                 <?php endif; ?>
             </div>
@@ -556,7 +617,7 @@ if (!empty($qrData)) {
             <div class="receiver-info">
                 <div class="sign-label">Received by:</div><br>
                 <div class="receiver-line"></div>
-                <div class="sign-label" style="margin-top: 2px; font-size: 0.45rem;">Signature over printed name</div>
+                <div class="sign-label" style="margin-top: 2px; font-size: 0.5rem;">Signature over printed name</div>
             </div>
         </div>
     </div>
