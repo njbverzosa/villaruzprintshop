@@ -13,9 +13,26 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['acc_number'])) {
     exit;
 }
 
-$userName = $_SESSION['fullname'];  
-$firstName = explode(' ', trim($userName))[0];  
- 
+// Get user name from session or database
+$userName = $_SESSION['user_name'] ?? 'User';
+$firstName = explode(' ', trim($userName))[0];
+
+// If user_name is not in session, fetch from database
+if (!isset($_SESSION['user_name']) || empty($_SESSION['user_name'])) {
+    try {
+        $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ? UNION SELECT f_name FROM customers WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
+        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($userData) {
+            $firstName = explode(' ', trim($userData['f_name']))[0];
+            $_SESSION['user_name'] = $userData['f_name'];
+        }
+    } catch (Exception $e) {
+        // Fallback if database query fails
+        $firstName = 'User';
+    }
+}
+
 // Verify CSRF token
 if (!isset($_POST['csrf_token'])) {
     echo json_encode(['success' => false, 'message' => 'CSRF token missing from request']);
@@ -79,7 +96,7 @@ if ($action === 'update_product') {
 
     try {
         date_default_timezone_set('Asia/Manila');
-         $formattedDate = date('j F Y g:i A');
+        $formattedDate = date('j F Y g:i A');
 
         $pdo->beginTransaction();
 
@@ -105,9 +122,14 @@ if ($action === 'update_product') {
             
             $logDetails = "Updated product: {$oldProduct['product_name']} (ID: {$productId}) | Changes: " . (empty($changes) ? "No changes" : implode(", ", $changes));
             
-            // Insert into logs
-            $logStmt = $pdo->prepare("INSERT INTO logs (name, action, details, created_at) VALUES (?, ?, ?, ?)");
-            $logStmt->execute([$firstName, "Updated Product", $logDetails, $formattedDate]);
+            // Insert into logs - check if logs table exists and has correct columns
+            try {
+                $logStmt = $pdo->prepare("INSERT INTO logs (name, action, details, created_at) VALUES (?, ?, ?, ?)");
+                $logStmt->execute([$firstName, "Updated Product", $logDetails, $formattedDate]);
+            } catch (PDOException $logError) {
+                // Log table might not exist or have different structure, just continue
+                error_log("Log insertion failed: " . $logError->getMessage());
+            }
             
             $pdo->commit();
 

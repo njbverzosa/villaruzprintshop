@@ -1,11 +1,19 @@
 <?php
-// web/all_products.php
+// all_products.php
+
 session_start();
 
 // ==============================================
 // 1. FIX PATHS - config.php is in DB_Conn folder at root level
 // ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
+
+// ==============================================
+// STORE USER NAME IN SESSION FOR API USE
+// ==============================================
+if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
+    $_SESSION['user_name'] = $userData['f_name'];
+}
 
 // ==============================================
 // 2. CHECK LOGIN STATUS
@@ -61,7 +69,10 @@ $user = $userData;
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
-// Fetch all products sorted by last_restocked
+
+// ===== FIXED QUERY - PROPER DATE SORTING =====
+// Since last_restocked is stored as string (e.g., "10 August 2026 1:39 PM"),
+// we need to convert it to a proper date for sorting
 $stmt = $pdo->prepare("
     SELECT * FROM merchandise_inventory 
     ORDER BY 
@@ -75,6 +86,20 @@ $stmt = $pdo->prepare("
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
 
+// If STR_TO_DATE doesn't work with your MySQL version, use this alternative:
+// $stmt = $pdo->prepare("
+//     SELECT * FROM merchandise_inventory 
+//     ORDER BY 
+//         CASE 
+//             WHEN last_restocked IS NULL OR last_restocked = '' THEN 1 
+//             ELSE 0 
+//         END,
+//         last_restocked DESC,
+//         id DESC
+// ");
+// $stmt->execute();
+// $allProducts = $stmt->fetchAll();
+
 // Group products by restock status for display
 $recentlyRestocked = [];
 $olderRestocked = [];
@@ -85,28 +110,25 @@ foreach ($allProducts as $product) {
         $neverRestocked[] = $product;
     } else {
         try {
+            // Parse the date string
             $restockDate = DateTime::createFromFormat('j M Y g:i A', $product['last_restocked']);
             if ($restockDate === false) {
+                // If parsing fails, try alternative format
                 $restockDate = new DateTime($product['last_restocked']);
             }
             $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
-
+            
             if ($daysDiff <= 7) {
                 $recentlyRestocked[] = $product;
             } else {
                 $olderRestocked[] = $product;
             }
         } catch (Exception $e) {
+            // If date parsing fails, treat as never restocked
             $neverRestocked[] = $product;
         }
     }
 }
-
-// Generate CSRF token if not exists
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrfToken = $_SESSION['csrf_token'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -114,7 +136,7 @@ $csrfToken = $_SESSION['csrf_token'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <meta name="csrf-token" content="<?php echo $csrfToken; ?>">
+    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
     <title>Shop Products | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -335,14 +357,12 @@ $csrfToken = $_SESSION['csrf_token'];
             border-radius: 30px;
             padding: 10px 25px;
             color: #ffffff;
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 16px;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             gap: 8px;
-            white-space: nowrap;
         }
 
         .add-product-btn:hover {
@@ -366,7 +386,7 @@ $csrfToken = $_SESSION['csrf_token'];
 
         .product-card {
             background: #ffffff;
-            border-radius: 7px;
+            border-radius: 20px;
             padding: 16px 12px;
             text-align: center;
             transition: all 0.3s;
@@ -381,6 +401,12 @@ $csrfToken = $_SESSION['csrf_token'];
             border-color: #3b82f6;
             transform: translateY(-4px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .product-icon {
+            font-size: 44px;
+            color: #3b82f6;
+            margin-bottom: 10px;
         }
 
         .product-title {
@@ -454,6 +480,7 @@ $csrfToken = $_SESSION['csrf_token'];
             margin-top: 4px;
         }
 
+        .sell-btn,
         .update-btn,
         .desc-btn {
             flex: 1;
@@ -468,6 +495,16 @@ $csrfToken = $_SESSION['csrf_token'];
             align-items: center;
             justify-content: center;
             gap: 5px;
+        }
+
+        .sell-btn {
+            background: #10b981;
+            color: white;
+        }
+
+        .sell-btn:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
         }
 
         .update-btn {
@@ -490,6 +527,7 @@ $csrfToken = $_SESSION['csrf_token'];
             transform: translateY(-2px);
         }
 
+        .sell-btn:disabled,
         .update-btn:disabled,
         .desc-btn:disabled {
             opacity: 0.5;
@@ -503,7 +541,7 @@ $csrfToken = $_SESSION['csrf_token'];
             margin-bottom: 10px;
         }
 
-        /* ========== MODAL STYLES ========== */
+        /* Description Modal - Modern Design */
         .desc-modal {
             display: none;
             position: fixed;
@@ -671,6 +709,46 @@ $csrfToken = $_SESSION['csrf_token'];
             word-wrap: break-word;
         }
 
+        .notes-section {
+            background: #fffbeb;
+            border-radius: 20px;
+            padding: 20px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .notes-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .notes-title i {
+            color: #f59e0b;
+            font-size: 16px;
+        }
+
+        .notes-title span {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .notes-text {
+            color: #78350f;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .empty-description {
+            color: #94a3b8;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
         .desc-modal-footer {
             padding: 20px 28px 28px;
             border-top: 1px solid #e2e8f0;
@@ -699,7 +777,7 @@ $csrfToken = $_SESSION['csrf_token'];
             box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
         }
 
-        /* Update Modal */
+        /* Other Modals */
         .modal {
             display: none;
             position: fixed;
@@ -898,13 +976,6 @@ $csrfToken = $_SESSION['csrf_token'];
             }
         }
 
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 1024px) {
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-                gap: 18px;
-            }
-        }
 
         @media (max-width: 768px) {
             .main-content {
@@ -912,13 +983,8 @@ $csrfToken = $_SESSION['csrf_token'];
             }
 
             .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-                /* 2 columns on tablet */
-                gap: 15px;
-            }
-
-            .product-card {
-                padding: 14px 10px;
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 12px;
             }
 
             .top-bar {
@@ -928,20 +994,6 @@ $csrfToken = $_SESSION['csrf_token'];
 
             .search-wrapper {
                 max-width: none;
-            }
-
-            .add-product-btn {
-                justify-content: center;
-            }
-
-            .dashboard-header {
-                padding: 15px 20px;
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-
-            .welcome h1 {
-                font-size: 22px;
             }
 
             .modal-content {
@@ -955,238 +1007,6 @@ $csrfToken = $_SESSION['csrf_token'];
 
             .desc-modal-header h3 {
                 font-size: 18px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .main-content {
-                padding: 15px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-                /* 2 columns on mobile */
-                gap: 12px;
-            }
-
-            .product-card {
-                padding: 12px 8px;
-                border-radius: 5px;
-            }
-
-            .product-title {
-                font-size: 13px;
-            }
-
-            .product-price {
-                font-size: 15px;
-                margin-bottom: 8px;
-            }
-
-            .product-unit {
-                font-size: 10px;
-                padding: 1px 8px;
-                margin-bottom: 6px;
-            }
-
-            .card-qty-control {
-                padding: 2px 6px;
-                margin-bottom: 8px;
-            }
-
-            .card-qty-btn {
-                width: 24px;
-                height: 24px;
-                font-size: 14px;
-            }
-
-            .card-qty-value {
-                font-size: 13px;
-                min-width: 30px;
-            }
-
-            .update-btn,
-            .desc-btn {
-                font-size: 10px;
-                padding: 6px 0;
-                border-radius: 6px;
-            }
-
-            .last_restocked {
-                font-size: 9px;
-                margin-top: 6px;
-            }
-
-            .dashboard-header {
-                padding: 20px 30px;
-                border-radius: 10px;
-            }
-
-            .welcome h1 {
-                font-size: 18px;
-            }
-
-            .add-product-btn {
-                font-size: 12px;
-                padding: 8px 16px;
-            }
-
-            .search-input {
-                font-size: 13px;
-                padding: 10px 12px 10px 38px;
-            }
-
-            .modal-content {
-                padding: 16px;
-                border-radius: 16px;
-            }
-
-            .modal-content h3 {
-                font-size: 18px;
-            }
-
-            .modal-btn {
-                font-size: 13px;
-                padding: 10px;
-            }
-
-            .desc-modal-content {
-                border-radius: 20px;
-            }
-
-            .desc-modal-header {
-                padding: 16px 20px;
-            }
-
-            .desc-modal-header h3 {
-                font-size: 16px;
-            }
-
-            .desc-modal-body {
-                padding: 16px;
-            }
-
-            .desc-modal-footer {
-                padding: 16px 20px 20px;
-            }
-
-            .burger-btn {
-                width: 40px;
-                height: 40px;
-                top: 12px;
-                right: 12px;
-            }
-
-            .burger-btn i {
-                font-size: 20px;
-            }
-        }
-
-        /* Extra small devices */
-        @media (max-width: 380px) {
-            .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-
-            .product-card {
-                padding: 10px 6px;
-            }
-
-            .product-title {
-                font-size: 12px;
-            }
-
-            .product-price {
-                font-size: 13px;
-            }
-
-            .card-qty-btn {
-                width: 20px;
-                height: 20px;
-                font-size: 12px;
-            }
-
-            .card-qty-value {
-                font-size: 12px;
-                min-width: 25px;
-            }
-
-            .update-btn,
-            .desc-btn {
-                font-size: 9px;
-                padding: 4px 0;
-            }
-        }
-
-        /* ========== COPY ICON STYLES ========== */
-
-        .product-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #0f172a;
-            line-height: 1.3;
-            user-select: text;
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-        }
-
-        .copy-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 2px 4px;
-            font-size: 14px;
-            color: #94a3b8;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            border-radius: 4px;
-        }
-
-        .copy-btn:hover {
-            color: #3b82f6;
-            background: #f1f5f9;
-        }
-
-        .copy-btn.copied {
-            color: #10b981;
-        }
-
-        .copy-btn .copy-icon {
-            transition: all 0.3s ease;
-        }
-
-        .copy-btn .check-icon {
-            display: none;
-            transition: all 0.3s ease;
-        }
-
-        .copy-btn.copied .copy-icon {
-            display: none;
-        }
-
-        .copy-btn.copied .check-icon {
-            display: inline-block;
-            animation: checkPop 0.3s ease;
-        }
-
-        @keyframes checkPop {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-
-            50% {
-                transform: scale(1.3);
-            }
-
-            100% {
-                transform: scale(1);
-                opacity: 1;
             }
         }
     </style>
@@ -1213,9 +1033,7 @@ $csrfToken = $_SESSION['csrf_token'];
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="welcome">
-                    <h4>
-                        Shop
-                    </h4>
+                    <h4>Shop Stock</h4>
                 </div>
             </div>
 
@@ -1246,27 +1064,26 @@ $csrfToken = $_SESSION['csrf_token'];
                             data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>"
                             data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>"
-                            data-qty="<?php echo number_format($product['qty_on_hand']); ?>">
-
-                            <!-- Clickable title (copies URL) -->
-                            <div class="product-title-wrapper">
-                                <div class="product-title" onclick="copyProductName(event, '<?php echo htmlspecialchars(addslashes($product['product_name'])); ?>', this)" title="Copy product link">
-                                    <?php echo htmlspecialchars($product['product_name']); ?> 📋
-                                </div>
-                            </div>
-
+                            data-qty="<?php echo number_format($product['qty_on_hand']); ?>"
+                            data-first-letter="<?php echo strtolower(substr(htmlspecialchars($product['product_name']), 0, 1)); ?>">
+                            <!-- <div class="product-icon">
+                                <i class="fas fa-tag"></i>
+                            </div> -->
+                            <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                             <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
 
                             <div class="card-qty-control">
                                 <button class="card-qty-btn decrement-card" data-id="<?php echo $product['id']; ?>">-</button>
-                                <span class="card-qty-value" id="qty-<?php echo $product['id']; ?>"><?php echo number_format($product['qty_on_hand']); ?></span>
+                                <span class="card-qty-value"
+                                    id="qty-<?php echo $product['id']; ?>"><?php echo number_format($product['qty_on_hand']); ?></span>
                                 <button class="card-qty-btn increment-card" data-id="<?php echo $product['id']; ?>">+</button>
                             </div>
 
                             <div class="card-actions">
+                                <!-- <button class="sell-btn" data-id="<?php echo $product['id']; ?>">SELL</button> -->
                                 <button class="desc-btn" data-id="<?php echo $product['id']; ?>">
-                                    <i class="fas fa-info-circle"></i> DESCRIPTION
+                                    <i class="fas fa-info-circle"></i> INFO
                                 </button>
                             </div>
                             <div class="card-actions" style="margin-top: 4px;">
@@ -1274,7 +1091,7 @@ $csrfToken = $_SESSION['csrf_token'];
                                     style="width: 100%;">UPDATE</button>
                             </div>
                             <div class="last_restocked">
-                                <?php echo htmlspecialchars($product['last_restocked'] ?? 'Never'); ?>
+                                <?php echo htmlspecialchars($product['last_restocked']); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -1283,7 +1100,7 @@ $csrfToken = $_SESSION['csrf_token'];
         </main>
     </div>
 
-    <!-- Description Modal -->
+    <!-- Description Modal - Modern Design -->
     <div id="descriptionModal" class="desc-modal">
         <div class="desc-modal-content">
             <div class="desc-modal-header">
@@ -1351,6 +1168,26 @@ $csrfToken = $_SESSION['csrf_token'];
         </div>
     </div>
 
+    <!-- Sell Modal -->
+    <div id="quantityModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-check-circle"></i> Confirm Sale</h3>
+            <p id="modalProductName" style="margin-bottom: 10px;"></p>
+            <p id="modalCurrentStock" style="margin-bottom: 10px; color: #64748b;"></p>
+            <p id="modalTotalAmount" style="margin-bottom: 15px; font-size: 18px; color: #3b82f6;"></p>
+            <label for="purposeSelect">Purpose / Note:</label>
+            <select name="note" id="purposeSelect">
+                <option value="">Select Purpose</option>
+                <option value="Use">Use</option>
+                <option value="Sell">Sell</option>
+            </select>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-cancel" id="modalCancel">Cancel</button>
+                <button class="modal-btn modal-confirm" id="modalConfirm">Confirm Sale</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Update Product Modal -->
     <div id="updateProductModal" class="modal">
         <div class="modal-content">
@@ -1387,35 +1224,700 @@ $csrfToken = $_SESSION['csrf_token'];
         <div class="modal-content">
             <h3><i class="fas fa-plus-circle"></i> Add New Product</h3>
 
-            <label>Product Name <span class="required">*</span></label>
-            <input type="text" id="productName" placeholder="Enter product name">
-            <div class="error-message" id="addNameError">Please enter a valid product name</div>
+            <!-- Tab Navigation -->
+            <div class="modal-tabs">
+                <button class="tab-btn active" data-tab="manual">Manual Entry</button>
+                <button class="tab-btn" data-tab="excel">Upload Excel</button>
+            </div>
 
-            <label>Unit <span class="required">*</span></label>
-            <input type="text" id="productUnit" placeholder="Enter unit (e.g., Pcs, Roll, Ream)" value="Pcs">
-            <div class="error-message" id="addUnitError">Please enter a valid unit</div>
+            <!-- Manual Entry Tab -->
+            <div id="manualTab" class="tab-content active">
+                <label>Product Name <span class="required">*</span></label>
+                <input type="text" id="productName" placeholder="Enter product name">
+                <div class="error-message" id="addNameError">Please enter a valid product name</div>
 
-            <label>Quantity <span class="required">*</span></label>
-            <input type="number" id="productQuantity" placeholder="Enter quantity on hand" step="1" min="0">
-            <div class="error-message" id="addQuantityError">Please enter a valid quantity</div>
+                <label>Unit <span class="required">*</span></label>
+                <input type="text" id="productUnit" placeholder="Enter unit (e.g., Pcs, Roll, Ream)" value="Pcs">
+                <div class="error-message" id="addUnitError">Please enter a valid unit</div>
 
-            <label>Unit Cost (₱) <span class="required">*</span></label>
-            <input type="text" id="productPrice" placeholder="Enter selling price">
-            <div class="error-message" id="addPriceError">Please enter a valid price</div>
+                <label>Quantity <span class="required">*</span></label>
+                <input type="number" id="productQuantity" placeholder="Enter quantity on hand" step="1" min="0">
+                <div class="error-message" id="addQuantityError">Please enter a valid quantity</div>
 
-            <label>Description</label>
-            <textarea id="productDescription" placeholder="Enter product description (optional)"></textarea>
+                <label>Unit Cost (₱) <span class="required">*</span></label>
+                <input type="text" id="productPrice" placeholder="Enter selling price">
+                <div class="error-message" id="addPriceError">Please enter a valid price</div>
 
-            <div class="modal-buttons">
-                <button class="modal-btn modal-cancel" id="cancelAddProduct">Cancel</button>
-                <button class="modal-btn modal-confirm" id="confirmAddProduct">Add Product</button>
+                <label>Description</label>
+                <textarea id="productDescription" placeholder="Enter product description (optional)"></textarea>
+
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-cancel" id="cancelAddProduct">Cancel</button>
+                    <button class="modal-btn modal-confirm" id="confirmAddProduct">Add Product</button>
+                </div>
+            </div>
+
+            <!-- Excel Upload Tab -->
+            <div id="excelTab" class="tab-content">
+                <!-- Excel Info with Image - Only shows in this tab -->
+                <div class="excel-info">
+                    <div class="excel-format-image">
+                        <img src="images/sample_excel.png" alt="Excel Sample Format">
+                    </div>
+                    <p class="excel-format-text">
+                        <strong>Note:</strong><br>
+                        Only columns B (Unit), C (Item Description), D (Quantity), E (Unit Cost) will be automatically
+                        inserted into the database.
+                    </p>
+                </div>
+
+                <div class="file-upload-area" id="fileUploadArea">
+                    <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none;">
+                    <div class="upload-placeholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click or drag file to upload</p>
+                        <span class="file-hint">Supported: .xlsx, .xls (Max 5MB)</span>
+                    </div>
+                    <div class="upload-preview" style="display: none;">
+                        <i class="fas fa-file-excel"></i>
+                        <span class="file-name"></span>
+                        <button class="remove-file"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-cancel" id="cancelExcelUpload">Cancel</button>
+                    <button class="modal-btn modal-confirm" id="confirmExcelUpload">Upload Products</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <style>
+        .modal-tabs {
+            display: flex;
+            gap: 150px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: #f5b342;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #f5b342;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Excel Info Section */
+        .excel-info {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .excel-format-image {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .excel-format-image img {
+            max-width: 100%;
+            width: 600px;
+            height: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+            object-fit: contain;
+        }
+
+        .excel-format-text {
+            font-size: 13px;
+            color: #666;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .excel-format-text strong {
+            color: #28a745;
+        }
+
+        /* File Upload Area */
+        .file-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area:hover {
+            border-color: #f5b342;
+            background: #fafafa;
+        }
+
+        .upload-placeholder i {
+            font-size: 48px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .upload-placeholder p {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .file-hint {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .upload-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: #e8f0fe;
+            border-radius: 8px;
+        }
+
+        .upload-preview i {
+            font-size: 24px;
+            color: #28a745;
+        }
+
+        .upload-preview .file-name {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #dc3545;
+            font-size: 16px;
+            padding: 0 5px;
+        }
+
+        .upload-loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top: 2px solid #f5b342;
+            border-radius: 50%;
+            animation: spin 0.5s linear infinite;
+            margin-left: 8px;
+        }
+
+        /* Modal Buttons */
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .modal-cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .modal-cancel:hover {
+            background: #5a6268;
+        }
+
+        .modal-confirm {
+            background: #28a745;
+            color: white;
+        }
+
+        .modal-confirm:hover {
+            background: #218838;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Image */
+        @media (max-width: 768px) {
+            .excel-format-image img {
+                max-height: 150px;
+            }
+
+            .excel-format-text {
+                font-size: 11px;
+            }
+        }
+    </style>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
     <script>
+        // Tab switching
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab;
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(tabId + 'Tab').classList.add('active');
+            });
+        });
+
+        // File upload handling
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const excelFile = document.getElementById('excelFile');
+        let selectedFile = null;
+
+        fileUploadArea.addEventListener('click', () => {
+            excelFile.click();
+        });
+
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.style.borderColor = '#f5b342';
+            fileUploadArea.style.background = '#fafafa';
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.style.borderColor = '#ccc';
+            fileUploadArea.style.background = 'transparent';
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                selectedFile = file;
+                updateFilePreview(file);
+            } else {
+                alert('Please upload a valid Excel file (.xlsx or .xls)');
+            }
+            fileUploadArea.style.borderColor = '#ccc';
+            fileUploadArea.style.background = 'transparent';
+        });
+
+        excelFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                updateFilePreview(file);
+            }
+        });
+
+        function updateFilePreview(file) {
+            const placeholder = document.querySelector('.upload-placeholder');
+            const preview = document.querySelector('.upload-preview');
+            const fileNameSpan = document.querySelector('.upload-preview .file-name');
+
+            placeholder.style.display = 'none';
+            preview.style.display = 'flex';
+            fileNameSpan.textContent = file.name;
+        }
+
+        document.querySelector('.remove-file')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedFile = null;
+            document.querySelector('.upload-placeholder').style.display = 'block';
+            document.querySelector('.upload-preview').style.display = 'none';
+            excelFile.value = '';
+        });
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Function to show duplicate modal
+        function showDuplicateModal(duplicates, allProducts, newProductsCount) {
+            // Create modal if it doesn't exist
+            let duplicateModal = document.getElementById('duplicateModal');
+            if (!duplicateModal) {
+                duplicateModal = document.createElement('div');
+                duplicateModal.id = 'duplicateModal';
+                duplicateModal.className = 'modal';
+                duplicateModal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;">
+                    <h4 style="color: #dc3545;"><i class="fas fa-exclamation-triangle"></i> The following products already exist in inventory and will be skipped</h4>
+                    <div class="duplicate-list" id="duplicateList"></div>
+                    <div class="modal-buttons" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button class="modal-btn modal-cancel" id="cancelDuplicateBtn">Cancel</button>
+                        <button class="modal-btn modal-confirm" id="confirmDuplicateBtn">Import New Products Only</button>
+                    </div>
+                </div>
+            `;
+                document.body.appendChild(duplicateModal);
+
+                // Add styles for duplicate modal
+                const style = document.createElement('style');
+                style.textContent = `
+                .duplicate-list {
+                    max-height: 400px;
+                    overflow-y: auto;
+                    margin: 20px 0;
+                }
+                .duplicate-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 13px;
+                }
+                .duplicate-table th,
+                .duplicate-table td {
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    text-align: left;
+                }
+                .duplicate-table th {
+                    background: #dc3545;
+                    color: white;
+                    position: sticky;
+                    top: 0;
+                }
+                .duplicate-table tr:nth-child(even) {
+                    background: #f8f9fa;
+                }
+                .warning-text {
+                    color: #dc3545;
+                    font-size: 14px;
+                    margin-bottom: 15px;
+                    padding: 10px;
+                    background: #fff3f3;
+                    border-radius: 5px;
+                }
+                .info-text {
+                color: #28a745;
+                font-size: 14px;
+                padding: 10px;
+                background: #f0fff4;
+                border-radius: 5px;
+                text-align: center;
+            }
+            `;
+                document.head.appendChild(style);
+            }
+
+            // Build duplicate list HTML
+            let tableHtml = `
+            <table class="duplicate-table">
+                <thead>
+                    <tr>
+                        <th>DB. Row</th>
+                        <th>Product Name</th>
+                        <th>Unit (New)</th>
+                        <th>Unit (Existing)</th>
+                        <th>Quantity</th>
+                        <th>Unit Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+            duplicates.forEach(dup => {
+                tableHtml += `
+                <tr style="background: #fff3f3;">
+                    <td>${dup.row}</td>
+                    <td><strong>${escapeHtml(dup.product_name)}</strong></td>
+                    <td>${escapeHtml(dup.unit)}</td>
+                    <td>${escapeHtml(dup.existing_unit)}</td>
+                    <td>${dup.quantity}</td>
+                    <td>₱${dup.unit_cost.toFixed(2)}</td>
+                </tr>
+            `;
+            });
+
+            tableHtml += `
+                </tbody>
+            </table>
+            <div class="info-text">
+                <h3>${newProductsCount} new product(s) will be imported.</h3><br>
+            </div>
+        `;
+
+            document.getElementById('duplicateList').innerHTML = tableHtml;
+            duplicateModal.style.display = 'flex';
+
+            // Handle confirm button (import only new products)
+            document.getElementById('confirmDuplicateBtn').onclick = async () => {
+                duplicateModal.style.display = 'none';
+
+                // Filter out duplicates and send only new products
+                const newProducts = [];
+                for (let i = 0; i < allProducts.length; i++) {
+                    const product = allProducts[i];
+                    const isDuplicate = duplicates.some(dup => dup.product_name === product.product_name);
+                    if (!isDuplicate) {
+                        newProducts.push(product);
+                    }
+                }
+
+                if (newProducts.length === 0) {
+                    alert('No new products to import.');
+                    return;
+                }
+
+                // Send only new products to server
+                const confirmBtn = document.getElementById('confirmExcelUpload');
+                const originalText = confirmBtn.innerHTML;
+                confirmBtn.innerHTML = 'Importing... <span class="upload-loading"></span>';
+                confirmBtn.disabled = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('products', JSON.stringify(newProducts));
+
+                    const response = await fetch('../API/import_products.php', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert(`Successfully imported ${result.imported_count} products!`);
+                        document.getElementById('addProductModal').style.display = 'none';
+                        if (typeof loadProducts === 'function') {
+                            loadProducts();
+                        } else {
+                            location.reload();
+                        }
+                        // Reset file input
+                        selectedFile = null;
+                        document.querySelector('.upload-placeholder').style.display = 'block';
+                        document.querySelector('.upload-preview').style.display = 'none';
+                        excelFile.value = '';
+                    } else {
+                        alert('Error: ' + (result.message || 'Failed to import products'));
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error importing products. Please try again.');
+                } finally {
+                    confirmBtn.innerHTML = originalText;
+                    confirmBtn.disabled = false;
+                }
+            };
+
+            // Handle cancel button
+            document.getElementById('cancelDuplicateBtn').onclick = () => {
+                duplicateModal.style.display = 'none';
+            };
+
+            // Close modal when clicking outside
+            duplicateModal.onclick = (e) => {
+                if (e.target === duplicateModal) {
+                    duplicateModal.style.display = 'none';
+                }
+            };
+        }
+
+        // Upload products from Excel
+        document.getElementById('confirmExcelUpload').addEventListener('click', async () => {
+            if (!selectedFile) {
+                alert('Please select an Excel file first');
+                return;
+            }
+
+            const confirmBtn = document.getElementById('confirmExcelUpload');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = 'Uploading... <span class="upload-loading"></span>';
+            confirmBtn.disabled = true;
+
+            try {
+                const reader = new FileReader();
+
+                reader.onload = async function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                    console.log('Excel data:', jsonData);
+
+                    // Extract data from columns B, C, D, E, F (index 1, 2, 3, 4, 5)
+                    const products = [];
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row && row.length >= 5) {
+                            const unit = row[1] ? row[1].toString().trim() : '';
+                            const productName = row[2] ? row[2].toString().trim() : '';
+                            const quantity = row[3] ? parseFloat(row[3]) : 0;
+                            const unitCost = row[4] ? parseFloat(row[4]) : 0;
+                            const description = row[5] ? row[5].toString().trim() : ''; // Column F for description
+
+                            if (unit && productName && quantity > 0 && unitCost > 0) {
+                                products.push({
+                                    unit: unit,
+                                    product_name: productName,
+                                    quantity: quantity,
+                                    unit_cost: unitCost,
+                                    description: description
+                                });
+                            }
+                        }
+                    }
+
+
+                    console.log('Parsed products:', products);
+
+                    if (products.length === 0) {
+                        alert('No valid data found in Excel file. Please check the format.');
+                        confirmBtn.innerHTML = originalText;
+                        confirmBtn.disabled = false;
+                        return;
+                    }
+
+                    // Send to server
+                    const formData = new FormData();
+                    formData.append('products', JSON.stringify(products));
+
+                    const response = await fetch('../API/import_products.php', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    console.log('Server response:', result);
+
+                    // Check for duplicates
+                    if (result.has_duplicates) {
+                        showDuplicateModal(result.duplicates, products, result.new_products_count);
+                        confirmBtn.innerHTML = originalText;
+                        confirmBtn.disabled = false;
+                        return;
+                    }
+
+                    if (result.success) {
+                        alert(`Successfully imported ${result.imported_count} products!`);
+                        document.getElementById('addProductModal').style.display = 'none';
+                        if (typeof loadProducts === 'function') {
+                            loadProducts();
+                        } else {
+                            location.reload();
+                        }
+                        selectedFile = null;
+                        document.querySelector('.upload-placeholder').style.display = 'block';
+                        document.querySelector('.upload-preview').style.display = 'none';
+                        excelFile.value = '';
+                    } else {
+                        alert('Error: ' + (result.message || 'Failed to import products'));
+                        if (result.errors && result.errors.length > 0) {
+                            console.error('Errors:', result.errors);
+                        }
+                    }
+                };
+
+                reader.readAsArrayBuffer(selectedFile);
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                alert('Error uploading file. Please try again.');
+            } finally {
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
+        });
+
+        // Cancel buttons
+        document.getElementById('cancelAddProduct')?.addEventListener('click', () => {
+            document.getElementById('addProductModal').style.display = 'none';
+        });
+
+        document.getElementById('cancelExcelUpload')?.addEventListener('click', () => {
+            document.getElementById('addProductModal').style.display = 'none';
+        });
+    </script>
+
+    <!-- Include SheetJS library for Excel parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+    <?php
+        include '../footer.php';
+    ?>
+
+
+    <script>
+        // Get CSRF token from meta tag
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         let selectedProductId = null;
+        let selectedProductName = null;
+        let selectedSellingPrice = null;
+        let quantityToSell = 0;
 
         // ========== DESCRIPTION MODAL FUNCTIONS ==========
         const descModal = document.getElementById('descriptionModal');
@@ -1423,12 +1925,14 @@ $csrfToken = $_SESSION['csrf_token'];
         const closeDescFooterBtn = document.querySelector('.close-desc-btn');
 
         function openDescriptionModal(productCard) {
+            // Get product data from data attributes
             const productName = productCard.getAttribute('data-fullname') || 'N/A';
             const productUnit = productCard.getAttribute('data-unit') || 'N/A';
             const productPrice = productCard.getAttribute('data-price') || '0';
             const productQty = productCard.getAttribute('data-qty') || '0';
             const productDescription = productCard.getAttribute('data-description') || '';
 
+            // Populate modal fields
             document.getElementById('descProductName').textContent = productName;
             document.getElementById('descProductUnit').textContent = productUnit;
             document.getElementById('descProductPrice').textContent = '₱ ' + productPrice;
@@ -1453,6 +1957,7 @@ $csrfToken = $_SESSION['csrf_token'];
         if (closeDescModalBtn) closeDescModalBtn.addEventListener('click', closeDescriptionModal);
         if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
 
+        // Close modal when clicking outside
         window.addEventListener('click', (e) => {
             if (e.target === descModal) {
                 closeDescriptionModal();
@@ -1460,11 +1965,17 @@ $csrfToken = $_SESSION['csrf_token'];
         });
 
         // ========== VALIDATION FUNCTIONS ==========
+        // Updated to accept all characters (numbers, letters, special characters, spaces)
         function validateText(input, errorElement, fieldName) {
             const value = input.value.trim();
             if (value === '') {
                 errorElement.style.display = 'block';
                 errorElement.textContent = `Please enter a valid ${fieldName}`;
+                return false;
+            }
+            if (value.length < 1) {
+                errorElement.style.display = 'block';
+                errorElement.textContent = `${fieldName} cannot be empty`;
                 return false;
             }
             errorElement.style.display = 'none';
@@ -1478,6 +1989,11 @@ $csrfToken = $_SESSION['csrf_token'];
                 errorElement.textContent = `Please enter a valid ${fieldName}`;
                 return false;
             }
+            if (value.length < 1) {
+                errorElement.style.display = 'block';
+                errorElement.textContent = `${fieldName} cannot be empty`;
+                return false;
+            }
             errorElement.style.display = 'none';
             return true;
         }
@@ -1489,7 +2005,8 @@ $csrfToken = $_SESSION['csrf_token'];
                 errorElement.textContent = 'This field is required';
                 return false;
             }
-            if (!/^\d+$/.test(value)) {
+            const regex = /^\d+$/;
+            if (!regex.test(value)) {
                 errorElement.style.display = 'block';
                 errorElement.textContent = 'Please enter numbers only (0-9)';
                 return false;
@@ -1510,7 +2027,8 @@ $csrfToken = $_SESSION['csrf_token'];
                 errorElement.textContent = 'This field is required';
                 return false;
             }
-            if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+            const regex = /^\d+(\.\d{1,2})?$/;
+            if (!regex.test(value)) {
                 errorElement.style.display = 'block';
                 errorElement.textContent = 'Please enter a valid price (e.g., 99.99)';
                 return false;
@@ -1538,7 +2056,7 @@ $csrfToken = $_SESSION['csrf_token'];
             document.getElementById('updatePriceError').style.display = 'none';
         }
 
-        // Real-time validation
+        // Real-time validation for add modal
         const addNameInput = document.getElementById('productName');
         const addUnitInput = document.getElementById('productUnit');
         const addQuantityInput = document.getElementById('productQuantity');
@@ -1557,6 +2075,7 @@ $csrfToken = $_SESSION['csrf_token'];
             addPriceInput.addEventListener('input', () => validatePrice(addPriceInput, document.getElementById('addPriceError')));
         }
 
+        // Real-time validation for update modal
         const updateNameInput = document.getElementById('updateProductName');
         const updateUnitInput = document.getElementById('updateUnit');
         const updateQuantityInput = document.getElementById('updateQuantity');
@@ -1575,7 +2094,7 @@ $csrfToken = $_SESSION['csrf_token'];
             updatePriceInput.addEventListener('input', () => validatePrice(updatePriceInput, document.getElementById('updatePriceError')));
         }
 
-        // ========== BURGER MENU ==========
+        // Burger Menu Toggle
         const burgerBtn = document.getElementById('burgerBtn');
         const sideMenu = document.getElementById('sideMenu');
         const menuOverlay = document.getElementById('menuOverlay');
@@ -1609,7 +2128,7 @@ $csrfToken = $_SESSION['csrf_token'];
             });
         });
 
-        // ========== SEARCH FUNCTIONALITY ==========
+        // Search functionality (no category filter)
         const searchInput = document.getElementById('liveSearchInput');
         const searchInfo = document.getElementById('searchInfo');
         const productCards = document.querySelectorAll('.product-card');
@@ -1644,7 +2163,7 @@ $csrfToken = $_SESSION['csrf_token'];
 
         let searchTimeout;
         if (searchInput) {
-            searchInput.addEventListener('input', function() {
+            searchInput.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(performLiveSearch, 100);
             });
@@ -1669,15 +2188,16 @@ $csrfToken = $_SESSION['csrf_token'];
             }, 3000);
         }
 
-        // ========== QUANTITY CONTROLS ==========
+        // Quantity Controls
         document.querySelectorAll('.decrement-card').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtySpan = document.getElementById(`qty-${productId}`);
-                let currentQty = parseInt(qtySpan.textContent.replace(/,/g, ''));
+                let currentQty = parseInt(qtySpan.textContent);
                 if (!isNaN(currentQty) && currentQty > 0) {
                     qtySpan.textContent = currentQty - 1;
+                    // Update data-qty attribute on parent card
                     const card = this.closest('.product-card');
                     if (card) card.setAttribute('data-qty', qtySpan.textContent);
                 }
@@ -1685,31 +2205,71 @@ $csrfToken = $_SESSION['csrf_token'];
         });
 
         document.querySelectorAll('.increment-card').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtySpan = document.getElementById(`qty-${productId}`);
-                let currentQty = parseInt(qtySpan.textContent.replace(/,/g, ''));
+                let currentQty = parseInt(qtySpan.textContent);
                 if (!isNaN(currentQty)) {
                     qtySpan.textContent = currentQty + 1;
+                    // Update data-qty attribute on parent card
                     const card = this.closest('.product-card');
                     if (card) card.setAttribute('data-qty', qtySpan.textContent);
                 }
             });
         });
 
-        // ========== DESCRIPTION BUTTON ==========
+        // Description Button
         document.querySelectorAll('.desc-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productCard = this.closest('.product-card');
                 openDescriptionModal(productCard);
             });
         });
 
-        // ========== UPDATE BUTTON ==========
+        // Sell Button
+        document.querySelectorAll('.sell-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const productId = this.dataset.id;
+                const card = this.closest('.product-card');
+                const productName = card.querySelector('.product-title').textContent;
+                const priceElem = card.querySelector('.product-price');
+                const sellingPrice = parseFloat(priceElem.textContent.replace('₱ ', '').replace(',', ''));
+                const qtySpan = document.getElementById(`qty-${productId}`);
+                let currentQty = parseInt(qtySpan.textContent);
+
+                if (!qtySpan.hasAttribute('data-original')) {
+                    qtySpan.setAttribute('data-original', qtySpan.textContent);
+                }
+                const originalQty = parseInt(qtySpan.getAttribute('data-original'));
+                const sellQuantity = originalQty - currentQty;
+
+                if (sellQuantity <= 0) {
+                    showToast('No quantity decrease detected. Use the - button to reduce stock before selling.', 'error');
+                    qtySpan.textContent = originalQty;
+                    return;
+                }
+
+                const totalAmount = sellingPrice * sellQuantity;
+                selectedProductId = productId;
+                selectedProductName = productName;
+                selectedSellingPrice = sellingPrice;
+                quantityToSell = sellQuantity;
+
+                document.getElementById('modalProductName').innerHTML = `<strong>Product:</strong> ${productName}<br><strong>Unit Cost:</strong> ₱ ${sellingPrice.toFixed(2)}`;
+                document.getElementById('modalCurrentStock').innerHTML = `<strong>Stock Change:</strong> ${originalQty} → ${currentQty}<br><strong>Quantity Sold:</strong> ${sellQuantity}`;
+                document.getElementById('modalTotalAmount').innerHTML = `<strong>Total Amount:</strong> ₱ ${totalAmount.toFixed(2)}<br><small>(${sellQuantity} × ₱ ${sellingPrice.toFixed(2)})</small>`;
+
+                document.getElementById('purposeSelect').value = '';
+                document.getElementById('quantityModal').style.display = 'flex';
+            });
+        });
+
+        // Update Button
         document.querySelectorAll('.update-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const card = this.closest('.product-card');
@@ -1717,9 +2277,9 @@ $csrfToken = $_SESSION['csrf_token'];
                 const unitElem = card.querySelector('.product-unit');
                 const unit = unitElem ? unitElem.textContent : 'Pcs';
                 const qtySpan = document.getElementById(`qty-${productId}`);
-                const currentQty = parseInt(qtySpan.textContent.replace(/,/g, ''));
+                const currentQty = parseInt(qtySpan.textContent);
                 const priceElem = card.querySelector('.product-price');
-                const currentPrice = parseFloat(priceElem.textContent.replace('₱ ', '').replace(/,/g, ''));
+                const currentPrice = parseFloat(priceElem.textContent.replace('₱ ', '').replace(',', ''));
                 const description = card.getAttribute('data-description') || '';
 
                 document.getElementById('updateProductName').value = productName;
@@ -1735,7 +2295,113 @@ $csrfToken = $_SESSION['csrf_token'];
             });
         });
 
-        // ========== UPDATE PRODUCT ==========
+        // ========== NAVIGATION FUNCTION ==========
+        function navigateToSoldProducts() {
+            // Use window.location to navigate to sold_products.php
+            window.location.href = 'sold_products.php';
+        }
+
+        // Sell Confirmation
+        const modal = document.getElementById('quantityModal');
+        const modalConfirm = document.getElementById('modalConfirm');
+        const modalCancel = document.getElementById('modalCancel');
+
+        modalConfirm.addEventListener('click', async () => {
+            const selectedPurpose = document.getElementById('purposeSelect').value;
+
+            if (!selectedPurpose) {
+                showToast('Please select a purpose for this sale', 'error');
+                return;
+            }
+
+            modal.style.display = 'none';
+            const qtySpan = document.getElementById(`qty-${selectedProductId}`);
+            const originalQty = parseInt(qtySpan.getAttribute('data-original'));
+            const currentQty = parseInt(qtySpan.textContent);
+            const sellQuantity = originalQty - currentQty;
+
+            if (sellQuantity <= 0) {
+                showToast('Invalid sale quantity', 'error');
+                return;
+            }
+
+            const sellBtn = document.querySelector(`.sell-btn[data-id="${selectedProductId}"]`);
+            const updateBtn = document.querySelector(`.update-btn[data-id="${selectedProductId}"]`);
+            const decrBtn = document.querySelector(`.decrement-card[data-id="${selectedProductId}"]`);
+            const incrBtn = document.querySelector(`.increment-card[data-id="${selectedProductId}"]`);
+
+            if (sellBtn) sellBtn.disabled = true;
+            if (updateBtn) updateBtn.disabled = true;
+            if (decrBtn) decrBtn.disabled = true;
+            if (incrBtn) incrBtn.disabled = true;
+
+            const saveIndicator = document.createElement('span');
+            saveIndicator.className = 'save-spinner';
+            if (sellBtn) sellBtn.appendChild(saveIndicator);
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'sell_product');
+                formData.append('product_id', selectedProductId);
+                formData.append('quantity', sellQuantity);
+                formData.append('product_name', selectedProductName);
+                formData.append('selling_price', selectedSellingPrice);
+                formData.append('purpose', selectedPurpose);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('../API/sold_products.php', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (data.success) {
+                    qtySpan.textContent = currentQty;
+                    qtySpan.setAttribute('data-original', currentQty);
+                    // Update data-qty on card
+                    const card = document.querySelector(`.product-card[data-id="${selectedProductId}"]`);
+                    if (card) card.setAttribute('data-qty', currentQty);
+                    showToast(`Sold! ${sellQuantity} × ₱ ${selectedSellingPrice.toFixed(2)} = ₱ ${data.total_amount.toFixed(2)}`, 'success');
+
+                    // Navigate to sold products after successful sale
+                    setTimeout(() => {
+                        navigateToSoldProducts();
+                    }, 1500); // 1.5 second delay to show the success toast
+                } else {
+                    qtySpan.textContent = originalQty;
+                    showToast(data.message || 'Sale failed', 'error');
+                }
+            } catch (err) {
+                qtySpan.textContent = originalQty;
+                showToast('Network error', 'error');
+            } finally {
+                if (sellBtn) sellBtn.disabled = false;
+                if (updateBtn) updateBtn.disabled = false;
+                if (decrBtn) decrBtn.disabled = false;
+                if (incrBtn) incrBtn.disabled = false;
+                if (saveIndicator) saveIndicator.remove();
+            }
+            selectedProductId = null;
+        });
+
+        modalCancel.addEventListener('click', () => {
+            if (selectedProductId) {
+                const qtySpan = document.getElementById(`qty-${selectedProductId}`);
+                const originalQty = qtySpan.getAttribute('data-original');
+                if (originalQty) qtySpan.textContent = originalQty;
+            }
+            modal.style.display = 'none';
+            selectedProductId = null;
+        });
+
+        modalCancel.addEventListener('click', () => {
+            if (selectedProductId) {
+                const qtySpan = document.getElementById(`qty-${selectedProductId}`);
+                const originalQty = qtySpan.getAttribute('data-original');
+                if (originalQty) qtySpan.textContent = originalQty;
+            }
+            modal.style.display = 'none';
+            selectedProductId = null;
+        });
+
+        // Update Product
         const updateModal = document.getElementById('updateProductModal');
         const cancelUpdate = document.getElementById('cancelUpdateProduct');
         const confirmUpdate = document.getElementById('confirmUpdateProduct');
@@ -1779,10 +2445,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 formData.append('description', description);
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/update_product.php', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('../API/update_product.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
@@ -1799,7 +2462,7 @@ $csrfToken = $_SESSION['csrf_token'];
             }
         });
 
-        // ========== ADD PRODUCT ==========
+        // Add Product
         const addModal = document.getElementById('addProductModal');
         const addBtn = document.getElementById('addProductBtn');
         const cancelAdd = document.getElementById('cancelAddProduct');
@@ -1853,10 +2516,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 formData.append('description', description);
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/add_product.php', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('../API/add_product.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
@@ -1873,71 +2533,10 @@ $csrfToken = $_SESSION['csrf_token'];
             }
         });
 
-        // ============================================================
-        // COPY PRODUCT NAME FROM TITLE CLICK
-        // ============================================================
-        function copyProductName(event, productName, element) {
-            // Stop event from bubbling
-            event.stopPropagation();
-
-            // Construct the full URL
-            const baseUrl = window.location.origin + '/public/shop';
-            const encodedProductName = encodeURIComponent(productName);
-            const fullUrl = baseUrl + '?product_name=' + encodedProductName;
-
-            // Copy the full URL to clipboard
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(fullUrl)
-                    .then(() => {
-                        showCopiedFeedbackTitle(element);
-                    })
-                    .catch(() => {
-                        fallbackCopyTextTitle(fullUrl, element);
-                    });
-            } else {
-                fallbackCopyTextTitle(fullUrl, element);
-            }
-        }
-
-        function fallbackCopyTextTitle(text, element) {
-            const tempInput = document.createElement('input');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            tempInput.setSelectionRange(0, 99999);
-
-            try {
-                document.execCommand('copy');
-                showCopiedFeedbackTitle(element);
-            } catch (err) {
-                element.style.color = '#ef4444';
-                setTimeout(() => {
-                    element.style.color = '';
-                }, 1500);
-            }
-
-            document.body.removeChild(tempInput);
-        }
-
-        function showCopiedFeedbackTitle(element) {
-            // Save the original text (remove any existing emojis)
-            let originalText = element.textContent;
-            // Remove all emoji characters (📋, ✅, ⭕, ☑️, etc.)
-            originalText = originalText.replace(/[📋✅⭕☑️🔵🟢✔️✓]/g, '').trim();
-
-            // Show circle checkmark (you can use ✅, ⭕, or ☑️)
-            element.innerHTML = originalText + ' ✔️';
-
-            // Reset after 2.5 seconds back to copy icon
-            setTimeout(() => {
-                element.innerHTML = originalText + ' 📋';
-                element.style.color = '';
-            }, 2500);
-        }
-
-        console.log('📦 Shop Stock Management loaded');
-        console.log('🔄 Auto-refresh on update/add');
-        console.log('📱 2-column grid on mobile');
+        // Store original quantities
+        document.querySelectorAll('.card-qty-value').forEach(span => {
+            span.setAttribute('data-original', span.textContent);
+        });
     </script>
 </body>
 

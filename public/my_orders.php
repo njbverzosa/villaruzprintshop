@@ -497,6 +497,18 @@ function getOrderProducts($pdo, $deliveryNumber)
             gap: 10px;
         }
 
+        .order-footer-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .order-footer-right {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
         .order-footer .total-amount {
             font-size: 16px;
             font-weight: 700;
@@ -753,9 +765,9 @@ function getOrderProducts($pdo, $deliveryNumber)
 
             .order-footer {
                 padding: 10px 14px;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 6px;
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
             }
 
             .order-footer .total-amount {
@@ -821,13 +833,19 @@ function getOrderProducts($pdo, $deliveryNumber)
 
             .order-footer {
                 padding: 10px 14px;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
+                flex-direction: row;
+                align-items: center;
+                gap: 8px;
             }
 
             .order-footer .total-amount {
                 font-size: 13px;
+            }
+
+            .order-footer-right .view-status-btn {
+                font-size: 11px;
+                padding: 5px 12px;
+                white-space: nowrap;
             }
 
             .dashboard-header {
@@ -889,7 +907,7 @@ function getOrderProducts($pdo, $deliveryNumber)
                 height: 14px;
                 border-width: 2px;
             }
-             .view-status-btn {
+            .view-status-btn {
                 font-size: 11px;
                 padding: 5px 12px;
             }
@@ -1019,7 +1037,7 @@ function getOrderProducts($pdo, $deliveryNumber)
 
                     <!-- Order Footer -->
                     <div class="order-footer">
-                        <div>
+                        <div class="order-footer-left">
                             <div class="total-amount">
                                 Total: <span><?php echo formatAmount($delivery['total_amount']); ?></span>
                             </div>
@@ -1033,10 +1051,12 @@ function getOrderProducts($pdo, $deliveryNumber)
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <a href="my_orders.php?delivery_number=<?php echo urlencode($delivery['delivery_number']); ?>" 
-                           class="view-status-btn">
-                            <i class="fas fa-eye"></i> Cancel Order
-                        </a>
+                        <div class="order-footer-right">
+                            <a href="my_orders.php?delivery_number=<?php echo urlencode($delivery['delivery_number']); ?>" 
+                               class="view-status-btn">
+                                <i class="fas fa-eye"></i> Cancel Order
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Delivery Address -->
