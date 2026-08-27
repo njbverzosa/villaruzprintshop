@@ -921,8 +921,9 @@ $encodedMonthYear = urlencode($monthYear);
                             <div class="status-wrapper">
                                 <select class="status-select" id="status-select"
                                     data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
-                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING</option>
+                                    
                                     <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
+                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING</option>
                                     <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>CANCELLED</option>
                                     <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
                                     <option value="PACKING" <?= $currentStatus == 'PACKING' ? 'selected' : '' ?>>PACKING</option>

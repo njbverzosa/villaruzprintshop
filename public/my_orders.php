@@ -85,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             exit;
         }
 
-        $allowedStatuses = ['PENDING', 'PACKING'];
-        if (!in_array(strtoupper($order['status']), $allowedStatuses)) {
+        // Only PENDING status can be cancelled
+        if (strtoupper($order['status']) !== 'PENDING') {
             $_SESSION['error_message'] = 'This order cannot be cancelled. Current status: ' . $order['status'];
             header('Location: cancel_order.php');
             exit;
@@ -136,7 +136,7 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 // ==============================================
 // 7. Fetch deliveries
 // ==============================================
-$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold, cancel_reason, other_reason FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED', 'CANCELLED') ORDER BY id DESC");
+$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold, cancel_reason, other_reason FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED') ORDER BY id DESC");
 $stmt->execute([$accNumber]);
 $deliveries = $stmt->fetchAll();
 
@@ -729,18 +729,21 @@ function getOrderProducts($pdo, $deliveryNumber)
         .cancel-form-wrapper {
             padding: 16px 18px;
             background: #f1f5f9;
-            border-top: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 8px;
         }
 
         .cancel-form-wrapper .form-title {
-            color: #1e293b;
+            color: #dc2626;
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .cancel-form-wrapper .form-title i {
-            margin-right: 8px;
             color: #ef4444;
         }
 
@@ -756,9 +759,6 @@ function getOrderProducts($pdo, $deliveryNumber)
             margin-bottom: 6px;
         }
 
-        .cancel-form-wrapper label .required {
-            color: #ef4444;
-        }
 
         .cancel-form-wrapper select,
         .cancel-form-wrapper textarea {
@@ -774,7 +774,6 @@ function getOrderProducts($pdo, $deliveryNumber)
 
         .cancel-form-wrapper select:focus,
         .cancel-form-wrapper textarea:focus {
-            outline: 2px solid #3b82f6;
             outline-offset: 1px;
             border-color: transparent;
         }
@@ -819,26 +818,25 @@ function getOrderProducts($pdo, $deliveryNumber)
             background: #dc2626;
         }
 
+        /* Cancel Order Button */
         .cancel-order-btn {
-            background: #ef4444;
-            color: white;
-            padding: 6px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            padding: 6px 16px;
+            background: white;
+            color: black;
+            border: 1px solid black;
+            border-radius: 2px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        .cancel-order-btn:hover {
-            background: #dc2626;
-            transform: scale(1.02);
-        }
 
         /* ========== BOTTOM NAVIGATION ========== */
         .bottom-nav {
@@ -1137,7 +1135,7 @@ function getOrderProducts($pdo, $deliveryNumber)
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="welcome">
-                <h3><i class="fas fa-boxes"></i> Cancel Orders</h3>
+                <h3><i class="fas fa-route"></i> Track my orders</h3>
             </div>
             <div class="user-badge">
                 <div class="avatar">
@@ -1177,8 +1175,9 @@ function getOrderProducts($pdo, $deliveryNumber)
                 $statusClass = strtolower($delivery['status']);
                 $statusDisplay = ucfirst(strtolower($delivery['status']));
                 $isCancelled = $statusClass === 'cancelled';
-                $canCancel = in_array($statusClass, ['pending', 'packing']);
-            ?>
+                // Only PENDING status can be cancelled
+                $canCancel = in_array($statusClass, ['pending']);
+                ?>
                 <div class="order-card" data-delivery-number="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
                     <!-- Order Header -->
                     <div class="order-header">
@@ -1197,9 +1196,9 @@ function getOrderProducts($pdo, $deliveryNumber)
                             </div>
                             <span class="order-date">
                                 <i class="fas fa-truck"></i>
-                                <?php echo formatDeliveryDateDisplay($delivery['delivery_date'] ?? 'This Day'); ?> - 8:00AM - 5:00PM
+                                <?php echo formatDeliveryDateDisplay($delivery['delivery_date'] ?? 'This Day'); ?> - 8:00AM -
+                                5:00PM
                             </span>
-                            
                         </div>
                     </div>
 
@@ -1241,7 +1240,8 @@ function getOrderProducts($pdo, $deliveryNumber)
                     $currentStatus = $statusClass;
                     $statusKeys = array_keys($statusSteps);
                     $currentIndex = array_search($currentStatus, $statusKeys);
-                    if ($currentIndex === false) $currentIndex = 0;
+                    if ($currentIndex === false)
+                        $currentIndex = 0;
                     ?>
                     <div class="status-tracker">
                         <?php foreach ($statusSteps as $key => $step):
@@ -1251,7 +1251,7 @@ function getOrderProducts($pdo, $deliveryNumber)
                             $isCompleted = $stepIndex < $currentIndex;
                             $statusClassDot = $isCancelled ? 'cancelled' : ($isCompleted ? 'completed' : ($isCurrent ? 'active' : ''));
                             $lineClass = $isCancelled ? 'cancelled' : ($isActive ? 'active' : '');
-                        ?>
+                            ?>
                             <div class="status-step">
                                 <div class="dot <?php echo $statusClassDot; ?>"></div>
                                 <span class="label <?php echo $statusClassDot; ?>"><?php echo $step['label']; ?></span>
@@ -1280,12 +1280,18 @@ function getOrderProducts($pdo, $deliveryNumber)
                         </div>
                         <div class="order-footer-right">
                             <?php if ($canCancel && !$isCancelled): ?>
-                                <button class="view-status-btn cancel-order-btn" onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
-                                    Cancel Order
+                                <button class="cancel-order-btn"
+                                    onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
+                                     Cancel Order
                                 </button>
                             <?php else: ?>
-                                <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">
-                                    Cannot cancel (<?php echo $statusClass; ?>)
+                                <span
+                                    style="font-size: 12px; color: <?php echo $isCancelled ? '#991b1b' : '#94a3b8'; ?>; font-weight: 500;">
+                                    <?php if ($isCancelled): ?>
+                                        Cancelled
+                                    <?php else: ?>
+                                        Cannot cancel
+                                    <?php endif; ?>
                                 </span>
                             <?php endif; ?>
                         </div>
@@ -1303,7 +1309,7 @@ function getOrderProducts($pdo, $deliveryNumber)
                     <?php if ($isCancelled && !empty($delivery['cancel_reason'])): ?>
                         <div style="padding: 10px 18px; background: #fef2f2; border-top: 1px solid #fee2e2;">
                             <span style="font-size: 12px; color: #991b1b;">
-                                <i class="fas fa-info-circle"></i> 
+                                <i class="fas fa-info-circle"></i>
                                 Cancelled: <?php echo htmlspecialchars($delivery['cancel_reason']); ?>
                                 <?php if (!empty($delivery['other_reason'])): ?>
                                     - <?php echo htmlspecialchars($delivery['other_reason']); ?>
@@ -1314,11 +1320,17 @@ function getOrderProducts($pdo, $deliveryNumber)
 
                     <!-- ========== CANCEL FORM ========== -->
                     <?php if ($canCancel && !$isCancelled): ?>
-                        <div class="cancel-form-wrapper" id="cancelForm_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
+                        <div class="cancel-form-wrapper"
+                            id="cancelForm_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
                             <form method="POST" action="cancel_order.php" onsubmit="return false;">
                                 <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
-                                <input type="hidden" name="delivery_number" value="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
+                                <input type="hidden" name="delivery_number"
+                                    value="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
                                 <input type="hidden" name="action" value="cancel_order">
+
+                                <div class="form-title">
+                                    Cancel Order
+                                </div>
 
                                 <!-- SELECT - Reason -->
                                 <div class="form-group">
@@ -1326,8 +1338,7 @@ function getOrderProducts($pdo, $deliveryNumber)
                                         Reason for Cancellation <span class="required">*</span>
                                     </label>
                                     <select id="cancelReason_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
-                                        name="cancel_reason"
-                                        required>
+                                        name="cancel_reason" required>
                                         <option value="">Select a reason...</option>
                                         <option value="Changed my mind">Changed my mind</option>
                                         <option value="Found a better price">Found a better price</option>
@@ -1340,22 +1351,24 @@ function getOrderProducts($pdo, $deliveryNumber)
                                 </div>
 
                                 <!-- TEXTAREA - Other Reason -->
-                                <div class="form-group" id="otherReasonGroup_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
+                                <div class="form-group"
+                                    id="otherReasonGroup_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
+                                    style="display: none;">
                                     <label>
                                         Please specify <span class="required">*</span>
                                     </label>
                                     <textarea id="otherReason_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
-                                        name="other_reason"
-                                        placeholder="Please specify your reason..."
-                                        rows="3"></textarea>
+                                        name="other_reason" placeholder="Please specify your reason..." rows="3"></textarea>
                                 </div>
 
                                 <!-- Buttons -->
                                 <div class="form-actions">
-                                    <button type="button" class="btn btn-secondary" onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
+                                    <button type="button" class="btn btn-secondary"
+                                        onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
                                         Close
                                     </button>
-                                    <button type="button" class="btn btn-danger" onclick="validateCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
+                                    <button type="button" class="btn btn-danger"
+                                        onclick="validateCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
                                         Confirm
                                     </button>
                                 </div>
@@ -1367,7 +1380,7 @@ function getOrderProducts($pdo, $deliveryNumber)
         <?php endif; ?>
     </main>
 
-     <!-- ========== BOTTOM NAVIGATION ========== -->
+    <!-- ========== BOTTOM NAVIGATION ========== -->
     <nav class="bottom-nav">
         <a href="shop.php" class="nav-item">
             <i class="fas fa-store"></i>
@@ -1383,10 +1396,6 @@ function getOrderProducts($pdo, $deliveryNumber)
         <a href="orders.php" class="nav-item active">
             <i class="fas fa-truck"></i>
             <span>Orders</span>
-        </a>
-        <a href="delivered.php" class="nav-item">
-            <i class="fas fa-box"></i>
-            <span>Received</span>
         </a>
         <a href="account.php" class="nav-item">
             <i class="fas fa-th-large"></i>
@@ -1462,7 +1471,7 @@ function getOrderProducts($pdo, $deliveryNumber)
             const form = document.getElementById('cancelForm_' + deliveryNumber);
             if (form) {
                 if (form.style.display === 'none' || form.style.display === '') {
-                    document.querySelectorAll('.cancel-form-wrapper').forEach(function(el) {
+                    document.querySelectorAll('.cancel-form-wrapper').forEach(function (el) {
                         if (el.id !== 'cancelForm_' + deliveryNumber) {
                             el.style.display = 'none';
                         }
@@ -1481,8 +1490,8 @@ function getOrderProducts($pdo, $deliveryNumber)
         // ============================================================
         // SHOW/HIDE OTHER REASON TEXTAREA
         // ============================================================
-        document.querySelectorAll('select[name="cancel_reason"]').forEach(function(select) {
-            select.addEventListener('change', function() {
+        document.querySelectorAll('select[name="cancel_reason"]').forEach(function (select) {
+            select.addEventListener('change', function () {
                 const deliveryNumber = this.id.replace('cancelReason_', '');
                 const otherGroup = document.getElementById('otherReasonGroup_' + deliveryNumber);
                 if (this.value === 'Other') {
@@ -1531,13 +1540,13 @@ function getOrderProducts($pdo, $deliveryNumber)
 
             // Send AJAX request
             fetch('../Customer_API/cancel_order.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(data)
-                })
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
                 .then(response => response.json())
                 .then(result => {
                     submitBtn.innerHTML = originalText;
@@ -1592,9 +1601,9 @@ function getOrderProducts($pdo, $deliveryNumber)
         // ============================================================
         // CLOSE CANCEL FORM ON ESCAPE KEY
         // ============================================================
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                document.querySelectorAll('.cancel-form-wrapper').forEach(function(el) {
+                document.querySelectorAll('.cancel-form-wrapper').forEach(function (el) {
                     el.style.display = 'none';
                 });
             }
@@ -1603,8 +1612,8 @@ function getOrderProducts($pdo, $deliveryNumber)
         // ============================================================
         // CLOSE FORM ON CLICK OUTSIDE
         // ============================================================
-        document.addEventListener('click', function(e) {
-            document.querySelectorAll('.cancel-form-wrapper').forEach(function(el) {
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('.cancel-form-wrapper').forEach(function (el) {
                 if (el.style.display === 'block') {
                     const isClickInside = el.contains(e.target);
                     const isClickOnButton = e.target.closest('.cancel-order-btn');

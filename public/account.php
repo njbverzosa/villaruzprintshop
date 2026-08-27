@@ -198,6 +198,7 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
                 opacity: 0;
                 transform: translateY(-15px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -529,6 +530,32 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
                     <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
+
+
+                <!-- Option 2: Clipboard with check -->
+                <a href="delivered.php" class="service-card">
+                    <div class="service-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <div class="service-name">Received Orders</div>
+                    <div class="service-desc">View and manage your received orders</div>
+                    <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
+                </a>
+
+                <!-- Earning Task -->
+                <!-- <a href="#" class="service-card" onclick="showComingSoon('Earning Task')">
+                    <div class="service-icon"><i class="fas fa-coins"></i></div>
+                    <div class="service-name">Earning Task</div>
+                    <div class="service-desc">Complete tasks, earn</div>
+                    <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
+                </a> -->
+
+                <!-- Cancelled Order -->
+                <a href="cancelled_orders.php" class="service-card">
+                    <div class="service-icon"><i class="fas fa-window-close"></i></div>
+                    <div class="service-name">Cancelled Orders</div>
+                    <div class="service-desc">View and manage your cancelled orders</div>
+                    <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
+                </a>
+
                 <!-- Sell Product -->
                 <a href="#" class="service-card" onclick="showComingSoon('Sell Product')">
                     <div class="service-icon"><i class="fas fa-store-alt"></i></div>
@@ -536,23 +563,7 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
                     <div class="service-desc">List your products</div>
                     <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
                 </a>
-
-                <!-- Online Service -->
-                <a href="#" class="service-card" onclick="showComingSoon('Online Service')">
-                    <div class="service-icon"><i class="fas fa-globe"></i></div>
-                    <div class="service-name">Online Service</div>
-                    <div class="service-desc">Digital services</div>
-                    <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
-                </a>
-
-                <!-- Earning Task -->
-                <a href="#" class="service-card" onclick="showComingSoon('Earning Task')">
-                    <div class="service-icon"><i class="fas fa-coins"></i></div>
-                    <div class="service-name">Earning Task</div>
-                    <div class="service-desc">Complete tasks, earn</div>
-                    <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
-                </a>
-
+                
                 <!-- Legitimate -->
                 <a href="#" class="service-card" onclick="showLegalities()">
                     <div class="service-icon"><i class="fas fa-shield-alt"></i></div>
@@ -598,10 +609,6 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
             <i class="fas fa-truck"></i>
             <span>Orders</span>
         </a>
-        <a href="delivered.php" class="nav-item">
-            <i class="fas fa-box"></i>
-            <span>Received</span>
-        </a>
         <a href="account.php" class="nav-item active">
             <i class="fas fa-th-large"></i>
             <span>Services</span>
@@ -616,7 +623,7 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
         const csrfToken = document.getElementById('csrfToken').value;
 
         // Toast auto-dismiss
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const toast = document.querySelector('.toast-message');
             if (toast) {
                 setTimeout(() => {

@@ -741,7 +741,7 @@ function getOrderProducts($pdo, $deliveryNumber)
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="welcome">
-                <h3><i class="fas fa-history"></i> History</h3>
+                <h3><i class="fas fa-history"></i> Delivered Orders</h3>
             </div>
             <div class="user-badge">
                 <div class="avatar">
@@ -887,11 +887,8 @@ function getOrderProducts($pdo, $deliveryNumber)
             <i class="fas fa-truck"></i>
             <span>Orders</span>
         </a>
-        <a href="delivered.php" class="nav-item active">
-            <i class="fas fa-box"></i>
-            <span>Received</span>
-        </a>
-        <a href="account.php" class="nav-item">
+        
+        <a href="account.php" class="nav-item active">
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>

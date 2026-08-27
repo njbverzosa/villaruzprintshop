@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -404,6 +405,7 @@ if (empty($_SESSION['csrf_token'])) {
                 opacity: 0;
                 transform: translateY(-50%) scale(0.8);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(-50%) scale(1);
@@ -509,6 +511,7 @@ if (empty($_SESSION['csrf_token'])) {
                 opacity: 0;
                 transform: translateY(30px) scale(0.95);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -773,6 +776,7 @@ if (empty($_SESSION['csrf_token'])) {
                 transform: translateX(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
@@ -784,6 +788,7 @@ if (empty($_SESSION['csrf_token'])) {
                 transform: translateX(0);
                 opacity: 1;
             }
+
             to {
                 transform: translateX(100%);
                 opacity: 0;
@@ -820,6 +825,7 @@ if (empty($_SESSION['csrf_token'])) {
             0% {
                 transform: rotate(0deg);
             }
+
             100% {
                 transform: rotate(360deg);
             }
@@ -830,22 +836,27 @@ if (empty($_SESSION['csrf_token'])) {
             .main-content {
                 padding: 15px 15px 20px;
             }
+
             .products-grid {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 14px;
                 padding: 8px 0 15px;
             }
+
             .dashboard-header {
                 padding: 14px 18px;
                 flex-wrap: wrap;
                 gap: 8px;
             }
+
             .welcome h3 {
                 font-size: 17px;
             }
+
             .user-badge .name {
                 font-size: 12px;
             }
+
             .search-input input {
                 padding: 10px 42px 10px 38px;
                 font-size: 14px;
@@ -856,62 +867,78 @@ if (empty($_SESSION['csrf_token'])) {
             .main-content {
                 padding: 12px 12px 16px;
             }
+
             body {
                 padding-bottom: 60px;
             }
+
             .products-grid {
                 grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
                 gap: 12px;
             }
+
             .product-card {
                 padding: 14px 10px;
                 border-radius: 14px;
             }
+
             .product-title {
                 font-size: 13px;
             }
+
             .product-price {
                 font-size: 16px;
             }
+
             .quantity-input {
                 width: 50px;
                 font-size: 12px;
                 padding: 5px;
             }
+
             .card-add-btn,
             .card-desc-btn {
                 font-size: 11px;
                 padding: 8px 0;
             }
+
             .dashboard-header {
                 padding: 12px 14px;
                 border-radius: 5px;
             }
+
             .welcome h3 {
                 font-size: 15px;
             }
+
             .user-badge .avatar {
                 width: 28px;
                 height: 28px;
                 font-size: 12px;
             }
+
             .user-badge .name {
                 font-size: 11px;
             }
+
             .bottom-nav {
                 padding: 4px 0 8px;
                 height: 56px;
             }
+
             .bottom-nav .nav-item {
                 padding: 2px 6px;
                 min-width: 36px;
             }
+
             .bottom-nav .nav-item i {
                 font-size: 18px;
             }
+
             .bottom-nav .nav-item span {
                 font-size: 9px;
             }
+
             .bottom-nav .nav-item .badge {
                 font-size: 10px;
                 min-width: 14px;
@@ -920,29 +947,36 @@ if (empty($_SESSION['csrf_token'])) {
                 right: 0px;
                 padding: 0 5px;
             }
+
             .desc-modal-content {
                 width: 95%;
                 border-radius: 20px;
             }
+
             .desc-modal-header h3 {
                 font-size: 17px;
             }
+
             .search-input input {
                 font-size: 13px;
                 padding: 9px 38px 9px 34px;
                 border-radius: 24px;
             }
+
             .search-input .search-icon {
                 font-size: 14px;
                 left: 10px;
             }
+
             .search-input .clear-btn {
                 right: 8px;
                 font-size: 14px;
             }
+
             .search-info {
                 font-size: 12px;
             }
+
             .image-modal-close {
                 top: -35px;
                 right: 25px;
@@ -950,6 +984,7 @@ if (empty($_SESSION['csrf_token'])) {
                 height: 20px;
                 font-size: 20px;
             }
+
             .image-modal-caption {
                 bottom: -38px;
                 font-size: 13px;
@@ -976,10 +1011,26 @@ if (empty($_SESSION['csrf_token'])) {
                 <h3><i class="fas fa-store"></i> Shop</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar">
-                    <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                <div class="avatar"
+                    style="<?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'background: linear-gradient(135deg, #f59e0b, #f97316); font-size: 12px;' : ''; ?>">
+                    <?php
+                    // Check if user is VIP
+                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+
+                    if ($isVip):
+                        ?>
+                        VIP
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                    <?php endif; ?>
                 </div>
                 <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
+                <?php if ($isVip): ?>
+                    <span
+                        style="font-size: 10px; color: #f59e0b; font-weight: 600; background: #fef3c7; padding: 2px 8px; border-radius: 12px;">
+                        <i class="fas fa-crown"></i> VIP
+                    </span>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -988,7 +1039,8 @@ if (empty($_SESSION['csrf_token'])) {
             <div class="search-wrapper">
                 <div class="search-input">
                     <i class="fas fa-search search-icon" id="searchIcon"></i>
-                    <input type="text" id="liveSearchInput" placeholder="Search products..." autocomplete="off" value="<?php echo htmlspecialchars($productNameFromUrl); ?>">
+                    <input type="text" id="liveSearchInput" placeholder="Search products..." autocomplete="off"
+                        value="<?php echo htmlspecialchars($productNameFromUrl); ?>">
                     <button class="clear-btn" id="clearSearchBtn" aria-label="Clear search">
                         <i class="fas fa-times"></i>
                     </button>
@@ -1010,8 +1062,7 @@ if (empty($_SESSION['csrf_token'])) {
                     <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                     <div class="product-image-wrapper">
                         <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
-                            alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                            class="product-image-clickable"
+                            alt="<?php echo htmlspecialchars($product['product_name']); ?>" class="product-image-clickable"
                             onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
                             style="width: 100px; height: auto; cursor: pointer;">
                     </div>
@@ -1020,7 +1071,8 @@ if (empty($_SESSION['csrf_token'])) {
 
                     <div class="quantity-selector">
                         <button class="qty-btn decrement" data-id="<?php echo $product['id']; ?>">-</button>
-                        <input type="number" class="quantity-input" id="qty-<?php echo $product['id']; ?>" value="1" min="1" max="999">
+                        <input type="number" class="quantity-input" id="qty-<?php echo $product['id']; ?>" value="1" min="1"
+                            max="999">
                         <button class="qty-btn increment" data-id="<?php echo $product['id']; ?>">+</button>
                     </div>
 
@@ -1061,10 +1113,6 @@ if (empty($_SESSION['csrf_token'])) {
         <a href="orders.php" class="nav-item">
             <i class="fas fa-truck"></i>
             <span>Orders</span>
-        </a>
-        <a href="delivered.php" class="nav-item">
-            <i class="fas fa-box"></i>
-            <span>Received</span>
         </a>
         <a href="account.php" class="nav-item">
             <i class="fas fa-th-large"></i>
@@ -1144,7 +1192,7 @@ if (empty($_SESSION['csrf_token'])) {
         // QUANTITY CONTROLS
         // ============================================================
         document.querySelectorAll('.decrement').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtyInput = document.getElementById(`qty-${productId}`);
@@ -1158,7 +1206,7 @@ if (empty($_SESSION['csrf_token'])) {
         });
 
         document.querySelectorAll('.increment').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtyInput = document.getElementById(`qty-${productId}`);
@@ -1197,7 +1245,7 @@ if (empty($_SESSION['csrf_token'])) {
             searchInput.focus();
         }
 
-        searchInput.addEventListener('input', function() {
+        searchInput.addEventListener('input', function () {
             toggleClearButton();
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
@@ -1205,12 +1253,12 @@ if (empty($_SESSION['csrf_token'])) {
             searchTimeout = setTimeout(filterProducts, 300);
         });
 
-        clearBtn.addEventListener('click', function(e) {
+        clearBtn.addEventListener('click', function (e) {
             e.preventDefault();
             clearSearch();
         });
 
-        searchInput.addEventListener('keydown', function(e) {
+        searchInput.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 clearSearch();
                 e.preventDefault();
@@ -1246,7 +1294,7 @@ if (empty($_SESSION['csrf_token'])) {
 
         function escapeHtml(text) {
             if (!text) return '';
-            return String(text).replace(/[&<>]/g, function(m) {
+            return String(text).replace(/[&<>]/g, function (m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -1311,7 +1359,7 @@ if (empty($_SESSION['csrf_token'])) {
             if (e.target === descModal) closeDescriptionModal();
         });
 
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && descModal.style.display === 'flex') {
                 closeDescriptionModal();
             }
@@ -1410,7 +1458,7 @@ if (empty($_SESSION['csrf_token'])) {
         // EVENT LISTENERS
         // ============================================================
         document.querySelectorAll('.add-to-cart-card').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const productName = this.dataset.name;
@@ -1423,7 +1471,7 @@ if (empty($_SESSION['csrf_token'])) {
         });
 
         document.querySelectorAll('.desc-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productName = this.dataset.name;
                 const productUnit = this.dataset.unit;
@@ -1438,7 +1486,7 @@ if (empty($_SESSION['csrf_token'])) {
         // ============================================================
         if (productNameFromUrl && productNameFromUrl.trim() !== '') {
             searchInput.value = productNameFromUrl;
-            setTimeout(function() {
+            setTimeout(function () {
                 filterProducts();
                 toggleClearButton();
                 document.querySelector('.search-section').scrollIntoView({

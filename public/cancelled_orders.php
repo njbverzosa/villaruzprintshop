@@ -136,7 +136,7 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 // ==============================================
 // 7. Fetch deliveries
 // ==============================================
-$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold, cancel_reason, other_reason FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED', 'CANCELLED') ORDER BY id DESC");
+$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold, cancel_reason, other_reason FROM for_deliveries WHERE acc_number = ? AND status IN ('CANCELLED') ORDER BY id DESC");
 $stmt->execute([$accNumber]);
 $deliveries = $stmt->fetchAll();
 
@@ -1137,7 +1137,7 @@ function getOrderProducts($pdo, $deliveryNumber)
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="welcome">
-                <h3><i class="fas fa-boxes"></i> Cancel Orders</h3>
+                <h3><i class="fas fa-window-close"></i> Cancelled Orders</h3>
             </div>
             <div class="user-badge">
                 <div class="avatar">
@@ -1230,7 +1230,7 @@ function getOrderProducts($pdo, $deliveryNumber)
                         'pending' => ['label' => 'Pending', 'color' => '#f59e0b'],
                         'packing' => ['label' => 'Packing', 'color' => '#3b82f6'],
                         'shipped' => ['label' => 'Shipped', 'color' => '#3b82f6'],
-                        'ofd' => ['label' => 'Out for Delivery', 'color' => '#10b981'],
+                        'ofd' => ['label' => 'OFD', 'color' => '#10b981'],
                         'delivered' => ['label' => 'Delivered', 'color' => '#10b981']
                     ];
 
@@ -1278,17 +1278,7 @@ function getOrderProducts($pdo, $deliveryNumber)
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="order-footer-right">
-                            <?php if ($canCancel && !$isCancelled): ?>
-                                <button class="view-status-btn cancel-order-btn" onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
-                                    Cancel Order
-                                </button>
-                            <?php else: ?>
-                                <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">
-                                    Cannot cancel (<?php echo $statusClass; ?>)
-                                </span>
-                            <?php endif; ?>
-                        </div>
+                        
                     </div>
 
                     <!-- Delivery Address -->
@@ -1303,68 +1293,11 @@ function getOrderProducts($pdo, $deliveryNumber)
                     <?php if ($isCancelled && !empty($delivery['cancel_reason'])): ?>
                         <div style="padding: 10px 18px; background: #fef2f2; border-top: 1px solid #fee2e2;">
                             <span style="font-size: 12px; color: #991b1b;">
-                                <i class="fas fa-info-circle"></i> 
                                 Cancelled: <?php echo htmlspecialchars($delivery['cancel_reason']); ?>
                                 <?php if (!empty($delivery['other_reason'])): ?>
                                     - <?php echo htmlspecialchars($delivery['other_reason']); ?>
                                 <?php endif; ?>
                             </span>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- ========== CANCEL FORM ========== -->
-                    <?php if ($canCancel && !$isCancelled): ?>
-                        <div class="cancel-form-wrapper" id="cancelForm_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
-                            <form method="POST" action="cancel_order.php" onsubmit="return false;">
-                                <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
-                                <input type="hidden" name="delivery_number" value="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
-                                <input type="hidden" name="action" value="cancel_order">
-
-                                <div class="form-title">
-                                    <i class="fas fa-exclamation-circle"></i> 
-                                    Cancel Order - <?php echo htmlspecialchars($delivery['delivery_number']); ?>
-                                </div>
-
-                                <!-- SELECT - Reason -->
-                                <div class="form-group">
-                                    <label>
-                                        Reason for Cancellation <span class="required">*</span>
-                                    </label>
-                                    <select id="cancelReason_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
-                                        name="cancel_reason"
-                                        required>
-                                        <option value="">Select a reason...</option>
-                                        <option value="Changed my mind">Changed my mind</option>
-                                        <option value="Found a better price">Found a better price</option>
-                                        <option value="Order placed by mistake">Order placed by mistake</option>
-                                        <option value="Delivery time too long">Delivery time too long</option>
-                                        <option value="Need to modify order">Need to modify order</option>
-                                        <option value="Payment issue">Payment issue</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-
-                                <!-- TEXTAREA - Other Reason -->
-                                <div class="form-group" id="otherReasonGroup_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
-                                    <label>
-                                        Please specify <span class="required">*</span>
-                                    </label>
-                                    <textarea id="otherReason_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
-                                        name="other_reason"
-                                        placeholder="Please specify your reason..."
-                                        rows="3"></textarea>
-                                </div>
-
-                                <!-- Buttons -->
-                                <div class="form-actions">
-                                    <button type="button" class="btn btn-secondary" onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
-                                        Close
-                                    </button>
-                                    <button type="button" class="btn btn-danger" onclick="validateCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
-                                        Confirm
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1385,15 +1318,11 @@ function getOrderProducts($pdo, $deliveryNumber)
                 <span class="badge"><?php echo $cartTotalItems; ?></span>
             <?php endif; ?>
         </a>
-        <a href="orders.php" class="nav-item active">
+        <a href="orders.php" class="nav-item">
             <i class="fas fa-truck"></i>
             <span>Orders</span>
         </a>
-        <a href="delivered.php" class="nav-item">
-            <i class="fas fa-box"></i>
-            <span>Received</span>
-        </a>
-        <a href="account.php" class="nav-item">
+        <a href="account.php" class="nav-item active">
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>

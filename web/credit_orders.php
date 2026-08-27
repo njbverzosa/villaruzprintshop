@@ -541,7 +541,7 @@ foreach ($orderItems as $item) {
             color: #64748b;
         }
 
-        
+
 
         /* Computer-Style Modal Dialog */
         .system-modal-overlay {
@@ -785,7 +785,7 @@ foreach ($orderItems as $item) {
                 padding: 15px;
             }
 
-            
+
             .dashboard-header {
                 padding: 20px 30px;
                 border-radius: 10px;
@@ -898,14 +898,15 @@ foreach ($orderItems as $item) {
                             <div class="status-wrapper">
                                 <select class="status-select" id="status-select"
                                     data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
-                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>><i
-                                            class="fas fa-pending"></i> PENDING</option>
+
                                     <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>><i
                                             class="fas fa-pending"></i> PAID</option>
                                     <!-- <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>><i
                                             class="fas fa-pending"></i> CANCELLED</option> -->
                                     <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>><i
                                             class="fas fa-pending"></i> CREDIT</option>
+                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>><i
+                                            class="fas fa-pending"></i> PENDING</option>
                                 </select>
                             </div>
                         </div>

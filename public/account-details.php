@@ -1094,10 +1094,6 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
             <i class="fas fa-truck"></i>
             <span>Orders</span>
         </a>
-        <a href="delivered.php" class="nav-item">
-            <i class="fas fa-box"></i>
-            <span>Received</span>
-        </a>
         <a href="account.php" class="nav-item active">
             <i class="fas fa-th-large"></i>
             <span>Services</span>
