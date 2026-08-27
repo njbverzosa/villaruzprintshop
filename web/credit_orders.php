@@ -1341,7 +1341,7 @@ foreach ($orderItems as $item) {
 
                 if (data.success) {
                     showMessageModal('SUCCESS', data.message, 'success', () => {
-                        // Reload the page to show updated data
+                        window.location.href = 'credit_folder.php';
                         window.location.reload();
                     });
                 } else {
@@ -1431,7 +1431,7 @@ foreach ($orderItems as $item) {
 
                 if (data.success) {
                     showMessageModal('SUCCESS', data.message, 'success', () => {
-                        window.location.href = 'pending_folder.php';
+                        window.location.href = 'credit_folder.php';
                     });
                 } else {
                     showMessageModal('ERROR', data.message || 'Failed to update status', 'error');

@@ -861,10 +861,6 @@ $encodedMonthYear = urlencode($monthYear);
             </div>
 
             <?php if (empty($orderItems)): ?>
-                <div class="empty-state">
-                    <i class="fas fa-box-open"></i>
-                    <p>No order items found for this delivery.</p>
-                </div>
             <?php else: ?>
                 <div class="orders-container">
                     <div class="delivery-group">
