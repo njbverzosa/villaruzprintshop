@@ -14,36 +14,24 @@ if (!isset($_SESSION['user_role']) || !isset($_SESSION['user_id']) || !isset($_S
 }
 
 // ==============================================
-// 3. GET USER DATA FROM SESSION
+// 2. GET USER DATA - ADDED vip column
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database - ADDED vip column
-$user = null;
-if ($userRole === 'Customer') {
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM admins WHERE id = ?");
+} else {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 }
+$stmt->execute([$userId]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     session_destroy();
     header('Location: ../login.php');
     exit;
-}
-
-
-// ==============================================
-// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
-// ==============================================
-date_default_timezone_set('Asia/Manila');
-$currentTime = date('g:i A'); // e.g., 2:30 PM
-
-if ($userRole === 'Customer') {
-    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-    $updateStmt->execute([$currentTime, $user['id']]);
 }
 
 // ==============================================

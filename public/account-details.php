@@ -33,8 +33,12 @@ $accNumber = $_SESSION['acc_number'];
 
 // Fetch user details from database - ADDED vip column
 $userData = null;
-if ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, street, barangay, land_mark, registered_at, active_email, vip FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+} elseif ($userRole === 'Customer') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, street, barangay, land_mark, registered_at, active_email, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }

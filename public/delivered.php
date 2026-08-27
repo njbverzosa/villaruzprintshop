@@ -29,42 +29,42 @@ if (!isLoggedIn()) {
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
-$accNumber = $_SESSION['acc_number'];
+$accNumber = $_SESSION['acc_number']; // ← THIS IS THE SESSION VARIABLE
 
-// Fetch user details from database - ADDED vip column
+// Fetch user details from database
 $userData = null;
-if ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+} elseif ($userRole === 'Customer') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
+    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
-$user = $userData;
+// ==============================================
+// 4. USE $userData INSTEAD OF $user
+// ==============================================
+$user = $userData; // Keep this for compatibility with existing code
+
 
 // ==============================================
-// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
+// 5. Cart badge for bottom bar
 // ==============================================
-date_default_timezone_set('Asia/Manila');
-$currentTime = date('g:i A'); // e.g., 2:30 PM
-
-if ($userRole === 'Customer') {
-    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-    $updateStmt->execute([$currentTime, $user['id']]);
-}
-
-// ==============================================
-// 4. Cart badge for bottom bar
-// ==============================================
-$cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
-$cartCountStmt->execute([$user['acc_number']]);
-$cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
-$cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
+   $cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
+    $cartCountStmt->execute([$user['acc_number']]);
+    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
+    $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
+    
+    
 
 $userAccNumber = $user['acc_number'] ?? '';
 
@@ -110,6 +110,7 @@ function getOrderProducts($pdo, $deliveryNumber)
 
 // Check if user is VIP
 $isVip = isset($user['vip']) && $user['vip'] == 1;
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

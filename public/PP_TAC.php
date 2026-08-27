@@ -38,18 +38,6 @@ if (!$user) {
     exit;
 }
 
-// ==============================================
-// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
-// ==============================================
-date_default_timezone_set('Asia/Manila');
-$currentTime = date('g:i A'); // e.g., 2:30 PM
-
-if ($userRole === 'Customer') {
-    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-    $updateStmt->execute([$currentTime, $user['id']]);
-}
-
-
 // Get cart count for bottom nav
 $cartStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
 $cartStmt->execute([$accNumber]);
