@@ -136,7 +136,7 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 // ==============================================
 // 7. Fetch deliveries - INCLUDING CANCELLED
 // ==============================================
-$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold, cancel_reason, other_reason FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED', 'CANCELLED') ORDER BY id DESC");
+$stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, charge, status, ordered_by, delivery_address, date_time_sold, cancel_reason, other_reason FROM for_deliveries WHERE acc_number = ? AND status IN ('PENDING', 'PACKING', 'SHIPPED', 'OFD', 'DELIVERED') ORDER BY id DESC");
 $stmt->execute([$accNumber]);
 $deliveries = $stmt->fetchAll();
 
