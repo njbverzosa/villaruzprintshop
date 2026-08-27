@@ -1069,7 +1069,6 @@ foreach ($allProducts as $product) {
                 </button>
             </div>
 
-            <div id="searchInfo" class="search-info"></div>
 
             <div class="products-grid" id="productsGrid">
                 <?php if (empty($allProducts)): ?>
