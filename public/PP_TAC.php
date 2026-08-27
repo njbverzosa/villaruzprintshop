@@ -25,9 +25,9 @@ $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
 if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM admins WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM admins WHERE id = ?");
 } else {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
 }
 $stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -37,6 +37,18 @@ if (!$user) {
     header('Location: ../login.php');
     exit;
 }
+
+// ==============================================
+// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$currentTime = date('g:i A'); // e.g., 2:30 PM
+
+if ($userRole === 'Customer') {
+    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
+    $updateStmt->execute([$currentTime, $user['id']]);
+}
+
 
 // Get cart count for bottom nav
 $cartStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
@@ -51,6 +63,7 @@ $csrfToken = $_SESSION['csrf_token'];
 
 // Check if user is VIP
 $isVip = isset($user['vip']) && $user['vip'] == 1;
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

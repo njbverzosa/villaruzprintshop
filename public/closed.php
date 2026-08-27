@@ -71,6 +71,7 @@ if (ini_get("session.use_cookies")) {
 // Destroy the session
 session_destroy();
 
+
 // ==============================================
 // 6. SET EXIT MESSAGE AND REDIRECT
 // ==============================================
@@ -78,7 +79,7 @@ session_destroy();
 session_start();
 
 // Set the exit message
-$_SESSION['exit_message'] = 'You are now offline.';
+$_SESSION['exit_message'] = 'Session ended';
 
 // Redirect to login page (go up one level from public folder)
 header('Location: ../login.php');

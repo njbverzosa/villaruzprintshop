@@ -34,11 +34,7 @@ $accNumber = $_SESSION['acc_number'];
 
 // Fetch user details from database - ADDED vip column
 $userData = null;
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
+if ($userRole === 'Customer') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -51,6 +47,18 @@ if (!$userData) {
 }
 
 $user = $userData;
+
+// ==============================================
+// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$currentTime = date('g:i A'); // e.g., 2:30 PM
+
+if ($userRole === 'Customer') {
+    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
+    $updateStmt->execute([$currentTime, $user['id']]);
+}
+
 
 $userAccNumber = $user['acc_number'] ?? '';
 $userFullName = $user['f_name'] ?? '';
