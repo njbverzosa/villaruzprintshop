@@ -32,14 +32,14 @@ $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
+// Fetch user details from database - ADDED vip column
 $userData = null;
 if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role FROM admins WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, vip FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 } elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -174,6 +174,10 @@ function getOrderProducts($pdo, $deliveryNumber)
     $stmt->execute([$deliveryNumber]);
     return $stmt->fetchAll();
 }
+
+// Check if user is VIP
+$isVip = isset($user['vip']) && $user['vip'] == 1;
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1124,6 +1128,16 @@ function getOrderProducts($pdo, $deliveryNumber)
                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
             }
         }
+         /* VIP Avatar Styles */
+        .user-badge .avatar.vip {
+            background: linear-gradient(135deg, #f59e0b, #f97316) !important;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .user-badge .vip-badge i {
+            font-size: 10px;
+        }
     </style>
 </head>
 
@@ -1140,8 +1154,16 @@ function getOrderProducts($pdo, $deliveryNumber)
                 <h3><i class="fas fa-boxes"></i> Cancel Orders</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar">
-                    <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
+                    <?php
+                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+
+                    if ($isVip):
+                        ?>
+                        <i class="fas fa-crown"></i>
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                    <?php endif; ?>
                 </div>
                 <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
             </div>

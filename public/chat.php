@@ -32,14 +32,14 @@ $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
+// Fetch user details from database - ADDED vip column
 $userData = null;
 if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role FROM admins WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, vip FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 } elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -63,6 +63,10 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrfToken = $_SESSION['csrf_token'];
+
+// Check if user is VIP
+$isVip = isset($user['vip']) && $user['vip'] == 1;
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -689,6 +693,17 @@ $csrfToken = $_SESSION['csrf_token'];
                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
             }
         }
+
+        /* VIP Avatar Styles */
+        .user-badge .avatar.vip {
+            background: linear-gradient(135deg, #f59e0b, #f97316) !important;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .user-badge .vip-badge i {
+            font-size: 10px;
+        }
     </style>
 </head>
 
@@ -707,8 +722,16 @@ $csrfToken = $_SESSION['csrf_token'];
                 <h3><i class="fas fa-comment-dots"></i> Live Chat Support</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar">
-                    <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
+                    <?php
+                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+
+                    if ($isVip):
+                        ?>
+                        <i class="fas fa-crown"></i>
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                    <?php endif; ?>
                 </div>
                 <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
             </div>
@@ -723,7 +746,8 @@ $csrfToken = $_SESSION['csrf_token'];
                     <i class="fas fa-comment-alt"></i>
                     <h4>Hello! 👋</h4>
                     <p>How can we help you today?</p>
-                    <p style="font-size: 12px; margin-top: 8px; color: #94a3b8;">Our support team is here to assist you.</p>
+                    <p style="font-size: 12px; margin-top: 8px; color: #94a3b8;">Our support team is here to assist you.
+                    </p>
                 </div>
             </div>
 
@@ -799,9 +823,9 @@ $csrfToken = $_SESSION['csrf_token'];
             formData.append('csrf_token', csrfToken);
 
             fetch('../Customer_API/chat.php', {
-                    method: 'POST',
-                    body: formData
-                })
+                method: 'POST',
+                body: formData
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -836,9 +860,9 @@ $csrfToken = $_SESSION['csrf_token'];
             formData.append('csrf_token', csrfToken);
 
             fetch('../Customer_API/chat.php', {
-                    method: 'POST',
-                    body: formData
-                })
+                method: 'POST',
+                body: formData
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -970,9 +994,9 @@ $csrfToken = $_SESSION['csrf_token'];
             formData.append('csrf_token', csrfToken);
 
             fetch('../Customer_API/chat.php', {
-                    method: 'POST',
-                    body: formData
-                })
+                method: 'POST',
+                body: formData
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1010,7 +1034,7 @@ $csrfToken = $_SESSION['csrf_token'];
         // EVENT LISTENERS
         // ==============================================
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
-        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+        document.getElementById('chatInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 sendMessage();
@@ -1020,7 +1044,7 @@ $csrfToken = $_SESSION['csrf_token'];
         // ==============================================
         // CLEANUP
         // ==============================================
-        window.addEventListener('beforeunload', function() {
+        window.addEventListener('beforeunload', function () {
             if (chatInterval) {
                 clearInterval(chatInterval);
             }

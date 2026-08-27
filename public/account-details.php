@@ -31,20 +31,19 @@ $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database - FIXED: Include all fields
+// Fetch user details from database - ADDED vip column
 $userData = null;
 if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, street, barangay, land_mark, registered_at, active_email FROM admins WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, street, barangay, land_mark, registered_at, active_email, vip FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 } elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, street, barangay, land_mark, registered_at, active_email FROM customers WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, street, barangay, land_mark, registered_at, active_email, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
@@ -86,6 +85,9 @@ $csrfToken = $_SESSION['csrf_token'];
 $successMessage = $_SESSION['edit_success'] ?? '';
 $errorMessage = $_SESSION['edit_error'] ?? '';
 unset($_SESSION['edit_success'], $_SESSION['edit_error']);
+
+// Check if user is VIP
+$isVip = isset($user['vip']) && $user['vip'] == 1;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -861,6 +863,16 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
                 padding: 10px;
             }
         }
+         /* VIP Avatar Styles */
+        .user-badge .avatar.vip {
+            background: linear-gradient(135deg, #f59e0b, #f97316) !important;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .user-badge .vip-badge i {
+            font-size: 10px;
+        }
     </style>
 </head>
 
@@ -877,10 +889,18 @@ unset($_SESSION['edit_success'], $_SESSION['edit_error']);
                 <h3><i class="fas fa-user"></i> Account</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar">
-                    <?php echo strtoupper(substr($userFullName, 0, 1) ?: 'G'); ?>
+                <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
+                    <?php
+                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+
+                    if ($isVip):
+                        ?>
+                        <i class="fas fa-crown"></i>
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                    <?php endif; ?>
                 </div>
-                <span class="name"><?php echo htmlspecialchars($userFullName ?: 'Guest'); ?></span>
+                <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
             </div>
         </div>
 

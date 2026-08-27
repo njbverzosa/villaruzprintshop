@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK IF USER IS LOGGED IN
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // If not logged in, redirect to login
@@ -32,21 +33,19 @@ $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 4. UPDATE USER STATUS TO OFFLINE (0)
+// 4. UPDATE USER STATUS TO OFFLINE (0) WITH ONLINE TIME
 // ==============================================
 try {
-    if ($userRole === 'Admin') {
-        // Update admin status to 0 (offline)
-        $stmt = $pdo->prepare("UPDATE admins SET status = 0 WHERE id = ?");
-        $stmt->execute([$userId]);
-    } elseif ($userRole === 'Customer') {
-        // Update customer status to 0 (offline)
-        $stmt = $pdo->prepare("UPDATE customers SET status = 0 WHERE id = ?");
-        $stmt->execute([$userId]);
-    }
+    // Set timezone to Asia/Manila
+    date_default_timezone_set('Asia/Manila');
+
+    // Get current time in 12-hour format with AM/PM
+    $currentTime = date('g:i A'); // e.g., 2:30 PM
+
+    // Update customer status to 0 (offline) and set online_time
+    $stmt = $pdo->prepare("UPDATE customers SET status = 0, online_time = ? WHERE id = ?");
+    $stmt->execute([$currentTime, $userId]);
 } catch (Exception $e) {
-    // Log error but continue with logout
-    error_log("Logout status update error: " . $e->getMessage());
 }
 
 // ==============================================
@@ -80,9 +79,6 @@ session_start();
 
 // Set the exit message
 $_SESSION['exit_message'] = 'You are now offline.';
-
-// Debug - verify session is set
-// error_log('Exit message set in session: ' . $_SESSION['exit_message']);
 
 // Redirect to login page (go up one level from public folder)
 header('Location: ../login.php');

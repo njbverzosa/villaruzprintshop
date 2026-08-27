@@ -5,9 +5,7 @@
 // 7 days = 7 * 24 * 60 * 60 = 604,800 seconds
 $sessionLifetime = 604800; // 7 days
 
-// Set cookie lifetime
 ini_set('session.cookie_lifetime', $sessionLifetime);
-// Set garbage collection lifetime
 ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 
@@ -17,12 +15,14 @@ require_once __DIR__ . '/DB_Conn/config.php';
 // ==============================================
 // 1. GET ALL DATA (for display in select options)
 // ==============================================
-function getAllAdmins($pdo) {
+function getAllAdmins($pdo)
+{
     $stmt = $pdo->query("SELECT id, acc_number, f_name FROM admins ORDER BY f_name");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getAllCustomers($pdo) {
+function getAllCustomers($pdo)
+{
     $stmt = $pdo->query("SELECT id, acc_number, f_name, phone_number, email FROM customers ORDER BY f_name");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -30,55 +30,56 @@ function getAllCustomers($pdo) {
 // ==============================================
 // 2. HANDLE FORM SUBMISSION (separate function)
 // ==============================================
-function handleLogin($pdo) {
+function handleLogin($pdo)
+{
     $errors = [];
     $loginSuccess = false;
     $redirectUrl = '';
     $successMessage = '';
-    
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return [
-            'errors' => $errors, 
+            'errors' => $errors,
             'loginSuccess' => $loginSuccess,
             'userTypeSelected' => 'Admin',
             'selectedRole' => '',
             'selectedCustomerId' => ''
         ];
     }
-    
+
     // CSRF validation
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         die('Invalid CSRF token');
     }
-    
+
     $userTypeSelected = trim($_POST['user_type'] ?? 'Admin');
     $selectedRole = trim($_POST['role'] ?? '');
     $selectedCustomerId = trim($_POST['customer'] ?? '');
     $password = $_POST['password'] ?? '';
-    
+
     // Validation
     if (empty($password)) {
         $errors[] = 'Password cannot be empty.';
     }
-    
+
     if ($userTypeSelected === 'Admin' && empty($selectedRole)) {
         $errors[] = 'Please select an admin account.';
     }
-    
+
     if ($userTypeSelected === 'Customer' && empty($selectedCustomerId)) {
         $errors[] = 'Please select a customer account.';
     }
-    
+
     if (!empty($errors)) {
         return [
-            'errors' => $errors, 
+            'errors' => $errors,
             'loginSuccess' => $loginSuccess,
             'userTypeSelected' => $userTypeSelected,
             'selectedRole' => $selectedRole,
             'selectedCustomerId' => $selectedCustomerId
         ];
     }
-    
+
     // Get identifier (last 4 digits of phone)
     $identifier = '';
     if ($userTypeSelected === 'Admin') {
@@ -96,17 +97,17 @@ function handleLogin($pdo) {
             $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
         }
     }
-    
+
     // Authenticate user
     $user = null;
     $userType = null;
-    
+
     if ($userTypeSelected === 'Admin') {
         $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access 
                               FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
         $stmt->execute([$selectedRole, $identifier]);
         $user = $stmt->fetch();
-        
+
         if ($user && password_verify($password, $user['password'])) {
             $userType = 'Admin';
         } else {
@@ -117,58 +118,52 @@ function handleLogin($pdo) {
                               FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
         $stmt->execute([$selectedCustomerId, $identifier]);
         $user = $stmt->fetch();
-        
+
         if ($user && password_verify($password, $user['password'])) {
             $userType = 'Customer';
         } else {
             $errors[] = 'Invalid credentials. Please try again.';
         }
     }
-    
+
     if (empty($errors) && $user && $userType) {
         date_default_timezone_set('Asia/Manila');
-        $lastLoginDate = date('D, j M Y g:i A');
-        $currentTime = date('g:i A'); // 12-hour format for online_time
-        
+        $currentTime = date('g:i A'); // e.g., 2:30 PM
+
         if ($userType === 'Admin') {
-            $updateStmt = $pdo->prepare("UPDATE admins SET last_login_date = ?, status = 1 WHERE id = ?");
-            $updateStmt->execute([$lastLoginDate, $user['id']]);
             session_regenerate_id(true);
-            
+
             // ONLY 3 SESSION VARIABLES
             $_SESSION['user_role'] = 'Admin';
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['acc_number'] = $user['acc_number'];
-            
+
             $loginSuccess = true;
             $redirectUrl = 'web/all_products.php';
             $successMessage = 'Accessing your account..';
-            
+
         } elseif ($userType === 'Customer') {
             // ==============================================
             // UPDATE CUSTOMER: last_login_date, status, online_time
             // ==============================================
-            $updateStmt = $pdo->prepare("UPDATE customers SET last_login_date = ?, status = 1, online_time = ? WHERE id = ?");
-            $updateStmt->execute([$lastLoginDate, $currentTime, $user['id']]);
+            $updateStmt = $pdo->prepare("UPDATE customers SET status = 1, online_time = ? WHERE id = ?");
+            $updateStmt->execute([$currentTime, $user['id']]);
             session_regenerate_id(true);
-            
+
             // ONLY 3 SESSION VARIABLES
             $_SESSION['user_role'] = 'Customer';
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['acc_number'] = $user['acc_number'];
-            
+
             $loginSuccess = true;
-            
-            // Check if f_name is empty or "Guest"
-            if (empty($user['f_name']) || is_null($user['f_name']) || $user['f_name'] === 'Guest') {
-                $redirectUrl = 'public/account.php';
-            } else {
-                $redirectUrl = 'public/shop.php';
-            }
-            $successMessage = 'Accessing your account..';
+
+
+            $redirectUrl = 'public/shop.php';
         }
+        $successMessage = 'Accessing your account..';
     }
-    
+
+
     return [
         'errors' => $errors,
         'loginSuccess' => $loginSuccess,
@@ -340,7 +335,7 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
             font-weight: 600;
             margin-top: 5px;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
@@ -550,6 +545,7 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
             0% {
                 transform: rotate(0deg);
             }
+
             100% {
                 transform: rotate(360deg);
             }
@@ -643,10 +639,12 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                 <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
                 <div class="user-type-toggle">
-                    <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>" onclick="switchUserType('Admin')">
+                    <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>"
+                        onclick="switchUserType('Admin')">
                         <i class="fas fa-user-tie"></i> Admin
                     </button>
-                    <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>" onclick="switchUserType('Customer')">
+                    <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>"
+                        onclick="switchUserType('Customer')">
                         <i class="fas fa-user"></i> Customer
                     </button>
                 </div>
@@ -654,7 +652,8 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                 <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
 
                 <!-- Admin Select Group -->
-                <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>" id="adminSelectGroup">
+                <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
+                    id="adminSelectGroup">
                     <label><i class="fas fa-users"></i> Select Admin Account</label>
                     <select name="role" id="adminSelect">
                         <option value="">-- Select your account --</option>
@@ -667,7 +666,8 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                 </div>
 
                 <!-- Customer Select Group -->
-                <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>" id="customerSelectGroup">
+                <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
+                    id="customerSelectGroup">
                     <label><i class="fas fa-users"></i> Select Customer Account</label>
                     <select name="customer" id="customerSelect">
                         <option value="">-- Select your account --</option>
@@ -710,7 +710,7 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
         // ==============================================
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
-        togglePassword.addEventListener('click', function() {
+        togglePassword.addEventListener('click', function () {
             const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
             password.setAttribute('type', type);
             this.classList.toggle('fa-eye');
@@ -749,25 +749,25 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
         // SHOW SPINNER FOR 1 SECOND THEN REDIRECT
         // ==============================================
         <?php if ($loginSuccess): ?>
-        document.addEventListener('DOMContentLoaded', function() {
-            const loginBtn = document.getElementById('loginBtn');
-            
-            // Disable login button
-            if (loginBtn) {
-                loginBtn.disabled = true;
-            }
-            
-            // After 1 second, redirect
-            setTimeout(function() {
-                window.location.href = '<?php echo $redirectUrl; ?>';
-            }, 2000);
-        });
+            document.addEventListener('DOMContentLoaded', function () {
+                const loginBtn = document.getElementById('loginBtn');
+
+                // Disable login button
+                if (loginBtn) {
+                    loginBtn.disabled = true;
+                }
+
+                // After 1 second, redirect
+                setTimeout(function () {
+                    window.location.href = '<?php echo $redirectUrl; ?>';
+                }, 2000);
+            });
         <?php endif; ?>
 
         // ==============================================
         // PREVENT FORM SUBMISSION IF SUCCESS
         // ==============================================
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
             <?php if ($loginSuccess): ?>
                 e.preventDefault();
                 return false;
