@@ -879,7 +879,6 @@ if (!empty($selectedMonth)) {
                 <?php if (empty($deliveriesByDeliveryNumber)): ?>
                     <div class="empty-state">
                         <i class="fas fa-folder-open"></i>
-                        <p>No pending deliveries for <?= htmlspecialchars($selectedMonth) ?></p>
                     </div>
                 <?php else: ?>
                     <?php foreach ($deliveriesByDeliveryNumber as $deliveryData): ?>
