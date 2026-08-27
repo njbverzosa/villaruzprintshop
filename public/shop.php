@@ -1051,7 +1051,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     </button>
                 </div>
             </div>
-            <div id="searchInfo" class="search-info"></div>
         </div>
 
         <!-- Products Grid -->
