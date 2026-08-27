@@ -53,6 +53,18 @@ if (!$userData) {
 $user = $userData;
 
 // ==============================================
+// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$currentTime = date('g:i A'); // e.g., 2:30 PM
+
+if ($userRole === 'Customer') {
+    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
+    $updateStmt->execute([$currentTime, $userData['id']]);
+} 
+
+
+// ==============================================
 // 4. HANDLE CANCEL ORDER POST (Non-AJAX fallback)
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel_order') {

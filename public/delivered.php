@@ -55,6 +55,17 @@ if (!$userData) {
 // ==============================================
 $user = $userData; // Keep this for compatibility with existing code
 
+// ==============================================
+// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$currentTime = date('g:i A'); // e.g., 2:30 PM
+
+if ($userRole === 'Customer') {
+    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
+    $updateStmt->execute([$currentTime, $userData['id']]);
+} 
+
 
 // ==============================================
 // 5. Cart badge for bottom bar
