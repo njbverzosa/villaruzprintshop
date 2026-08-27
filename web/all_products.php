@@ -117,7 +117,7 @@ foreach ($allProducts as $product) {
                 $restockDate = new DateTime($product['last_restocked']);
             }
             $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
-            
+
             if ($daysDiff <= 7) {
                 $recentlyRestocked[] = $product;
             } else {
@@ -1009,6 +1009,27 @@ foreach ($allProducts as $product) {
                 font-size: 18px;
             }
         }
+
+        .copy-number-btn {
+            background: none;
+            border: none;
+            color: #0a101a;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            line-height: 1;
+        }
+
+        .copy-number-btn:hover {
+            color: #065ff0;
+            background: #eff6ff;
+        }
+
+        .copy-number-btn.copied {
+            color: #10b981;
+        }
     </style>
 </head>
 
@@ -1090,6 +1111,13 @@ foreach ($allProducts as $product) {
                                 <button class="update-btn" data-id="<?php echo $product['id']; ?>"
                                     style="width: 100%;">UPDATE</button>
                             </div>
+
+                            <button class="copy-number-btn"
+                                onclick="copyDeliveryNumber('<?php echo htmlspecialchars($product['product_name']); ?>', this)"
+                                title="Copy product link">
+                                <i class="fas fa-copy"></i>
+                            </button>
+
                             <div class="last_restocked">
                                 <?php echo htmlspecialchars($product['last_restocked']); ?>
                             </div>
@@ -1907,7 +1935,7 @@ foreach ($allProducts as $product) {
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 
     <?php
-        include '../footer.php';
+    include '../footer.php';
     ?>
 
 
@@ -2532,6 +2560,60 @@ foreach ($allProducts as $product) {
                 confirmAdd.disabled = false;
             }
         });
+
+        function copyDeliveryNumber(productName, element) {
+            // Build the full URL with product_name parameter
+            const baseUrl = 'https://villaruz-print-shop-and-general-merchandise.shop/public/shop';
+            const encodedProductName = encodeURIComponent(productName);
+            const fullUrl = baseUrl + '?product_name=' + encodedProductName;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                const toast = document.getElementById('copyToast');
+                if (toast) {
+                    toast.textContent = '✅ Product link copied!';
+                    toast.classList.add('show');
+                }
+
+                if (element) {
+                    const icon = element.querySelector ? element.querySelector('i') : null;
+                    if (icon) {
+                        icon.className = 'fas fa-check';
+                    }
+                    element.classList.add('copied');
+                }
+
+                setTimeout(() => {
+                    if (toast) {
+                        toast.classList.remove('show');
+                    }
+                    if (element) {
+                        const icon = element.querySelector ? element.querySelector('i') : null;
+                        if (icon) {
+                            icon.className = 'fas fa-copy';
+                        }
+                        element.classList.remove('copied');
+                    }
+                }, 3000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const input = document.createElement('input');
+                input.value = fullUrl;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+
+                const toast = document.getElementById('copyToast');
+                if (toast) {
+                    toast.textContent = '✅ Product link copied!';
+                    toast.classList.add('show');
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                    }, 3000);
+                }
+            });
+        }
 
         // Store original quantities
         document.querySelectorAll('.card-qty-value').forEach(span => {
