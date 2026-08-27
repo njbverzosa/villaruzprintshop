@@ -1250,7 +1250,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                         'pending' => ['label' => 'Pending', 'color' => '#f59e0b'],
                         'packing' => ['label' => 'Packing', 'color' => '#3b82f6'],
                         'shipped' => ['label' => 'Shipped', 'color' => '#3b82f6'],
-                        'ofd' => ['label' => 'Out for Delivery', 'color' => '#10b981'],
+                        'ofd' => ['label' => 'OFD', 'color' => '#10b981'],
                         'delivered' => ['label' => 'Delivered', 'color' => '#10b981']
                     ];
 
