@@ -1320,6 +1320,11 @@ function getOrderProducts($pdo, $deliveryNumber)
                                 <input type="hidden" name="delivery_number" value="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
                                 <input type="hidden" name="action" value="cancel_order">
 
+                                <div class="form-title">
+                                    <i class="fas fa-exclamation-circle"></i> 
+                                    Cancel Order - <?php echo htmlspecialchars($delivery['delivery_number']); ?>
+                                </div>
+
                                 <!-- SELECT - Reason -->
                                 <div class="form-group">
                                     <label>
