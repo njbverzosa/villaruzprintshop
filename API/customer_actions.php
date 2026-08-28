@@ -179,7 +179,7 @@ if ($action === 'bulk_toggle_status') {
         $newStatus = ($statusAction === 'unlock') ? 1 : 0;
         $placeholders = implode(',', array_fill(0, count($customerIds), '?'));
         
-        $stmt = $pdo->prepare("UPDATE customers SET active_email = ? WHERE id IN ({$placeholders})");
+        $stmt = $pdo->prepare("UPDATE customers SET account = ? WHERE id IN ({$placeholders})");
         $params = array_merge([$newStatus], $customerIds);
         $result = $stmt->execute($params);
         
