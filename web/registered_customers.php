@@ -1105,10 +1105,10 @@ function getOnlineStatus($onlineTime)
                         // Replace with UNLOCK button
                         actionContainer.innerHTML = `
                             <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-unlock"></i> UNLOCK
+                                <i class="fas fa-unlock"></i>
                             </button>
                             <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-trash-alt"></i> DELETE
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         `;
                     } else {
@@ -1118,10 +1118,10 @@ function getOnlineStatus($onlineTime)
                         // Replace with LOCK button
                         actionContainer.innerHTML = `
                             <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-lock"></i> LOCK
+                                <i class="fas fa-lock"></i>
                             </button>
                             <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-trash-alt"></i> DELETE
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         `;
                     }

@@ -3,6 +3,7 @@
 
 session_start();
 
+
 // ==============================================
 // 1. FIX PATHS - config.php is in DB_Conn folder at root level
 // ==============================================
