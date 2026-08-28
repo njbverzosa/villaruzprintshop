@@ -108,18 +108,28 @@ function handleLogin($pdo)
         $stmt->execute([$selectedRole, $identifier]);
         $user = $stmt->fetch();
 
+        // ==============================================
+        // ADMIN: NO active_email check (skip)
+        // ==============================================
         if ($user && password_verify($password, $user['password'])) {
             $userType = 'Admin';
         } else {
             $errors[] = 'Invalid credentials. Please try again.';
         }
+
     } elseif ($userTypeSelected === 'Customer') {
-        $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, 'Customer' as role, status, email 
+        $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email, active_email 
                               FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
         $stmt->execute([$selectedCustomerId, $identifier]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password'])) {
+        // ==============================================
+        // CUSTOMER ONLY: Check active_email
+        // ==============================================
+        if ($user && $user['account'] == 0) {
+            $errors[] = 'Your account has been temporarily locked due to suspicious activity. Please contact our support.';
+            $user = null; // Prevent further processing
+        } elseif ($user && password_verify($password, $user['password'])) {
             $userType = 'Customer';
         } else {
             $errors[] = 'Invalid credentials. Please try again.';
@@ -157,12 +167,10 @@ function handleLogin($pdo)
 
             $loginSuccess = true;
 
-
             $redirectUrl = 'public/shop.php';
         }
         $successMessage = 'Accessing your account..';
     }
-
 
     return [
         'errors' => $errors,
