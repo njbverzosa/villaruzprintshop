@@ -31,9 +31,10 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
 }
 
 // ==============================================
-// 4. TABLES TO EXPORT
+// 4. TABLES TO EXPORT - ADDED 'admins'
 // ==============================================
 $tablesToExport = [
+    'admins',
     'cart',
     'chat_account',
     'chat_conversation',
