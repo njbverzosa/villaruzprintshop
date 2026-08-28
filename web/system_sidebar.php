@@ -390,7 +390,7 @@
 
         <!-- Settings Dropdown -->
         <?php 
-        $settingsActive = in_array($currentPage, ['admin.php', 'database_manager.php', 'registered_customers.php', 'chat.php']);
+        $settingsActive = in_array($currentPage, ['admin.php', 'database_manager.php', 'registered_customers.php', 'prompt_ai.php']);
         ?>
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('settingsDropdown')">
@@ -411,8 +411,12 @@
                     <i class="fas fa-user-friends"></i>
                     <span>Customers</span>
                 </a>
+
+                <a href="prompt_ai.php" class="nav-dropdown-item <?php echo $currentPage == 'prompt_ai.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-robot"></i>
+                    <span>Prompt AI</span>
+                </a>
                
-              
             </div>
         </div>
 

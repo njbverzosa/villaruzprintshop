@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -44,23 +45,18 @@ if ($userRole === 'Admin') {
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
 $user = $userData;
-
 
 // Get all tables in the database
 $stmt = $pdo->query("SHOW TABLES");
 $allTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-// Filter to show only relevant tables (customers, admins, and logs included)
+// Filter to show only relevant tables
 $displayTables = ['cart', 'for_deliveries', 'merchandise_inventory', 'order_status_history', 'customers', 'admins', 'location', 'logs'];
 
 // Get selected table from URL parameter
@@ -70,7 +66,7 @@ $tableColumns = [];
 $tableCount = 0;
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 
-// Handle single cell update via AJAX
+// Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
     header('Content-Type: application/json');
 
@@ -96,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         exit();
     }
 
-    // Handle add new row
     if (isset($_POST['action']) && $_POST['action'] === 'add_row') {
         $tableName = $_POST['table_name'];
 
@@ -106,7 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
                 exit();
             }
 
-            // Get columns to insert (exclude auto-increment id)
             $columns = $pdo->query("DESCRIBE `$tableName`")->fetchAll(PDO::FETCH_ASSOC);
             $insertColumns = [];
             $insertValues = [];
@@ -132,7 +126,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             $stmt->execute($params);
             $newId = $pdo->lastInsertId();
 
-            // Fetch the new row
             $stmt = $pdo->prepare("SELECT * FROM `$tableName` WHERE id = ?");
             $stmt->execute([$newId]);
             $newRow = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -144,7 +137,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         exit();
     }
 
-    // Handle delete row
     if (isset($_POST['action']) && $_POST['action'] === 'delete_row') {
         $tableName = $_POST['table_name'];
         $rowId = intval($_POST['row_id']);
@@ -167,15 +159,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
 }
 
 if ($selectedTable && in_array($selectedTable, $displayTables)) {
-    // Check if table exists
     $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
     $stmt->execute([$selectedTable]);
     if ($stmt->rowCount() > 0) {
-        // Get column names
         $columns = $pdo->query("DESCRIBE `$selectedTable`")->fetchAll(PDO::FETCH_ASSOC);
         $tableColumns = $columns;
 
-        // Build query with search
         if (!empty($searchTerm)) {
             $searchConditions = [];
             foreach ($columns as $column) {
@@ -202,7 +191,6 @@ if ($selectedTable && in_array($selectedTable, $displayTables)) {
     }
 }
 
-// Get table row counts
 $tableCounts = [];
 foreach ($displayTables as $table) {
     $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
@@ -240,24 +228,20 @@ foreach ($displayTables as $table) {
             flex-direction: column;
         }
 
-       /* Main content wrapper (no sidebar) */
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
-        }
-
-        /* Main content */
-        .main-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
+            height: 100vh;
         }
 
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 80px);
         }
 
         .dashboard-header {
@@ -270,20 +254,21 @@ foreach ($displayTables as $table) {
             border-radius: 20px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
         }
 
-        .welcome h1 {
-            font-size: 28px;
+        .welcome h4 {
+            font-size: 22px;
             font-weight: 700;
             color: #0f172a;
         }
-        
+
         .burger-btn {
             position: fixed;
-            top: 15px;
-            right: 15px;
-            width: 44px;
-            height: 44px;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
@@ -302,14 +287,14 @@ foreach ($displayTables as $table) {
         }
 
         .burger-btn i {
-            font-size: 22px;
+            font-size: 24px;
             color: #3b82f6;
         }
 
         .side-menu {
             position: fixed;
             top: 0;
-            right: -280px;
+            right: -320px;
             width: 280px;
             height: 100vh;
             background: #ffffff;
@@ -336,7 +321,6 @@ foreach ($displayTables as $table) {
             font-size: 18px;
             color: #0f172a;
             margin-top: 8px;
-            word-break: break-word;
         }
 
         .menu-header .user-greeting {
@@ -358,8 +342,8 @@ foreach ($displayTables as $table) {
             display: flex;
             align-items: center;
             gap: 15px;
-            padding: 12px;
-            border-radius: 12px;
+            padding: 14px 12px;
+            border-radius: 14px;
             color: #475569;
             text-decoration: none;
             transition: all 0.2s;
@@ -367,13 +351,13 @@ foreach ($displayTables as $table) {
         }
 
         .menu-nav .nav-item i {
-            width: 22px;
-            font-size: 18px;
+            width: 24px;
+            font-size: 20px;
             color: #3b82f6;
         }
 
         .menu-nav .nav-item span {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 500;
         }
 
@@ -404,14 +388,13 @@ foreach ($displayTables as $table) {
             display: block;
         }
 
-        /* Database Layout */
         .database-layout {
             display: flex;
             gap: 20px;
-            flex-wrap: wrap;
+            flex: 1;
+            min-height: 0;
         }
 
-        /* Sidebar - Table List */
         .table-sidebar {
             width: 260px;
             background: #ffffff;
@@ -420,6 +403,8 @@ foreach ($displayTables as $table) {
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .sidebar-header {
@@ -428,6 +413,10 @@ foreach ($displayTables as $table) {
             border-bottom: 1px solid #e2e8f0;
             font-weight: 600;
             color: #0f172a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
         }
 
         .sidebar-header i {
@@ -435,9 +424,29 @@ foreach ($displayTables as $table) {
             margin-right: 8px;
         }
 
+        .sidebar-header .download-all-btn {
+            background: #ffffff;
+            color: #3b82f6;
+            border: 1px solid #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sidebar-header .download-all-btn:hover {
+            background: #f1f5f9;
+            border-color: #3b82f6;
+            transform: scale(1.05);
+        }
+
         .table-list {
             list-style: none;
-            max-height: calc(100vh - 200px);
+            flex: 1;
             overflow-y: auto;
         }
 
@@ -485,7 +494,6 @@ foreach ($displayTables as $table) {
             font-weight: 600;
         }
 
-        /* Main Content - Table Data */
         .table-content {
             flex: 1;
             background: #ffffff;
@@ -493,6 +501,9 @@ foreach ($displayTables as $table) {
             border: 1px solid #e2e8f0;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
         .table-info-bar {
@@ -504,6 +515,7 @@ foreach ($displayTables as $table) {
             align-items: center;
             flex-wrap: wrap;
             gap: 10px;
+            flex-shrink: 0;
         }
 
         .table-title {
@@ -572,6 +584,7 @@ foreach ($displayTables as $table) {
         .table-actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .btn-sm {
@@ -580,6 +593,7 @@ foreach ($displayTables as $table) {
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            border: none;
         }
 
         .btn-outline {
@@ -614,11 +628,11 @@ foreach ($displayTables as $table) {
             background: #dc2626;
         }
 
-        /* Table Wrapper */
+        /* TABLE WRAPPER - ONLY THIS IS SCROLLABLE */
         .table-wrapper {
-            overflow-x: auto;
-            max-height: calc(100vh - 300px);
-            overflow-y: auto;
+            flex: 1;
+            overflow: auto;
+            position: relative;
         }
 
         .data-table {
@@ -633,17 +647,18 @@ foreach ($displayTables as $table) {
             text-align: left;
             font-weight: 600;
             color: #475569;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 2px solid #e2e8f0;
             position: sticky;
             top: 0;
-            background: #f8fafc;
+            z-index: 10;
             white-space: nowrap;
         }
 
         .data-table td {
-            padding: 8px;
+            padding: 8px 10px;
             border-bottom: 1px solid #e2e8f0;
             color: #1e293b;
+            vertical-align: middle;
         }
 
         .data-table tr:hover {
@@ -655,7 +670,6 @@ foreach ($displayTables as $table) {
             color: #3b82f6;
         }
 
-        /* Editable Cell Styles */
         .editable-cell {
             cursor: pointer;
             transition: background 0.2s;
@@ -668,12 +682,12 @@ foreach ($displayTables as $table) {
 
         .editable-cell.editing {
             background: #fef3c7;
-            padding: 0;
+            padding: 4px;
         }
 
         .editable-cell .cell-value {
             display: block;
-            padding: 8px;
+            padding: 4px;
             word-break: break-word;
             white-space: normal;
             max-width: 300px;
@@ -681,12 +695,13 @@ foreach ($displayTables as $table) {
 
         .editable-cell .cell-input {
             width: 100%;
-            padding: 8px;
+            padding: 6px 8px;
             border: 2px solid #3b82f6;
             border-radius: 6px;
             font-size: 12px;
             font-family: inherit;
             background: white;
+            min-width: 80px;
         }
 
         .editable-cell .cell-input:focus {
@@ -707,7 +722,6 @@ foreach ($displayTables as $table) {
             border-radius: 4px;
             font-size: 10px;
             cursor: pointer;
-            margin-left: 5px;
         }
 
         .btn-go:hover {
@@ -722,7 +736,6 @@ foreach ($displayTables as $table) {
             border-radius: 4px;
             font-size: 10px;
             cursor: pointer;
-            margin-left: 5px;
         }
 
         .btn-cancel:hover {
@@ -733,11 +746,11 @@ foreach ($displayTables as $table) {
             background: #ef4444;
             color: white;
             border: none;
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
             font-size: 11px;
             cursor: pointer;
-            margin-left: 5px;
+            transition: all 0.2s;
         }
 
         .btn-delete:hover {
@@ -748,6 +761,7 @@ foreach ($displayTables as $table) {
             text-align: center;
             padding: 60px;
             color: #94a3b8;
+            width: 100%;
         }
 
         .empty-state i {
@@ -782,7 +796,6 @@ foreach ($displayTables as $table) {
                 transform: translateX(100%);
                 opacity: 0;
             }
-
             to {
                 transform: translateX(0);
                 opacity: 1;
@@ -794,37 +807,40 @@ foreach ($displayTables as $table) {
                 transform: translateX(0);
                 opacity: 1;
             }
-
             to {
                 transform: translateX(100%);
                 opacity: 0;
             }
         }
 
-       
-
         @media (max-width: 768px) {
             .main-content {
                 padding: 15px;
+                height: calc(100vh - 60px);
             }
 
             .database-layout {
                 flex-direction: column;
+                min-height: 0;
             }
 
             .table-sidebar {
                 width: 100%;
+                max-height: 200px;
             }
 
             .table-list {
                 display: flex;
                 overflow-x: auto;
+                overflow-y: hidden;
+                flex: none;
                 max-height: none;
             }
 
             .table-list li {
                 border-bottom: none;
                 border-right: 1px solid #e2e8f0;
+                flex-shrink: 0;
             }
 
             .table-list li a {
@@ -832,7 +848,7 @@ foreach ($displayTables as $table) {
             }
 
             .burger-btn {
-                top: 55px;
+                top: 15px;
                 right: 15px;
                 width: 42px;
                 height: 42px;
@@ -853,6 +869,30 @@ foreach ($displayTables as $table) {
 
             .editable-cell .cell-value {
                 max-width: 150px;
+            }
+
+            .table-content {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .table-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .table-actions .btn-sm {
+                width: 100%;
+                text-align: center;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .search-box input {
+                flex: 1;
             }
         }
     </style>
@@ -880,7 +920,7 @@ foreach ($displayTables as $table) {
             <div class="dashboard-header">
                 <div class="welcome">
                     <h4>
-                        Database Manager
+                        <i class="fas fa-database" style="color: #3b82f6;"></i> Database Manager
                     </h4>
                 </div>
             </div>
@@ -889,7 +929,10 @@ foreach ($displayTables as $table) {
                 <!-- Sidebar with table list -->
                 <div class="table-sidebar">
                     <div class="sidebar-header">
-                        <i class="fas fa-tables"></i> Tables
+                        <span><i class="fas fa-tables"></i> Tables</span>
+                        <button class="download-all-btn" onclick="downloadAllTables()" title="Download all tables as SQL">
+                            <i class="fas fa-download"></i>
+                        </button>
                     </div>
                     <ul class="table-list">
                         <?php foreach ($displayTables as $table): ?>
@@ -920,7 +963,7 @@ foreach ($displayTables as $table) {
                             <?php endif; ?>
                         </div>
                         <div class="search-box">
-                            <form method="GET" style="display: flex; gap: 8px;">
+                            <form method="GET" style="display: flex; gap: 8px; align-items: center;">
                                 <input type="hidden" name="table"
                                     value="<?php echo htmlspecialchars($selectedTable); ?>">
                                 <input type="text" name="search" placeholder="Search records..."
@@ -928,7 +971,7 @@ foreach ($displayTables as $table) {
                                 <button type="submit"><i class="fas fa-search"></i></button>
                                 <?php if (!empty($searchTerm)): ?>
                                     <a href="?table=<?php echo urlencode($selectedTable); ?>" class="btn-sm clear-search"
-                                        style="text-decoration: none; display: inline-flex; align-items: center;">
+                                        style="text-decoration: none; display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 8px; background: #e2e8f0; color: #475569;">
                                         <i class="fas fa-times"></i> Clear
                                     </a>
                                 <?php endif; ?>
@@ -947,6 +990,7 @@ foreach ($displayTables as $table) {
                         </div>
                     </div>
 
+                    <!-- TABLE WRAPPER - ONLY THIS IS SCROLLABLE -->
                     <div class="table-wrapper" id="tableWrapper">
                         <?php if (empty($tableData)): ?>
                             <div class="empty-state">
@@ -1014,9 +1058,7 @@ foreach ($displayTables as $table) {
         </main>
     </div>
 
-   <?php
-        include '../footer.php';
-    ?>
+    <?php include '../footer.php'; ?>
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1100,7 +1142,6 @@ foreach ($displayTables as $table) {
 
                 if (data.success) {
                     showToast('New row added successfully!', 'success');
-                    // Reload the page to show the new row
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
@@ -1138,12 +1179,6 @@ foreach ($displayTables as $table) {
 
                 if (data.success) {
                     showToast('Row deleted successfully!', 'success');
-                    // Remove the row from the table
-                    const row = document.getElementById(`row-${rowId}`);
-                    if (row) {
-                        row.remove();
-                    }
-                    // Update the record count
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
@@ -1210,7 +1245,8 @@ foreach ($displayTables as $table) {
             const originalValue = cell.getAttribute('data-original-value');
 
             if (newValue === originalValue) {
-                cancelEdit(cell, cell.querySelector('.cell-value') || document.createElement('div'));
+                const originalElement = cell.querySelector('.cell-value');
+                cancelEdit(cell, originalElement || document.createElement('div'));
                 return;
             }
 
@@ -1328,6 +1364,25 @@ foreach ($displayTables as $table) {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // Download all tables as SQL
+        function downloadAllTables() {
+            showToast('Preparing download...', 'success');
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '../API/export_all_tables.php';
+
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
     </script>
 </body>

@@ -1259,14 +1259,8 @@ $encodedMonthYear = urlencode($monthYear);
                     `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
                 row.cells[1].innerHTML =
                     `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
-                row.cells[2].innerHTML = `
-                    <select class="editable-select" data-field="unit">
-                        <option value="PCS" ${originalUnit === 'PCS' ? 'selected' : ''}>PCS</option>
-                        <option value="BOX" ${originalUnit === 'BOX' ? 'selected' : ''}>BOX</option>
-                        <option value="REAMS" ${originalUnit === 'REAMS' ? 'selected' : ''}>REAMS</option>
-                        <option value="SET" ${originalUnit === 'SET' ? 'selected' : ''}>SET</option>
-                    </select>
-                `;
+                row.cells[2].innerHTML =
+                    `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
                 row.cells[3].innerHTML =
                     `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
                 row.cells[4].innerHTML =
@@ -1298,18 +1292,18 @@ $encodedMonthYear = urlencode($monthYear);
             rows.forEach((row, index) => {
                 const productInput = row.cells[0].querySelector('input');
                 const piecesInput = row.cells[1].querySelector('input');
-                const unitSelect = row.cells[2].querySelector('select');
+                const unitInput = row.cells[2].querySelector('input');
                 const sellingPriceInput = row.cells[3].querySelector('input');
                 const totalInput = row.cells[4].querySelector('input');
 
-                if (!productInput || !piecesInput || !unitSelect || !sellingPriceInput || !totalInput) {
+                if (!productInput || !piecesInput || !unitInput || !sellingPriceInput || !totalInput) {
                     isValid = false;
                     return;
                 }
 
                 const newProduct = productInput.value.trim();
                 const newPieces = piecesInput.value;
-                const newUnit = unitSelect.value;
+                const newUnit = unitInput.value.trim();
                 const newSellingPrice = sellingPriceInput.value;
                 const newTotal = totalInput.value;
 
