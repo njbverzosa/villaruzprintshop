@@ -191,6 +191,18 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             font-size: 28px;
         }
 
+        .chat-header-custom .chat-title .ai-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
         .chat-header-custom .chat-title div {
             display: flex;
             flex-direction: column;
@@ -199,6 +211,17 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         .chat-header-custom .chat-title span {
             font-weight: 600;
             font-size: 18px;
+        }
+
+        .chat-header-custom .chat-title .ai-badge {
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            margin-left: 6px;
         }
 
         .chat-header-custom .chat-title small {
@@ -548,6 +571,12 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 font-size: 16px;
             }
 
+            .chat-header-custom .chat-title .ai-avatar {
+                width: 34px;
+                height: 34px;
+                font-size: 16px;
+            }
+
             .chat-messages {
                 padding: 14px 16px;
             }
@@ -596,8 +625,19 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 font-size: 22px;
             }
 
+            .chat-header-custom .chat-title .ai-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+
             .chat-header-custom .chat-title span {
                 font-size: 14px;
+            }
+
+            .chat-header-custom .chat-title .ai-badge {
+                font-size: 8px;
+                padding: 1px 8px;
             }
 
             .chat-header-custom .chat-title small {
@@ -739,6 +779,26 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
         <!-- Chat Container -->
         <div class="chat-container">
+
+            <!-- Chat Header -->
+            <div class="chat-header-custom">
+                <div class="chat-title">
+                    <div class="ai-avatar">
+                        <img src="logo/avatar.png" alt="" style="width: 50px; border-radius: 100px;height: 50px;">
+                    </div>
+                    <div>
+                        <span>
+                            Jo Seph
+                            <span class="ai-badge"> AI Assistant</span>
+                        </span>
+                        <small>24/7 Support</small>
+                    </div>
+                </div>
+                <div class="chat-status">
+                    <span class="dot"></span>
+                    <span>Online</span>
+                </div>
+            </div>
 
             <!-- Chat Messages -->
             <div class="chat-messages" id="chatMessages">

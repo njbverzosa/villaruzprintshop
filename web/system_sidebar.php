@@ -412,11 +412,7 @@
                     <span>Customers</span>
                 </a>
                
-                <!-- Chat Centre with chat icon -->
-                <a href="chat.php" class="nav-dropdown-item <?php echo $currentPage == 'chat.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-comment-dots"></i>
-                    <span>Chat Centre</span>
-                </a>
+              
             </div>
         </div>
 
