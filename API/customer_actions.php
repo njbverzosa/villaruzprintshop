@@ -62,7 +62,7 @@ if ($action === 'delete_customer') {
 }
 
 // ==============================================
-// TOGGLE ACCOUNT STATUS (LOCK/UNLOCK)
+// TOGGLE ACCOUNT STATUS (LOCK/UNLOCK) - ACCOUNT COLUMN
 // ==============================================
 if ($action === 'toggle_account_status') {
     $customerId = intval($_POST['customer_id'] ?? 0);
@@ -80,8 +80,8 @@ if ($action === 'toggle_account_status') {
     }
     
     try {
-        // First, get customer name for logging
-        $stmt = $pdo->prepare("SELECT f_name, active_email FROM customers WHERE id = :id");
+        // First, get customer name and current account status for logging
+        $stmt = $pdo->prepare("SELECT f_name, account FROM customers WHERE id = :id");
         $stmt->execute([':id' => $customerId]);
         $customer = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -90,9 +90,9 @@ if ($action === 'toggle_account_status') {
             exit;
         }
         
-        // Determine new status
+        // Determine new status (1 = active/unlocked, 0 = locked)
         $newStatus = ($statusAction === 'unlock') ? 1 : 0;
-        $currentStatus = $customer['active_email'];
+        $currentStatus = $customer['account'];
         
         // Check if already in the requested state
         if (($statusAction === 'lock' && $currentStatus == 0) || 
@@ -105,8 +105,8 @@ if ($action === 'toggle_account_status') {
             exit;
         }
         
-        // Update the customer's active_email status
-        $stmt = $pdo->prepare("UPDATE customers SET active_email = :status WHERE id = :id");
+        // Update the customer's account status
+        $stmt = $pdo->prepare("UPDATE customers SET account = :status WHERE id = :id");
         $result = $stmt->execute([
             ':status' => $newStatus,
             ':id' => $customerId
@@ -114,12 +114,14 @@ if ($action === 'toggle_account_status') {
         
         if ($result) {
             $actionText = ($statusAction === 'unlock') ? 'Unlocked' : 'Locked';
-            $statusText = ($statusAction === 'unlock') ? 'active' : 'inactive';
+            $statusText = ($statusAction === 'unlock') ? 'unlocked' : 'locked';
             
+            // Log the action
+            error_log("{$actionText} account - Customer: {$customer['f_name']} (ID: {$customerId}), User: {$_SESSION['user_id']}");
             
             echo json_encode([
                 'success' => true, 
-                'message' => "Account updated!"
+                'message' => "Customer account has been {$statusText} successfully!"
             ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update account status']);
@@ -143,7 +145,7 @@ if ($action === 'get_customer_details') {
     }
     
     try {
-        $stmt = $pdo->prepare("SELECT id, f_name, email, phone_number, active_email, acc_number, text_pass FROM customers WHERE id = :id");
+        $stmt = $pdo->prepare("SELECT id, f_name, email, phone_number, account, acc_number, text_pass FROM customers WHERE id = :id");
         $stmt->execute([':id' => $customerId]);
         $customer = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -159,7 +161,7 @@ if ($action === 'get_customer_details') {
 }
 
 // ==============================================
-// BULK LOCK/UNLOCK (Optional - for future use)
+// BULK LOCK/UNLOCK - ACCOUNT COLUMN
 // ==============================================
 if ($action === 'bulk_toggle_status') {
     $customerIds = $_POST['customer_ids'] ?? [];
