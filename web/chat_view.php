@@ -68,17 +68,6 @@ if (empty($targetAcc)) {
     exit;
 }
 
-// Check if the chat account exists
-$stmt = $pdo->prepare("SELECT * FROM chat_account WHERE acc_number = ?");
-$stmt->execute([$targetAcc]);
-$chatAccount = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$chatAccount) {
-    // If no chat account exists, create one automatically
-    $stmt = $pdo->prepare("INSERT INTO chat_account (acc_number, status, chat_sent) VALUES (?, 1, NOW())");
-    $stmt->execute([$targetAcc]);
-}
-
 // Get customer info if available
 $stmt = $pdo->prepare("SELECT f_name, email, phone_number FROM customers WHERE acc_number = ?");
 $stmt->execute([$targetAcc]);
@@ -312,6 +301,22 @@ $stmt = $pdo->prepare("
 $stmt->execute([$accNumber]);
 $unreadResult = $stmt->fetch(PDO::FETCH_ASSOC);
 $totalUnread = $unreadResult['unread_count'] ?? 0;
+
+// ==============================================
+// 7. SUGGESTED PROMPTS
+// ==============================================
+$suggestedPrompts = [
+    "Hello! How can I help you today?",
+    "Thank you for your order!",
+    "Your order is being processed.",
+    "We've received your payment.",
+    "Your order is ready for deliver.",
+    "We'll update you on the status.",
+    "Do you have any questions?",
+    "We appreciate your business!",
+    "Hello good morning! How can I help you today?",
+    "Hello good afternoon! How can I help you today?"
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -592,6 +597,51 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         .empty-chat p {
             font-size: 14px;
             margin-top: 4px;
+        }
+
+        /* ========== SUGGESTED PROMPTS ========== */
+        .suggested-prompts {
+            padding: 10px 15px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex-shrink: 0;
+            max-height: 80px;
+            overflow-x: auto;
+            align-items: center;
+        }
+
+        .suggested-prompts .prompt-label {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+
+        .suggested-prompts .prompt-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 12px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .suggested-prompts .prompt-btn:hover {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: scale(1.02);
+        }
+
+        .suggested-prompts .prompt-btn:active {
+            transform: scale(0.95);
         }
 
         /* ========== MESSAGE INPUT ========== */
@@ -914,6 +964,17 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                 font-size: 13px;
             }
 
+            .suggested-prompts {
+                padding: 8px 12px;
+                max-height: 70px;
+                gap: 6px;
+            }
+
+            .suggested-prompts .prompt-btn {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+
             .chat-input-area {
                 padding: 10px 14px;
                 border-radius: 0 0 10px 10px;
@@ -976,6 +1037,21 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                 font-size: 12px;
             }
 
+            .suggested-prompts {
+                padding: 6px 10px;
+                max-height: 60px;
+                gap: 4px;
+            }
+
+            .suggested-prompts .prompt-label {
+                font-size: 10px;
+            }
+
+            .suggested-prompts .prompt-btn {
+                font-size: 10px;
+                padding: 3px 8px;
+            }
+
             .chat-input-area {
                 padding: 10px 12px;
                 border-radius: 0 0 10px 10px;
@@ -1033,7 +1109,7 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                 <!-- Chat Header INSIDE the container -->
                 <div class="chat-header-inner">
                     <div class="header-left">
-                        <button class="back-btn" onclick="window.location.href='chat.php'" title="Back to conversations">
+                        <button class="back-btn" onclick="window.location.href='registered_customers.php'" title="Back to conversations">
                             <i class="fas fa-arrow-left"></i>
                         </button>
                         <div class="user-info">
@@ -1080,6 +1156,16 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                     </div>
                 </div>
 
+                <!-- Suggested Prompts -->
+                <div class="suggested-prompts" id="suggestedPrompts">
+                    <span class="prompt-label"><i class="fas fa-lightbulb"></i> Quick replies:</span>
+                    <?php foreach ($suggestedPrompts as $prompt): ?>
+                        <button class="prompt-btn" data-prompt="<?php echo htmlspecialchars($prompt); ?>">
+                            <?php echo htmlspecialchars($prompt); ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+
                 <!-- Message Input -->
                 <div class="chat-input-area">
                     <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
@@ -1105,6 +1191,7 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const typingIndicator = document.getElementById('typingIndicator');
+        const suggestedPrompts = document.getElementById('suggestedPrompts');
 
         let isFetching = false;
         let isSending = false;
@@ -1250,8 +1337,8 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         // ==============================================
         // SEND MESSAGE
         // ==============================================
-        function sendMessage() {
-            const message = messageInput.value.trim();
+        function sendMessage(messageText) {
+            const message = messageText || messageInput.value.trim();
             if (!message || isSending) return;
 
             isSending = true;
@@ -1275,7 +1362,11 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        messageInput.value = '';
+                        // Clear input if it was from the input field
+                        if (!messageText) {
+                            messageInput.value = '';
+                        }
+                        
                         const msg = data.message_data;
 
                         const emptyState = chatMessages.querySelector('.empty-chat');
@@ -1346,9 +1437,25 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         }
 
         // ==============================================
+        // SUGGESTED PROMPTS - AUTO SEND ON CLICK
+        // ==============================================
+        document.querySelectorAll('.prompt-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const prompt = this.getAttribute('data-prompt');
+                if (prompt) {
+                    // Send the prompt immediately
+                    sendMessage(prompt);
+                }
+            });
+        });
+
+        // ==============================================
         // EVENT LISTENERS
         // ==============================================
-        sendBtn.addEventListener('click', sendMessage);
+        sendBtn.addEventListener('click', function() {
+            sendMessage();
+        });
 
         messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -1402,6 +1509,7 @@ $totalUnread = $unreadResult['unread_count'] ?? 0;
         console.log('👤 Target: ' + targetAcc);
         console.log('📨 Last message ID: ' + lastMessageId);
         console.log('🔄 Polling every 1 second');
+        console.log('💡 Quick reply prompts available - click to auto-send');
     </script>
 </body>
 

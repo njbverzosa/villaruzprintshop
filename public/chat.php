@@ -788,7 +788,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             <i class="fas fa-truck"></i>
             <span>Orders</span>
         </a>
-        <a href="account.php" class="nav-item">
+        <a href="account.php" class="nav-item active">
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
