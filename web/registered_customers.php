@@ -106,22 +106,15 @@ function getOnlineStatus($onlineTime)
 
     $currentTimestamp = time();
     $diffSeconds = $currentTimestamp - $storedTimestamp;
-    $diffMinutes = floor($diffSeconds / 60); // Convert to minutes
+    $diffMinutes = floor($diffSeconds / 60);
 
-    // Green: 1-2 minutes (Online - Recently Active)
     if ($diffMinutes >= 1 && $diffMinutes <= 2) {
         return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'label' => 'Active'];
-    }
-    // Yellow/Orange: 3-5 minutes (Away - Idle)
-    elseif ($diffMinutes >= 3 && $diffMinutes <= 5) {
+    } elseif ($diffMinutes >= 3 && $diffMinutes <= 5) {
         return ['status' => 'away', 'class' => 'status-away', 'text' => '● Away', 'label' => 'Away'];
-    }
-    // Red: 6+ minutes (Offline)
-    elseif ($diffMinutes >= 6) {
+    } elseif ($diffMinutes >= 6) {
         return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
-    }
-    // If less than 1 minute, still consider as online (just logged in)
-    else {
+    } else {
         return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'label' => 'Active'];
     }
 }
@@ -136,7 +129,6 @@ function getOnlineStatus($onlineTime)
     <title>Registered Customers | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* ========== MODERN LIGHT GRAY DASHBOARD STYLES ========== */
         * {
             margin: 0;
             padding: 0;
@@ -152,18 +144,10 @@ function getOnlineStatus($onlineTime)
             flex-direction: column;
         }
 
-        /* Main content wrapper (no sidebar) */
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
-        }
-
-        /* Main content */
-        .main-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
         }
 
         .main-content {
@@ -315,50 +299,6 @@ function getOnlineStatus($onlineTime)
             display: block;
         }
 
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 20px;
-            transition: all 0.3s;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            border-color: #3b82f6;
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
-        }
-
-        .stat-icon {
-            font-size: 32px;
-            background: linear-gradient(145deg, #3b82f6, #8b5cf6);
-            --webkit-background-clip: text;
-            --webkit-text-fill-color: transparent;
-            margin-bottom: 12px;
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: #0f172a;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: #64748b;
-        }
-
-        /* Table Styles */
         .merchandise-section {
             background: #ffffff;
             border-radius: 10px;
@@ -385,12 +325,6 @@ function getOnlineStatus($onlineTime)
             align-items: center;
             gap: 10px;
             color: #0f172a;
-        }
-
-        .section-header h5 i {
-            background: linear-gradient(145deg, #3b82f6, #8b5cf6);
-            --webkit-background-clip: text;
-            --webkit-text-fill-color: transparent;
         }
 
         .inventory-table {
@@ -443,30 +377,55 @@ function getOnlineStatus($onlineTime)
             box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
         }
 
-        .active-badge {
-            padding: 4px 10px;
+        .lock-btn {
+            background: #f59e0b;
+            border: none;
             border-radius: 20px;
-            font-size: 11px;
+            padding: 6px 16px;
+            color: #ffffff;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
             display: inline-block;
-            margin-left: 8px;
+            font-size: 12px;
+            margin-right: 4px;
         }
 
-        .badge-active {
+        .lock-btn:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .unlock-btn {
             background: #10b981;
-            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 16px;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin-right: 4px;
         }
 
-        .badge-inactive {
-            background: #ef4444;
-            color: white;
+        .unlock-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
 
-        /* ==============================================
-           ONLINE STATUS INDICATORS - UPDATED COLORS
-           ============================================== */
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
 
-        /* Green - Online (1-2 minutes) */
+        /* ========== ONLINE STATUS INDICATORS ========== */
         .status-online {
             color: #10b981;
             font-size: 24px;
@@ -474,14 +433,12 @@ function getOnlineStatus($onlineTime)
             animation: pulse-green 2s infinite;
         }
 
-        /* Orange/Yellow - Away (3-5 minutes) */
         .status-away {
             color: #f59e0b;
             font-size: 24px;
             animation: pulse-away 1.5s infinite;
         }
 
-        /* Gray - Offline (6+ minutes) */
         .status-offline {
             color: #94a3b8;
             font-size: 20px;
@@ -498,44 +455,23 @@ function getOnlineStatus($onlineTime)
         .status-text.online {
             color: #10b981;
         }
-
         .status-text.away {
             color: #f59e0b;
         }
-
         .status-text.offline {
             color: #94a3b8;
         }
 
         @keyframes pulse-green {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.6;
-                transform: scale(1.2);
-            }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
         }
 
         @keyframes pulse-away {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.5;
-                transform: scale(1.1);
-            }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
         }
 
-        /* Status column header */
         .status-header {
             text-align: center;
             font-size: 11px;
@@ -556,8 +492,88 @@ function getOnlineStatus($onlineTime)
             justify-content: center;
         }
 
-        /* ============================================== */
+        /* ========== EMAIL STATUS DOT ========== */
+        .email-status-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
 
+        .dot-active {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+        }
+
+        .dot-inactive {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+        }
+
+        /* ========== PASSWORD STYLES ========== */
+        .password-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafc;
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .password-text {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #0f172a;
+        }
+
+        .password-placeholder {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #94a3b8;
+            letter-spacing: 2px;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .copy-btn:hover {
+            transform: scale(1.2);
+            background: #e2e8f0;
+        }
+
+        .copy-btn-eye {
+            color: #3b82f6;
+        }
+
+        .copy-btn-eye:hover {
+            color: #2563eb;
+        }
+
+        .copy-btn-copy {
+            color: #10b981;
+        }
+
+        .copy-btn-copy:hover {
+            color: #059669;
+        }
+
+        /* ========== TOAST ========== */
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -579,67 +595,40 @@ function getOnlineStatus($onlineTime)
             background: #ef4444;
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+        .toast-warning {
+            background: #f59e0b;
+        }
 
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
         }
 
         @media (max-width: 768px) {
-            .main-content {
-                padding: 20px;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .inventory-table th,
-            .inventory-table td {
-                padding: 10px 8px;
-                font-size: 12px;
-            }
-
-            .burger-btn {
-                top: 15px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
-
-            .side-menu {
-                width: 260px;
-            }
+            .main-content { padding: 20px; }
+            .inventory-table th, .inventory-table td { padding: 10px 8px; font-size: 12px; }
+            .burger-btn { top: 15px; right: 15px; width: 42px; height: 42px; }
+            .side-menu { width: 260px; }
+            .password-wrapper { padding: 2px 4px; gap: 4px; }
+            .copy-btn { padding: 2px 4px; font-size: 12px; }
+            .action-buttons { flex-direction: column; gap: 4px; }
+            .lock-btn, .unlock-btn, .delete-btn { font-size: 10px; padding: 4px 10px; }
+            .email-status-dot { width: 10px; height: 10px; margin-left: 4px; }
         }
     </style>
 </head>
 
 <body>
     <div class="app-wrapper">
-        <!-- Burger Button -->
         <div class="burger-btn" id="burgerBtn">
             <i class="fas fa-bars"></i>
         </div>
 
-        <!-- Overlay -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
         <?php
@@ -659,38 +648,15 @@ function getOnlineStatus($onlineTime)
                 </div>
             </div>
 
-            <!-- <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-users"></i></div>
-                    <div class="stat-value"><?php echo $totalCustomers; ?></div>
-                    <div class="stat-label">Total Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-envelope-open-text"></i></div>
-                    <div class="stat-value"><?php echo $activeCustomers; ?></div>
-                    <div class="stat-label">Active Email</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-envelope"></i></div>
-                    <div class="stat-value"><?php echo $inactiveCustomers; ?></div>
-                    <div class="stat-label">Inactive Email</div>
-                </div>
-            </div> -->
-
             <div class="merchandise-section">
-                <div class="section-header">
-                    <h5>(<?php echo $totalCustomers; ?>) Customer List</h5>
-                </div>
                 <div style="overflow-x: auto;">
                     <table class="inventory-table" id="customersTable">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Full Name</th>
+                                <th class="status-header">Status</th>
                                 <th>Phone Number</th>
                                 <th>Email</th>
-                                <th>Registered Date</th>
-                                <th class="status-header">Status</th>
                                 <th>Action</th>
                                 <th>User / Pass</th>
                             </tr>
@@ -698,26 +664,15 @@ function getOnlineStatus($onlineTime)
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="8" style="text-align: center; padding: 40px;">No customers found</td>
+                                    <td colspan="6" style="text-align: center; padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
                                     $onlineStatus = getOnlineStatus($customer['online_time'] ?? '');
-                                ?>
-                                    <tr data-id="<?php echo $customer['id']; ?>"
-                                        data-name="<?php echo strtolower(htmlspecialchars($customer['f_name'] ?? '')); ?>"
-                                        data-phone="<?php echo htmlspecialchars($customer['phone_number'] ?? ''); ?>"
-                                        data-email="<?php echo strtolower(htmlspecialchars($customer['email'] ?? '')); ?>">
-                                        <td><?php echo $customer['id']; ?></td>
-                                        <td><strong><?php echo htmlspecialchars($customer['f_name'] ?? 'N/A'); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($customer['phone_number'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <?php echo htmlspecialchars($customer['email'] ?? 'N/A'); ?>
-                                            <span class="active-badge <?php echo (isset($customer['active_email']) && ($customer['active_email'] == 1 || $customer['active_email'] === null)) ? 'badge-active' : 'badge-inactive'; ?>">
-                                                <?php echo (isset($customer['active_email']) && ($customer['active_email'] == 1 || $customer['active_email'] === null)) ? 'ACTIVE' : 'INACTIVE'; ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo date('M d, Y', strtotime($customer['registered_at'])); ?></td>
+                                    $isActive = isset($customer['active_email']) && ($customer['active_email'] == 1 || $customer['active_email'] === null);
+                                    ?>
+                                    <tr data-id="<?php echo $customer['id']; ?>">
+                                        <td><?php echo htmlspecialchars($customer['f_name'] ?? 'N/A'); ?></td>
                                         <td class="status-cell">
                                             <div class="status-dot-wrapper">
                                                 <?php if ($onlineStatus['status'] === 'online'): ?>
@@ -732,15 +687,49 @@ function getOnlineStatus($onlineTime)
                                                 <?php endif; ?>
                                             </div>
                                         </td>
+                                        <td><?php echo htmlspecialchars($customer['phone_number'] ?? 'N/A'); ?></td>
                                         <td>
-                                            <button class="delete-btn"
-                                                onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                <i class="fas fa-trash-alt"></i> DELETE
-                                            </button>
+                                            <?php echo htmlspecialchars($customer['email'] ?? 'N/A'); ?>
+                                            <span class="email-status-dot <?php echo $isActive ? 'dot-active' : 'dot-inactive'; ?>"
+                                                  id="dot_<?php echo $customer['id']; ?>"
+                                                  title="<?php echo $isActive ? 'Email Active' : 'Email Inactive'; ?>">
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
+                                                <?php if ($isActive): ?>
+                                                    <button class="lock-btn" onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                        <i class="fas fa-lock"></i>
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button class="unlock-btn" onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                        <i class="fas fa-unlock"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                                <button class="delete-btn" onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                         <td style="white-space: nowrap;">
-                                            <?php echo htmlspecialchars($customer['acc_number']); ?> /
-                                            <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
+                                            <div class="password-wrapper">
+                                                <span style="color: #475569; font-weight: 500;">
+                                                    <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                                </span>
+                                                <span style="color: #94a3b8;">/</span>
+                                                <span class="password-text" id="pass_<?php echo $customer['id']; ?>" style="display: none;">
+                                                    <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
+                                                </span>
+                                                <span class="password-placeholder" id="placeholder_<?php echo $customer['id']; ?>">
+                                                    ••••••••
+                                                </span>
+                                                <button class="copy-btn copy-btn-eye" onclick="togglePassword(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['text_pass'] ?? ''); ?>')" title="Show/Hide password">
+                                                    <i class="fas fa-eye" id="eye_<?php echo $customer['id']; ?>"></i>
+                                                </button>
+                                                <button class="copy-btn copy-btn-copy" onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>', <?php echo $customer['id']; ?>)" title="Copy password">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -755,7 +744,6 @@ function getOnlineStatus($onlineTime)
     <?php include '../footer.php'; ?>
 
     <script>
-        // Get CSRF token from meta tag
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?php echo $_SESSION['csrf_token']; ?>';
 
         // ========== BURGER MENU TOGGLE ==========
@@ -792,7 +780,7 @@ function getOnlineStatus($onlineTime)
             });
         });
 
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeMenu();
             }
@@ -802,7 +790,8 @@ function getOnlineStatus($onlineTime)
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
             document.body.appendChild(toast);
             setTimeout(() => {
                 toast.style.animation = 'slideOut 0.3s ease';
@@ -810,15 +799,135 @@ function getOnlineStatus($onlineTime)
             }, 3000);
         }
 
+        // ========== TOGGLE PASSWORD VISIBILITY ==========
+        function togglePassword(customerId, password) {
+            const passwordText = document.getElementById('pass_' + customerId);
+            const placeholder = document.getElementById('placeholder_' + customerId);
+            const eyeIcon = document.getElementById('eye_' + customerId);
+
+            if (passwordText.style.display === 'none' || passwordText.style.display === '') {
+                passwordText.style.display = 'inline';
+                placeholder.style.display = 'none';
+                eyeIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordText.style.display = 'none';
+                placeholder.style.display = 'inline';
+                eyeIcon.className = 'fas fa-eye';
+            }
+        }
+
+        // ========== COPY PASSWORD ==========
+        function copyPassword(password, customerId) {
+            navigator.clipboard.writeText(password).then(() => {
+                showToast('Password copied to clipboard!', 'success');
+                const copyBtn = event.target.closest('.copy-btn-copy');
+                const icon = copyBtn.querySelector('i');
+                const originalClass = icon.className;
+                icon.className = 'fas fa-check';
+                icon.style.color = '#10b981';
+                setTimeout(() => {
+                    icon.className = originalClass;
+                    icon.style.color = '#10b981';
+                }, 1500);
+            }).catch(() => {
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = password;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showToast('Password copied to clipboard!', 'success');
+                } catch (err) {
+                    showToast('Failed to copy password', 'error');
+                }
+            });
+        }
+
+        // ========== TOGGLE ACCOUNT STATUS (LOCK/UNLOCK) ==========
+        async function toggleAccountStatus(customerId, action, customerName) {
+            const confirmMessage = action === 'lock'
+                ? `⚠️ Are you sure you want to LOCK "${customerName}"'s account?\n\nThis will deactivate their email access.`
+                : `⚠️ Are you sure you want to UNLOCK "${customerName}"'s account?\n\nThis will reactivate their email access.`;
+
+            if (!confirm(confirmMessage)) return;
+
+            const row = document.querySelector(`tr[data-id="${customerId}"]`);
+            const actionBtn = row.querySelector(action === 'lock' ? '.lock-btn' : '.unlock-btn');
+            const originalText = actionBtn.innerHTML;
+            actionBtn.disabled = true;
+            actionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'toggle_account_status');
+                formData.append('customer_id', customerId);
+                formData.append('status_action', action);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('../API/customer_actions.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+
+                    // Update only the email dot
+                    const dot = document.getElementById('dot_' + customerId);
+                    const actionContainer = document.getElementById('action_' + customerId);
+
+                    if (action === 'lock') {
+                        // Change dot to RED (inactive)
+                        dot.className = 'email-status-dot dot-inactive';
+                        dot.title = 'Email Inactive';
+                        // Replace with UNLOCK button
+                        actionContainer.innerHTML = `
+                            <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-unlock"></i> UNLOCK
+                            </button>
+                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-trash-alt"></i> DELETE
+                            </button>
+                        `;
+                    } else {
+                        // Change dot to GREEN (active)
+                        dot.className = 'email-status-dot dot-active';
+                        dot.title = 'Email Active';
+                        // Replace with LOCK button
+                        actionContainer.innerHTML = `
+                            <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-lock"></i> LOCK
+                            </button>
+                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-trash-alt"></i> DELETE
+                            </button>
+                        `;
+                    }
+                } else {
+                    showToast(data.message || 'Failed to update account status', 'error');
+                    actionBtn.disabled = false;
+                    actionBtn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('Network error. Please try again.', 'error');
+                actionBtn.disabled = false;
+                actionBtn.innerHTML = originalText;
+            }
+        }
+
         // ========== DELETE CUSTOMER ==========
         async function deleteCustomer(customerId, customerName) {
             const confirmed = confirm(`⚠️ Are you sure you want to delete "${customerName}"?\n\nThis action will permanently remove this customer from the database and cannot be undone!`);
             if (!confirmed) return;
 
-            const deleteBtn = event.target.closest('.delete-btn');
+            const row = document.querySelector(`tr[data-id="${customerId}"]`);
+            const deleteBtn = row.querySelector('.delete-btn');
             const originalText = deleteBtn.innerHTML;
             deleteBtn.disabled = true;
-            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
             try {
                 const formData = new FormData();
@@ -834,7 +943,12 @@ function getOnlineStatus($onlineTime)
 
                 if (data.success) {
                     showToast(data.message, 'success');
-                    setTimeout(() => location.reload(), 1500);
+                    row.remove();
+                    const headerCount = document.querySelector('.section-header h5');
+                    if (headerCount) {
+                        const currentCount = parseInt(headerCount.textContent.match(/\((\d+)\)/)?.[1] || 0);
+                        headerCount.innerHTML = `(${currentCount - 1}) Customer List`;
+                    }
                 } else {
                     showToast(data.message || 'Failed to delete customer', 'error');
                     deleteBtn.disabled = false;
@@ -848,15 +962,13 @@ function getOnlineStatus($onlineTime)
             }
         }
 
-        // ==============================================
-        // AUTO-REFRESH STATUS EVERY 60 SECONDS
-        // ==============================================
+        // ========== AUTO-REFRESH STATUS EVERY 60 SECONDS ==========
         function refreshOnlineStatus() {
             fetch(window.location.href, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
                 .then(response => response.text())
                 .then(html => {
                     const parser = new DOMParser();
@@ -875,12 +987,12 @@ function getOnlineStatus($onlineTime)
                 .catch(error => console.error('Error refreshing status:', error));
         }
 
-        // Refresh every 60 seconds (1 minute)
         setInterval(refreshOnlineStatus, 60000);
 
         console.log('👥 Registered Customers page loaded');
         console.log('🟢 Status indicators update every 60 seconds');
-        console.log('📊 Status thresholds: 1-2 min = Green (Active), 3-5 min = Orange (Away), 6+ min = Gray (Offline)');
+        console.log('🔐 Password hidden by default - click eye to show, copy to copy');
+        console.log('🔒 Lock/Unlock buttons update account status without page reload');
     </script>
 </body>
 
