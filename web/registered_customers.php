@@ -911,17 +911,17 @@ function getOnlineStatus($onlineTime)
                                                 <?php if ($isActive): ?>
                                                     <button class="lock-btn"
                                                         onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                        <i class="fas fa-lock"></i> LOCK
+                                                        <i class="fas fa-lock"></i>
                                                     </button>
                                                 <?php else: ?>
                                                     <button class="unlock-btn"
                                                         onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                        <i class="fas fa-unlock"></i> UNLOCK
+                                                        <i class="fas fa-unlock"></i>
                                                     </button>
                                                 <?php endif; ?>
                                                 <button class="delete-btn"
                                                     onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                    <i class="fas fa-trash-alt"></i> DELETE
+                                                    <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             </div>
                                         </td>
