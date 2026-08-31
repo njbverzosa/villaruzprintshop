@@ -8,7 +8,8 @@ header('Content-Type: application/json');
 // ==============================================
 // 0. DEFINE THE UPDATE ONLINE TIME FUNCTION
 // ==============================================
-function updateOnlineTime($pdo, $userRole, $userAccNumber) {
+function updateOnlineTime($pdo, $userRole, $userAccNumber)
+{
     $currentDateTime = date('D, j M Y g:i A');
     try {
         if ($userRole === 'Customer') {
@@ -164,17 +165,32 @@ try {
                     echo json_encode([
                         'success' => false,
                         'exists' => false,
-                        'message' => 'Delivery number not found in your account, this will be processed as a new order.'
+                        'message' => 'Delivery number not found in your account. This will be processed as a new order.'
                     ]);
                     exit();
                 }
 
-                // Check if the order status is PAID (cannot add items to paid/delivered orders)
-                if (strtoupper($delivery['status']) === 'PAID') {
+                // Only allow PENDING status for adding items
+                $currentStatus = strtoupper($delivery['status']);
+
+                // Check if the order status is NOT PENDING (cannot add items)
+                if ($currentStatus !== 'PENDING') {
+                    $statusMessages = [
+                        'PAID' => 'paid/delivered',
+                        'CANCELLED' => 'cancelled',
+                        'CREDIT' => 'on credit',
+                        'PACKING' => 'being packed',
+                        'SHIPPED' => 'already shipped',
+                        'OFD' => 'out for delivery',
+                        'DELIVERED' => 'already delivered'
+                    ];
+
+                    $statusText = $statusMessages[$currentStatus] ?? strtolower($currentStatus);
+
                     echo json_encode([
                         'success' => false,
                         'exists' => false,
-                        'message' => 'This delivery number has already been paid/delivered. You cannot add items to this order.'
+                        'message' => "You cannot add items to this order. This will be processed as a new order."
                     ]);
                     exit();
                 }
@@ -263,6 +279,41 @@ try {
             $subtotalAmount = round($subtotalAmount, 2);
 
             // ============================================================
+            // DELIVERY DATE VALIDATION
+            // ============================================================
+            date_default_timezone_set('Asia/Manila');
+            $currentDateTime = new DateTime();
+            $currentTime = $currentDateTime->format('H:i'); // 24-hour format
+            $currentDate = $currentDateTime->format('Y-m-d');
+
+            // Parse the delivery date
+            $deliveryDateObj = DateTime::createFromFormat('Y-m-d', $deliveryDateRaw);
+            if (!$deliveryDateObj) {
+                echo json_encode(['success' => false, 'message' => 'Invalid delivery date format']);
+                exit();
+            }
+
+            $deliveryDateStr = $deliveryDateObj->format('Y-m-d');
+            $cutoffTime = '17:00'; // 5:00 PM cutoff
+
+            // Check if delivery date is today
+            if ($deliveryDateStr === $currentDate) {
+                // If current time is after 5:00 PM (17:00), move delivery to tomorrow
+                if ($currentTime >= $cutoffTime) {
+                    $deliveryDateObj->modify('+1 day');
+                    $deliveryDateFormatted = $deliveryDateObj->format('j F Y');
+                    $deliveryDateRaw = $deliveryDateObj->format('Y-m-d');
+
+                    // Log the change
+                    error_log("Delivery date moved to tomorrow due to cutoff time. Original: {$deliveryDateStr}, New: {$deliveryDateRaw}");
+                } else {
+                    $deliveryDateFormatted = $deliveryDateObj->format('j F Y');
+                }
+            } else {
+                $deliveryDateFormatted = $deliveryDateObj->format('j F Y');
+            }
+
+            // ============================================================
             // CALCULATE DELIVERY CHARGE BASED ON BARANGAY (FREE FOR ₱500+)
             // ============================================================
             $deliveryCharge = 0;
@@ -283,16 +334,8 @@ try {
                 }
             }
 
-            // Format delivery date
-            $deliveryDateFormatted = '';
-            if (!empty($deliveryDateRaw)) {
-                $timestamp = strtotime($deliveryDateRaw);
-                $deliveryDateFormatted = date('j F Y', $timestamp);
-            }
-
             $totalAmount = round($subtotalAmount + $deliveryCharge, 2);
 
-            date_default_timezone_set('Asia/Manila');
             $dateTimeSold = date('j F Y');
             $MYD = date('F Y');
 
@@ -365,8 +408,8 @@ try {
                     $newTotalAmount = floatval($newTotalResult['new_total'] ?? 0) + $deliveryCharge;
                     $newTotalAmount = round($newTotalAmount, 2);
 
-                    $updateDeliveryStmt = $pdo->prepare("UPDATE for_deliveries SET total_amount = ?, charge = ? WHERE delivery_number = ?");
-                    $updateDeliveryStmt->execute([$newTotalAmount, $deliveryCharge, $deliveryNumber]);
+                    $updateDeliveryStmt = $pdo->prepare("UPDATE for_deliveries SET total_amount = ?, charge = ?, delivery_date = ? WHERE delivery_number = ?");
+                    $updateDeliveryStmt->execute([$newTotalAmount, $deliveryCharge, $deliveryDateFormatted, $deliveryNumber]);
 
                     $stmt = $pdo->prepare("DELETE FROM cart WHERE acc_number = ?");
                     $stmt->execute([$userAccNumber]);
@@ -384,7 +427,9 @@ try {
                         'delivery_charge' => $deliveryCharge,
                         'subtotal_amount' => $subtotalAmount,
                         'barangay' => $barangay,
-                        'free_delivery' => ($deliveryCharge == 0 && $subtotalAmount >= 500)
+                        'free_delivery' => ($deliveryCharge == 0 && $subtotalAmount >= 500),
+                        'delivery_date' => $deliveryDateFormatted,
+                        'delivery_date_raw' => $deliveryDateRaw
                     ]);
                     exit();
                 }
@@ -533,13 +578,15 @@ try {
                 'delivery_charge' => $deliveryCharge,
                 'total_amount' => $totalAmount,
                 'delivery_date' => $deliveryDateFormatted,
+                'delivery_date_raw' => $deliveryDateRaw,
                 'existing_order' => false,
                 'address_updated' => true,
                 'street' => $street,
                 'barangay' => $barangay,
                 'land_mark' => $landMark,
                 'full_address' => $fullAddress,
-                'free_delivery' => ($deliveryCharge == 0 && $subtotalAmount >= 500)
+                'free_delivery' => ($deliveryCharge == 0 && $subtotalAmount >= 500),
+                'cutoff_applied' => ($deliveryDateRaw !== $_POST['delivery_date'] && $currentTime >= $cutoffTime)
             ]);
             break;
 

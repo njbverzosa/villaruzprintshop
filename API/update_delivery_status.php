@@ -805,6 +805,15 @@ elseif ($action === 'delete_order') {
     try {
         $pdo->beginTransaction();
 
+        // First, check if the delivery exists
+        $checkStmt = $pdo->prepare("SELECT delivery_number FROM for_deliveries WHERE delivery_number = :delivery_number");
+        $checkStmt->execute([':delivery_number' => $deliveryNumber]);
+        $exists = $checkStmt->fetch();
+
+        if (!$exists) {
+            throw new Exception("Delivery #{$deliveryNumber} not found");
+        }
+
         // Delete from order_status_history
         $stmt1 = $pdo->prepare("DELETE FROM order_status_history WHERE delivery_number = :delivery_number");
         $result1 = $stmt1->execute([':delivery_number' => $deliveryNumber]);
@@ -813,15 +822,22 @@ elseif ($action === 'delete_order') {
         $stmt2 = $pdo->prepare("DELETE FROM for_deliveries WHERE delivery_number = :delivery_number");
         $result2 = $stmt2->execute([':delivery_number' => $deliveryNumber]);
 
+        // Check if at least one deletion was successful
         if (!$result1 && !$result2) {
             throw new Exception("Failed to delete order data");
         }
+
+        // Log what was deleted
+        $deletedFromHistory = $stmt1->rowCount();
+        $deletedFromDeliveries = $stmt2->rowCount();
 
         $pdo->commit();
 
         echo json_encode([
             'success' => true,
-            'message' => "Order #{$deliveryNumber} has been cancelled and deleted successfully!"
+            'message' => "{$deliveryNumber} deleted!",
+            'deleted_from_history' => $deletedFromHistory,
+            'deleted_from_deliveries' => $deletedFromDeliveries
         ]);
 
     } catch (Exception $e) {
