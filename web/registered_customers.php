@@ -108,35 +108,86 @@ function getUnreadCount($pdo, $customerAccNumber)
 }
 
 // ==============================================
-// FUNCTION TO DETERMINE ONLINE STATUS - UPDATED THRESHOLDS
+// FUNCTION TO DETERMINE ONLINE STATUS - WITH TIME DIFF DISPLAY
 // ==============================================
 function getOnlineStatus($onlineTime)
 {
     if (empty($onlineTime)) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline', 'time_diff' => ''];
     }
 
     // Parse the stored time (format: M j, g:i A e.g., Aug 31, 2:30 PM)
     $storedTimestamp = strtotime($onlineTime);
     if ($storedTimestamp === false) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline', 'time_diff' => ''];
     }
 
     $currentTimestamp = time();
     $diffSeconds = $currentTimestamp - $storedTimestamp;
     $diffMinutes = floor($diffSeconds / 60);
+    $diffHours = floor($diffSeconds / 3600);
+    $diffDays = floor($diffSeconds / 86400);
+    $diffWeeks = floor($diffSeconds / 604800);
 
-    // Online: 0-1 minute gap (Active)
+    // Determine status based on time difference
     if ($diffMinutes <= 1) {
-        return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'label' => 'Active'];
-    } 
-    // Away: 1-2 minute gap
-    elseif ($diffMinutes >= 1 && $diffMinutes <= 2) {
-        return ['status' => 'away', 'class' => 'status-away', 'text' => '● Away', 'label' => 'Away'];
-    } 
-    // Offline: 2+ minutes gap
-    else {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
+        // Online: 0-1 minute - Show green dot
+        return [
+            'status' => 'online',
+            'class' => 'status-online',
+            'text' => '● Online',
+            'label' => 'Active',
+            'time_diff' => ''
+        ];
+    } elseif ($diffMinutes >= 1 && $diffMinutes <= 60) {
+        // Away: 1-60 minutes - Show minutes
+        $displayTime = $diffMinutes . 'm';
+        return [
+            'status' => 'away',
+            'class' => 'status-away',
+            'text' => '● Away',
+            'label' => 'Away',
+            'time_diff' => $displayTime
+        ];
+    } elseif ($diffHours >= 1 && $diffHours < 24) {
+        // Hours: 1-23 hours
+        $displayTime = $diffHours . 'h';
+        return [
+            'status' => 'offline',
+            'class' => 'status-offline',
+            'text' => '● Offline',
+            'label' => 'Offline',
+            'time_diff' => $displayTime
+        ];
+    } elseif ($diffDays >= 1 && $diffDays < 7) {
+        // Days: 1-6 days
+        $displayTime = $diffDays . 'd';
+        return [
+            'status' => 'offline',
+            'class' => 'status-offline',
+            'text' => '● Offline',
+            'label' => 'Offline',
+            'time_diff' => $displayTime
+        ];
+    } elseif ($diffWeeks >= 1 && $diffWeeks < 4) {
+        // Weeks: 1-3 weeks
+        $displayTime = $diffWeeks . 'w';
+        return [
+            'status' => 'offline',
+            'class' => 'status-offline',
+            'text' => '● Offline',
+            'label' => 'Offline',
+            'time_diff' => $displayTime
+        ];
+    } else {
+        // More than 4 weeks
+        return [
+            'status' => 'offline',
+            'class' => 'status-offline',
+            'text' => '● Offline',
+            'label' => 'Offline',
+            'time_diff' => '4w+'
+        ];
     }
 }
 ?>
@@ -913,14 +964,18 @@ function getOnlineStatus($onlineTime)
                                         <td class="status-cell">
                                             <div class="status-dot-wrapper">
                                                 <?php if ($onlineStatus['status'] === 'online'): ?>
-                                                    <i class="fas fa-circle status-online" title="Online - Recently Active (0-1 min)"></i>
+                                                    <i class="fas fa-circle status-online"
+                                                        title="Online - Recently Active (0-1 min)"></i>
                                                     <span class="status-text online">Active</span>
                                                 <?php elseif ($onlineStatus['status'] === 'away'): ?>
-                                                    <i class="fas fa-circle status-away" title="Away - Idle for 1-2 min"></i>
-                                                    <span class="status-text away">Away</span>
+                                                    <i class="fas fa-clock status-away"
+                                                        title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                    <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
                                                 <?php else: ?>
-                                                    <i class="fas fa-circle status-offline" title="Offline - 2+ min inactive"></i>
-                                                    <span class="status-text offline">Offline</span>
+                                                    <i class="fas fa-clock status-offline"
+                                                        title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                    <span
+                                                        class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -1027,7 +1082,7 @@ function getOnlineStatus($onlineTime)
 
     <?php include '../footer.php'; ?>
 
- <script>
+    <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?php echo $_SESSION['csrf_token']; ?>';
 
         // ========== BURGER MENU TOGGLE ==========
@@ -1092,7 +1147,7 @@ function getOnlineStatus($onlineTime)
 
             navigator.clipboard.writeText(text).then(() => {
                 showToast(`${label} copied to clipboard!`, 'success');
-                
+
                 const buttons = document.querySelectorAll('.copy-btn-phone, .copy-btn-email');
                 buttons.forEach(btn => {
                     const parentTd = btn.closest('td');
@@ -1146,7 +1201,7 @@ function getOnlineStatus($onlineTime)
                 showToast('No password to copy', 'warning');
                 return;
             }
-            
+
             navigator.clipboard.writeText(password).then(() => {
                 showToast('Password copied to clipboard!', 'success');
                 const copyBtn = event.target.closest('.copy-btn-copy');
@@ -1204,7 +1259,7 @@ function getOnlineStatus($onlineTime)
                     showToast(data.message, 'success');
 
                     const actionContainer = document.getElementById('action_' + customerId);
-                    
+
                     if (action === 'lock') {
                         actionContainer.innerHTML = `
                             <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
