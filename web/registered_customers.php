@@ -116,7 +116,7 @@ function getOnlineStatus($onlineTime)
         return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
     }
 
-    // Parse the stored time (format: g:i A)
+    // Parse the stored time (format: M j, g:i A e.g., Aug 31, 2:30 PM)
     $storedTimestamp = strtotime($onlineTime);
     if ($storedTimestamp === false) {
         return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
@@ -140,6 +140,7 @@ function getOnlineStatus($onlineTime)
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 

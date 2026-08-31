@@ -48,19 +48,13 @@ if (!$userData) {
     exit;
 }
 
-// ==============================================
-// 5. UPDATE USER STATUS TO OFFLINE (0) WITH ONLINE TIME
-// ==============================================
+// public/closed.php
 date_default_timezone_set('Asia/Manila');
-$currentTime = date('g:i A'); // e.g., 2:30 PM
+$currentTime = date('M j, g:i A'); // e.g., Aug 31, 2:30 PM
 
 if ($userRole === 'Customer') {
     $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
     $updateStmt->execute([$currentTime, $userData['id']]);
-    
-    // Optional: Also set status to 0 (offline) if you have a status column
-    // $updateStmt = $pdo->prepare("UPDATE customers SET status = 0, online_time = ? WHERE id = ?");
-    // $updateStmt->execute([$currentTime, $userData['id']]);
 }
 
 // ==============================================
