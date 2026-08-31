@@ -64,13 +64,12 @@ $userAccNumber = $user['acc_number'] ?? '';
 $userFullName = $user['f_name'] ?? '';
 
 // Fetch user's address details from customers table
-$stmt = $pdo->prepare("SELECT street, barangay, land_mark FROM customers WHERE acc_number = ?");
+$stmt = $pdo->prepare("SELECT street, barangay FROM customers WHERE acc_number = ?");
 $stmt->execute([$userAccNumber]);
 $userAddressData = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $userStreet = $userAddressData['street'] ?? '';
 $userBarangay = $userAddressData['barangay'] ?? '';
-$userLandMark = $userAddressData['land_mark'] ?? '';
 
 // Check if user has both street and barangay (address is complete)
 $hasCompleteAddress = !empty($userStreet) && !empty($userBarangay);
@@ -79,9 +78,6 @@ $hasCompleteAddress = !empty($userStreet) && !empty($userBarangay);
 $userAddress = '';
 if (!empty($userStreet) && !empty($userBarangay)) {
     $userAddress = $userStreet . ', ' . $userBarangay;
-    if (!empty($userLandMark)) {
-        $userAddress .= ', ' . $userLandMark;
-    }
 }
 
 // Fetch ALL cart items for current user

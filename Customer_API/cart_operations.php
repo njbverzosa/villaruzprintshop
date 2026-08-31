@@ -234,7 +234,7 @@ try {
             updateOnlineTime($pdo, $userRole, $userAccNumber);
 
             // Get user's address details from customers table
-            $stmt = $pdo->prepare("SELECT street, barangay, land_mark FROM customers WHERE acc_number = ?");
+            $stmt = $pdo->prepare("SELECT street, barangay FROM customers WHERE acc_number = ?");
             $stmt->execute([$userAccNumber]);
             $userAddressData = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -245,7 +245,6 @@ try {
 
             $street = $userAddressData['street'] ?? '';
             $barangay = $userAddressData['barangay'] ?? '';
-            $landMark = $userAddressData['land_mark'] ?? '';
 
             // Check if user has complete address
             if (empty($street) || empty($barangay)) {
@@ -255,9 +254,6 @@ try {
 
             // Combine address fields
             $fullAddress = trim($street . ', ' . $barangay);
-            if (!empty($landMark)) {
-                $fullAddress .= ', ' . $landMark;
-            }
 
             // Get cart items for this user
             $stmt = $pdo->prepare("SELECT * FROM cart WHERE acc_number = ?");
@@ -583,7 +579,6 @@ try {
                 'address_updated' => true,
                 'street' => $street,
                 'barangay' => $barangay,
-                'land_mark' => $landMark,
                 'full_address' => $fullAddress,
                 'free_delivery' => ($deliveryCharge == 0 && $subtotalAmount >= 500),
                 'cutoff_applied' => ($deliveryDateRaw !== $_POST['delivery_date'] && $currentTime >= $cutoffTime)
