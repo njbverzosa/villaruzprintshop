@@ -140,7 +140,7 @@ function handleLogin($pdo)
 
     if (empty($errors) && $user && $userType) {
         date_default_timezone_set('Asia/Manila');
-        $currentTime = date('g:i A'); // e.g., 2:30 PM
+        $currentTime = date('M j, g:i A'); // e.g., Aug 31, 2:30 PM
 
         if ($userType === 'Admin') {
             session_regenerate_id(true);
