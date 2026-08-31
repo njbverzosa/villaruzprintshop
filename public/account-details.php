@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -34,7 +35,7 @@ $accNumber = $_SESSION['acc_number'];
 // Fetch user details from database - ADDED vip column
 $userData = null;
 if ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, street, barangay, land_mark, registered_at, active_email, vip FROM customers WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, street, barangay, landmark_photo, registered_at, active_email, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -59,7 +60,7 @@ $currentTime = date('M j, g:i A'); // e.g., Aug 31, 2:30 PM
 if ($userRole === 'Customer') {
     $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
     $updateStmt->execute([$currentTime, $userData['id']]);
-} 
+}
 
 
 // ==============================================
@@ -77,7 +78,7 @@ $userAccNumber = $user['acc_number'] ?? $accNumber;
 $userFullName = $user['f_name'] ?? '';
 $userStreet = $user['street'] ?? '';
 $userBarangay = $user['barangay'] ?? '';
-$userLandMark = $user['land_mark'] ?? '';
+$userLandMark = $user['landmark_photo'] ?? '';
 $userEmail = $user['email'] ?? '';
 $userContact = $user['phone_number'] ?? '';
 $userJoined = $user['registered_at'] ?? '';
@@ -856,22 +857,27 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             body {
                 padding-bottom: 0;
             }
+
             .bottom-nav {
                 display: none;
             }
+
             .account-detail .edit-btn,
             .account-detail .cancel-btn {
                 display: none !important;
             }
+
             .account-card {
                 box-shadow: none;
                 border: 1px solid #e2e8f0;
             }
+
             .main-content {
                 padding: 10px;
             }
         }
-         /* VIP Avatar Styles */
+
+        /* VIP Avatar Styles */
         .user-badge .avatar.vip {
             background: linear-gradient(135deg, #f59e0b, #f97316) !important;
             font-size: 12px;
@@ -880,6 +886,77 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
         .user-badge .vip-badge i {
             font-size: 10px;
+        }
+
+        /* ========== LANDMARK PHOTO UPLOAD ========== */
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8fafc;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            transform: scale(1.02);
+        }
+
+        .upload-area i {
+            font-size: 40px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .upload-area:hover i {
+            color: #3b82f6;
+        }
+
+        .landmark-photo-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .remove-photo-btn:hover {
+            background: #dc2626 !important;
+            transform: scale(1.1);
+        }
+
+        #previewImage {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid #e2e8f0;
+        }
+
+        @media (max-width: 480px) {
+            .upload-area {
+                padding: 20px 15px;
+            }
+
+            .upload-area i {
+                font-size: 30px;
+            }
+
+            .upload-area p {
+                font-size: 13px;
+            }
+
+            #previewImage,
+            .landmark-photo-wrapper img {
+                max-width: 150px;
+                max-height: 120px;
+            }
         }
     </style>
 </head>
@@ -951,8 +1028,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     <div class="value-display" id="display_f_name"><?php echo htmlspecialchars($userFullName); ?></div>
                     <div class="value-edit">
                         <input type="text" class="edit-input" id="input_f_name"
-                            value="<?php echo htmlspecialchars($userFullName); ?>"
-                            placeholder="Enter your full name">
+                            value="<?php echo htmlspecialchars($userFullName); ?>" placeholder="Enter your full name">
                     </div>
                     <div class="btn-group">
                         <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
@@ -974,8 +1050,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     </div>
                     <div class="value-edit">
                         <input type="text" class="edit-input" id="input_street"
-                            value="<?php echo htmlspecialchars($userStreet); ?>"
-                            placeholder="Enter your street name">
+                            value="<?php echo htmlspecialchars($userStreet); ?>" placeholder="Enter your street name">
                     </div>
                     <div class="btn-group">
                         <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
@@ -997,8 +1072,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     </div>
                     <div class="value-edit">
                         <input type="text" class="edit-input" id="input_barangay"
-                            value="<?php echo htmlspecialchars($userBarangay); ?>"
-                            placeholder="Enter your barangay">
+                            value="<?php echo htmlspecialchars($userBarangay); ?>" placeholder="Enter your barangay">
                     </div>
                     <div class="btn-group">
                         <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
@@ -1011,23 +1085,58 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 </div>
             </div>
 
-            <!-- Land Mark (Editable) -->
+            <!-- Land Mark (Photo Upload) -->
             <div class="account-detail" data-field="land_mark">
-                <span class="label"><i class="fas fa-map-pin"></i> Land Mark</span>
+                <span class="label"><i class="fas fa-camera"></i> Land Mark Photo</span>
                 <div class="value-wrapper">
                     <div class="value-display" id="display_land_mark">
-                        <?php echo htmlspecialchars($userLandMark ?: 'Not set'); ?>
+                        <?php if (!empty($userLandMark) && file_exists(__DIR__ . '/../' . $userLandMark)): ?>
+                            <div class="landmark-photo-wrapper" style="position: relative; display: inline-block;">
+                                <img src="../<?php echo htmlspecialchars($userLandMark); ?>" alt="Landmark Photo"
+                                    style="max-width: 200px; max-height: 150px; border-radius: 8px; object-fit: cover; border: 2px solid #e2e8f0;"
+                                    id="landmarkPreview">
+                                <button class="remove-photo-btn" onclick="deleteLandmarkPhoto()" title="Remove photo"
+                                    style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4); transition: all 0.3s;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        <?php else: ?>
+                            <span style="color: #94a3b8;">No photo uploaded</span>
+                        <?php endif; ?>
                     </div>
-                    <div class="value-edit">
-                        <input type="text" class="edit-input" id="input_land_mark"
-                            value="<?php echo htmlspecialchars($userLandMark); ?>"
-                            placeholder="Enter a landmark near your location">
+                    <div class="value-edit" style="display: none; width: 100%;">
+                        <div class="upload-area" id="uploadArea"
+                            style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 30px 20px; text-align: center; cursor: pointer; transition: all 0.3s; background: #f8fafc;">
+                            <i class="fas fa-cloud-upload-alt"
+                                style="font-size: 40px; color: #94a3b8; margin-bottom: 10px; display: block;"></i>
+                            <p style="color: #475569; margin-bottom: 8px; font-weight: 500;">Click or drag to upload</p>
+                            <p style="color: #94a3b8; font-size: 12px;">JPG, JPEG, PNG (Max 5MB)</p>
+                            <input type="file" id="landmarkFileInput" accept=".jpg,.jpeg,.png" style="display: none;">
+                        </div>
+                        <div id="uploadProgress" style="display: none; margin-top: 10px;">
+                            <div style="background: #e2e8f0; border-radius: 10px; height: 8px; overflow: hidden;">
+                                <div id="progressBar"
+                                    style="background: #3b82f6; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                            <p style="color: #475569; font-size: 12px; margin-top: 5px;" id="progressText">Uploading...
+                            </p>
+                        </div>
+                        <div id="previewContainer" style="display: none; margin-top: 10px;">
+                            <img id="previewImage" src="#" alt="Preview"
+                                style="max-width: 200px; max-height: 150px; border-radius: 8px; object-fit: cover; border: 2px solid #e2e8f0;">
+                        </div>
                     </div>
                     <div class="btn-group">
-                        <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
-                            <i class="fas fa-pen"></i> Edit
-                        </button>
-                        <button class="cancel-btn" onclick="cancelEdit(this)" title="Cancel edit">
+                        <?php if (!empty($userLandMark) && file_exists(__DIR__ . '/../' . $userLandMark)): ?>
+                            <button class="edit-btn" onclick="toggleEdit(this)" title="Change photo">
+                                <i class="fas fa-upload"></i> Change
+                            </button>
+                        <?php else: ?>
+                            <button class="edit-btn" onclick="toggleEdit(this)" title="Upload photo">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        <?php endif; ?>
+                        <button class="cancel-btn" onclick="cancelEdit(this)" title="Cancel">
                             <i class="fas fa-times"></i> Cancel
                         </button>
                     </div>
@@ -1052,8 +1161,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     </div>
                     <div class="value-edit">
                         <input type="email" class="edit-input" id="input_email"
-                            value="<?php echo htmlspecialchars($userEmail); ?>"
-                            placeholder="Enter your email address">
+                            value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Enter your email address">
                     </div>
                     <div class="btn-group">
                         <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
@@ -1079,7 +1187,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                             placeholder="Enter your contact number" disabled>
                     </div>
                     <div class="btn-group">
-                        <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;" title="Contact number cannot be edited">
+                        <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;"
+                            title="Contact number cannot be edited">
                             <i class="fas fa-lock"></i>
                         </button>
                     </div>
@@ -1092,11 +1201,12 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 <div class="value-wrapper">
                     <div class="value-display"><?php echo htmlspecialchars($userJoined ?: 'N/A'); ?></div>
                     <div class="value-edit">
-                        <input type="text" class="edit-input"
-                            value="<?php echo htmlspecialchars($userJoined); ?>" disabled>
+                        <input type="text" class="edit-input" value="<?php echo htmlspecialchars($userJoined); ?>"
+                            disabled>
                     </div>
                     <div class="btn-group">
-                        <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;" title="Read only field">
+                        <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;"
+                            title="Read only field">
                             <i class="fas fa-lock"></i>
                         </button>
                     </div>
@@ -1126,7 +1236,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-       <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>
@@ -1139,7 +1249,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         // ============================================================
         // TOAST MESSAGES
         // ============================================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const toast = document.getElementById('toastMessage');
             if (toast) {
                 setTimeout(() => {
@@ -1192,7 +1302,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
             btn.innerHTML = '<i class="fas fa-save"></i> Save';
             btn.className = 'edit-btn saving';
-            btn.onclick = function() {
+            btn.onclick = function () {
                 saveField(this);
             };
             detail.classList.add('editing');
@@ -1221,7 +1331,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
             editBtn.innerHTML = '<i class="fas fa-pen"></i> Edit';
             editBtn.className = 'edit-btn';
-            editBtn.onclick = function() {
+            editBtn.onclick = function () {
                 toggleEdit(this);
             };
             detail.classList.remove('editing');
@@ -1246,7 +1356,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 showToast('Please enter a value', 'error');
                 btn.innerHTML = '<i class="fas fa-pen"></i> Edit';
                 btn.className = 'edit-btn';
-                btn.onclick = function() {
+                btn.onclick = function () {
                     toggleEdit(this);
                 };
                 return;
@@ -1272,7 +1382,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
                 if (data.success) {
                     showToast('Field updated successfully! Refreshing page...', 'success');
-                    setTimeout(function() {
+                    setTimeout(function () {
                         location.reload();
                     }, 1500);
                 } else {
@@ -1283,7 +1393,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                         btn.innerHTML = '<i class="fas fa-pen"></i> Edit';
                         btn.className = 'edit-btn';
                         btn.disabled = false;
-                        btn.onclick = function() {
+                        btn.onclick = function () {
                             toggleEdit(this);
                         };
                     }, 2000);
@@ -1297,7 +1407,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     btn.innerHTML = '<i class="fas fa-pen"></i> Edit';
                     btn.className = 'edit-btn';
                     btn.disabled = false;
-                    btn.onclick = function() {
+                    btn.onclick = function () {
                         toggleEdit(this);
                     };
                 }, 2000);
@@ -1305,7 +1415,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         }
 
         // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && e.target.classList.contains('edit-input') && e.target.tagName !== 'TEXTAREA') {
                 const detail = e.target.closest('.account-detail');
                 if (detail) {
@@ -1321,6 +1431,172 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 }
             }
         });
+
+        // ============================================================
+        // LANDMARK PHOTO UPLOAD
+        // ============================================================
+        let selectedFile = null;
+
+        // Handle file selection
+        document.addEventListener('DOMContentLoaded', function () {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('landmarkFileInput');
+
+            if (uploadArea && fileInput) {
+                uploadArea.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+
+                uploadArea.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', function (e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        handleFileSelect(files[0]);
+                    }
+                });
+
+                fileInput.addEventListener('change', function (e) {
+                    if (this.files.length > 0) {
+                        handleFileSelect(this.files[0]);
+                    }
+                });
+            }
+        });
+
+        function handleFileSelect(file) {
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!allowedTypes.includes(file.type)) {
+                showToast('Only JPG, JPEG, and PNG files are allowed', 'error');
+                return;
+            }
+
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('File size exceeds 5MB limit', 'error');
+                return;
+            }
+
+            selectedFile = file;
+
+            // Show preview
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+                // Hide upload area
+                document.getElementById('uploadArea').style.display = 'none';
+                // Show upload button
+                const saveBtn = document.querySelector('.account-detail.editing .edit-btn');
+                if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                    saveBtn.className = 'edit-btn primary';
+                    saveBtn.onclick = function () {
+                        uploadLandmarkPhoto();
+                    };
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadLandmarkPhoto() {
+            if (!selectedFile) {
+                showToast('Please select a photo first', 'warning');
+                return;
+            }
+
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '30%';
+            progressText.textContent = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('action', 'upload_landmark_photo');
+            formData.append('csrf_token', csrfToken);
+            formData.append('acc_number', accNumber);
+            formData.append('landmark_photo', selectedFile);
+
+            try {
+                // FIX: Use the correct API endpoint
+                const response = await fetch('../Customer_API/edit_account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progressBar.style.width = '70%';
+                progressText.textContent = 'Processing...';
+
+                const data = await response.json();
+
+                if (data.success) {
+                    progressBar.style.width = '100%';
+                    progressText.textContent = 'Complete!';
+                    showToast(data.message, 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast(data.message || 'Upload failed', 'error');
+                    progressDiv.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Network error. Please try again.', 'error');
+                progressDiv.style.display = 'none';
+            }
+        }
+
+        async function deleteLandmarkPhoto() {
+            if (!confirm('Are you sure you want to remove this photo?')) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'delete_landmark_photo');
+                formData.append('csrf_token', csrfToken);
+                formData.append('acc_number', accNumber);
+
+                // FIX: Use the correct API endpoint
+                const response = await fetch('../Customer_API/edit_account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast(data.message || 'Failed to remove photo', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Network error. Please try again.', 'error');
+            }
+        }
+
+
 
         console.log('👤 Account page loaded');
         console.log('📧 Email verified: <?php echo $isEmailVerified ? 'Yes' : 'No'; ?>');

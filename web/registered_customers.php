@@ -82,23 +82,13 @@ $customers = $stmt->fetchAll();
 function getUnreadCount($pdo, $customerAccNumber)
 {
     try {
-        if ($_SESSION['user_role'] === 'Admin') {
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) as unread_count 
-                FROM chat_conversation 
-                WHERE acc_number = ? 
-                AND status = 0
-            ");
-            $stmt->execute([$customerAccNumber]);
-        } else {
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) as unread_count 
-                FROM chat_conversation 
-                WHERE receiver_acc = ? 
-                AND status = 0
-            ");
-            $stmt->execute([$customerAccNumber]);
-        }
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as unread_count 
+            FROM chat_conversation 
+            WHERE acc_number = ? 
+            AND status = 0
+        ");
+        $stmt->execute([$customerAccNumber]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return intval($result['unread_count'] ?? 0);
     } catch (PDOException $e) {
@@ -108,18 +98,17 @@ function getUnreadCount($pdo, $customerAccNumber)
 }
 
 // ==============================================
-// FUNCTION TO DETERMINE ONLINE STATUS - WITH TIME DIFF DISPLAY
+// FUNCTION TO DETERMINE ONLINE STATUS
 // ==============================================
 function getOnlineStatus($onlineTime)
 {
     if (empty($onlineTime)) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline', 'time_diff' => ''];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => ''];
     }
 
-    // Parse the stored time (format: M j, g:i A e.g., Aug 31, 2:30 PM)
     $storedTimestamp = strtotime($onlineTime);
     if ($storedTimestamp === false) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline', 'time_diff' => ''];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => ''];
     }
 
     $currentTimestamp = time();
@@ -129,65 +118,18 @@ function getOnlineStatus($onlineTime)
     $diffDays = floor($diffSeconds / 86400);
     $diffWeeks = floor($diffSeconds / 604800);
 
-    // Determine status based on time difference
     if ($diffMinutes <= 1) {
-        // Online: 0-1 minute - Show green dot
-        return [
-            'status' => 'online',
-            'class' => 'status-online',
-            'text' => '● Online',
-            'label' => 'Active',
-            'time_diff' => ''
-        ];
+        return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'time_diff' => ''];
     } elseif ($diffMinutes >= 1 && $diffMinutes <= 60) {
-        // Away: 1-60 minutes - Show minutes
-        $displayTime = $diffMinutes . 'm';
-        return [
-            'status' => 'away',
-            'class' => 'status-away',
-            'text' => '● Away',
-            'label' => 'Away',
-            'time_diff' => $displayTime
-        ];
+        return ['status' => 'away', 'class' => 'status-away', 'text' => '● Away', 'time_diff' => $diffMinutes . 'm'];
     } elseif ($diffHours >= 1 && $diffHours < 24) {
-        // Hours: 1-23 hours
-        $displayTime = $diffHours . 'h';
-        return [
-            'status' => 'offline',
-            'class' => 'status-offline',
-            'text' => '● Offline',
-            'label' => 'Offline',
-            'time_diff' => $displayTime
-        ];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffHours . 'h'];
     } elseif ($diffDays >= 1 && $diffDays < 7) {
-        // Days: 1-6 days
-        $displayTime = $diffDays . 'd';
-        return [
-            'status' => 'offline',
-            'class' => 'status-offline',
-            'text' => '● Offline',
-            'label' => 'Offline',
-            'time_diff' => $displayTime
-        ];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffDays . 'd'];
     } elseif ($diffWeeks >= 1 && $diffWeeks < 4) {
-        // Weeks: 1-3 weeks
-        $displayTime = $diffWeeks . 'w';
-        return [
-            'status' => 'offline',
-            'class' => 'status-offline',
-            'text' => '● Offline',
-            'label' => 'Offline',
-            'time_diff' => $displayTime
-        ];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffWeeks . 'w'];
     } else {
-        // More than 4 weeks
-        return [
-            'status' => 'offline',
-            'class' => 'status-offline',
-            'text' => '● Offline',
-            'label' => 'Offline',
-            'time_diff' => '4w+'
-        ];
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => '4w+'];
     }
 }
 ?>
@@ -500,7 +442,7 @@ function getOnlineStatus($onlineTime)
             justify-content: center;
         }
 
-        /* ========== ONLINE STATUS INDICATORS ========== */
+        /* Status Indicators */
         .status-online {
             color: #10b981;
             font-size: 24px;
@@ -587,7 +529,7 @@ function getOnlineStatus($onlineTime)
             justify-content: center;
         }
 
-        /* ========== EMAIL STATUS DOT ========== */
+        /* Email Status Dot */
         .email-status-dot {
             display: inline-block;
             width: 12px;
@@ -622,7 +564,7 @@ function getOnlineStatus($onlineTime)
             }
         }
 
-        /* ========== PASSWORD STYLES ========== */
+        /* Password Styles */
         .password-wrapper {
             display: inline-flex;
             align-items: center;
@@ -647,7 +589,7 @@ function getOnlineStatus($onlineTime)
             letter-spacing: 2px;
         }
 
-        /* ========== COPY BUTTONS FOR PHONE AND EMAIL ========== */
+        /* Copy Buttons */
         .copy-btn-phone {
             color: #3b82f6;
             font-size: 14px;
@@ -682,21 +624,6 @@ function getOnlineStatus($onlineTime)
             transform: scale(1.1);
         }
 
-        .copy-btn-phone.copied,
-        .copy-btn-email.copied {
-            color: #10b981;
-        }
-
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-
-            .copy-btn-phone,
-            .copy-btn-email {
-                font-size: 11px;
-                padding: 1px 3px;
-            }
-        }
-
         .copy-btn {
             background: none;
             border: none;
@@ -728,7 +655,7 @@ function getOnlineStatus($onlineTime)
             color: #059669;
         }
 
-        /* ========== CHAT ICON WITH BADGE ========== */
+        /* Chat Icon with Badge */
         .chat-icon-wrapper {
             position: relative;
             display: inline-block;
@@ -790,7 +717,7 @@ function getOnlineStatus($onlineTime)
             }
         }
 
-        /* ========== TOAST ========== */
+        /* Toast */
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -838,6 +765,130 @@ function getOnlineStatus($onlineTime)
                 transform: translateX(100%);
                 opacity: 0;
             }
+        }
+
+        /* Landmark Photo Styles */
+        .landmark-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.2s;
+        }
+
+        .landmark-thumb:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .no-photo {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Modal */
+        .landmark-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+            cursor: zoom-out;
+        }
+
+        .landmark-modal-content {
+            position: relative;
+            margin: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .landmark-modal-image {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            cursor: zoom-in;
+        }
+
+        .landmark-modal-image.zoomed {
+            transform: scale(2);
+            cursor: zoom-out;
+        }
+
+        .landmark-modal-close {
+            position: fixed;
+            top: 20px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            color: white;
+        }
+
+        .landmark-modal-close:hover {
+            color: #bbb;
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        .landmark-modal-caption {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .zoom-controls {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10000;
+        }
+
+        .zoom-controls button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .zoom-controls button:hover {
+            background: rgba(255, 255, 255, 0.4);
         }
 
         @media (max-width: 768px) {
@@ -936,6 +987,7 @@ function getOnlineStatus($onlineTime)
                     <table class="inventory-table" id="customersTable">
                         <thead>
                             <tr>
+                                <th>Landmark</th>
                                 <th>Full Name</th>
                                 <th class="status-header">Status</th>
                                 <th>Chat</th>
@@ -948,34 +1000,42 @@ function getOnlineStatus($onlineTime)
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="7" style="text-align: center; padding: 40px;">No customers found</td>
+                                    <td colspan="8" style="text-align: center; padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
                                     $onlineStatus = getOnlineStatus($customer['online_time'] ?? '');
-                                    // account = 1 means active/unlocked, account = 0 means locked
                                     $isAccountActive = isset($customer['account']) && $customer['account'] == 1;
-                                    // active_email = 1 means green dot, active_email = 0 means red dot
                                     $isEmailActive = isset($customer['active_email']) && $customer['active_email'] == 1;
                                     $unreadCount = getUnreadCount($pdo, $customer['acc_number']);
                                     ?>
                                     <tr data-id="<?php echo $customer['id']; ?>">
+                                        <td>
+                                            <?php
+                                            $landmarkPhoto = $customer['landmark_photo'] ?? '';
+                                            $customerName = htmlspecialchars($customer['f_name'] ?? 'Customer');
+                                            if (!empty($landmarkPhoto) && file_exists(__DIR__ . '/../' . $landmarkPhoto)):
+                                                ?>
+                                                <img src="../<?php echo htmlspecialchars($landmarkPhoto); ?>"
+                                                    alt="Landmark photo of <?php echo $customerName; ?>" class="landmark-thumb"
+                                                    onclick="openLandmarkModal('../<?php echo htmlspecialchars($landmarkPhoto); ?>', '<?php echo $customerName; ?>')"
+                                                    title="Click to zoom">
+                                            <?php else: ?>
+                                                <span class="no-photo">No photo</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?php echo htmlspecialchars($customer['f_name'] ?? 'N/A'); ?></td>
                                         <td class="status-cell">
                                             <div class="status-dot-wrapper">
                                                 <?php if ($onlineStatus['status'] === 'online'): ?>
-                                                    <i class="fas fa-circle status-online"
-                                                        title="Online - Recently Active (0-1 min)"></i>
+                                                    <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
                                                     <span class="status-text online">Active</span>
                                                 <?php elseif ($onlineStatus['status'] === 'away'): ?>
-                                                    <i class="fas fa-clock status-away"
-                                                        title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                    <i class="fas fa-clock status-away" title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
                                                     <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
                                                 <?php else: ?>
-                                                    <i class="fas fa-clock status-offline"
-                                                        title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
-                                                    <span
-                                                        class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
+                                                    <i class="fas fa-clock status-offline" title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                    <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -991,8 +1051,7 @@ function getOnlineStatus($onlineTime)
                                                         <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
                                                     </span>
                                                 <?php else: ?>
-                                                    <span class="badge-unread hidden"
-                                                        id="badge_<?php echo $customer['id']; ?>"></span>
+                                                    <span class="badge-unread hidden" id="badge_<?php echo $customer['id']; ?>"></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -1015,9 +1074,7 @@ function getOnlineStatus($onlineTime)
                                                     <i class="fas fa-copy"></i>
                                                 </button>
                                             <?php endif; ?>
-                                            <!-- Dot uses active_email column: 1 = green, 0 = red -->
-                                            <span
-                                                class="email-status-dot <?php echo $isEmailActive ? 'dot-active' : 'dot-inactive'; ?>"
+                                            <span class="email-status-dot <?php echo $isEmailActive ? 'dot-active' : 'dot-inactive'; ?>"
                                                 id="dot_<?php echo $customer['id']; ?>"
                                                 title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
                                             </span>
@@ -1025,13 +1082,11 @@ function getOnlineStatus($onlineTime)
                                         <td>
                                             <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
                                                 <?php if ($isAccountActive): ?>
-                                                    <!-- Account is active (account = 1) - Show LOCK button -->
                                                     <button class="lock-btn"
                                                         onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
                                                         <i class="fas fa-lock"></i>
                                                     </button>
                                                 <?php else: ?>
-                                                    <!-- Account is locked (account = 0) - Show UNLOCK button -->
                                                     <button class="unlock-btn"
                                                         onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
                                                         <i class="fas fa-unlock"></i>
@@ -1049,12 +1104,10 @@ function getOnlineStatus($onlineTime)
                                                     <?php echo htmlspecialchars($customer['acc_number']); ?>
                                                 </span>
                                                 <span style="color: #94a3b8;">/</span>
-                                                <span class="password-text" id="pass_<?php echo $customer['id']; ?>"
-                                                    style="display: none;">
+                                                <span class="password-text" id="pass_<?php echo $customer['id']; ?>" style="display: none;">
                                                     <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
                                                 </span>
-                                                <span class="password-placeholder"
-                                                    id="placeholder_<?php echo $customer['id']; ?>">
+                                                <span class="password-placeholder" id="placeholder_<?php echo $customer['id']; ?>">
                                                     ••••••••
                                                 </span>
                                                 <button class="copy-btn copy-btn-eye"
@@ -1079,6 +1132,19 @@ function getOnlineStatus($onlineTime)
         </main>
     </div>
 
+    <!-- Landmark Modal -->
+    <div id="landmarkModal" class="landmark-modal">
+        <button class="landmark-modal-close" onclick="closeLandmarkModal()">&times;</button>
+        <div class="landmark-modal-content">
+            <img id="landmarkModalImage" class="landmark-modal-image" src="" alt="Landmark photo">
+        </div>
+        <div id="landmarkModalCaption" class="landmark-modal-caption"></div>
+        <div class="zoom-controls">
+            <button onclick="zoomIn()">🔍 Zoom In</button>
+            <button onclick="zoomOut()">🔍 Zoom Out</button>
+            <button onclick="resetZoom()">↺ Reset</button>
+        </div>
+    </div>
 
     <?php include '../footer.php'; ?>
 
@@ -1119,7 +1185,7 @@ function getOnlineStatus($onlineTime)
             });
         });
 
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeMenu();
             }
@@ -1138,7 +1204,7 @@ function getOnlineStatus($onlineTime)
             }, 3000);
         }
 
-        // ========== COPY TO CLIPBOARD (Phone & Email) ==========
+        // ========== COPY TO CLIPBOARD ==========
         function copyToClipboard(text, label) {
             if (!text || text === 'N/A' || text === '') {
                 showToast('Nothing to copy', 'warning');
@@ -1147,22 +1213,6 @@ function getOnlineStatus($onlineTime)
 
             navigator.clipboard.writeText(text).then(() => {
                 showToast(`${label} copied to clipboard!`, 'success');
-
-                const buttons = document.querySelectorAll('.copy-btn-phone, .copy-btn-email');
-                buttons.forEach(btn => {
-                    const parentTd = btn.closest('td');
-                    if (parentTd && parentTd.textContent.includes(text)) {
-                        const icon = btn.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fas fa-check';
-                            btn.classList.add('copied');
-                            setTimeout(() => {
-                                icon.className = 'fas fa-copy';
-                                btn.classList.remove('copied');
-                            }, 2000);
-                        }
-                    }
-                });
             }).catch(() => {
                 try {
                     const textArea = document.createElement('textarea');
@@ -1204,15 +1254,6 @@ function getOnlineStatus($onlineTime)
 
             navigator.clipboard.writeText(password).then(() => {
                 showToast('Password copied to clipboard!', 'success');
-                const copyBtn = event.target.closest('.copy-btn-copy');
-                const icon = copyBtn.querySelector('i');
-                const originalClass = icon.className;
-                icon.className = 'fas fa-check';
-                icon.style.color = '#10b981';
-                setTimeout(() => {
-                    icon.className = originalClass;
-                    icon.style.color = '#10b981';
-                }, 1500);
             }).catch(() => {
                 try {
                     const textArea = document.createElement('textarea');
@@ -1228,11 +1269,11 @@ function getOnlineStatus($onlineTime)
             });
         }
 
-        // ========== TOGGLE ACCOUNT STATUS (LOCK/UNLOCK) ==========
+        // ========== TOGGLE ACCOUNT STATUS ==========
         async function toggleAccountStatus(customerId, action, customerName) {
             const confirmMessage = action === 'lock'
-                ? `⚠️ Are you sure you want to LOCK "${customerName}"'s account?\n\nThis will lock their account.`
-                : `⚠️ Are you sure you want to UNLOCK "${customerName}"'s account?\n\nThis will reactivate their account.`;
+                ? `⚠️ Are you sure you want to LOCK "${customerName}"'s account?`
+                : `⚠️ Are you sure you want to UNLOCK "${customerName}"'s account?`;
 
             if (!confirm(confirmMessage)) return;
 
@@ -1294,7 +1335,7 @@ function getOnlineStatus($onlineTime)
 
         // ========== DELETE CUSTOMER ==========
         async function deleteCustomer(customerId, customerName) {
-            const confirmed = confirm(`⚠️ Are you sure you want to delete "${customerName}"?\n\nThis action will permanently remove this customer from the database and cannot be undone!`);
+            const confirmed = confirm(`⚠️ Are you sure you want to delete "${customerName}"? This action cannot be undone!`);
             if (!confirmed) return;
 
             const row = document.querySelector(`tr[data-id="${customerId}"]`);
@@ -1331,34 +1372,102 @@ function getOnlineStatus($onlineTime)
             }
         }
 
-        // ========== AUTO-REFRESH STATUS EVERY 60 SECONDS ==========
-        function refreshOnlineStatus() {
-            fetch(window.location.href, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .then(response => response.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newStatuses = doc.querySelectorAll('.status-cell');
-                    const currentStatuses = document.querySelectorAll('.status-cell');
+        // ========== LANDMARK MODAL ZOOM FUNCTIONALITY ==========
+        let currentZoom = 1;
+        const zoomStep = 0.25;
+        const maxZoom = 5;
+        const minZoom = 1;
 
-                    if (newStatuses.length === currentStatuses.length) {
-                        currentStatuses.forEach((cell, index) => {
-                            if (newStatuses[index]) {
-                                cell.innerHTML = newStatuses[index].innerHTML;
-                            }
-                        });
-                    }
-                })
-                .catch(error => console.error('Error refreshing status:', error));
+        function openLandmarkModal(imageSrc, customerName) {
+            const modal = document.getElementById('landmarkModal');
+            const modalImage = document.getElementById('landmarkModalImage');
+            const caption = document.getElementById('landmarkModalCaption');
+
+            modalImage.src = imageSrc;
+            caption.textContent = customerName + "'s Landmark Photo";
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            resetZoom();
+            document.addEventListener('keydown', handleKeyPress);
         }
 
-        setInterval(refreshOnlineStatus, 60000);
+        function closeLandmarkModal() {
+            const modal = document.getElementById('landmarkModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.removeEventListener('keydown', handleKeyPress);
+            resetZoom();
+        }
 
-        // ========== UPDATE UNREAD BADGES EVERY 30 SECONDS ==========
+        function handleKeyPress(e) {
+            if (e.key === 'Escape') {
+                closeLandmarkModal();
+            } else if (e.key === '+' || e.key === '=') {
+                zoomIn();
+            } else if (e.key === '-') {
+                zoomOut();
+            } else if (e.key === '0') {
+                resetZoom();
+            }
+        }
+
+        function zoomIn() {
+            const img = document.getElementById('landmarkModalImage');
+            if (currentZoom < maxZoom) {
+                currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+                img.style.transform = `scale(${currentZoom})`;
+            }
+        }
+
+        function zoomOut() {
+            const img = document.getElementById('landmarkModalImage');
+            if (currentZoom > minZoom) {
+                currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+                img.style.transform = `scale(${currentZoom})`;
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            const img = document.getElementById('landmarkModalImage');
+            img.style.transform = 'scale(1)';
+            const container = img.parentElement;
+            container.scrollTop = 0;
+            container.scrollLeft = 0;
+        }
+
+        document.getElementById('landmarkModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLandmarkModal();
+            }
+        });
+
+        document.getElementById('landmarkModalImage').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (currentZoom === 1) {
+                zoomIn();
+            } else {
+                resetZoom();
+            }
+        });
+
+        document.getElementById('landmarkModalImage').addEventListener('wheel', function(e) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        });
+
+        window.addEventListener('resize', function() {
+            if (document.getElementById('landmarkModal').style.display === 'block') {
+                resetZoom();
+            }
+        });
+
+        // ========== UPDATE UNREAD BADGES ==========
         function updateUnreadBadges() {
             const wrappers = document.querySelectorAll('.chat-icon-wrapper');
 
@@ -1405,10 +1514,7 @@ function getOnlineStatus($onlineTime)
         setInterval(updateUnreadBadges, 30000);
 
         console.log('👥 Registered Customers page loaded');
-        console.log('🟢 Status indicators update every 60 seconds');
-        console.log('🔐 Password hidden by default - click eye to show, copy to copy');
-        console.log('🔒 Lock/Unlock buttons update account status without page reload');
-        console.log('💬 Unread message badges update every 30 seconds');
+        console.log('🔐 Password hidden by default - click eye to show');
     </script>
 </body>
 

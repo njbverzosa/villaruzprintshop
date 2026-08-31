@@ -294,7 +294,7 @@ try {
             }
 
             $deliveryDateStr = $deliveryDateObj->format('Y-m-d');
-            $cutoffTime = '17:00'; // 5:00 PM cutoff
+            $cutoffTime = '15:00'; // 3:00 PM cutoff
 
             // Check if delivery date is today
             if ($deliveryDateStr === $currentDate) {
@@ -326,9 +326,9 @@ try {
                 $barangay30 = ['bobonot', 'amalbalan', 'gais-guipe', 'gaisguipe', 'hermosa', 'petal'];
 
                 if (in_array($barangayLower, $barangay15)) {
-                    $deliveryCharge = 15;
+                    $deliveryCharge = 25;
                 } elseif (in_array($barangayLower, $barangay30)) {
-                    $deliveryCharge = 30;
+                    $deliveryCharge = 35;
                 } else {
                     $deliveryCharge = 50;
                 }

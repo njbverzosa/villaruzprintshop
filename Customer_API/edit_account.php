@@ -151,6 +151,16 @@ try {
         error_log("Column check error: " . $e->getMessage());
     }
 
+    // Ensure landmark_photo column exists
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM customers LIKE 'landmark_photo'");
+        if ($stmt->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE customers ADD COLUMN landmark_photo VARCHAR(500) NULL");
+        }
+    } catch (PDOException $e) {
+        error_log("Column check error: " . $e->getMessage());
+    }
+
     switch ($action) {
         case 'update_field':
             $field = $_POST['field'] ?? '';
@@ -237,6 +247,140 @@ try {
                 }
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update field']);
+            }
+            break;
+
+        // ============================================================
+        // UPLOAD LANDMARK PHOTO
+        // ============================================================
+        case 'upload_landmark_photo':
+            // Check if file was uploaded
+            if (!isset($_FILES['landmark_photo']) || $_FILES['landmark_photo']['error'] !== UPLOAD_ERR_OK) {
+                $errorMessages = [
+                    UPLOAD_ERR_INI_SIZE => 'File exceeds server upload limit',
+                    UPLOAD_ERR_FORM_SIZE => 'File exceeds form upload limit',
+                    UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                    UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                    UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                    UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+                ];
+                $errorCode = $_FILES['landmark_photo']['error'] ?? UPLOAD_ERR_NO_FILE;
+                $errorMsg = $errorMessages[$errorCode] ?? 'Unknown upload error';
+                echo json_encode(['success' => false, 'message' => $errorMsg]);
+                exit();
+            }
+
+            $file = $_FILES['landmark_photo'];
+            $fileName = $file['name'];
+            $fileTmp = $file['tmp_name'];
+            $fileSize = $file['size'];
+
+            // Get file extension
+            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            // Allowed extensions
+            $allowedExtensions = ['jpg', 'jpeg', 'png'];
+
+            // Validate file extension
+            if (!in_array($fileExt, $allowedExtensions)) {
+                echo json_encode(['success' => false, 'message' => 'Only JPG, JPEG, and PNG files are allowed']);
+                exit();
+            }
+
+            // Validate file size (max 5MB)
+            $maxFileSize = 5 * 1024 * 1024; // 5MB
+            if ($fileSize > $maxFileSize) {
+                echo json_encode(['success' => false, 'message' => 'File size exceeds 5MB limit']);
+                exit();
+            }
+
+            // Validate file is actually an image
+            if (!getimagesize($fileTmp)) {
+                echo json_encode(['success' => false, 'message' => 'Uploaded file is not a valid image']);
+                exit();
+            }
+
+            try {
+                // Get user data to check for existing photo
+                $stmt = $pdo->prepare("SELECT landmark_photo FROM customers WHERE acc_number = ?");
+                $stmt->execute([$accNumber]);
+                $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                // Create upload directory if it doesn't exist
+                // Landmark_Photos is at the same level as DB_Conn
+                $uploadDir = __DIR__ . '/../Landmark_Photos/';
+                if (!file_exists($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                // Generate unique filename
+                $newFileName = time() . '_' . $accNumber . '.' . $fileExt;
+                $uploadPath = $uploadDir . $newFileName;
+                // Store path relative to project root
+                $dbPath = 'Landmark_Photos/' . $newFileName;
+
+                // Move uploaded file
+                if (move_uploaded_file($fileTmp, $uploadPath)) {
+                    // Delete old landmark photo if exists
+                    if (!empty($userData['landmark_photo'])) {
+                        $oldFilePath = __DIR__ . '/../' . $userData['landmark_photo'];
+                        if (file_exists($oldFilePath)) {
+                            unlink($oldFilePath);
+                        }
+                    }
+
+                    // Update database with the new photo path
+                    $updateStmt = $pdo->prepare("UPDATE customers SET landmark_photo = ? WHERE acc_number = ?");
+                    $updateStmt->execute([$dbPath, $accNumber]);
+
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Landmark photo uploaded successfully!',
+                        'photo_path' => $dbPath,
+                        'photo_url' => '../' . $dbPath
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to move uploaded file']);
+                }
+            } catch (PDOException $e) {
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+            }
+            break;
+
+        // ============================================================
+        // DELETE LANDMARK PHOTO
+        // ============================================================
+        case 'delete_landmark_photo':
+            try {
+                // Get current landmark photo path
+                $stmt = $pdo->prepare("SELECT landmark_photo FROM customers WHERE acc_number = ?");
+                $stmt->execute([$accNumber]);
+                $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($userData && !empty($userData['landmark_photo'])) {
+                    // Delete file from server
+                    $filePath = __DIR__ . '/../' . $userData['landmark_photo'];
+                    if (file_exists($filePath)) {
+                        unlink($filePath);
+                    }
+
+                    // Update database to NULL
+                    $updateStmt = $pdo->prepare("UPDATE customers SET landmark_photo = NULL WHERE acc_number = ?");
+                    $updateStmt->execute([$accNumber]);
+
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Landmark photo removed successfully!'
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'No landmark photo to remove'
+                    ]);
+                }
+            } catch (PDOException $e) {
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
             }
             break;
 
