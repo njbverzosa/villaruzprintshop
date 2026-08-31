@@ -412,10 +412,10 @@
                     <span>Customers</span>
                 </a>
 
-                <a href="prompt_ai.php" class="nav-dropdown-item <?php echo $currentPage == 'prompt_ai.php' ? 'active' : ''; ?>">
+                <!-- <a href="prompt_ai.php" class="nav-dropdown-item <?php echo $currentPage == 'prompt_ai.php' ? 'active' : ''; ?>">
                     <i class="fas fa-robot"></i>
                     <span>Prompt AI</span>
-                </a>
+                </a> -->
                
             </div>
         </div>

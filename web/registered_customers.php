@@ -610,6 +610,56 @@ function getOnlineStatus($onlineTime)
             letter-spacing: 2px;
         }
 
+        /* ========== COPY BUTTONS FOR PHONE AND EMAIL ========== */
+        .copy-btn-phone {
+            color: #3b82f6;
+            font-size: 14px;
+            margin-left: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .copy-btn-phone:hover {
+            background: #eff6ff;
+            transform: scale(1.1);
+        }
+
+        .copy-btn-email {
+            color: #8b5cf6;
+            font-size: 14px;
+            margin-left: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .copy-btn-email:hover {
+            background: #f3e8ff;
+            transform: scale(1.1);
+        }
+
+        .copy-btn-phone.copied,
+        .copy-btn-email.copied {
+            color: #10b981;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+
+            .copy-btn-phone,
+            .copy-btn-email {
+                font-size: 11px;
+                padding: 1px 3px;
+            }
+        }
+
         .copy-btn {
             background: none;
             border: none;
@@ -866,7 +916,10 @@ function getOnlineStatus($onlineTime)
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
                                     $onlineStatus = getOnlineStatus($customer['online_time'] ?? '');
-                                    $isActive = isset($customer['active_email']) && ($customer['active_email'] == 1 || $customer['active_email'] === null);
+                                    // account = 1 means active/unlocked, account = 0 means locked
+                                    $isAccountActive = isset($customer['account']) && $customer['account'] == 1;
+                                    // active_email = 1 means green dot, active_email = 0 means red dot
+                                    $isEmailActive = isset($customer['active_email']) && $customer['active_email'] == 1;
                                     $unreadCount = getUnreadCount($pdo, $customer['acc_number']);
                                     ?>
                                     <tr data-id="<?php echo $customer['id']; ?>">
@@ -902,24 +955,42 @@ function getOnlineStatus($onlineTime)
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td><?php echo htmlspecialchars($customer['phone_number'] ?? 'N/A'); ?></td>
+                                        <td>
+                                            <?php echo htmlspecialchars($customer['phone_number'] ?? 'N/A'); ?>
+                                            <?php if (!empty($customer['phone_number'])): ?>
+                                                <button class="copy-btn copy-btn-phone"
+                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($customer['phone_number']); ?>', 'Phone number')"
+                                                    title="Copy phone number">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <?php echo htmlspecialchars($customer['email'] ?? 'N/A'); ?>
+                                            <?php if (!empty($customer['email'])): ?>
+                                                <button class="copy-btn copy-btn-email"
+                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($customer['email']); ?>', 'Email')"
+                                                    title="Copy email address">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                            <!-- Dot uses active_email column: 1 = green, 0 = red -->
                                             <span
-                                                class="email-status-dot <?php echo $isActive ? 'dot-active' : 'dot-inactive'; ?>"
+                                                class="email-status-dot <?php echo $isEmailActive ? 'dot-active' : 'dot-inactive'; ?>"
                                                 id="dot_<?php echo $customer['id']; ?>"
-                                                title="<?php echo $isActive ? 'Email Active' : 'Email Inactive'; ?>">
+                                                title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
                                             </span>
                                         </td>
-
                                         <td>
                                             <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
-                                                <?php if ($isActive): ?>
+                                                <?php if ($isAccountActive): ?>
+                                                    <!-- Account is active (account = 1) - Show LOCK button -->
                                                     <button class="lock-btn"
                                                         onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
                                                         <i class="fas fa-lock"></i>
                                                     </button>
                                                 <?php else: ?>
+                                                    <!-- Account is locked (account = 0) - Show UNLOCK button -->
                                                     <button class="unlock-btn"
                                                         onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
                                                         <i class="fas fa-unlock"></i>
@@ -1042,8 +1113,55 @@ function getOnlineStatus($onlineTime)
             }
         }
 
-        // ========== COPY PASSWORD ==========
+        // ========== COPY TO CLIPBOARD (Phone & Email) ==========
+        function copyToClipboard(text, label) {
+            if (!text || text === 'N/A' || text === '') {
+                showToast('Nothing to copy', 'warning');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} copied to clipboard!`, 'success');
+
+                // Find the clicked button and show checkmark temporarily
+                const buttons = document.querySelectorAll('.copy-btn-phone, .copy-btn-email');
+                buttons.forEach(btn => {
+                    const parentTd = btn.closest('td');
+                    if (parentTd && parentTd.textContent.includes(text)) {
+                        const icon = btn.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-check';
+                            btn.classList.add('copied');
+                            setTimeout(() => {
+                                icon.className = 'fas fa-copy';
+                                btn.classList.remove('copied');
+                            }, 2000);
+                        }
+                    }
+                });
+            }).catch(() => {
+                // Fallback for older browsers
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showToast(`${label} copied to clipboard!`, 'success');
+                } catch (err) {
+                    showToast('Failed to copy', 'error');
+                }
+            });
+        }
+
+        // ========== COPY PASSWORD (existing function) ==========
         function copyPassword(password, customerId) {
+            if (!password) {
+                showToast('No password to copy', 'warning');
+                return;
+            }
+
             navigator.clipboard.writeText(password).then(() => {
                 showToast('Password copied to clipboard!', 'success');
                 const copyBtn = event.target.closest('.copy-btn-copy');
@@ -1069,12 +1187,12 @@ function getOnlineStatus($onlineTime)
                 }
             });
         }
-
+        
         // ========== TOGGLE ACCOUNT STATUS (LOCK/UNLOCK) ==========
         async function toggleAccountStatus(customerId, action, customerName) {
             const confirmMessage = action === 'lock'
-                ? `⚠️ Are you sure you want to LOCK "${customerName}"'s account?\n\nThis will deactivate their email access.`
-                : `⚠️ Are you sure you want to UNLOCK "${customerName}"'s account?\n\nThis will reactivate their email access.`;
+                ? `⚠️ Are you sure you want to LOCK "${customerName}"'s account?\n\nThis will lock their account.`
+                : `⚠️ Are you sure you want to UNLOCK "${customerName}"'s account?\n\nThis will reactivate their account.`;
 
             if (!confirm(confirmMessage)) return;
 
@@ -1100,37 +1218,35 @@ function getOnlineStatus($onlineTime)
                 if (data.success) {
                     showToast(data.message, 'success');
 
-                    // Update only the email dot
-                    const dot = document.getElementById('dot_' + customerId);
+                    // Update the action buttons (based on account column)
                     const actionContainer = document.getElementById('action_' + customerId);
 
                     if (action === 'lock') {
-                        // Change dot to RED (inactive)
-                        dot.className = 'email-status-dot dot-inactive';
-                        dot.title = 'Email Inactive';
-                        // Replace with UNLOCK button
+                        // Account is now locked (account = 0) - Show UNLOCK button
                         actionContainer.innerHTML = `
-                            <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-unlock"></i>
-                            </button>
-                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
+                    <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-unlock"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
                     } else {
-                        // Change dot to GREEN (active)
-                        dot.className = 'email-status-dot dot-active';
-                        dot.title = 'Email Active';
-                        // Replace with LOCK button
+                        // Account is now active (account = 1) - Show LOCK button
                         actionContainer.innerHTML = `
-                            <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-lock"></i>
-                            </button>
-                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
+                    <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-lock"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
                     }
+
+                    // Note: The dot color is controlled by active_email column
+                    // If your API also updates active_email when locking/unlocking, update the dot here
+                    // Otherwise, the dot remains unchanged
+
                 } else {
                     showToast(data.message || 'Failed to update account status', 'error');
                     actionBtn.disabled = false;
