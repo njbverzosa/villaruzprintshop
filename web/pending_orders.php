@@ -10,10 +10,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -53,7 +54,6 @@ if (!$userData) {
 // 4. USE $userData INSTEAD OF $user
 // ==============================================
 $user = $userData;
-
 
 // Get delivery_number from URL
 $selectedDeliveryNumber = isset($_GET['delivery_number']) ? $_GET['delivery_number'] : '';
@@ -104,7 +104,8 @@ if (!$deliveryInfo && !empty($orderItems)) {
         'ordered_by' => $firstItem['ordered_by'] ?? ($firstItem['customer_name'] ?? 'Unknown Customer'),
         'delivery_m_y' => $firstItem['delivery_m_y'] ?? '',
         'status' => $firstItem['status'] ?? 'PENDING',
-        'delivery_number' => $selectedDeliveryNumber
+        'delivery_number' => $selectedDeliveryNumber,
+        'delivery_date' => $firstItem['delivery_date'] ?? null
     ];
 }
 
@@ -114,7 +115,8 @@ if (!$deliveryInfo) {
         'ordered_by' => 'Customer Information Not Found',
         'delivery_m_y' => '',
         'status' => 'PENDING',
-        'delivery_number' => $selectedDeliveryNumber
+        'delivery_number' => $selectedDeliveryNumber,
+        'delivery_date' => null
     ];
 }
 
@@ -143,6 +145,26 @@ foreach ($orderItems as $item) {
 
 // Encode monthYear for JavaScript
 $encodedMonthYear = urlencode($monthYear);
+
+/**
+ * Format delivery date for display
+ * 
+ * @param string|null $date Date in Y-m-d format
+ * @return string Formatted date (e.g., "26 August 2026")
+ */
+function formatDeliveryDate($date)
+{
+    if (empty($date) || $date === '0000-00-00' || $date === '1970-01-01') {
+        return '';
+    }
+
+    $timestamp = strtotime($date);
+    if ($timestamp === false || $timestamp <= 0) {
+        return '';
+    }
+
+    return date('j F Y', $timestamp);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -362,6 +384,25 @@ $encodedMonthYear = urlencode($monthYear);
             margin-right: 10px;
         }
 
+        #deliveryDateInput {
+            background: white;
+            color: #1e293b;
+        }
+
+        #deliveryDateInput:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        @media (max-width: 480px) {
+            #deliveryDateInput {
+                font-size: 11px;
+                padding: 4px 6px;
+                max-width: 140px;
+            }
+        }
+
         .orders-table {
             width: 100%;
             border-collapse: collapse;
@@ -400,18 +441,6 @@ $encodedMonthYear = urlencode($monthYear);
         }
 
         /* Buttons */
-
-        .receipt-actions {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            padding: 20px;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            flex-wrap: wrap;
-        }
-
         .receipt-btn {
             display: inline-flex;
             align-items: center;
@@ -475,6 +504,79 @@ $encodedMonthYear = urlencode($monthYear);
             font-size: 14px;
         }
 
+        /* ========== RECEIPT ACTIONS - MOBILE ALIGNMENT ONLY ========== */
+        /* Desktop view - stays exactly as it was */
+        .receipt-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+        }
+
+        /* Mobile View - ONLY changes for mobile devices */
+        @media (max-width: 768px) {
+            .receipt-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                padding: 15px;
+            }
+
+            .receipt-actions .receipt-btn {
+                width: 100%;
+                justify-content: center;
+                margin: 0;
+            }
+
+            .receipt-actions .status-wrapper {
+                width: 100%;
+                grid-column: 1 / -1;
+            }
+
+            .receipt-actions .status-select {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Only change button sizes on small mobile (480px and below) */
+        @media (max-width: 480px) {
+            .receipt-actions {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                padding: 12px;
+            }
+
+            .receipt-btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            .receipt-btn i {
+                font-size: 12px;
+            }
+
+            .status-select {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .receipt-actions {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .receipt-actions .status-wrapper {
+                grid-column: 1;
+            }
+        }
+
         /* Editable input styles */
         .editable-input {
             width: 100%;
@@ -528,14 +630,6 @@ $encodedMonthYear = urlencode($monthYear);
             color: #64748b;
         }
 
-        footer {
-            background: #ffffff;
-            padding: 20px 5%;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-            color: #94a3b8;
-            font-size: 12px;
-        }
 
         /* Computer-Style Modal Dialog */
         .system-modal-overlay {
@@ -773,15 +867,6 @@ $encodedMonthYear = urlencode($monthYear);
             .welcome h4 {
                 font-size: 14px;
             }
-
-            .receipt-btn {
-                padding: 8px 16px;
-                font-size: 12px;
-            }
-
-            .receipt-btn i {
-                font-size: 14px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -789,7 +874,6 @@ $encodedMonthYear = urlencode($monthYear);
                 padding: 15px;
             }
 
-            
             .dashboard-header {
                 padding: 20px 30px;
                 border-radius: 10px;
@@ -798,7 +882,6 @@ $encodedMonthYear = urlencode($monthYear);
             .welcome h1 {
                 font-size: 18px;
             }
-
         }
     </style>
 </head>
@@ -835,7 +918,8 @@ $encodedMonthYear = urlencode($monthYear);
                         <i class="fas fa-chevron-right"></i>
                         <i class="fas fa-folder-open"></i>
                         <span id="deliveryNumber"><?= htmlspecialchars($deliveryNumber) ?></span>
-                        <i class="fas fa-copy" style="cursor: pointer; color: #3b82f6;" onclick="copyDeliveryNumber()" title="Copy delivery number"></i>
+                        <i class="fas fa-copy" style="cursor: pointer; color: #3b82f6;" onclick="copyDeliveryNumber()"
+                            title="Copy delivery number"></i>
                     </h4>
                 </div>
             </div>
@@ -848,8 +932,23 @@ $encodedMonthYear = urlencode($monthYear);
             <?php else: ?>
                 <div class="orders-container">
                     <div class="delivery-group">
-                        <div class="delivery-header">
-                            <i class="fas fa-user"></i> Customer: <?= htmlspecialchars($customerName) ?>
+                        <div class="delivery-header"
+                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div class="customer-info">
+                                <i class="fas fa-user"></i> Ordered By: <?= htmlspecialchars($customerName) ?>
+                            </div>
+                            <div class="delivery-date-info" id="deliveryDateWrapper">
+                                <i class="fas fa-calendar"></i> Delivery Date:
+                                <span id="deliveryDateDisplay">
+                                    <?php
+                                    $formattedDate = formatDeliveryDate($deliveryInfo['delivery_date'] ?? '');
+                                    echo htmlspecialchars($formattedDate);
+                                    ?>
+                                </span>
+                                <input type="date" id="deliveryDateInput"
+                                    style="display: none; padding: 4px 8px; border: 2px solid #8b5cf6; border-radius: 6px; font-size: 13px;"
+                                    value="<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>">
+                            </div>
                         </div>
                         <div class="orders-table-container">
                             <table class="orders-table" id="orders-table">
@@ -861,11 +960,13 @@ $encodedMonthYear = urlencode($monthYear);
                                             data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
                                             data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
-                                            <td class="product-name"><?= htmlspecialchars($item['product_name'] ?? 'N/A') ?>
+                                            <td class="product-name">
+                                                <?= htmlspecialchars($item['product_name'] ?? 'N/A') ?>
                                             </td>
                                             <td class="pieces"><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
                                             <td class="unit"><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
-                                            <td class="selling_price">₱ <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?>
+                                            <td class="selling_price">₱
+                                                <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?>
                                             </td>
                                             <td class="total-amount">
                                                 ₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?>
@@ -888,26 +989,33 @@ $encodedMonthYear = urlencode($monthYear);
                         <!-- Receipt Buttons and Status Update -->
                         <div class="receipt-actions">
                             <button class="receipt-btn delivery-receipt" onclick="generateReceipt('delivery')">
-                                <i class="fas fa-truck"></i> Delivery Receipt
+                                Delivery Receipt
                             </button>
                             <button class="receipt-btn billing-receipt" onclick="generateReceipt('billing')">
-                                <i class="fas fa-file-invoice-dollar"></i> Billing Receipt
+                                Billing Receipt
                             </button>
                             <button class="receipt-btn download-excel" id="download-excel-btn">
-                                <i class="fas fa-file-excel"></i> Download Excel
+                                Download Excel
                             </button>
                             <button class="receipt-btn edit-mode-btn" id="edit-mode-btn">
-                                <i class="fas fa-edit"></i> Edit
+                                Edit
                             </button>
 
                             <!-- Update Status Dropdown -->
                             <div class="status-wrapper">
                                 <select class="status-select" id="status-select"
                                     data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
-                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING</option>
-                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
-                                    <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>CANCELLED</option>
-                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
+                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>
+                                        PENDING
+                                    </option>
+                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID
+                                    </option>
+                                    <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>
+                                        CANCELLED
+                                    </option>
+                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>
+                                        CREDIT
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -927,7 +1035,9 @@ $encodedMonthYear = urlencode($monthYear);
         // ====== ADDED: MonthYear for redirect ======
         const monthYear = '<?= htmlspecialchars($monthYear) ?>';
         const encodedMonthYear = '<?= $encodedMonthYear ?>';
-        
+
+        const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
+
         let isEditMode = false;
         let originalData = new Map(); // Store original data for each row
         let isProcessing = false;
@@ -958,7 +1068,7 @@ $encodedMonthYear = urlencode($monthYear);
         }
 
         // ========== EXCEL DOWNLOAD FUNCTION ==========
-        document.getElementById('download-excel-btn')?.addEventListener('click', function() {
+        document.getElementById('download-excel-btn')?.addEventListener('click', function () {
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             const excelData = [];
 
@@ -1119,15 +1229,15 @@ $encodedMonthYear = urlencode($monthYear);
 
         function showConfirmModal(title, message, onConfirm, onCancel = null) {
             showSystemModal(title, message, 'warning', [{
-                    label: 'CANCEL',
-                    action: 'cancel',
-                    type: ''
-                },
-                {
-                    label: 'CONFIRM',
-                    action: 'confirm',
-                    type: 'primary'
-                }
+                label: 'CANCEL',
+                action: 'cancel',
+                type: ''
+            },
+            {
+                label: 'CONFIRM',
+                action: 'confirm',
+                type: 'primary'
+            }
             ]).then(result => {
                 if (result === 'confirm' && onConfirm) {
                     onConfirm();
@@ -1149,7 +1259,7 @@ $encodedMonthYear = urlencode($monthYear);
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
+            return str.replace(/[&<>]/g, function (m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -1238,6 +1348,14 @@ $encodedMonthYear = urlencode($monthYear);
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
+            // ====== ADD: Show date input and hide display ======
+            const dateDisplay = document.getElementById('deliveryDateDisplay');
+            const dateInput = document.getElementById('deliveryDateInput');
+            if (dateDisplay && dateInput) {
+                dateDisplay.style.display = 'none';
+                dateInput.style.display = 'inline-block';
+            }
+
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
 
             rows.forEach((row, index) => {
@@ -1289,6 +1407,11 @@ $encodedMonthYear = urlencode($monthYear);
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             let isValid = true;
 
+            // ====== GET UPDATED DELIVERY DATE ======
+            const dateInput = document.getElementById('deliveryDateInput');
+            const updatedDeliveryDate = dateInput ? dateInput.value : '';
+            const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
+
             rows.forEach((row, index) => {
                 const productInput = row.cells[0].querySelector('input');
                 const piecesInput = row.cells[1].querySelector('input');
@@ -1331,6 +1454,9 @@ $encodedMonthYear = urlencode($monthYear);
 
             if (!isValid) return;
 
+            // Check if delivery date changed
+            const dateChanged = updatedDeliveryDate && updatedDeliveryDate !== originalDeliveryDate;
+
             let hasChanges = false;
             for (const item of updatedItems) {
                 if (item.original.product !== item.updated.product ||
@@ -1343,21 +1469,27 @@ $encodedMonthYear = urlencode($monthYear);
                 }
             }
 
-            if (!hasChanges) {
+            if (!hasChanges && !dateChanged) {
                 exitEditMode();
                 return;
             }
 
+            // Build confirmation message
+            let confirmMessage = 'Are you sure you want to update the order?';
+            if (dateChanged) {
+                confirmMessage += '\n\n📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
+            }
+
             showConfirmModal(
                 'UPDATE ORDER ITEMS',
-                'Are you sure you want to update the order items? This action will modify the records.',
+                confirmMessage,
                 async () => {
-                    await updateOrderItems(updatedItems);
+                    await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged);
                 }
             );
         }
 
-        async function updateOrderItems(updatedItems) {
+        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged) {
             try {
                 const formData = new FormData();
                 formData.append('action', 'update_order_items');
@@ -1371,6 +1503,11 @@ $encodedMonthYear = urlencode($monthYear);
                     selling_price: item.updated.selling_price,
                     total_amount: item.updated.total
                 }))));
+
+                // ====== ADD DELIVERY DATE TO FORM DATA ======
+                if (dateChanged && updatedDeliveryDate) {
+                    formData.append('delivery_date', updatedDeliveryDate);
+                }
 
                 const response = await fetch('../API/update_delivery_status.php', {
                     method: 'POST',
@@ -1410,7 +1547,7 @@ $encodedMonthYear = urlencode($monthYear);
         if (statusSelect) {
             let previousStatus = statusSelect.value;
 
-            statusSelect.addEventListener('change', async function() {
+            statusSelect.addEventListener('change', async function () {
                 const newStatus = this.value;
 
                 if (newStatus === 'PAID') {
@@ -1509,7 +1646,7 @@ $encodedMonthYear = urlencode($monthYear);
 
         // ========== REMOVE ITEM FUNCTIONALITY ==========
         document.querySelectorAll('.remove-btn').forEach(button => {
-            button.addEventListener('click', async function() {
+            button.addEventListener('click', async function () {
                 if (isEditMode) {
                     showMessageModal('EDIT MODE ACTIVE',
                         'Please click UPDATE to save changes or refresh the page to cancel edit mode.',

@@ -67,31 +67,40 @@ function isValidStatus($status)
  * 
  * @param PDO $pdo Database connection
  * @param string $deliveryNumber Delivery number to lookup
- * @return string|null Current status or null if not found
+ * @return array|null Current status and delivery_date or null if not found
  */
 function getCurrentDeliveryStatus($pdo, $deliveryNumber)
 {
-    $stmt = $pdo->prepare("SELECT status FROM for_deliveries WHERE delivery_number = :delivery_number");
+    $stmt = $pdo->prepare("SELECT status, delivery_date FROM for_deliveries WHERE delivery_number = :delivery_number");
     $stmt->execute([':delivery_number' => $deliveryNumber]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $result ? $result['status'] : null;
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 /**
- * Update delivery status in for_deliveries table
+ * Update delivery status and delivery date in for_deliveries table
  * 
  * @param PDO $pdo Database connection
  * @param string $deliveryNumber Delivery number
  * @param string $newStatus New status to set
+ * @param string|null $deliveryDate New delivery date (optional)
  * @return bool True on success
  */
-function updateDeliveryStatus($pdo, $deliveryNumber, $newStatus)
+function updateDeliveryStatus($pdo, $deliveryNumber, $newStatus, $deliveryDate = null)
 {
-    $stmt = $pdo->prepare("UPDATE for_deliveries SET status = :status WHERE delivery_number = :delivery_number");
-    return $stmt->execute([
-        ':status' => $newStatus,
-        ':delivery_number' => $deliveryNumber
-    ]);
+    if ($deliveryDate !== null) {
+        $stmt = $pdo->prepare("UPDATE for_deliveries SET status = :status, delivery_date = :delivery_date WHERE delivery_number = :delivery_number");
+        return $stmt->execute([
+            ':status' => $newStatus,
+            ':delivery_date' => $deliveryDate,
+            ':delivery_number' => $deliveryNumber
+        ]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE for_deliveries SET status = :status WHERE delivery_number = :delivery_number");
+        return $stmt->execute([
+            ':status' => $newStatus,
+            ':delivery_number' => $deliveryNumber
+        ]);
+    }
 }
 
 /**
@@ -418,14 +427,15 @@ function removeOrderItem($pdo, $deliveryNumber, $productName)
 }
 
 /**
- * Update multiple order items
+ * Update multiple order items with delivery date
  * 
  * @param PDO $pdo Database connection
  * @param string $deliveryNumber Delivery number
  * @param array $items Array of items to update
+ * @param string|null $deliveryDate New delivery date (optional)
  * @return array Result with success flag and message
  */
-function updateOrderItems($pdo, $deliveryNumber, $items)
+function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
 {
     $updatedCount = 0;
     $errors = [];
@@ -516,21 +526,37 @@ function updateOrderItems($pdo, $deliveryNumber, $items)
     $totalResult = $totalStmt->fetch(PDO::FETCH_ASSOC);
     $newTotal = $totalResult['total'] ?? 0;
 
-    $updateDeliveryTotalStmt = $pdo->prepare("
-        UPDATE for_deliveries 
-        SET total_amount = :total_amount 
-        WHERE delivery_number = :delivery_number
-    ");
-    $updateDeliveryTotalStmt->execute([
-        ':total_amount' => $newTotal,
-        ':delivery_number' => $deliveryNumber
-    ]);
+    // Update delivery total and optionally delivery date
+    if ($deliveryDate !== null) {
+        $updateDeliveryStmt = $pdo->prepare("
+            UPDATE for_deliveries 
+            SET total_amount = :total_amount,
+                delivery_date = :delivery_date
+            WHERE delivery_number = :delivery_number
+        ");
+        $updateDeliveryStmt->execute([
+            ':total_amount' => $newTotal,
+            ':delivery_date' => $deliveryDate,
+            ':delivery_number' => $deliveryNumber
+        ]);
+    } else {
+        $updateDeliveryStmt = $pdo->prepare("
+            UPDATE for_deliveries 
+            SET total_amount = :total_amount 
+            WHERE delivery_number = :delivery_number
+        ");
+        $updateDeliveryStmt->execute([
+            ':total_amount' => $newTotal,
+            ':delivery_number' => $deliveryNumber
+        ]);
+    }
 
     return [
         'success' => true,
-        'message' => "Successfully updated {$updatedCount} item(s)",
+        'message' => "Successfully updated {$updatedCount} item(s)" . ($deliveryDate !== null ? " and delivery date to {$deliveryDate}" : ""),
         'updated_count' => $updatedCount,
-        'new_total' => $newTotal
+        'new_total' => $newTotal,
+        'delivery_date' => $deliveryDate
     ];
 }
 
@@ -568,11 +594,13 @@ if ($action === 'update_order_status') {
         $currentDateTime = date('j M Y');
 
         // STEP 1: Get current status before making any changes
-        $oldStatus = getCurrentDeliveryStatus($pdo, $deliveryNumber);
+        $deliveryInfo = getCurrentDeliveryStatus($pdo, $deliveryNumber);
 
-        if ($oldStatus === null) {
+        if ($deliveryInfo === null) {
             throw new Exception("Delivery #{$deliveryNumber} not found");
         }
+
+        $oldStatus = $deliveryInfo['status'];
 
         // STEP 2: Update status in for_deliveries table
         $updateResult = updateDeliveryStatus($pdo, $deliveryNumber, $newStatus);
@@ -722,6 +750,7 @@ elseif ($action === 'remove_order_item') {
 elseif ($action === 'update_order_items') {
     $deliveryNumber = trim($_POST['delivery_number'] ?? '');
     $itemsJson = $_POST['items'] ?? '';
+    $deliveryDate = isset($_POST['delivery_date']) && !empty($_POST['delivery_date']) ? trim($_POST['delivery_date']) : null;
 
     // Validate inputs
     if (empty($deliveryNumber)) {
@@ -744,8 +773,8 @@ elseif ($action === 'update_order_items') {
     try {
         $pdo->beginTransaction();
 
-        // Update all items using the helper function
-        $result = updateOrderItems($pdo, $deliveryNumber, $items);
+        // Update all items using the helper function with delivery date
+        $result = updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate);
 
         $pdo->commit();
 

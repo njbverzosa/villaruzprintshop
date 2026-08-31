@@ -34,11 +34,7 @@ $accNumber = $_SESSION['acc_number'];
 
 // Fetch user details from database - ADDED vip column
 $userData = null;
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, vip FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
+if ($userRole === 'Customer') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -51,6 +47,18 @@ if (!$userData) {
 }
 
 $user = $userData;
+
+// ==============================================
+// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$currentTime = date('g:i A'); // e.g., 2:30 PM
+
+if ($userRole === 'Customer') {
+    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
+    $updateStmt->execute([$currentTime, $userData['id']]);
+}
+
 
 // ==============================================
 // 4. HANDLE CANCEL ORDER POST (Non-AJAX fallback)
@@ -176,7 +184,7 @@ function getOrderProducts($pdo, $deliveryNumber)
 }
 
 // Check if user is VIP
-$isVip = isset($user['vip']) && $user['vip'] == 1;
+$isVip = isset($userData['vip']) && $userData['vip'] == 1;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1127,7 +1135,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
             }
         }
-         /* VIP Avatar Styles */
+
+        /* VIP Avatar Styles */
         .user-badge .avatar.vip {
             background: linear-gradient(135deg, #f59e0b, #f97316) !important;
             font-size: 12px;
@@ -1153,18 +1162,18 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 <h3><i class="fas fa-boxes"></i> Cancel Orders</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
+                <div class="avatar <?php echo (isset($userData['vip']) && $userData['vip'] == 1) ? 'vip' : ''; ?>">
                     <?php
-                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+                    $isVip = isset($userData['vip']) && $userData['vip'] == 1;
 
                     if ($isVip):
                         ?>
                         <i class="fas fa-crown"></i>
                     <?php else: ?>
-                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                        <?php echo strtoupper(substr($userData['f_name'] ?? 'G', 0, 1)); ?>
                     <?php endif; ?>
                 </div>
-                <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
+                <span class="name"><?php echo htmlspecialchars($userData['f_name'] ?? 'Guest'); ?></span>
             </div>
         </div>
 
@@ -1199,7 +1208,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 $statusDisplay = ucfirst(strtolower($delivery['status']));
                 $isCancelled = $statusClass === 'cancelled';
                 $canCancel = in_array($statusClass, ['pending', 'packing']);
-            ?>
+                ?>
                 <div class="order-card" data-delivery-number="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
                     <!-- Order Header -->
                     <div class="order-header">
@@ -1218,9 +1227,10 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                             </div>
                             <span class="order-date">
                                 <i class="fas fa-truck"></i>
-                                <?php echo formatDeliveryDateDisplay($delivery['delivery_date'] ?? 'This Day'); ?> - 8:00AM - 5:00PM
+                                <?php echo formatDeliveryDateDisplay($delivery['delivery_date'] ?? 'This Day'); ?> - 8:00AM -
+                                5:00PM
                             </span>
-                            
+
                         </div>
                     </div>
 
@@ -1262,7 +1272,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     $currentStatus = $statusClass;
                     $statusKeys = array_keys($statusSteps);
                     $currentIndex = array_search($currentStatus, $statusKeys);
-                    if ($currentIndex === false) $currentIndex = 0;
+                    if ($currentIndex === false)
+                        $currentIndex = 0;
                     ?>
                     <div class="status-tracker">
                         <?php foreach ($statusSteps as $key => $step):
@@ -1272,7 +1283,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                             $isCompleted = $stepIndex < $currentIndex;
                             $statusClassDot = $isCancelled ? 'cancelled' : ($isCompleted ? 'completed' : ($isCurrent ? 'active' : ''));
                             $lineClass = $isCancelled ? 'cancelled' : ($isActive ? 'active' : '');
-                        ?>
+                            ?>
                             <div class="status-step">
                                 <div class="dot <?php echo $statusClassDot; ?>"></div>
                                 <span class="label <?php echo $statusClassDot; ?>"><?php echo $step['label']; ?></span>
@@ -1301,7 +1312,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                         </div>
                         <div class="order-footer-right">
                             <?php if ($canCancel && !$isCancelled): ?>
-                                <button class="view-status-btn cancel-order-btn" onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
+                                <button class="view-status-btn cancel-order-btn"
+                                    onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
                                     Cancel Order
                                 </button>
                             <?php else: ?>
@@ -1324,7 +1336,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     <?php if ($isCancelled && !empty($delivery['cancel_reason'])): ?>
                         <div style="padding: 10px 18px; background: #fef2f2; border-top: 1px solid #fee2e2;">
                             <span style="font-size: 12px; color: #991b1b;">
-                                <i class="fas fa-info-circle"></i> 
+                                <i class="fas fa-info-circle"></i>
                                 Cancelled: <?php echo htmlspecialchars($delivery['cancel_reason']); ?>
                                 <?php if (!empty($delivery['other_reason'])): ?>
                                     - <?php echo htmlspecialchars($delivery['other_reason']); ?>
@@ -1335,14 +1347,16 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
                     <!-- ========== CANCEL FORM ========== -->
                     <?php if ($canCancel && !$isCancelled): ?>
-                        <div class="cancel-form-wrapper" id="cancelForm_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
+                        <div class="cancel-form-wrapper"
+                            id="cancelForm_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
                             <form method="POST" action="cancel_order.php" onsubmit="return false;">
                                 <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
-                                <input type="hidden" name="delivery_number" value="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
+                                <input type="hidden" name="delivery_number"
+                                    value="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
                                 <input type="hidden" name="action" value="cancel_order">
 
                                 <div class="form-title">
-                                    <i class="fas fa-exclamation-circle"></i> 
+                                    <i class="fas fa-exclamation-circle"></i>
                                     Cancel Order - <?php echo htmlspecialchars($delivery['delivery_number']); ?>
                                 </div>
 
@@ -1352,8 +1366,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                                         Reason for Cancellation <span class="required">*</span>
                                     </label>
                                     <select id="cancelReason_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
-                                        name="cancel_reason"
-                                        required>
+                                        name="cancel_reason" required>
                                         <option value="">Select a reason...</option>
                                         <option value="Changed my mind">Changed my mind</option>
                                         <option value="Found a better price">Found a better price</option>
@@ -1366,22 +1379,24 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                                 </div>
 
                                 <!-- TEXTAREA - Other Reason -->
-                                <div class="form-group" id="otherReasonGroup_<?php echo htmlspecialchars($delivery['delivery_number']); ?>" style="display: none;">
+                                <div class="form-group"
+                                    id="otherReasonGroup_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
+                                    style="display: none;">
                                     <label>
                                         Please specify <span class="required">*</span>
                                     </label>
                                     <textarea id="otherReason_<?php echo htmlspecialchars($delivery['delivery_number']); ?>"
-                                        name="other_reason"
-                                        placeholder="Please specify your reason..."
-                                        rows="3"></textarea>
+                                        name="other_reason" placeholder="Please specify your reason..." rows="3"></textarea>
                                 </div>
 
                                 <!-- Buttons -->
                                 <div class="form-actions">
-                                    <button type="button" class="btn btn-secondary" onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
+                                    <button type="button" class="btn btn-secondary"
+                                        onclick="toggleCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
                                         Close
                                     </button>
-                                    <button type="button" class="btn btn-danger" onclick="validateCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
+                                    <button type="button" class="btn btn-danger"
+                                        onclick="validateCancelForm('<?php echo htmlspecialchars($delivery['delivery_number']); ?>')">
                                         Confirm
                                     </button>
                                 </div>
@@ -1393,7 +1408,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         <?php endif; ?>
     </main>
 
-     <!-- ========== BOTTOM NAVIGATION ========== -->
+    <!-- ========== BOTTOM NAVIGATION ========== -->
     <nav class="bottom-nav">
         <a href="shop.php" class="nav-item">
             <i class="fas fa-store"></i>
@@ -1484,7 +1499,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             const form = document.getElementById('cancelForm_' + deliveryNumber);
             if (form) {
                 if (form.style.display === 'none' || form.style.display === '') {
-                    document.querySelectorAll('.cancel-form-wrapper').forEach(function(el) {
+                    document.querySelectorAll('.cancel-form-wrapper').forEach(function (el) {
                         if (el.id !== 'cancelForm_' + deliveryNumber) {
                             el.style.display = 'none';
                         }
@@ -1503,8 +1518,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         // ============================================================
         // SHOW/HIDE OTHER REASON TEXTAREA
         // ============================================================
-        document.querySelectorAll('select[name="cancel_reason"]').forEach(function(select) {
-            select.addEventListener('change', function() {
+        document.querySelectorAll('select[name="cancel_reason"]').forEach(function (select) {
+            select.addEventListener('change', function () {
                 const deliveryNumber = this.id.replace('cancelReason_', '');
                 const otherGroup = document.getElementById('otherReasonGroup_' + deliveryNumber);
                 if (this.value === 'Other') {
@@ -1553,13 +1568,13 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
             // Send AJAX request
             fetch('../Customer_API/cancel_order.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(data)
-                })
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
                 .then(response => response.json())
                 .then(result => {
                     submitBtn.innerHTML = originalText;
@@ -1614,9 +1629,9 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         // ============================================================
         // CLOSE CANCEL FORM ON ESCAPE KEY
         // ============================================================
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                document.querySelectorAll('.cancel-form-wrapper').forEach(function(el) {
+                document.querySelectorAll('.cancel-form-wrapper').forEach(function (el) {
                     el.style.display = 'none';
                 });
             }
@@ -1625,8 +1640,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         // ============================================================
         // CLOSE FORM ON CLICK OUTSIDE
         // ============================================================
-        document.addEventListener('click', function(e) {
-            document.querySelectorAll('.cancel-form-wrapper').forEach(function(el) {
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('.cancel-form-wrapper').forEach(function (el) {
                 if (el.style.display === 'block') {
                     const isClickInside = el.contains(e.target);
                     const isClickOnButton = e.target.closest('.cancel-order-btn');

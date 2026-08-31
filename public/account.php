@@ -2,37 +2,49 @@
 // public/account.php - Services Page
 
 session_start();
+
+// ==============================================
+// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 
 // ==============================================
-// 1. CHECK LOGIN STATUS
+// 2. CHECK LOGIN STATUS
 // ==============================================
-if (!isset($_SESSION['user_role']) || !isset($_SESSION['user_id']) || !isset($_SESSION['acc_number'])) {
-    $_SESSION['login_error'] = 'Please login first.';
+function isLoggedIn() {
+    return isset($_SESSION['user_role']) && 
+           isset($_SESSION['user_id']) && 
+           isset($_SESSION['acc_number']);}
+
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
     exit;
 }
 
 // ==============================================
-// 2. GET USER DATA - ADDED vip column
+// 3. GET USER DATA FROM SESSION
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM admins WHERE id = ?");
-} else {
+// Fetch user details from database - ADDED vip column
+$userData = null;
+if ($userRole === 'Customer') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
-$stmt->execute([$userId]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$user) {
+if (!$userData) {
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
+
+$user = $userData;
 
 // ==============================================
 // 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
@@ -42,7 +54,7 @@ $currentTime = date('g:i A'); // e.g., 2:30 PM
 
 if ($userRole === 'Customer') {
     $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-    $updateStmt->execute([$currentTime, $user['id']]);
+    $updateStmt->execute([$currentTime, $userData['id']]);
 } 
 
 
@@ -69,7 +81,7 @@ $errorMessage = $_SESSION['edit_error'] ?? '';
 unset($_SESSION['edit_success'], $_SESSION['edit_error']);
 
 // Check if user is VIP
-$isVip = isset($user['vip']) && $user['vip'] == 1;
+$isVip = isset($userData['vip']) && $userData['vip'] == 1;
 
 ?>
 <!DOCTYPE html>
@@ -512,18 +524,18 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 <h3><i class="fas fa-th-large"></i> Services</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
+                <div class="avatar <?php echo (isset($userData['vip']) && $userData['vip'] == 1) ? 'vip' : ''; ?>">
                     <?php
-                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+                    $isVip = isset($userData['vip']) && $userData['vip'] == 1;
 
                     if ($isVip):
                         ?>
                         <i class="fas fa-crown"></i>
                     <?php else: ?>
-                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                        <?php echo strtoupper(substr($userData['f_name'] ?? 'G', 0, 1)); ?>
                     <?php endif; ?>
                 </div>
-                <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
+                <span class="name"><?php echo htmlspecialchars($userData['f_name'] ?? 'Guest'); ?></span>
             </div>
         </div>
 

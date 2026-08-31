@@ -34,11 +34,7 @@ $accNumber = $_SESSION['acc_number'];
 
 // Fetch user details from database - ADDED vip column
 $userData = null;
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, vip FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
+if ($userRole === 'Customer') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -188,7 +184,7 @@ function getOrderProducts($pdo, $deliveryNumber)
 }
 
 // Check if user is VIP
-$isVip = isset($user['vip']) && $user['vip'] == 1;
+$isVip = isset($userData['vip']) && $userData['vip'] == 1;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1163,18 +1159,18 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 <h3><i class="fas fa-route"></i> Track my orders</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
+                <div class="avatar <?php echo (isset($userData['vip']) && $userData['vip'] == 1) ? 'vip' : ''; ?>">
                     <?php
-                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+                    $isVip = isset($userData['vip']) && $userData['vip'] == 1;
 
                     if ($isVip):
                         ?>
                         <i class="fas fa-crown"></i>
                     <?php else: ?>
-                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                        <?php echo strtoupper(substr($userData['f_name'] ?? 'G', 0, 1)); ?>
                     <?php endif; ?>
                 </div>
-                <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
+                <span class="name"><?php echo htmlspecialchars($userData['f_name'] ?? 'Guest'); ?></span>
             </div>
         </div>
 

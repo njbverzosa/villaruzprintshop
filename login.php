@@ -104,23 +104,38 @@ function handleLogin($pdo)
 
     if ($userTypeSelected === 'Admin') {
         $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access 
-                              FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
+                          FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
         $stmt->execute([$selectedRole, $identifier]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password'])) {
-            $userType = 'Admin';
+        if ($user) {
+            // Check if account is locked (assuming status = 1 means locked)
+            if ($user['status'] == 1) {
+                $errors[] = 'Account locked. Please contact support.';
+            } elseif (password_verify($password, $user['password'])) {
+                $userType = 'Admin';
+            } else {
+                $errors[] = 'Invalid credentials. Please try again.';
+            }
         } else {
             $errors[] = 'Invalid credentials. Please try again.';
         }
+
     } elseif ($userTypeSelected === 'Customer') {
-        $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, 'Customer' as role, status, email 
-                              FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
+        $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email 
+                          FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
         $stmt->execute([$selectedCustomerId, $identifier]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password'])) {
-            $userType = 'Customer';
+        if ($user) {
+            // Check if account is locked (assuming status = 1 means locked)
+            if ($user['account'] == 1) {
+                $errors[] = 'Account locked due to suspicious activity. For your security, please contact support immediately.';
+            } elseif (password_verify($password, $user['password'])) {
+                $userType = 'Customer';
+            } else {
+                $errors[] = 'Invalid credentials. Please try again.';
+            }
         } else {
             $errors[] = 'Invalid credentials. Please try again.';
         }
@@ -146,7 +161,7 @@ function handleLogin($pdo)
             // ==============================================
             // UPDATE CUSTOMER: last_login_date, status, online_time
             // ==============================================
-            $updateStmt = $pdo->prepare("UPDATE customers SET status = 1, online_time = ? WHERE id = ?");
+            $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
             $updateStmt->execute([$currentTime, $user['id']]);
             session_regenerate_id(true);
 

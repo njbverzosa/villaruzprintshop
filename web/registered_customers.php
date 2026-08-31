@@ -92,7 +92,8 @@ foreach ($customers as $customer) {
 // ==============================================
 // FUNCTION TO GET UNREAD MESSAGE COUNT - FIXED
 // ==============================================
-function getUnreadCount($pdo, $customerAccNumber) {
+function getUnreadCount($pdo, $customerAccNumber)
+{
     try {
         // For admin: count unread messages sent BY this customer (status = 0)
         // For customer: count unread messages sent TO this customer (status = 0)
@@ -161,6 +162,7 @@ function getOnlineStatus($onlineTime)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
+    <meta http-equiv="refresh" content="10">
     <title>Registered Customers | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -690,9 +692,12 @@ function getOnlineStatus($onlineTime)
         }
 
         @keyframes pulse-badge {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
             }
+
             50% {
                 transform: scale(1.1);
             }
@@ -883,8 +888,8 @@ function getOnlineStatus($onlineTime)
                                         <td>
                                             <div class="chat-icon-wrapper">
                                                 <span class="chat-icon"
-                                                      onclick="window.location.href='chat_view.php?acc=<?php echo urlencode($customer['acc_number']); ?>'"
-                                                      data-acc="<?php echo htmlspecialchars($customer['acc_number']); ?>">
+                                                    onclick="window.location.href='chat_view.php?acc=<?php echo urlencode($customer['acc_number']); ?>'"
+                                                    data-acc="<?php echo htmlspecialchars($customer['acc_number']); ?>">
                                                     <i class="fas fa-paper-plane"></i>
                                                 </span>
                                                 <?php if ($unreadCount > 0): ?>
@@ -892,7 +897,8 @@ function getOnlineStatus($onlineTime)
                                                         <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
                                                     </span>
                                                 <?php else: ?>
-                                                    <span class="badge-unread hidden" id="badge_<?php echo $customer['id']; ?>"></span>
+                                                    <span class="badge-unread hidden"
+                                                        id="badge_<?php echo $customer['id']; ?>"></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -905,7 +911,7 @@ function getOnlineStatus($onlineTime)
                                                 title="<?php echo $isActive ? 'Email Active' : 'Email Inactive'; ?>">
                                             </span>
                                         </td>
-                                        
+
                                         <td>
                                             <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
                                                 <?php if ($isActive): ?>
@@ -1212,46 +1218,46 @@ function getOnlineStatus($onlineTime)
         // ========== UPDATE UNREAD BADGES EVERY 30 SECONDS ==========
         function updateUnreadBadges() {
             const wrappers = document.querySelectorAll('.chat-icon-wrapper');
-            
+
             wrappers.forEach(wrapper => {
                 const icon = wrapper.querySelector('.chat-icon');
                 if (!icon) return;
-                
+
                 const accNumber = icon.getAttribute('data-acc');
                 if (!accNumber) return;
-                
+
                 const badge = wrapper.querySelector('.badge-unread');
                 if (!badge) return;
-                
+
                 // Find the customer ID from the row
                 const row = icon.closest('tr');
                 if (!row) return;
                 const customerId = row.getAttribute('data-id');
                 if (!customerId) return;
-                
+
                 // Fetch unread count for this customer
                 const formData = new FormData();
                 formData.append('action', 'get_unread_count');
                 formData.append('customer_acc', accNumber);
                 formData.append('csrf_token', csrfToken);
-                
+
                 fetch('../Customer_API/chat.php', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const count = data.unread_count || 0;
-                        if (count > 0) {
-                            badge.textContent = count > 9 ? '9+' : count;
-                            badge.classList.remove('hidden');
-                        } else {
-                            badge.classList.add('hidden');
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const count = data.unread_count || 0;
+                            if (count > 0) {
+                                badge.textContent = count > 9 ? '9+' : count;
+                                badge.classList.remove('hidden');
+                            } else {
+                                badge.classList.add('hidden');
+                            }
                         }
-                    }
-                })
-                .catch(error => console.error('Error updating badge:', error));
+                    })
+                    .catch(error => console.error('Error updating badge:', error));
             });
         }
 

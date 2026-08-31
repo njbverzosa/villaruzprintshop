@@ -1,5 +1,5 @@
 <?php
-// public/orders.php 
+// public/delivered.php 
 
 session_start();
 
@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -32,13 +33,10 @@ $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number']; // ← THIS IS THE SESSION VARIABLE
 
 // Fetch user details from database
+// Fetch user details from database
 $userData = null;
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
+if ($userRole === 'Customer') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -64,20 +62,20 @@ $currentTime = date('g:i A'); // e.g., 2:30 PM
 if ($userRole === 'Customer') {
     $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
     $updateStmt->execute([$currentTime, $userData['id']]);
-} 
+}
 
 
 // ==============================================
 // 5. Cart badge for bottom bar
 // ==============================================
-   $cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
-    $cartCountStmt->execute([$user['acc_number']]);
-    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
-    $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
-    
-    
+$cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
+$cartCountStmt->execute([$userData['acc_number']]);
+$cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
+$cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 
-$userAccNumber = $user['acc_number'] ?? '';
+
+
+$userAccNumber = $userData['acc_number'] ?? '';
 
 // Fetch all deliveries for this user from for_deliveries table
 $stmt = $pdo->prepare("SELECT delivery_number, delivery_date, total_amount, status, ordered_by, delivery_address, date_time_sold FROM for_deliveries WHERE acc_number = ? AND status = 'PAID' ORDER BY id DESC");
@@ -120,7 +118,7 @@ function getOrderProducts($pdo, $deliveryNumber)
 }
 
 // Check if user is VIP
-$isVip = isset($user['vip']) && $user['vip'] == 1;
+$isVip = isset($userData['vip']) && $userData['vip'] == 1;
 
 ?>
 <!DOCTYPE html>
@@ -366,6 +364,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -743,7 +742,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
             }
         }
-         /* VIP Avatar Styles */
+
+        /* VIP Avatar Styles */
         .user-badge .avatar.vip {
             background: linear-gradient(135deg, #f59e0b, #f97316) !important;
             font-size: 12px;
@@ -769,18 +769,18 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 <h3><i class="fas fa-history"></i> Delivered Orders</h3>
             </div>
             <div class="user-badge">
-                <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
+                <div class="avatar <?php echo (isset($userData['vip']) && $userData['vip'] == 1) ? 'vip' : ''; ?>">
                     <?php
-                    $isVip = isset($user['vip']) && $user['vip'] == 1;
+                    $isVip = isset($userData['vip']) && $userData['vip'] == 1;
 
                     if ($isVip):
                         ?>
                         <i class="fas fa-crown"></i>
                     <?php else: ?>
-                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                        <?php echo strtoupper(substr($userData['f_name'] ?? 'G', 0, 1)); ?>
                     <?php endif; ?>
                 </div>
-                <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
+                <span class="name"><?php echo htmlspecialchars($userData['f_name'] ?? 'Guest'); ?></span>
             </div>
         </div>
 
@@ -797,7 +797,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 $firstProduct = $productCount > 0 ? $products[0] : null;
                 $remainingProducts = $productCount > 0 ? array_slice($products, 1) : [];
                 $remainingCount = count($remainingProducts);
-            ?>
+                ?>
                 <div class="order-card" data-delivery-number="<?php echo htmlspecialchars($delivery['delivery_number']); ?>">
                     <!-- Order Header -->
                     <div class="order-header">
@@ -920,12 +920,12 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             <i class="fas fa-truck"></i>
             <span>Orders</span>
         </a>
-        
+
         <a href="account.php" class="nav-item active">
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-       <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>

@@ -26,30 +26,45 @@ if (!isLoggedIn()) {
 }
 
 // ==============================================
-// 3. GET USER DATA FROM SESSION
+// 3. GET USER DATA FROM SESSION (MOVE THIS UP)
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 4. UPDATE USER STATUS TO OFFLINE (0) WITH ONLINE TIME
+// 4. FETCH USER DATA FROM DATABASE
 // ==============================================
-try {
-    // Set timezone to Asia/Manila
-    date_default_timezone_set('Asia/Manila');
+$userData = null;
+if ($userRole === 'Customer') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, online_time, f_name, email, phone_number, vip FROM customers WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+}
 
-    // Get current time in 12-hour format with AM/PM
-    $currentTime = date('g:i A'); // e.g., 2:30 PM
-
-    // Update customer status to 0 (offline) and set online_time
-    $stmt = $pdo->prepare("UPDATE customers SET status = 0, online_time = ? WHERE id = ?");
-    $stmt->execute([$currentTime, $userId]);
-} catch (Exception $e) {
+if (!$userData) {
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
 }
 
 // ==============================================
-// 5. DESTROY SESSION COMPLETELY
+// 5. UPDATE USER STATUS TO OFFLINE (0) WITH ONLINE TIME
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$currentTime = date('g:i A'); // e.g., 2:30 PM
+
+if ($userRole === 'Customer') {
+    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
+    $updateStmt->execute([$currentTime, $userData['id']]);
+    
+    // Optional: Also set status to 0 (offline) if you have a status column
+    // $updateStmt = $pdo->prepare("UPDATE customers SET status = 0, online_time = ? WHERE id = ?");
+    // $updateStmt->execute([$currentTime, $userData['id']]);
+}
+
+// ==============================================
+// 6. DESTROY SESSION COMPLETELY
 // ==============================================
 // Clear all session variables
 $_SESSION = array();
@@ -71,9 +86,8 @@ if (ini_get("session.use_cookies")) {
 // Destroy the session
 session_destroy();
 
-
 // ==============================================
-// 6. SET EXIT MESSAGE AND REDIRECT
+// 7. SET EXIT MESSAGE AND REDIRECT
 // ==============================================
 // Start a new session to store the exit message
 session_start();
