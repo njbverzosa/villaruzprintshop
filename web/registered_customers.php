@@ -76,29 +76,13 @@ $stmt = $pdo->prepare("SELECT * FROM customers ORDER BY id DESC");
 $stmt->execute();
 $customers = $stmt->fetchAll();
 
-// Calculate statistics
-$totalCustomers = count($customers);
-$activeCustomers = 0;
-$inactiveCustomers = 0;
-
-foreach ($customers as $customer) {
-    if (isset($customer['active_email']) && ($customer['active_email'] == 1 || $customer['active_email'] === null)) {
-        $activeCustomers++;
-    } else {
-        $inactiveCustomers++;
-    }
-}
-
 // ==============================================
-// FUNCTION TO GET UNREAD MESSAGE COUNT - FIXED
+// FUNCTION TO GET UNREAD MESSAGE COUNT
 // ==============================================
 function getUnreadCount($pdo, $customerAccNumber)
 {
     try {
-        // For admin: count unread messages sent BY this customer (status = 0)
-        // For customer: count unread messages sent TO this customer (status = 0)
         if ($_SESSION['user_role'] === 'Admin') {
-            // Admin sees unread messages from this customer
             $stmt = $pdo->prepare("
                 SELECT COUNT(*) as unread_count 
                 FROM chat_conversation 
@@ -107,7 +91,6 @@ function getUnreadCount($pdo, $customerAccNumber)
             ");
             $stmt->execute([$customerAccNumber]);
         } else {
-            // Customer sees unread messages sent to them
             $stmt = $pdo->prepare("
                 SELECT COUNT(*) as unread_count 
                 FROM chat_conversation 
@@ -119,7 +102,6 @@ function getUnreadCount($pdo, $customerAccNumber)
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return intval($result['unread_count'] ?? 0);
     } catch (PDOException $e) {
-        // If table doesn't exist, return 0
         error_log("Error getting unread count: " . $e->getMessage());
         return 0;
     }
@@ -144,14 +126,17 @@ function getOnlineStatus($onlineTime)
     $diffSeconds = $currentTimestamp - $storedTimestamp;
     $diffMinutes = floor($diffSeconds / 60);
 
-    if ($diffMinutes >= 1 && $diffMinutes <= 2) {
+    // Online: 0-1 minute gap (Active)
+    if ($diffMinutes <= 1) {
         return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'label' => 'Active'];
-    } elseif ($diffMinutes >= 3 && $diffMinutes <= 5) {
+    } 
+    // Away: 1-2 minute gap
+    elseif ($diffMinutes >= 1 && $diffMinutes <= 2) {
         return ['status' => 'away', 'class' => 'status-away', 'text' => '● Away', 'label' => 'Away'];
-    } elseif ($diffMinutes >= 6) {
+    } 
+    // Offline: 2+ minutes gap
+    else {
         return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'label' => 'Offline'];
-    } else {
-        return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'label' => 'Active'];
     }
 }
 ?>
@@ -927,13 +912,13 @@ function getOnlineStatus($onlineTime)
                                         <td class="status-cell">
                                             <div class="status-dot-wrapper">
                                                 <?php if ($onlineStatus['status'] === 'online'): ?>
-                                                    <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
+                                                    <i class="fas fa-circle status-online" title="Online - Recently Active (0-1 min)"></i>
                                                     <span class="status-text online">Active</span>
                                                 <?php elseif ($onlineStatus['status'] === 'away'): ?>
-                                                    <i class="fas fa-circle status-away" title="Away - Idle for 3-5 min"></i>
+                                                    <i class="fas fa-circle status-away" title="Away - Idle for 1-2 min"></i>
                                                     <span class="status-text away">Away</span>
                                                 <?php else: ?>
-                                                    <i class="fas fa-circle status-offline" title="Offline - 6+ min inactive"></i>
+                                                    <i class="fas fa-circle status-offline" title="Offline - 2+ min inactive"></i>
                                                     <span class="status-text offline">Offline</span>
                                                 <?php endif; ?>
                                             </div>
@@ -1038,9 +1023,10 @@ function getOnlineStatus($onlineTime)
         </main>
     </div>
 
+
     <?php include '../footer.php'; ?>
 
-    <script>
+ <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?php echo $_SESSION['csrf_token']; ?>';
 
         // ========== BURGER MENU TOGGLE ==========
@@ -1096,6 +1082,46 @@ function getOnlineStatus($onlineTime)
             }, 3000);
         }
 
+        // ========== COPY TO CLIPBOARD (Phone & Email) ==========
+        function copyToClipboard(text, label) {
+            if (!text || text === 'N/A' || text === '') {
+                showToast('Nothing to copy', 'warning');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} copied to clipboard!`, 'success');
+                
+                const buttons = document.querySelectorAll('.copy-btn-phone, .copy-btn-email');
+                buttons.forEach(btn => {
+                    const parentTd = btn.closest('td');
+                    if (parentTd && parentTd.textContent.includes(text)) {
+                        const icon = btn.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-check';
+                            btn.classList.add('copied');
+                            setTimeout(() => {
+                                icon.className = 'fas fa-copy';
+                                btn.classList.remove('copied');
+                            }, 2000);
+                        }
+                    }
+                });
+            }).catch(() => {
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showToast(`${label} copied to clipboard!`, 'success');
+                } catch (err) {
+                    showToast('Failed to copy', 'error');
+                }
+            });
+        }
+
         // ========== TOGGLE PASSWORD VISIBILITY ==========
         function togglePassword(customerId, password) {
             const passwordText = document.getElementById('pass_' + customerId);
@@ -1113,55 +1139,13 @@ function getOnlineStatus($onlineTime)
             }
         }
 
-        // ========== COPY TO CLIPBOARD (Phone & Email) ==========
-        function copyToClipboard(text, label) {
-            if (!text || text === 'N/A' || text === '') {
-                showToast('Nothing to copy', 'warning');
-                return;
-            }
-
-            navigator.clipboard.writeText(text).then(() => {
-                showToast(`${label} copied to clipboard!`, 'success');
-
-                // Find the clicked button and show checkmark temporarily
-                const buttons = document.querySelectorAll('.copy-btn-phone, .copy-btn-email');
-                buttons.forEach(btn => {
-                    const parentTd = btn.closest('td');
-                    if (parentTd && parentTd.textContent.includes(text)) {
-                        const icon = btn.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fas fa-check';
-                            btn.classList.add('copied');
-                            setTimeout(() => {
-                                icon.className = 'fas fa-copy';
-                                btn.classList.remove('copied');
-                            }, 2000);
-                        }
-                    }
-                });
-            }).catch(() => {
-                // Fallback for older browsers
-                try {
-                    const textArea = document.createElement('textarea');
-                    textArea.value = text;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    showToast(`${label} copied to clipboard!`, 'success');
-                } catch (err) {
-                    showToast('Failed to copy', 'error');
-                }
-            });
-        }
-
-        // ========== COPY PASSWORD (existing function) ==========
+        // ========== COPY PASSWORD ==========
         function copyPassword(password, customerId) {
             if (!password) {
                 showToast('No password to copy', 'warning');
                 return;
             }
-
+            
             navigator.clipboard.writeText(password).then(() => {
                 showToast('Password copied to clipboard!', 'success');
                 const copyBtn = event.target.closest('.copy-btn-copy');
@@ -1187,7 +1171,7 @@ function getOnlineStatus($onlineTime)
                 }
             });
         }
-        
+
         // ========== TOGGLE ACCOUNT STATUS (LOCK/UNLOCK) ==========
         async function toggleAccountStatus(customerId, action, customerName) {
             const confirmMessage = action === 'lock'
@@ -1218,35 +1202,27 @@ function getOnlineStatus($onlineTime)
                 if (data.success) {
                     showToast(data.message, 'success');
 
-                    // Update the action buttons (based on account column)
                     const actionContainer = document.getElementById('action_' + customerId);
-
+                    
                     if (action === 'lock') {
-                        // Account is now locked (account = 0) - Show UNLOCK button
                         actionContainer.innerHTML = `
-                    <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-unlock"></i>
-                    </button>
-                    <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                `;
+                            <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-unlock"></i>
+                            </button>
+                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        `;
                     } else {
-                        // Account is now active (account = 1) - Show LOCK button
                         actionContainer.innerHTML = `
-                    <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-lock"></i>
-                    </button>
-                    <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                `;
+                            <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        `;
                     }
-
-                    // Note: The dot color is controlled by active_email column
-                    // If your API also updates active_email when locking/unlocking, update the dot here
-                    // Otherwise, the dot remains unchanged
-
                 } else {
                     showToast(data.message || 'Failed to update account status', 'error');
                     actionBtn.disabled = false;
@@ -1286,11 +1262,6 @@ function getOnlineStatus($onlineTime)
                 if (data.success) {
                     showToast(data.message, 'success');
                     row.remove();
-                    const headerCount = document.querySelector('.section-header h5');
-                    if (headerCount) {
-                        const currentCount = parseInt(headerCount.textContent.match(/\((\d+)\)/)?.[1] || 0);
-                        headerCount.innerHTML = `(${currentCount - 1}) Customer List`;
-                    }
                 } else {
                     showToast(data.message || 'Failed to delete customer', 'error');
                     deleteBtn.disabled = false;
@@ -1345,13 +1316,11 @@ function getOnlineStatus($onlineTime)
                 const badge = wrapper.querySelector('.badge-unread');
                 if (!badge) return;
 
-                // Find the customer ID from the row
                 const row = icon.closest('tr');
                 if (!row) return;
                 const customerId = row.getAttribute('data-id');
                 if (!customerId) return;
 
-                // Fetch unread count for this customer
                 const formData = new FormData();
                 formData.append('action', 'get_unread_count');
                 formData.append('customer_acc', accNumber);
@@ -1377,7 +1346,6 @@ function getOnlineStatus($onlineTime)
             });
         }
 
-        // Update unread badges every 30 seconds
         setInterval(updateUnreadBadges, 30000);
 
         console.log('👥 Registered Customers page loaded');
