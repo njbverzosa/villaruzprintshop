@@ -109,10 +109,7 @@ function handleLogin($pdo)
         $user = $stmt->fetch();
 
         if ($user) {
-            // Check if account is locked (assuming status = 1 means locked)
-            if ($user['status'] == 1) {
-                $errors[] = 'Account locked. Please contact support.';
-            } elseif (password_verify($password, $user['password'])) {
+            if (password_verify($password, $user['password'])) {
                 $userType = 'Admin';
             } else {
                 $errors[] = 'Invalid credentials. Please try again.';
