@@ -185,13 +185,6 @@ function getUnreadCount($pdo, $accNumber)
             font-weight: 700;
             color: #0f172a;
         }
-
-        .welcome h4 {
-            font-size: 20px;
-            font-weight: 600;
-            color: #0f172a;
-        }
-
         .burger-btn {
             position: fixed;
             top: 20px;
@@ -697,17 +690,11 @@ function getUnreadCount($pdo, $accNumber)
         ?>
 
         <main class="main-content">
-            <div class="dashboard-header">
+             <div class="dashboard-header">
                 <div class="welcome">
-                    <h4><i class="fas fa-clock"></i> Daily Time Records</h4>
-                </div>
-                <div>
-                    <span style="font-size: 14px; color: #64748b;">
-                        <i class="fas fa-calendar-alt"></i> <?php echo date('F j, Y'); ?>
-                    </span>
-                    <span style="font-size: 14px; color: #64748b; margin-left: 15px;">
-                        <i class="fas fa-database"></i> <?php echo count($dtrRecords); ?> records
-                    </span>
+                    <h4>
+                        DTR
+                    </h4>
                 </div>
             </div>
 

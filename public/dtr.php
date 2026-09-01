@@ -104,7 +104,7 @@ try {
         INDEX idx_acc_date (acc_number, date),
         INDEX idx_user_date (user_id, date)
     )");
-    
+
     // Add photo column if not exists
     $pdo->exec("ALTER TABLE dtr ADD COLUMN IF NOT EXISTS time_in_photo VARCHAR(255) NULL, ADD COLUMN IF NOT EXISTS time_out_photo VARCHAR(255) NULL");
 } catch (PDOException $e) {
@@ -446,9 +446,20 @@ $isDtrDisabled = false; // Always enabled
         }
 
         @keyframes pulse-dot {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.7); }
-            100% { opacity: 1; transform: scale(1); }
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.7);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         .live-badge.active {
@@ -498,7 +509,9 @@ $isDtrDisabled = false; // Always enabled
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* ========== DTR BUTTONS ========== */
@@ -1107,9 +1120,8 @@ $isDtrDisabled = false; // Always enabled
 
             <!-- ========== DTR NOTICE ========== -->
             <div class="dtr-notice no-print">
-                <i class="fas fa-info-circle"></i>
                 <span>
-                    This system is for official use only
+                    Official use only.Camera offline? Close other camera tabs and refresh.
                 </span>
             </div>
 
@@ -1261,7 +1273,7 @@ $isDtrDisabled = false; // Always enabled
                     setTimeout(() => toast.remove(), 500);
                 }, 5000);
             }
-            
+
             // Auto-start camera on page load
             console.log('Page loaded, starting camera...');
             startCamera();
@@ -1275,7 +1287,7 @@ $isDtrDisabled = false; // Always enabled
             toast.className = 'toast-message ' + type;
             const icon = type === 'success' ? 'fa-check-circle' :
                 type === 'warning' ? 'fa-exclamation-triangle' :
-                type === 'info' ? 'fa-info-circle' : 'fa-exclamation-circle';
+                    type === 'info' ? 'fa-info-circle' : 'fa-exclamation-circle';
             toast.innerHTML = `
                 <i class="fas ${icon}"></i> 
                 ${message}
@@ -1301,7 +1313,7 @@ $isDtrDisabled = false; // Always enabled
         async function startCamera() {
             try {
                 console.log('Attempting to start camera...');
-                
+
                 // Try to get camera with facingMode: 'user' (front camera)
                 const constraints = {
                     video: {
@@ -1311,28 +1323,28 @@ $isDtrDisabled = false; // Always enabled
                     },
                     audio: false
                 };
-                
+
                 previewStream = await navigator.mediaDevices.getUserMedia(constraints);
                 console.log('Camera stream obtained successfully');
-                
+
                 previewVideo.srcObject = previewStream;
                 await previewVideo.play();
                 console.log('Video playing');
-                
+
                 // Show video, hide placeholder
                 previewVideo.classList.add('active');
                 cameraPlaceholder.classList.add('hidden');
-                
+
                 // Update status
                 liveBadge.classList.add('active');
                 statusDot.className = 'dot pulse';
                 statusText.textContent = 'Live';
                 isPreviewActive = true;
-                
+
                 console.log('Camera started successfully.');
             } catch (error) {
                 console.error('Camera error:', error);
-                
+
                 // Try without facingMode constraint as fallback
                 try {
                     console.log('Trying fallback constraints...');
@@ -1340,21 +1352,21 @@ $isDtrDisabled = false; // Always enabled
                         video: true,
                         audio: false
                     };
-                    
+
                     previewStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
                     console.log('Fallback camera stream obtained');
-                    
+
                     previewVideo.srcObject = previewStream;
                     await previewVideo.play();
-                    
+
                     previewVideo.classList.add('active');
                     cameraPlaceholder.classList.add('hidden');
-                    
+
                     liveBadge.classList.add('active');
                     statusDot.className = 'dot pulse';
                     statusText.textContent = 'Live';
                     isPreviewActive = true;
-                    
+
                     console.log('Camera started with fallback constraints.');
                 } catch (fallbackError) {
                     console.error('Fallback camera error:', fallbackError);
@@ -1376,11 +1388,11 @@ $isDtrDisabled = false; // Always enabled
                 previewStream.getTracks().forEach(track => track.stop());
                 previewStream = null;
             }
-            
+
             previewVideo.srcObject = null;
             previewVideo.classList.remove('active');
             cameraPlaceholder.classList.remove('hidden');
-            
+
             liveBadge.classList.remove('active');
             statusDot.className = 'dot';
             statusText.textContent = 'Offline';
@@ -1412,17 +1424,17 @@ $isDtrDisabled = false; // Always enabled
             canvas.width = previewVideo.videoWidth || 640;
             canvas.height = previewVideo.videoHeight || 480;
             const context = canvas.getContext('2d');
-            
+
             // Flip the image horizontally (mirror) when drawing
             context.translate(canvas.width, 0);
             context.scale(-1, 1);
             context.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
-            
+
             // Reset transform for any additional drawing
             context.setTransform(1, 0, 0, 1, 0, 0);
 
             // Convert to blob
-            canvas.toBlob(function(blob) {
+            canvas.toBlob(function (blob) {
                 if (blob) {
                     submitDtrWithPhoto(blob, action);
                 } else {
@@ -1456,8 +1468,8 @@ $isDtrDisabled = false; // Always enabled
                 isProcessing = false;
 
                 if (data.success) {
-                    const msgType = action === 'time_in' ? (data.data?.is_late ? 'warning' : 'success') : 
-                                   (data.data?.is_ot ? 'warning' : 'success');
+                    const msgType = action === 'time_in' ? (data.data?.is_late ? 'warning' : 'success') :
+                        (data.data?.is_ot ? 'warning' : 'success');
                     showToast(data.message, msgType);
                     setTimeout(() => {
                         location.reload();
@@ -1494,14 +1506,14 @@ $isDtrDisabled = false; // Always enabled
         // ============================================================
         // CLEANUP ON PAGE UNLOAD
         // ============================================================
-        window.addEventListener('beforeunload', function() {
+        window.addEventListener('beforeunload', function () {
             stopCamera();
         });
 
         // ============================================================
         // RECOVER CAMERA IF TAB BECOMES VISIBLE AGAIN
         // ============================================================
-        document.addEventListener('visibilitychange', function() {
+        document.addEventListener('visibilitychange', function () {
             if (!document.hidden && !isPreviewActive) {
                 console.log('Tab became visible, restarting camera...');
                 startCamera();
