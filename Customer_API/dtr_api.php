@@ -43,6 +43,7 @@ $action = $_POST['action'] ?? '';
 if ($action === 'time_in') {
     $today = date('Y-m-d');
     $now = date('H:i:s');
+    $nowTimestamp = strtotime($now);
 
     // Check if already clocked in today
     $checkStmt = $pdo->prepare("SELECT id FROM dtr WHERE acc_number = ? AND date = ? AND time_in IS NOT NULL AND time_out IS NULL");
@@ -66,11 +67,23 @@ if ($action === 'time_in') {
     $stmt = $pdo->prepare("INSERT INTO dtr (acc_number, user_id, date, time_in, status) VALUES (?, ?, ?, ?, 'present') ON DUPLICATE KEY UPDATE time_in = VALUES(time_in), status = 'present'");
     $stmt->execute([$accNumber, $userId, $today, $now]);
 
+    // Check if late
+    $cutOffIn = strtotime('08:00:00');
+    $isLate = $nowTimestamp > $cutOffIn;
+    $lateMinutes = $isLate ? floor(($nowTimestamp - $cutOffIn) / 60) : 0;
+
+    $message = 'Time in recorded';
+    if ($isLate) {
+        $message .=' Late Yarn!';
+    }
+
     echo json_encode([
         'success' => true,
-        'message' => 'Time in recorded successfully at ' . date('h:i A'),
+        'message' => $message,
         'data' => [
-            'time_in' => $now
+            'time_in' => $now,
+            'is_late' => $isLate,
+            'late_minutes' => $lateMinutes
         ]
     ]);
     exit;
@@ -82,37 +95,48 @@ if ($action === 'time_in') {
 if ($action === 'time_out') {
     $today = date('Y-m-d');
     $now = date('H:i:s');
+    $nowTimestamp = strtotime($now);
 
     // Check if clocked in today
-    $checkStmt = $pdo->prepare("SELECT id FROM dtr WHERE acc_number = ? AND date = ? AND time_in IS NOT NULL AND time_out IS NULL");
+    $checkStmt = $pdo->prepare("SELECT id, time_in FROM dtr WHERE acc_number = ? AND date = ? AND time_in IS NOT NULL AND time_out IS NULL");
     $checkStmt->execute([$accNumber, $today]);
-    $dtrId = $checkStmt->fetchColumn();
+    $dtrData = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$dtrId) {
+    if (!$dtrData) {
         echo json_encode(['success' => false, 'message' => 'You are not clocked in.']);
         exit;
     }
+
+    $dtrId = $dtrData['id'];
 
     // Update time_out
     $stmt = $pdo->prepare("UPDATE dtr SET time_out = ? WHERE id = ?");
     $stmt->execute([$now, $dtrId]);
 
-    // Calculate hours worked
-    $hoursStmt = $pdo->prepare("SELECT time_in FROM dtr WHERE id = ?");
-    $hoursStmt->execute([$dtrId]);
-    $dtrData = $hoursStmt->fetch(PDO::FETCH_ASSOC);
+    // Check if overtime
+    $cutOffOut = strtotime('17:00:00');
+    $isOT = $nowTimestamp > $cutOffOut;
+    $otMinutes = $isOT ? floor(($nowTimestamp - $cutOffOut) / 60) : 0;
 
+    // Calculate hours worked
     $timeIn = new DateTime($dtrData['time_in']);
     $timeOut = new DateTime($now);
     $diff = $timeIn->diff($timeOut);
     $hoursWorked = $diff->h + ($diff->i / 60);
 
+    $message = 'Time out recorded';
+    if ($isOT) {
+        $message .= ' O.T. Yarn!';
+    }
+
     echo json_encode([
         'success' => true,
-        'message' => 'Time out recorded successfully at ' . date('h:i A'),
+        'message' => $message,
         'data' => [
             'time_out' => $now,
-            'hours_worked' => round($hoursWorked, 2)
+            'hours_worked' => round($hoursWorked, 2),
+            'is_ot' => $isOT,
+            'ot_minutes' => $otMinutes
         ]
     ]);
     exit;

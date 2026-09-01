@@ -300,6 +300,16 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             border: 1px solid #93c5fd;
         }
 
+        .toast-message.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
+        .toast-message.warning i {
+            color: #f59e0b;
+        }
+
         .toast-message i {
             font-size: 18px;
         }
@@ -936,9 +946,20 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 <span>
                     <span class="label"><i class="fas fa-today"></i> Today's Status:</span>
                     <?php if ($isCheckedOut): ?>
-                        <span class="value"><span class="highlight"><i class="fas fa-check-circle" style="color: #22c55e;"></i> Completed</span></span>
+                        <span class="value">
+                            <span class="highlight" style="color: #22c55e;">
+                                Completed
+                            </span>
+                        </span>
                     <?php elseif ($isCheckedIn): ?>
-                        <span class="value"><span class="highlight" style="color: #eab308;"><i class="fas fa-clock"></i> Clocked In at <?php echo date('h:i A', strtotime($checkedInTime)); ?></span></span>
+                        <?php
+                        $checkInTimeStr = $dtrToday['time_in'] ?? null;
+                        ?>
+                        <span class="value">
+                            <span class="highlight" style="color: #eab308;">
+                                Clocked In at <?php echo $checkInTimeStr ? date('h:i A', strtotime($checkInTimeStr)) : 'N/A'; ?>
+                            </span>
+                        </span>
                     <?php else: ?>
                         <span class="value" style="color: #94a3b8;">Not clocked in yet</span>
                     <?php endif; ?>
@@ -950,14 +971,14 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 <?php
                 // Determine if both buttons should be disabled
                 $disableButtons = $isDtrDisabled || $isCheckedOut;
-                
+
                 // Time In button: disabled if already checked in OR DTR is disabled
                 $timeInDisabled = $isCheckedIn || $disableButtons;
-                
+
                 // Time Out button: disabled if not checked in OR already checked out OR DTR is disabled
                 $timeOutDisabled = !$isCheckedIn || $isCheckedOut || $disableButtons;
                 ?>
-                
+
                 <button class="btn-dtr time-in" id="timeInBtn" <?php echo $timeInDisabled ? 'disabled' : ''; ?>>
                     <i class="fas fa-sign-in-alt icon"></i>
                     <span>Time In</span>
@@ -991,8 +1012,10 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                             <?php foreach ($dtrRecords as $record): ?>
                                 <tr>
                                     <td><?php echo date('M j, Y', strtotime($record['date'])); ?></td>
-                                    <td><?php echo $record['time_in'] ? date('h:i A', strtotime($record['time_in'])) : '—'; ?></td>
-                                    <td><?php echo $record['time_out'] ? date('h:i A', strtotime($record['time_out'])) : '—'; ?></td>
+                                    <td><?php echo $record['time_in'] ? date('h:i A', strtotime($record['time_in'])) : '—'; ?>
+                                    </td>
+                                    <td><?php echo $record['time_out'] ? date('h:i A', strtotime($record['time_out'])) : '—'; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -1012,7 +1035,8 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             <!-- Print Footer (only visible when printing) -->
             <div class="print-footer">
                 <p>Generated on: <?php echo date('F j, Y h:i A'); ?></p>
-                <p>This is a system-generated DTR report. <?php echo date('Y'); ?> &copy; Villaruz Print Shop & General Merchandise</p>
+                <p>This is a system-generated DTR report. <?php echo date('Y'); ?> &copy; Villaruz Print Shop & General
+                    Merchandise</p>
             </div>
         </div>
     </main>
@@ -1062,7 +1086,7 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         // TOAST MESSAGES
         // ============================================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const toast = document.getElementById('toastMessage');
             if (toast) {
                 setTimeout(() => {
@@ -1079,8 +1103,9 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
 
             const toast = document.createElement('div');
             toast.className = 'toast-message ' + type;
-            const icon = type === 'success' ? 'fa-check-circle' : type === 'info' ? 'fa-info-circle' :
-                'fa-exclamation-circle';
+            const icon = type === 'success' ? 'fa-check-circle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                type === 'info' ? 'fa-info-circle' : 'fa-exclamation-circle';
             toast.innerHTML = `
                 <i class="fas ${icon}"></i> 
                 ${message}
@@ -1097,13 +1122,13 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 toast.style.opacity = '0';
                 toast.style.transition = 'opacity 0.5s';
                 setTimeout(() => toast.remove(), 500);
-            }, 5000);
+            }, 6000);
         }
 
         // ============================================================
         // TIME IN
         // ============================================================
-        document.getElementById('timeInBtn').addEventListener('click', async function() {
+        document.getElementById('timeInBtn').addEventListener('click', async function () {
             // Check if DTR is disabled
             if (isWeekend) {
                 showToast('DTR is disabled on weekends.', 'error');
@@ -1134,10 +1159,10 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast(data.message, 'success');
+                    showToast(data.message, data.data?.is_late ? 'warning' : 'success');
                     setTimeout(() => {
                         location.reload();
-                    }, 1500);
+                    }, 2500);
                 } else {
                     showToast(data.message || 'Error clocking in', 'error');
                     btn.innerHTML = originalText;
@@ -1154,7 +1179,7 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         // TIME OUT
         // ============================================================
-        document.getElementById('timeOutBtn').addEventListener('click', async function() {
+        document.getElementById('timeOutBtn').addEventListener('click', async function () {
             // Check if DTR is disabled
             if (isWeekend) {
                 showToast('DTR is disabled on weekends.', 'error');
@@ -1185,10 +1210,10 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast(data.message, 'success');
+                    showToast(data.message, data.data?.is_ot ? 'warning' : 'success');
                     setTimeout(() => {
                         location.reload();
-                    }, 1500);
+                    }, 2500);
                 } else {
                     showToast(data.message || 'Error clocking out', 'error');
                     btn.innerHTML = originalText;
@@ -1201,7 +1226,6 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 btn.disabled = false;
             }
         });
-
     </script>
 
 </body>
