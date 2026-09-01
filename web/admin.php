@@ -61,7 +61,8 @@ $tables = [
     'cart' => 'Cart',
     'merchandise_inventory' => 'Merchandise Inventory',
     'customers' => 'Customers',
-    'order_status_history' => 'Order Status History'
+    'order_status_history' => 'Order Status History',
+    'dtr' => 'Date Time Record'
 ];
 
 // Handle reset ID request
