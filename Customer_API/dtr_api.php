@@ -157,9 +157,9 @@ if ($action === 'time_in') {
     $lateMinutes = $isLate ? floor(($nowTimestamp - $cutOffIn) / 60) : 0;
 
     $message = 'Time in recorded';
-    if ($isLate) {
-        $message .= ' Late Yarn!';
-    }
+    // if ($isLate) {
+    //     $message .= ' Late Yarn!';
+    // }
 
     echo json_encode([
         'success' => true,
@@ -224,9 +224,9 @@ if ($action === 'time_out') {
     $hoursWorked = $diff->h + ($diff->i / 60);
 
     $message = 'Time out recorded';
-    if ($isOT) {
-        $message .= ' O.T. Yarn!';
-    }
+    // if ($isOT) {
+    //     $message .= ' O.T. Yarn!';
+    // }
 
     echo json_encode([
         'success' => true,

@@ -250,41 +250,54 @@ $isDtrDisabled = false; // Always enabled
         /* ========== TOAST MESSAGES ========== */
         .toast-message {
             padding: 12px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             margin-bottom: 20px;
             font-size: 14px;
             display: flex;
             align-items: center;
             gap: 10px;
             animation: slideDown 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
         }
 
         .toast-message.success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
+            background: #10b981;
+            color: #ffffff;
+            border: 1px solid #059669;
+        }
+
+        .toast-message.success i {
+            color: #ffffff;
         }
 
         .toast-message.error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
+            background: #ef4444;
+            color: #ffffff;
+            border: 1px solid #dc2626;
+        }
+
+        .toast-message.error i {
+            color: #ffffff;
         }
 
         .toast-message.info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
+            background: #3b82f6;
+            color: #ffffff;
+            border: 1px solid #2563eb;
+        }
+
+        .toast-message.info i {
+            color: #ffffff;
         }
 
         .toast-message.warning {
-            background: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fcd34d;
+            background: #f59e0b;
+            color: #ffffff;
+            border: 1px solid #d97706;
         }
 
         .toast-message.warning i {
-            color: #f59e0b;
+            color: #ffffff;
         }
 
         .toast-message i {
@@ -294,7 +307,7 @@ $isDtrDisabled = false; // Always enabled
         @keyframes slideDown {
             from {
                 opacity: 0;
-                transform: translateY(-10px);
+                transform: translateY(-15px);
             }
 
             to {
@@ -308,7 +321,7 @@ $isDtrDisabled = false; // Always enabled
             border: none;
             color: inherit;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             margin-left: auto;
             opacity: 0.7;
             transition: opacity 0.3s;
@@ -1105,39 +1118,12 @@ $isDtrDisabled = false; // Always enabled
                     <video id="previewVideo" autoplay playsinline muted></video>
                     <div class="camera-placeholder" id="cameraPlaceholder">
                         <i class="fas fa-camera"></i>
-                        <span>Camera Ready</span>
-                        <span class="status-text">Click Time In/Out to capture</span>
                     </div>
                     <div class="live-badge" id="liveBadge">
                         <span class="dot" id="statusDot"></span>
                         <span id="statusText">Offline</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Today's Log -->
-            <div class="today-log">
-                <span>
-                    <span class="label"><i class="fas fa-today"></i> Today's Status:</span>
-                    <?php if ($isCheckedOut): ?>
-                        <span class="value">
-                            <span class="highlight" style="color: #22c55e;">
-                                Completed
-                            </span>
-                        </span>
-                    <?php elseif ($isCheckedIn): ?>
-                        <?php
-                        $checkInTimeStr = $dtrToday['time_in'] ?? null;
-                        ?>
-                        <span class="value">
-                            <span class="highlight" style="color: #eab308;">
-                                Clocked In at <?php echo $checkInTimeStr ? date('h:i A', strtotime($checkInTimeStr)) : 'N/A'; ?>
-                            </span>
-                        </span>
-                    <?php else: ?>
-                        <span class="value" style="color: #94a3b8;">Not clocked in yet</span>
-                    <?php endif; ?>
-                </span>
             </div>
 
             <!-- DTR Buttons -->
@@ -1206,12 +1192,6 @@ $isDtrDisabled = false; // Always enabled
                 </table>
             </div>
 
-            <!-- Print Footer (only visible when printing) -->
-            <div class="print-footer">
-                <p>Generated on: <?php echo date('F j, Y h:i A'); ?></p>
-                <p>This is a system-generated DTR report. <?php echo date('Y'); ?> &copy; Villaruz Print Shop & General
-                    Merchandise</p>
-            </div>
         </div>
     </main>
 
