@@ -33,6 +33,77 @@ if (empty($csrfToken) || $csrfToken !== ($_SESSION['csrf_token'] ?? '')) {
 }
 
 // ============================================================
+// CREATE UPLOAD DIRECTORY
+// ============================================================
+// DTR_Photos folder is at the same level as DB_Conn
+$uploadDir = __DIR__ . '/../DTR_Photos/';
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0777, true);
+}
+
+// ============================================================
+// CREATE TABLE IF NOT EXISTS
+// ============================================================
+try {
+    // Check if table exists
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'dtr'");
+    $tableExists = $tableCheck->rowCount() > 0;
+    
+    if (!$tableExists) {
+        // Create the table with photo columns
+        $createTableSQL = "CREATE TABLE dtr (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            acc_number VARCHAR(50) NOT NULL,
+            user_id INT NOT NULL,
+            date DATE NOT NULL,
+            time_in TIME NULL,
+            time_out TIME NULL,
+            time_in_photo VARCHAR(255) NULL,
+            time_out_photo VARCHAR(255) NULL,
+            status ENUM('present', 'absent', 'late', 'half_day') DEFAULT 'present',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_acc_date (acc_number, date),
+            INDEX idx_user_date (user_id, date)
+        )";
+        $pdo->exec($createTableSQL);
+    } else {
+        // Check if photo columns exist and add them if not
+        $columns = $pdo->query("SHOW COLUMNS FROM dtr");
+        $columnNames = [];
+        while ($col = $columns->fetch(PDO::FETCH_ASSOC)) {
+            $columnNames[] = $col['Field'];
+        }
+        
+        if (!in_array('time_in_photo', $columnNames)) {
+            $pdo->exec("ALTER TABLE dtr ADD COLUMN time_in_photo VARCHAR(255) NULL");
+        }
+        if (!in_array('time_out_photo', $columnNames)) {
+            $pdo->exec("ALTER TABLE dtr ADD COLUMN time_out_photo VARCHAR(255) NULL");
+        }
+    }
+} catch (PDOException $e) {
+    // Log error but continue - table might already exist or have permission issues
+    error_log('DTR Table creation error: ' . $e->getMessage());
+}
+
+// ============================================================
+// FUNCTION: SAVE PHOTO
+// ============================================================
+function saveDtrPhoto($photoData, $accNumber, $action) {
+    global $uploadDir;
+    
+    $timestamp = date('Ymd_His');
+    $filename = $action . '_' . $accNumber . '_' . $timestamp . '.jpg';
+    $filepath = $uploadDir . $filename;
+    $dbPath = 'DTR_Photos/' . $filename;
+    
+    if (file_put_contents($filepath, $photoData)) {
+        return $dbPath;
+    }
+    return null;
+}
+
+// ============================================================
 // GET ACTION
 // ============================================================
 $action = $_POST['action'] ?? '';
@@ -44,6 +115,20 @@ if ($action === 'time_in') {
     $today = date('Y-m-d');
     $now = date('H:i:s');
     $nowTimestamp = strtotime($now);
+
+    // Check if photo was uploaded
+    $photoPath = null;
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $photoData = file_get_contents($_FILES['photo']['tmp_name']);
+        $photoPath = saveDtrPhoto($photoData, $accNumber, 'time_in');
+        if (!$photoPath) {
+            echo json_encode(['success' => false, 'message' => 'Failed to save photo.']);
+            exit;
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Photo is required for time in.']);
+        exit;
+    }
 
     // Check if already clocked in today
     $checkStmt = $pdo->prepare("SELECT id FROM dtr WHERE acc_number = ? AND date = ? AND time_in IS NOT NULL AND time_out IS NULL");
@@ -64,8 +149,8 @@ if ($action === 'time_in') {
     }
 
     // Insert or update DTR record
-    $stmt = $pdo->prepare("INSERT INTO dtr (acc_number, user_id, date, time_in, status) VALUES (?, ?, ?, ?, 'present') ON DUPLICATE KEY UPDATE time_in = VALUES(time_in), status = 'present'");
-    $stmt->execute([$accNumber, $userId, $today, $now]);
+    $stmt = $pdo->prepare("INSERT INTO dtr (acc_number, user_id, date, time_in, time_in_photo, status) VALUES (?, ?, ?, ?, ?, 'present') ON DUPLICATE KEY UPDATE time_in = VALUES(time_in), time_in_photo = VALUES(time_in_photo), status = 'present'");
+    $stmt->execute([$accNumber, $userId, $today, $now, $photoPath]);
 
     // Check if late
     $cutOffIn = strtotime('08:00:00');
@@ -74,7 +159,7 @@ if ($action === 'time_in') {
 
     $message = 'Time in recorded';
     if ($isLate) {
-        $message .=' Late Yarn!';
+        $message .= ' Late Yarn!';
     }
 
     echo json_encode([
@@ -83,7 +168,8 @@ if ($action === 'time_in') {
         'data' => [
             'time_in' => $now,
             'is_late' => $isLate,
-            'late_minutes' => $lateMinutes
+            'late_minutes' => $lateMinutes,
+            'photo' => $photoPath
         ]
     ]);
     exit;
@@ -97,6 +183,20 @@ if ($action === 'time_out') {
     $now = date('H:i:s');
     $nowTimestamp = strtotime($now);
 
+    // Check if photo was uploaded
+    $photoPath = null;
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $photoData = file_get_contents($_FILES['photo']['tmp_name']);
+        $photoPath = saveDtrPhoto($photoData, $accNumber, 'time_out');
+        if (!$photoPath) {
+            echo json_encode(['success' => false, 'message' => 'Failed to save photo.']);
+            exit;
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Photo is required for time out.']);
+        exit;
+    }
+
     // Check if clocked in today
     $checkStmt = $pdo->prepare("SELECT id, time_in FROM dtr WHERE acc_number = ? AND date = ? AND time_in IS NOT NULL AND time_out IS NULL");
     $checkStmt->execute([$accNumber, $today]);
@@ -109,9 +209,9 @@ if ($action === 'time_out') {
 
     $dtrId = $dtrData['id'];
 
-    // Update time_out
-    $stmt = $pdo->prepare("UPDATE dtr SET time_out = ? WHERE id = ?");
-    $stmt->execute([$now, $dtrId]);
+    // Update time_out with photo
+    $stmt = $pdo->prepare("UPDATE dtr SET time_out = ?, time_out_photo = ? WHERE id = ?");
+    $stmt->execute([$now, $photoPath, $dtrId]);
 
     // Check if overtime
     $cutOffOut = strtotime('17:00:00');
@@ -136,7 +236,8 @@ if ($action === 'time_out') {
             'time_out' => $now,
             'hours_worked' => round($hoursWorked, 2),
             'is_ot' => $isOT,
-            'ot_minutes' => $otMinutes
+            'ot_minutes' => $otMinutes,
+            'photo' => $photoPath
         ]
     ]);
     exit;

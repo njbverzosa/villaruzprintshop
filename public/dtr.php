@@ -104,8 +104,11 @@ try {
         INDEX idx_acc_date (acc_number, date),
         INDEX idx_user_date (user_id, date)
     )");
+    
+    // Add photo column if not exists
+    $pdo->exec("ALTER TABLE dtr ADD COLUMN IF NOT EXISTS time_in_photo VARCHAR(255) NULL, ADD COLUMN IF NOT EXISTS time_out_photo VARCHAR(255) NULL");
 } catch (PDOException $e) {
-    // Table might already exist
+    // Table might already exist or column already exists
 }
 
 // Fetch today's DTR record for this user
@@ -352,6 +355,159 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             margin: 0 auto;
             width: 100%;
             border: 1px solid #e2e8f0;
+        }
+
+        /* ========== HEXAGON CAMERA PREVIEW ========== */
+        .camera-preview-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0 20px;
+            padding: 5px;
+        }
+
+        .hexagon-wrapper {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            overflow: hidden;
+            background: #1e293b;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 3px solid #3b82f6;
+            transition: all 0.3s ease;
+        }
+
+        .hexagon-wrapper:hover {
+            transform: scale(1.02);
+            border-color: #22c55e;
+        }
+
+        .hexagon-wrapper video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1.1);
+            display: none;
+        }
+
+        .hexagon-wrapper video.active {
+            display: block;
+        }
+
+        .hexagon-wrapper .camera-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #94a3b8;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .hexagon-wrapper .camera-placeholder.hidden {
+            display: none;
+        }
+
+        .hexagon-wrapper .camera-placeholder i {
+            font-size: 48px;
+            color: #3b82f6;
+            margin-bottom: 10px;
+            opacity: 0.6;
+        }
+
+        .hexagon-wrapper .camera-placeholder .status-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .hexagon-wrapper .camera-status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hexagon-wrapper .camera-status-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .hexagon-wrapper .camera-status-badge .dot.active {
+            background: #22c55e;
+            animation: pulse 1.5s infinite;
+        }
+
+        .hexagon-wrapper .camera-status-badge .dot.inactive {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ========== CAMERA CAPTURE OVERLAY ========== */
+        .capture-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9998;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .capture-overlay.active {
+            display: flex;
+        }
+
+        .capture-overlay .capture-spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #22c55e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .capture-overlay .capture-text {
+            color: #fff;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .capture-overlay .capture-subtext {
+            color: #94a3b8;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* ========== DTR BUTTONS ========== */
@@ -639,6 +795,11 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             .dtr-table td {
                 padding: 8px 12px;
             }
+
+            .hexagon-wrapper {
+                width: 160px;
+                height: 160px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -734,6 +895,11 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             .dtr-table td {
                 padding: 6px 10px;
             }
+
+            .hexagon-wrapper {
+                width: 140px;
+                height: 140px;
+            }
         }
 
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
@@ -750,7 +916,8 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             .dtr-buttons,
             .toast-message,
             .dtr-notice,
-            .no-print {
+            .no-print,
+            .camera-preview-container {
                 display: none !important;
             }
 
@@ -892,10 +1059,18 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
 
 <body>
 
+    <!-- ========== CAPTURE OVERLAY ========== -->
+    <div class="capture-overlay" id="captureOverlay">
+        <div class="capture-spinner"></div>
+        <div class="capture-text">Capturing Photo...</div>
+        <div class="capture-subtext">Please wait while we capture your image</div>
+    </div>
+
     <!-- ========== MAIN CONTENT ========== -->
     <main class="main-content">
         <input type="hidden" id="csrfToken" value="<?php echo $csrfToken; ?>">
         <input type="hidden" id="userAccNumber" value="<?php echo htmlspecialchars($accNumber); ?>">
+        <input type="hidden" id="pendingAction" value="">
 
         <!-- Dashboard Header -->
         <div class="dashboard-header">
@@ -939,6 +1114,22 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 <span>
                     This system is for official use only
                 </span>
+            </div>
+
+            <!-- ========== HEXAGON CAMERA PREVIEW ========== -->
+            <div class="camera-preview-container no-print">
+                <div class="hexagon-wrapper" id="hexagonWrapper">
+                    <video id="previewVideo" autoplay playsinline muted></video>
+                    <div class="camera-placeholder" id="cameraPlaceholder">
+                        <i class="fas fa-camera"></i>
+                        <span>Camera Ready</span>
+                        <span class="status-text">Click Time In/Out to capture</span>
+                    </div>
+                    <div class="camera-status-badge">
+                        <span class="dot inactive" id="statusDot"></span>
+                        <span id="statusText">Offline</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Today's Log -->
@@ -1005,6 +1196,7 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                             <th>Date</th>
                             <th>Time In</th>
                             <th>Time Out</th>
+                            <th>Photo</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1016,11 +1208,26 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                                     </td>
                                     <td><?php echo $record['time_out'] ? date('h:i A', strtotime($record['time_out'])) : '—'; ?>
                                     </td>
+                                    <td>
+                                        <?php if (!empty($record['time_in_photo'])): ?>
+                                            <a href="../<?php echo $record['time_in_photo']; ?>" target="_blank" title="Time In Photo">
+                                                <i class="fas fa-camera" style="color: #3b82f6;"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (!empty($record['time_out_photo'])): ?>
+                                            <a href="../<?php echo $record['time_out_photo']; ?>" target="_blank" title="Time Out Photo">
+                                                <i class="fas fa-camera" style="color: #ef4444;"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (empty($record['time_in_photo']) && empty($record['time_out_photo'])): ?>
+                                            <span style="color: #94a3b8;">—</span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="3">
+                                <td colspan="4">
                                     <div class="no-records">
                                         <i class="far fa-calendar-alt"></i>
                                         No records found for this month.
@@ -1084,6 +1291,22 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         const isWithinWorkingHours = <?php echo $isWithinWorkingHours ? 'true' : 'false'; ?>;
 
         // ============================================================
+        // CAMERA VARIABLES
+        // ============================================================
+        let previewStream = null;
+        let isPreviewActive = false;
+        let isProcessing = false;
+
+        // ============================================================
+        // DOM ELEMENTS
+        // ============================================================
+        const previewVideo = document.getElementById('previewVideo');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const captureOverlay = document.getElementById('captureOverlay');
+
+        // ============================================================
         // TOAST MESSAGES
         // ============================================================
         document.addEventListener('DOMContentLoaded', function () {
@@ -1095,6 +1318,9 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                     setTimeout(() => toast.remove(), 500);
                 }, 5000);
             }
+            
+            // Auto-start camera on page load
+            startCamera();
         });
 
         function showToast(message, type = 'success') {
@@ -1126,9 +1352,137 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         }
 
         // ============================================================
+        // CAMERA FUNCTIONS
+        // ============================================================
+        async function startCamera() {
+            try {
+                previewStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                });
+                
+                previewVideo.srcObject = previewStream;
+                await previewVideo.play();
+                
+                // Show video, hide placeholder
+                previewVideo.classList.add('active');
+                cameraPlaceholder.classList.add('hidden');
+                
+                // Update status
+                statusDot.className = 'dot active';
+                statusText.textContent = 'Live';
+                isPreviewActive = true;
+                
+                console.log('Camera started successfully.');
+            } catch (error) {
+                console.error('Camera error:', error);
+                showToast('Unable to access camera. Please allow camera permissions.', 'error');
+                // Keep placeholder visible with error message
+                cameraPlaceholder.querySelector('span').textContent = 'Camera Unavailable';
+                cameraPlaceholder.querySelector('.status-text').textContent = 'Please allow camera access';
+            }
+        }
+
+        function stopCamera() {
+            if (previewStream) {
+                previewStream.getTracks().forEach(track => track.stop());
+                previewStream = null;
+            }
+            
+            previewVideo.srcObject = null;
+            previewVideo.classList.remove('active');
+            cameraPlaceholder.classList.remove('hidden');
+            
+            statusDot.className = 'dot inactive';
+            statusText.textContent = 'Offline';
+            isPreviewActive = false;
+        }
+
+        // ============================================================
+        // CAPTURE AND SUBMIT
+        // ============================================================
+        function captureAndSubmit(action) {
+            if (isProcessing) {
+                showToast('Please wait, processing...', 'info');
+                return;
+            }
+
+            if (!isPreviewActive) {
+                showToast('Camera not available. Please refresh the page.', 'error');
+                return;
+            }
+
+            // Show overlay
+            captureOverlay.classList.add('active');
+            isProcessing = true;
+
+            // Use a canvas to capture from the video
+            const canvas = document.createElement('canvas');
+            canvas.width = previewVideo.videoWidth || 640;
+            canvas.height = previewVideo.videoHeight || 480;
+            const context = canvas.getContext('2d');
+            context.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
+
+            // Convert to blob
+            canvas.toBlob(function(blob) {
+                if (blob) {
+                    submitDtrWithPhoto(blob, action);
+                } else {
+                    showToast('Failed to capture photo. Please try again.', 'error');
+                    captureOverlay.classList.remove('active');
+                    isProcessing = false;
+                }
+            }, 'image/jpeg', 0.85);
+        }
+
+        // ============================================================
+        // SUBMIT DTR WITH PHOTO
+        // ============================================================
+        async function submitDtrWithPhoto(photoBlob, action) {
+            const formData = new FormData();
+            formData.append('action', action);
+            formData.append('acc_number', accNumber);
+            formData.append('csrf_token', csrfToken);
+            formData.append('photo', photoBlob, 'dtr_photo.jpg');
+
+            try {
+                const response = await fetch('../Customer_API/dtr_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Hide overlay
+                captureOverlay.classList.remove('active');
+                isProcessing = false;
+
+                if (data.success) {
+                    const msgType = action === 'time_in' ? (data.data?.is_late ? 'warning' : 'success') : 
+                                   (data.data?.is_ot ? 'warning' : 'success');
+                    showToast(data.message, msgType);
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2500);
+                } else {
+                    showToast(data.message || 'Error processing request', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Network error. Please try again.', 'error');
+                captureOverlay.classList.remove('active');
+                isProcessing = false;
+            }
+        }
+
+        // ============================================================
         // TIME IN
         // ============================================================
-        document.getElementById('timeInBtn').addEventListener('click', async function () {
+        document.getElementById('timeInBtn').addEventListener('click', function () {
             // Check if DTR is disabled
             if (isWeekend) {
                 showToast('DTR is disabled on weekends.', 'error');
@@ -1139,47 +1493,14 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 return;
             }
 
-            const btn = this;
-            const originalText = btn.innerHTML;
-
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            btn.disabled = true;
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'time_in');
-                formData.append('acc_number', accNumber);
-                formData.append('csrf_token', csrfToken);
-
-                const response = await fetch('../Customer_API/dtr_api.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(data.message, data.data?.is_late ? 'warning' : 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2500);
-                } else {
-                    showToast(data.message || 'Error clocking in', 'error');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Network error. Please try again.', 'error');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
+            // Capture and submit
+            captureAndSubmit('time_in');
         });
 
         // ============================================================
         // TIME OUT
         // ============================================================
-        document.getElementById('timeOutBtn').addEventListener('click', async function () {
+        document.getElementById('timeOutBtn').addEventListener('click', function () {
             // Check if DTR is disabled
             if (isWeekend) {
                 showToast('DTR is disabled on weekends.', 'error');
@@ -1190,41 +1511,15 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 return;
             }
 
-            const btn = this;
-            const originalText = btn.innerHTML;
+            // Capture and submit
+            captureAndSubmit('time_out');
+        });
 
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            btn.disabled = true;
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'time_out');
-                formData.append('acc_number', accNumber);
-                formData.append('csrf_token', csrfToken);
-
-                const response = await fetch('../Customer_API/dtr_api.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(data.message, data.data?.is_ot ? 'warning' : 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2500);
-                } else {
-                    showToast(data.message || 'Error clocking out', 'error');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Network error. Please try again.', 'error');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
+        // ============================================================
+        // CLEANUP ON PAGE UNLOAD
+        // ============================================================
+        window.addEventListener('beforeunload', function() {
+            stopCamera();
         });
     </script>
 
