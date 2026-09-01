@@ -163,9 +163,6 @@ $isWeekend = ($dayOfWeek == 0 || $dayOfWeek == 6);
 // 1. It's a weekend, OR
 // 2. Current time is outside working hours
 $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
-
-// For debugging - you can uncomment to see the values
-// echo "<!-- Work Start: $workStartTotal, Work End: $workEndTotal, Current: $currentTimeTotal, Within: " . ($isWithinWorkingHours ? 'Yes' : 'No') . ", Weekend: " . ($isWeekend ? 'Yes' : 'No') . " -->";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -465,7 +462,7 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* ========== CAMERA CAPTURE OVERLAY ========== */
+        /* ========== CAPTURE OVERLAY ========== */
         .capture-overlay {
             display: none;
             position: fixed;
@@ -1070,7 +1067,6 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
     <main class="main-content">
         <input type="hidden" id="csrfToken" value="<?php echo $csrfToken; ?>">
         <input type="hidden" id="userAccNumber" value="<?php echo htmlspecialchars($accNumber); ?>">
-        <input type="hidden" id="pendingAction" value="">
 
         <!-- Dashboard Header -->
         <div class="dashboard-header">
@@ -1210,12 +1206,12 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                                     </td>
                                     <td>
                                         <?php if (!empty($record['time_in_photo'])): ?>
-                                            <a href="../<?php echo $record['time_in_photo']; ?>" target="_blank" title="Time In Photo">
+                                            <a href="../DTR_Photos/<?php echo $record['time_in_photo']; ?>" target="_blank" title="Time In Photo">
                                                 <i class="fas fa-camera" style="color: #3b82f6;"></i>
                                             </a>
                                         <?php endif; ?>
                                         <?php if (!empty($record['time_out_photo'])): ?>
-                                            <a href="../<?php echo $record['time_out_photo']; ?>" target="_blank" title="Time Out Photo">
+                                            <a href="../DTR_Photos/<?php echo $record['time_out_photo']; ?>" target="_blank" title="Time Out Photo">
                                                 <i class="fas fa-camera" style="color: #ef4444;"></i>
                                             </a>
                                         <?php endif; ?>
@@ -1320,7 +1316,7 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             }
             
             // Auto-start camera on page load
-            startCamera();
+            setTimeout(startCamera, 500);
         });
 
         function showToast(message, type = 'success') {
@@ -1356,14 +1352,17 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         async function startCamera() {
             try {
-                previewStream = await navigator.mediaDevices.getUserMedia({
+                // Try to get camera with facingMode: 'user' (front camera)
+                const constraints = {
                     video: {
                         facingMode: 'user',
                         width: { ideal: 640 },
                         height: { ideal: 480 }
                     },
                     audio: false
-                });
+                };
+                
+                previewStream = await navigator.mediaDevices.getUserMedia(constraints);
                 
                 previewVideo.srcObject = previewStream;
                 await previewVideo.play();
@@ -1380,10 +1379,33 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 console.log('Camera started successfully.');
             } catch (error) {
                 console.error('Camera error:', error);
-                showToast('Unable to access camera. Please allow camera permissions.', 'error');
-                // Keep placeholder visible with error message
-                cameraPlaceholder.querySelector('span').textContent = 'Camera Unavailable';
-                cameraPlaceholder.querySelector('.status-text').textContent = 'Please allow camera access';
+                
+                // Try without facingMode constraint as fallback
+                try {
+                    const fallbackConstraints = {
+                        video: true,
+                        audio: false
+                    };
+                    
+                    previewStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    
+                    previewVideo.srcObject = previewStream;
+                    await previewVideo.play();
+                    
+                    previewVideo.classList.add('active');
+                    cameraPlaceholder.classList.add('hidden');
+                    
+                    statusDot.className = 'dot active';
+                    statusText.textContent = 'Live';
+                    isPreviewActive = true;
+                    
+                    console.log('Camera started with fallback constraints.');
+                } catch (fallbackError) {
+                    console.error('Fallback camera error:', fallbackError);
+                    showToast('Unable to access camera. Please allow camera permissions and refresh.', 'error');
+                    cameraPlaceholder.querySelector('span').textContent = 'Camera Unavailable';
+                    cameraPlaceholder.querySelector('.status-text').textContent = 'Please allow camera access';
+                }
             }
         }
 
@@ -1411,8 +1433,10 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 return;
             }
 
-            if (!isPreviewActive) {
+            if (!isPreviewActive || !previewStream) {
                 showToast('Camera not available. Please refresh the page.', 'error');
+                // Try to restart camera
+                startCamera();
                 return;
             }
 
@@ -1520,6 +1544,15 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         window.addEventListener('beforeunload', function() {
             stopCamera();
+        });
+
+        // ============================================================
+        // RECOVER CAMERA IF TAB BECOMES VISIBLE AGAIN
+        // ============================================================
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && !isPreviewActive) {
+                startCamera();
+            }
         });
     </script>
 
