@@ -374,7 +374,8 @@ $isDtrDisabled = false; // Always enabled
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scale(1.1);
+            transform: scale(1.1) scaleX(-1);
+            /* Mirror the video horizontally */
             display: none;
         }
 
@@ -1411,7 +1412,14 @@ $isDtrDisabled = false; // Always enabled
             canvas.width = previewVideo.videoWidth || 640;
             canvas.height = previewVideo.videoHeight || 480;
             const context = canvas.getContext('2d');
+            
+            // Flip the image horizontally (mirror) when drawing
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
             context.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
+            
+            // Reset transform for any additional drawing
+            context.setTransform(1, 0, 0, 1, 0, 0);
 
             // Convert to blob
             canvas.toBlob(function(blob) {
