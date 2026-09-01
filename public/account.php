@@ -569,10 +569,10 @@ $isVip = isset($userData['vip']) && $userData['vip'] == 1;
                 </a>
 
                 <!-- PayLater -->
-                <a href="#" class="service-card" onclick="showComingSoon('PayLater')">
-                    <div class="service-icon"><i class="fas fa-credit-card"></i></div>
-                    <div class="service-name">PayLater</div>
-                    <div class="service-desc">Get now, pay later</div>
+                <a href="dtr.php" class="service-card">
+                    <div class="service-icon"><i class="fas fa-calendar"></i></div>
+                    <div class="service-name">Date/Time Record</div>
+                    <div class="service-desc">DTR</div>
                     <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
                 </a>
 

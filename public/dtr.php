@@ -1,0 +1,1209 @@
+<?php
+// public/dtr.php
+
+session_start();
+
+// ==============================================
+// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// ==============================================
+require_once __DIR__ . '/../DB_Conn/config.php';
+
+// ==============================================
+// 2. CHECK LOGIN STATUS
+// ==============================================
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
+}
+
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    $_SESSION['login_error'] = 'Please login first to access the shop.';
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 3. GET USER DATA FROM SESSION
+// ==============================================
+$userRole = $_SESSION['user_role'];
+$userId = $_SESSION['user_id'];
+$accNumber = $_SESSION['acc_number'];
+
+// Fetch user details from database
+$userData = null;
+if ($userRole === 'Customer') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, street, barangay, landmark_photo, registered_at, active_email, vip FROM customers WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+if (!$userData) {
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 4. USE $userData
+// ==============================================
+$user = $userData;
+
+// ==============================================
+// 5. UPDATE ONLINE TIME AFTER USER IS DEFINED
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$currentTime = date('M j, g:i A');
+
+if ($userRole === 'Customer') {
+    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
+    $updateStmt->execute([$currentTime, $userData['id']]);
+}
+
+// ==============================================
+// 6. GET CART COUNT FOR BOTTOM NAV
+// ==============================================
+$cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
+$cartCountStmt->execute([$accNumber]);
+$cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
+$cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
+
+// Generate CSRF token if not exists
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_token'];
+
+// Get success/error messages from session
+$successMessage = $_SESSION['edit_success'] ?? '';
+$errorMessage = $_SESSION['edit_error'] ?? '';
+unset($_SESSION['edit_success'], $_SESSION['edit_error']);
+
+// Check if user is VIP
+$isVip = isset($user['vip']) && $user['vip'] == 1;
+
+// ==============================================
+// 7. DTR - FETCH TODAY'S RECORDS
+// ==============================================
+$today = date('Y-m-d');
+$dtrRecords = [];
+
+// Check if table exists, if not create it
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS dtr (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        acc_number VARCHAR(50) NOT NULL,
+        user_id INT NOT NULL,
+        date DATE NOT NULL,
+        time_in TIME,
+        time_out TIME,
+        status ENUM('present', 'absent', 'late', 'half_day') DEFAULT 'present',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_acc_date (acc_number, date),
+        INDEX idx_user_date (user_id, date)
+    )");
+} catch (PDOException $e) {
+    // Table might already exist
+}
+
+// Fetch today's DTR record for this user
+$dtrStmt = $pdo->prepare("SELECT * FROM dtr WHERE acc_number = ? AND date = ?");
+$dtrStmt->execute([$accNumber, $today]);
+$dtrToday = $dtrStmt->fetch(PDO::FETCH_ASSOC);
+
+// Fetch this month's DTR records
+$monthStart = date('Y-m-01');
+$monthStmt = $pdo->prepare("SELECT * FROM dtr WHERE acc_number = ? AND date >= ? ORDER BY date DESC");
+$monthStmt->execute([$accNumber, $monthStart]);
+$dtrRecords = $monthStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$isCheckedIn = false;
+$checkedInTime = null;
+$isCheckedOut = false;
+
+if ($dtrToday) {
+    if ($dtrToday['time_in'] && !$dtrToday['time_out']) {
+        $isCheckedIn = true;
+        $checkedInTime = $dtrToday['time_in'];
+    }
+    if ($dtrToday['time_out']) {
+        $isCheckedOut = true;
+    }
+}
+
+// ==============================================
+// 8. CHECK WORKING HOURS
+// ==============================================
+$currentHour = date('H'); // 24-hour format
+$currentMinute = date('i');
+$currentTimeTotal = ($currentHour * 60) + $currentMinute; // Total minutes since midnight
+
+// Working hours: 8:00 AM to 5:00 PM (adjust as needed)
+$workStartHour = 8;   // 8:00 AM
+$workStartMinute = 0;
+$workEndHour = 17;    // 5:00 PM
+$workEndMinute = 0;
+
+$workStartTotal = ($workStartHour * 60) + $workStartMinute;
+$workEndTotal = ($workEndHour * 60) + $workEndMinute;
+
+// Check if current time is within working hours
+$isWithinWorkingHours = ($currentTimeTotal >= $workStartTotal && $currentTimeTotal <= $workEndTotal);
+
+// Check if today is a weekend (Saturday = 6, Sunday = 0)
+$dayOfWeek = date('w'); // 0 = Sunday, 6 = Saturday
+$isWeekend = ($dayOfWeek == 0 || $dayOfWeek == 6);
+
+// DTR is disabled if:
+// 1. It's a weekend, OR
+// 2. Current time is outside working hours
+$isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
+
+// For debugging - you can uncomment to see the values
+// echo "<!-- Work Start: $workStartTotal, Work End: $workEndTotal, Current: $currentTimeTotal, Within: " . ($isWithinWorkingHours ? 'Yes' : 'No') . ", Weekend: " . ($isWeekend ? 'Yes' : 'No') . " -->";
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="csrf-token" content="<?php echo $csrfToken; ?>">
+    <title>DTR | Villaruz Print Shop & General Merchandise</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ========== RESET & BASE STYLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 70px;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        input,
+        textarea,
+        [contenteditable="true"] {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            flex: 1;
+            padding: 20px 20px 30px;
+            overflow-y: auto;
+            background: #f1f5f9;
+        }
+
+        /* ========== DASHBOARD HEADER ========== */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: #ffffff;
+            padding: 18px 25px;
+            border-radius: 2px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .welcome h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .welcome h3 i {
+            color: #3b82f6;
+            margin-left: 8px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f1f5f9;
+            padding: 6px 14px 6px 10px;
+            border-radius: 5px;
+        }
+
+        .user-badge .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .user-badge .avatar.vip {
+            background: linear-gradient(135deg, #f59e0b, #f97316) !important;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .user-badge .name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #0f172a;
+        }
+
+        /* ========== TOAST MESSAGES ========== */
+        .toast-message {
+            padding: 12px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .toast-message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .toast-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .toast-message.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .toast-message i {
+            font-size: 18px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: auto;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            padding: 0 4px;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        /* ========== DTR CARD ========== */
+        .dtr-card {
+            background: white;
+            border-radius: 5px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-width: 850px;
+            margin: 0 auto;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ========== DTR BUTTONS ========== */
+        .dtr-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn-dtr {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 160px;
+            justify-content: center;
+        }
+
+        .btn-dtr:active {
+            transform: scale(0.95);
+        }
+
+        .btn-dtr.time-in {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-dtr.time-in:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(34, 197, 94, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-dtr.time-in:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-dtr.time-out {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-dtr.time-out:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(239, 68, 68, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-dtr.time-out:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-dtr .icon {
+            font-size: 20px;
+        }
+
+        /* ========== TODAY'S LOG ========== */
+        .today-log {
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .today-log .label {
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .today-log .value {
+            color: #0f172a;
+            font-weight: 500;
+        }
+
+        .today-log .value .highlight {
+            color: #3b82f6;
+            font-weight: 700;
+        }
+
+        /* ========== DTR NOTICE ========== */
+        .dtr-notice {
+            background: #fef3c7;
+            padding: 12px 18px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .dtr-notice i {
+            font-size: 20px;
+            color: #f59e0b;
+        }
+
+        .dtr-notice strong {
+            font-weight: 700;
+        }
+
+        /* ========== DTR LOG TABLE ========== */
+        .dtr-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 20px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dtr-section-title i {
+            color: #3b82f6;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dtr-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 500px;
+        }
+
+        .dtr-table th {
+            background: #f1f5f9;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .dtr-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
+
+        .dtr-table tr:hover td {
+            background: #f8fafc;
+        }
+
+        .no-records {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .no-records i {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+            color: #cbd5e1;
+        }
+
+        /* ========== BOTTOM NAVIGATION ========== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0 12px;
+            z-index: 1000;
+            box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.06);
+            height: 65px;
+        }
+
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: #525f70;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            padding: 4px 16px;
+            position: relative;
+            min-width: 56px;
+        }
+
+        .bottom-nav .nav-item i {
+            font-size: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .bottom-nav .nav-item span {
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            transition: all 0.3s ease;
+        }
+
+        .bottom-nav .nav-item:hover {
+            color: #3b82f6;
+        }
+
+        .bottom-nav .nav-item.active {
+            color: #3b82f6;
+        }
+
+        .bottom-nav .nav-item .badge {
+            position: absolute;
+            top: 0;
+            right: 4px;
+            background: lightgreen;
+            color: #020e20;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 1px 6px;
+            border-radius: 20px;
+            min-width: 12px;
+            text-align: center;
+            line-height: 14px;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px 15px 20px;
+            }
+
+            .dashboard-header {
+                padding: 14px 18px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .welcome h3 {
+                font-size: 17px;
+            }
+
+            .user-badge .name {
+                font-size: 12px;
+            }
+
+            .dtr-card {
+                padding: 20px;
+            }
+
+            .btn-dtr {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: 140px;
+            }
+
+            .dtr-table {
+                font-size: 12px;
+                min-width: 400px;
+            }
+
+            .dtr-table th,
+            .dtr-table td {
+                padding: 8px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 12px 12px 16px;
+            }
+
+            body {
+                padding-bottom: 60px;
+            }
+
+            .dtr-card {
+                padding: 14px;
+                border-radius: 8px;
+            }
+
+            .dashboard-header {
+                padding: 12px 14px;
+                border-radius: 5px;
+            }
+
+            .welcome h3 {
+                font-size: 15px;
+            }
+
+            .user-badge .avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            .user-badge .name {
+                font-size: 11px;
+            }
+
+            .btn-dtr {
+                padding: 10px 16px;
+                font-size: 13px;
+                min-width: 120px;
+                border-radius: 8px;
+            }
+
+            .btn-dtr .icon {
+                font-size: 16px;
+            }
+
+            .today-log {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+                padding: 12px 16px;
+            }
+
+            .dtr-notice {
+                font-size: 12px;
+                padding: 10px 14px;
+                flex-wrap: wrap;
+            }
+
+            .bottom-nav {
+                padding: 4px 0 8px;
+                height: 56px;
+            }
+
+            .bottom-nav .nav-item {
+                padding: 2px 6px;
+                min-width: 36px;
+            }
+
+            .bottom-nav .nav-item i {
+                font-size: 18px;
+            }
+
+            .bottom-nav .nav-item span {
+                font-size: 9px;
+            }
+
+            .bottom-nav .nav-item .badge {
+                font-size: 10px;
+                min-width: 14px;
+                line-height: 14px;
+                top: -2px;
+                right: 0px;
+                padding: 0 5px;
+            }
+
+            .dtr-table {
+                font-size: 11px;
+                min-width: 320px;
+            }
+
+            .dtr-table th,
+            .dtr-table td {
+                padding: 6px 10px;
+            }
+        }
+
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .bottom-nav {
+                padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            }
+        }
+
+        /* ========== PRINT STYLES ========== */
+        @media print {
+
+            .bottom-nav,
+            .dashboard-header,
+            .dtr-buttons,
+            .toast-message,
+            .dtr-notice,
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .main-content {
+                padding: 20px !important;
+                background: white !important;
+            }
+
+            .dtr-card {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+                border-radius: 0 !important;
+                padding: 20px !important;
+                max-width: 100% !important;
+            }
+
+            .today-log {
+                background: #f8fafc !important;
+                border: 1px solid #ddd !important;
+                padding: 12px 16px !important;
+                margin-bottom: 20px !important;
+            }
+
+            .today-log .label {
+                color: #333 !important;
+            }
+
+            .today-log .value {
+                color: #000 !important;
+            }
+
+            .dtr-section-title {
+                font-size: 14px !important;
+                color: #000 !important;
+                margin-top: 15px !important;
+            }
+
+            .dtr-section-title i {
+                color: #000 !important;
+            }
+
+            .table-wrapper {
+                border: 1px solid #ddd !important;
+                overflow: visible !important;
+            }
+
+            .dtr-table {
+                font-size: 12px !important;
+                min-width: auto !important;
+                width: 100% !important;
+            }
+
+            .dtr-table th {
+                background: #f1f5f9 !important;
+                color: #000 !important;
+                border-bottom: 2px solid #000 !important;
+                padding: 8px 12px !important;
+            }
+
+            .dtr-table td {
+                padding: 8px 12px !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                color: #000 !important;
+            }
+
+            .dtr-table tr:hover td {
+                background: transparent !important;
+            }
+
+            .no-records {
+                padding: 20px !important;
+                color: #666 !important;
+            }
+
+            .no-records i {
+                color: #ccc !important;
+            }
+
+            .print-header {
+                display: block !important;
+                text-align: center;
+                padding-bottom: 15px;
+                border-bottom: 3px double #000;
+                margin-bottom: 20px;
+            }
+
+            .print-header h1 {
+                font-size: 22px;
+                color: #000;
+                margin: 0;
+            }
+
+            .print-header p {
+                font-size: 13px;
+                color: #333;
+                margin: 4px 0 0;
+            }
+
+            .dtr-card {
+                page-break-inside: avoid;
+            }
+
+            .dtr-table tr {
+                page-break-inside: avoid;
+            }
+
+            .print-footer {
+                display: block !important;
+                text-align: center;
+                font-size: 11px;
+                color: #666;
+                margin-top: 20px;
+                padding-top: 10px;
+                border-top: 1px solid #ddd;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+        }
+
+        .print-header {
+            display: none;
+        }
+
+        .print-footer {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+        <input type="hidden" id="csrfToken" value="<?php echo $csrfToken; ?>">
+        <input type="hidden" id="userAccNumber" value="<?php echo htmlspecialchars($accNumber); ?>">
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="welcome">
+                <h3><i class="fas fa-clock"></i> Daily Time Record</h3>
+            </div>
+            <div class="user-badge">
+                <div class="avatar <?php echo $isVip ? 'vip' : ''; ?>">
+                    <?php if ($isVip): ?>
+                        <i class="fas fa-crown"></i>
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($user['f_name'] ?? 'G', 0, 1)); ?>
+                    <?php endif; ?>
+                </div>
+                <span class="name"><?php echo htmlspecialchars($user['f_name'] ?? 'Guest'); ?></span>
+            </div>
+        </div>
+
+        <!-- Toast Messages -->
+        <?php if ($successMessage): ?>
+            <div class="toast-message success" id="toastMessage">
+                <i class="fas fa-check-circle"></i>
+                <?php echo htmlspecialchars($successMessage); ?>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+        <?php endif; ?>
+        <?php if ($errorMessage): ?>
+            <div class="toast-message error" id="toastMessage">
+                <i class="fas fa-exclamation-circle"></i>
+                <?php echo htmlspecialchars($errorMessage); ?>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+        <?php endif; ?>
+
+        <!-- ========== DTR CONTENT ========== -->
+        <div class="dtr-card" id="dtrPrintArea">
+
+            <!-- ========== DTR NOTICE ========== -->
+            <div class="dtr-notice no-print">
+                <i class="fas fa-info-circle"></i>
+                <span>
+                    This system is for official use only
+                </span>
+            </div>
+
+            <!-- Today's Log -->
+            <div class="today-log">
+                <span>
+                    <span class="label"><i class="fas fa-today"></i> Today's Status:</span>
+                    <?php if ($isCheckedOut): ?>
+                        <span class="value"><span class="highlight"><i class="fas fa-check-circle" style="color: #22c55e;"></i> Completed</span></span>
+                    <?php elseif ($isCheckedIn): ?>
+                        <span class="value"><span class="highlight" style="color: #eab308;"><i class="fas fa-clock"></i> Clocked In at <?php echo date('h:i A', strtotime($checkedInTime)); ?></span></span>
+                    <?php else: ?>
+                        <span class="value" style="color: #94a3b8;">Not clocked in yet</span>
+                    <?php endif; ?>
+                </span>
+            </div>
+
+            <!-- DTR Buttons -->
+            <div class="dtr-buttons no-print">
+                <?php
+                // Determine if both buttons should be disabled
+                $disableButtons = $isDtrDisabled || $isCheckedOut;
+                
+                // Time In button: disabled if already checked in OR DTR is disabled
+                $timeInDisabled = $isCheckedIn || $disableButtons;
+                
+                // Time Out button: disabled if not checked in OR already checked out OR DTR is disabled
+                $timeOutDisabled = !$isCheckedIn || $isCheckedOut || $disableButtons;
+                ?>
+                
+                <button class="btn-dtr time-in" id="timeInBtn" <?php echo $timeInDisabled ? 'disabled' : ''; ?>>
+                    <i class="fas fa-sign-in-alt icon"></i>
+                    <span>Time In</span>
+                </button>
+
+                <button class="btn-dtr time-out" id="timeOutBtn" <?php echo $timeOutDisabled ? 'disabled' : ''; ?>>
+                    <i class="fas fa-sign-out-alt icon"></i>
+                    <span>Time Out</span>
+                </button>
+            </div>
+
+            <!-- DTR Log Table -->
+            <div class="dtr-section-title">
+                <i class="fas fa-list"></i> This Month's Records
+                <span style="font-weight: 400; color: #94a3b8; font-size: 12px; margin-left: 4px;">
+                    (<?php echo date('F Y'); ?>)
+                </span>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="dtr-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (count($dtrRecords) > 0): ?>
+                            <?php foreach ($dtrRecords as $record): ?>
+                                <tr>
+                                    <td><?php echo date('M j, Y', strtotime($record['date'])); ?></td>
+                                    <td><?php echo $record['time_in'] ? date('h:i A', strtotime($record['time_in'])) : '—'; ?></td>
+                                    <td><?php echo $record['time_out'] ? date('h:i A', strtotime($record['time_out'])) : '—'; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="3">
+                                    <div class="no-records">
+                                        <i class="far fa-calendar-alt"></i>
+                                        No records found for this month.
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Print Footer (only visible when printing) -->
+            <div class="print-footer">
+                <p>Generated on: <?php echo date('F j, Y h:i A'); ?></p>
+                <p>This is a system-generated DTR report. <?php echo date('Y'); ?> &copy; Villaruz Print Shop & General Merchandise</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========== BOTTOM NAVIGATION ========== -->
+    <nav class="bottom-nav no-print">
+        <a href="shop.php" class="nav-item">
+            <i class="fas fa-store"></i>
+            <span>Shop</span>
+        </a>
+        <a href="cart.php" class="nav-item">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Cart</span>
+            <?php if ($cartTotalItems > 0): ?>
+                <span class="badge"><?php echo $cartTotalItems; ?></span>
+            <?php endif; ?>
+        </a>
+        <a href="orders.php" class="nav-item">
+            <i class="fas fa-truck"></i>
+            <span>Orders</span>
+        </a>
+        <a href="account.php" class="nav-item active">
+            <i class="fas fa-th-large"></i>
+            <span>Services</span>
+        </a>
+        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </nav>
+
+    <script>
+        // ============================================================
+        // CONFIGURATION
+        // ============================================================
+        const csrfToken = document.getElementById('csrfToken').value;
+        const accNumber = document.getElementById('userAccNumber').value;
+
+        // Working hours from PHP
+        const workStartHour = <?php echo $workStartHour; ?>;
+        const workStartMinute = <?php echo $workStartMinute; ?>;
+        const workEndHour = <?php echo $workEndHour; ?>;
+        const workEndMinute = <?php echo $workEndMinute; ?>;
+        const isWeekend = <?php echo $isWeekend ? 'true' : 'false'; ?>;
+        const isWithinWorkingHours = <?php echo $isWithinWorkingHours ? 'true' : 'false'; ?>;
+
+        // ============================================================
+        // TOAST MESSAGES
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const toast = document.getElementById('toastMessage');
+            if (toast) {
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.5s';
+                    setTimeout(() => toast.remove(), 500);
+                }, 5000);
+            }
+        });
+
+        function showToast(message, type = 'success') {
+            const existingToast = document.querySelector('.toast-message');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-message ' + type;
+            const icon = type === 'success' ? 'fa-check-circle' : type === 'info' ? 'fa-info-circle' :
+                'fa-exclamation-circle';
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i> 
+                ${message}
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+
+            const mainContent = document.querySelector('.main-content');
+            const header = document.querySelector('.dashboard-header');
+            if (mainContent && header) {
+                mainContent.insertBefore(toast, header.nextSibling);
+            }
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s';
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
+        // ============================================================
+        // TIME IN
+        // ============================================================
+        document.getElementById('timeInBtn').addEventListener('click', async function() {
+            // Check if DTR is disabled
+            if (isWeekend) {
+                showToast('DTR is disabled on weekends.', 'error');
+                return;
+            }
+            if (!isWithinWorkingHours) {
+                showToast('DTR is only available during working hours (8:00 AM - 5:00 PM).', 'error');
+                return;
+            }
+
+            const btn = this;
+            const originalText = btn.innerHTML;
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'time_in');
+                formData.append('acc_number', accNumber);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('../Customer_API/dtr_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast(data.message || 'Error clocking in', 'error');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Network error. Please try again.', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // ============================================================
+        // TIME OUT
+        // ============================================================
+        document.getElementById('timeOutBtn').addEventListener('click', async function() {
+            // Check if DTR is disabled
+            if (isWeekend) {
+                showToast('DTR is disabled on weekends.', 'error');
+                return;
+            }
+            if (!isWithinWorkingHours) {
+                showToast('DTR is only available during working hours (8:00 AM - 5:00 PM).', 'error');
+                return;
+            }
+
+            const btn = this;
+            const originalText = btn.innerHTML;
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'time_out');
+                formData.append('acc_number', accNumber);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('../Customer_API/dtr_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast(data.message || 'Error clocking out', 'error');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Network error. Please try again.', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>
