@@ -1118,12 +1118,6 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                     <video id="previewVideo" autoplay playsinline muted></video>
                     <div class="camera-placeholder" id="cameraPlaceholder">
                         <i class="fas fa-camera"></i>
-                        <span>Camera Ready</span>
-                        <span class="status-text">Click Time In/Out to capture</span>
-                    </div>
-                    <div class="camera-status-badge">
-                        <span class="dot inactive" id="statusDot"></span>
-                        <span id="statusText">Offline</span>
                     </div>
                 </div>
             </div>
