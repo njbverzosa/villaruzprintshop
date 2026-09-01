@@ -331,7 +331,7 @@ $isDtrDisabled = false; // Always enabled
             border: 1px solid #e2e8f0;
         }
 
-        /* ========== HEXAGON CAMERA PREVIEW ========== */
+        /* ========== SQUARE CAMERA PREVIEW ========== */
         .camera-preview-container {
             display: flex;
             justify-content: center;
@@ -340,25 +340,24 @@ $isDtrDisabled = false; // Always enabled
             padding: 5px;
         }
 
-        .hexagon-wrapper {
+        .camera-wrapper {
             position: relative;
             width: 200px;
             height: 200px;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            -webkit-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             overflow: hidden;
             background: #1e293b;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             border: 3px solid #3b82f6;
+            border-radius: 12px;
             transition: all 0.3s ease;
         }
 
-        .hexagon-wrapper:hover {
+        .camera-wrapper:hover {
             transform: scale(1.02);
             border-color: #22c55e;
         }
 
-        .hexagon-wrapper video {
+        .camera-wrapper video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -366,11 +365,11 @@ $isDtrDisabled = false; // Always enabled
             display: none;
         }
 
-        .hexagon-wrapper video.active {
+        .camera-wrapper video.active {
             display: block;
         }
 
-        .hexagon-wrapper .camera-placeholder {
+        .camera-wrapper .camera-placeholder {
             width: 100%;
             height: 100%;
             display: flex;
@@ -384,59 +383,63 @@ $isDtrDisabled = false; // Always enabled
             padding: 20px;
         }
 
-        .hexagon-wrapper .camera-placeholder.hidden {
+        .camera-wrapper .camera-placeholder.hidden {
             display: none;
         }
 
-        .hexagon-wrapper .camera-placeholder i {
+        .camera-wrapper .camera-placeholder i {
             font-size: 48px;
             color: #3b82f6;
             margin-bottom: 10px;
             opacity: 0.6;
         }
 
-        .hexagon-wrapper .camera-placeholder .status-text {
+        .camera-wrapper .camera-placeholder .status-text {
             font-size: 12px;
             color: #64748b;
             margin-top: 4px;
         }
 
-        .hexagon-wrapper .camera-status-badge {
+        /* ========== LIVE BADGE ========== */
+        .live-badge {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(0, 0, 0, 0.8);
+            background: #ef4444;
             color: #fff;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
             z-index: 5;
             display: flex;
             align-items: center;
             gap: 6px;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            transition: all 0.3s ease;
         }
 
-        .hexagon-wrapper .camera-status-badge .dot {
+        .live-badge .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             display: inline-block;
+            background: #fff;
         }
 
-        .hexagon-wrapper .camera-status-badge .dot.active {
-            background: #22c55e;
-            animation: pulse 1.5s infinite;
+        .live-badge .dot.pulse {
+            animation: pulse-dot 1.5s infinite;
         }
 
-        .hexagon-wrapper .camera-status-badge .dot.inactive {
-            background: #ef4444;
-        }
-
-        @keyframes pulse {
+        @keyframes pulse-dot {
             0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+            50% { opacity: 0.4; transform: scale(0.7); }
             100% { opacity: 1; transform: scale(1); }
+        }
+
+        .live-badge.active {
+            background: #22c55e;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
         }
 
         /* ========== CAPTURE OVERLAY ========== */
@@ -627,7 +630,7 @@ $isDtrDisabled = false; // Always enabled
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
-            min-width: 500px;
+            min-width: 400px;
         }
 
         .dtr-table th {
@@ -762,7 +765,7 @@ $isDtrDisabled = false; // Always enabled
 
             .dtr-table {
                 font-size: 12px;
-                min-width: 400px;
+                min-width: 350px;
             }
 
             .dtr-table th,
@@ -770,7 +773,7 @@ $isDtrDisabled = false; // Always enabled
                 padding: 8px 12px;
             }
 
-            .hexagon-wrapper {
+            .camera-wrapper {
                 width: 160px;
                 height: 160px;
             }
@@ -862,7 +865,7 @@ $isDtrDisabled = false; // Always enabled
 
             .dtr-table {
                 font-size: 11px;
-                min-width: 320px;
+                min-width: 300px;
             }
 
             .dtr-table th,
@@ -870,9 +873,16 @@ $isDtrDisabled = false; // Always enabled
                 padding: 6px 10px;
             }
 
-            .hexagon-wrapper {
+            .camera-wrapper {
                 width: 140px;
                 height: 140px;
+            }
+
+            .live-badge {
+                font-size: 9px;
+                padding: 2px 8px;
+                top: 6px;
+                right: 6px;
             }
         }
 
@@ -1089,17 +1099,17 @@ $isDtrDisabled = false; // Always enabled
                 </span>
             </div>
 
-            <!-- ========== HEXAGON CAMERA PREVIEW ========== -->
+            <!-- ========== SQUARE CAMERA PREVIEW ========== -->
             <div class="camera-preview-container no-print">
-                <div class="hexagon-wrapper" id="hexagonWrapper">
+                <div class="camera-wrapper" id="cameraWrapper">
                     <video id="previewVideo" autoplay playsinline muted></video>
                     <div class="camera-placeholder" id="cameraPlaceholder">
                         <i class="fas fa-camera"></i>
                         <span>Camera Ready</span>
                         <span class="status-text">Click Time In/Out to capture</span>
                     </div>
-                    <div class="camera-status-badge">
-                        <span class="dot inactive" id="statusDot"></span>
+                    <div class="live-badge" id="liveBadge">
+                        <span class="dot" id="statusDot"></span>
                         <span id="statusText">Offline</span>
                     </div>
                 </div>
@@ -1169,7 +1179,6 @@ $isDtrDisabled = false; // Always enabled
                             <th>Date</th>
                             <th>Time In</th>
                             <th>Time Out</th>
-                            <th>Photo</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1181,26 +1190,11 @@ $isDtrDisabled = false; // Always enabled
                                     </td>
                                     <td><?php echo $record['time_out'] ? date('h:i A', strtotime($record['time_out'])) : '—'; ?>
                                     </td>
-                                    <td>
-                                        <?php if (!empty($record['time_in_photo'])): ?>
-                                            <a href="../DTR_Photos/<?php echo $record['time_in_photo']; ?>" target="_blank" title="Time In Photo">
-                                                <i class="fas fa-camera" style="color: #3b82f6;"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                        <?php if (!empty($record['time_out_photo'])): ?>
-                                            <a href="../DTR_Photos/<?php echo $record['time_out_photo']; ?>" target="_blank" title="Time Out Photo">
-                                                <i class="fas fa-camera" style="color: #ef4444;"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                        <?php if (empty($record['time_in_photo']) && empty($record['time_out_photo'])): ?>
-                                            <span style="color: #94a3b8;">—</span>
-                                        <?php endif; ?>
-                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="4">
+                                <td colspan="3">
                                     <div class="no-records">
                                         <i class="far fa-calendar-alt"></i>
                                         No records found for this month.
@@ -1267,6 +1261,7 @@ $isDtrDisabled = false; // Always enabled
         // ============================================================
         const previewVideo = document.getElementById('previewVideo');
         const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const liveBadge = document.getElementById('liveBadge');
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
         const captureOverlay = document.getElementById('captureOverlay');
@@ -1348,7 +1343,8 @@ $isDtrDisabled = false; // Always enabled
                 cameraPlaceholder.classList.add('hidden');
                 
                 // Update status
-                statusDot.className = 'dot active';
+                liveBadge.classList.add('active');
+                statusDot.className = 'dot pulse';
                 statusText.textContent = 'Live';
                 isPreviewActive = true;
                 
@@ -1373,7 +1369,8 @@ $isDtrDisabled = false; // Always enabled
                     previewVideo.classList.add('active');
                     cameraPlaceholder.classList.add('hidden');
                     
-                    statusDot.className = 'dot active';
+                    liveBadge.classList.add('active');
+                    statusDot.className = 'dot pulse';
                     statusText.textContent = 'Live';
                     isPreviewActive = true;
                     
@@ -1386,6 +1383,9 @@ $isDtrDisabled = false; // Always enabled
                         <span style="color: #ef4444;">Camera Unavailable</span>
                         <span class="status-text" style="color: #94a3b8;">Please allow camera access</span>
                     `;
+                    liveBadge.classList.remove('active');
+                    statusDot.className = 'dot';
+                    statusText.textContent = 'Offline';
                 }
             }
         }
@@ -1400,7 +1400,8 @@ $isDtrDisabled = false; // Always enabled
             previewVideo.classList.remove('active');
             cameraPlaceholder.classList.remove('hidden');
             
-            statusDot.className = 'dot inactive';
+            liveBadge.classList.remove('active');
+            statusDot.className = 'dot';
             statusText.textContent = 'Offline';
             isPreviewActive = false;
         }
