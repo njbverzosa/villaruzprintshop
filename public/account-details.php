@@ -307,12 +307,13 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             color: #94a3b8;
         }
 
+        /* ========== FORM STYLES ========== */
         .account-detail {
             display: flex;
-            align-items: center;
-            padding: 14px 12px;
+            align-items: flex-start;
+            padding: 16px 12px;
             border-bottom: 1px solid #f1f5f9;
-            gap: 10px;
+            gap: 12px;
             transition: all 0.3s;
             flex-wrap: wrap;
             border-radius: 8px;
@@ -336,6 +337,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             display: flex;
             align-items: center;
             gap: 8px;
+            padding-top: 4px;
         }
 
         .account-detail .label i {
@@ -347,19 +349,17 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         .account-detail .value-wrapper {
             flex: 1;
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
             min-width: 0;
-            flex-wrap: wrap;
         }
 
         .account-detail .value-display {
-            flex: 1;
-            padding: 8px 14px;
-            min-height: 40px;
+            padding: 10px 14px;
+            min-height: 44px;
             background: #f8fafc;
             border-radius: 8px;
-            border: 1px solid transparent;
+            border: 1px solid #e2e8f0;
             word-break: break-word;
             font-size: 14px;
             color: #0f172a;
@@ -371,13 +371,13 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         }
 
         .account-detail .value-edit {
-            flex: 1;
+            width: 100%;
             display: none;
-            min-width: 0;
         }
 
         .account-detail .value-edit input,
-        .account-detail .value-edit textarea {
+        .account-detail .value-edit textarea,
+        .account-detail .value-edit select {
             width: 100%;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -391,14 +391,16 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         }
 
         .account-detail .value-edit input:focus,
-        .account-detail .value-edit textarea:focus {
+        .account-detail .value-edit textarea:focus,
+        .account-detail .value-edit select:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
             background: #ffffff;
         }
 
         .account-detail .value-edit input:hover,
-        .account-detail .value-edit textarea:hover {
+        .account-detail .value-edit textarea:hover,
+        .account-detail .value-edit select:hover {
             border-color: #94a3b8;
         }
 
@@ -414,28 +416,30 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             line-height: 1.6;
         }
 
+        .account-detail .value-edit select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        .account-detail .value-edit input:disabled,
+        .account-detail .value-edit textarea:disabled,
+        .account-detail .value-edit select:disabled {
+            background: #f1f5f9;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
         .account-detail.editing {
             background: #eff6ff;
             border-radius: 10px;
-            padding: 14px 12px;
+            padding: 16px 12px;
             border-left: 4px solid #3b82f6;
             margin: 4px 0;
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
-        }
-
-        .account-detail.editing .value-edit input,
-        .account-detail.editing .value-edit textarea {
-            border-color: #3b82f6;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .account-detail.editing .label {
-            color: #1e40af;
-        }
-
-        .account-detail.editing .label i {
-            color: #2563eb;
         }
 
         .account-detail.editing .value-edit {
@@ -447,10 +451,19 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             display: none;
         }
 
+        .account-detail.editing .label {
+            color: #1e40af;
+        }
+
+        .account-detail.editing .label i {
+            color: #2563eb;
+        }
+
         .account-detail .btn-group {
             display: flex;
             gap: 6px;
             flex-shrink: 0;
+            margin-top: 4px;
         }
 
         .account-detail .edit-btn {
@@ -458,7 +471,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             border: none;
             color: #94a3b8;
             cursor: pointer;
-            padding: 8px 14px;
+            padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
             font-size: 13px;
@@ -505,12 +518,23 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             border-color: #fca5a5;
         }
 
+        .account-detail .edit-btn.primary {
+            color: white;
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .account-detail .edit-btn.primary:hover:not(:disabled) {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
         .account-detail .cancel-btn {
             background: #f1f5f9;
             border: 1px solid #e2e8f0;
             color: #64748b;
             cursor: pointer;
-            padding: 8px 14px;
+            padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
             font-size: 13px;
@@ -552,6 +576,13 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         .status-badge.unverified {
             background: #fee2e2;
             color: #991b1b;
+        }
+
+        .field-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+            display: block;
         }
 
         /* ========== BOTTOM NAVIGATION ========== */
@@ -620,6 +651,68 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             line-height: 14px;
         }
 
+        /* ========== VIP AVATAR STYLES ========== */
+        .user-badge .avatar.vip {
+            background: linear-gradient(135deg, #f59e0b, #f97316) !important;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .user-badge .vip-badge i {
+            font-size: 10px;
+        }
+
+        /* ========== LANDMARK PHOTO UPLOAD ========== */
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8fafc;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            transform: scale(1.02);
+        }
+
+        .upload-area i {
+            font-size: 40px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .upload-area:hover i {
+            color: #3b82f6;
+        }
+
+        .landmark-photo-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .remove-photo-btn:hover {
+            background: #dc2626 !important;
+            transform: scale(1.1);
+        }
+
+        #previewImage {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid #e2e8f0;
+        }
+
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .main-content {
@@ -674,8 +767,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
             .account-detail .value-wrapper {
                 width: 100%;
-                flex-direction: column;
-                align-items: stretch;
             }
 
             .account-detail .value-display {
@@ -684,12 +775,9 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 min-height: 38px;
             }
 
-            .account-detail .value-edit {
-                width: 100%;
-            }
-
             .account-detail .value-edit input,
-            .account-detail .value-edit textarea {
+            .account-detail .value-edit textarea,
+            .account-detail .value-edit select {
                 font-size: 14px;
                 padding: 10px 12px;
             }
@@ -773,7 +861,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             }
 
             .account-detail .value-edit input,
-            .account-detail .value-edit textarea {
+            .account-detail .value-edit textarea,
+            .account-detail .value-edit select {
                 font-size: 13px;
                 padding: 8px 10px;
                 border-radius: 6px;
@@ -877,86 +966,51 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             }
         }
 
-        /* VIP Avatar Styles */
-        .user-badge .avatar.vip {
-            background: linear-gradient(135deg, #f59e0b, #f97316) !important;
-            font-size: 12px;
-            font-weight: 700;
+        /* ========== FORM GROUP ENHANCEMENTS ========== */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
-        .user-badge .vip-badge i {
-            font-size: 10px;
+        .form-row .account-detail {
+            border-bottom: none;
+            padding: 12px 10px;
         }
 
-        /* ========== LANDMARK PHOTO UPLOAD ========== */
-        .upload-area {
-            border: 2px dashed #cbd5e1;
-            border-radius: 12px;
-            padding: 30px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: #f8fafc;
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
         }
 
-        .upload-area:hover {
-            border-color: #3b82f6;
-            background: #eff6ff;
-        }
-
-        .upload-area.dragover {
-            border-color: #3b82f6;
-            background: #dbeafe;
-            transform: scale(1.02);
-        }
-
-        .upload-area i {
-            font-size: 40px;
-            color: #94a3b8;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .upload-area:hover i {
-            color: #3b82f6;
-        }
-
-        .landmark-photo-wrapper {
+        .input-group {
             position: relative;
-            display: inline-block;
         }
 
-        .remove-photo-btn:hover {
-            background: #dc2626 !important;
-            transform: scale(1.1);
+        .input-group .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
         }
 
-        #previewImage {
-            max-width: 200px;
-            max-height: 150px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 2px solid #e2e8f0;
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            padding-left: 36px !important;
         }
 
-        @media (max-width: 480px) {
-            .upload-area {
-                padding: 20px 15px;
-            }
+        .input-group textarea+.input-icon {
+            top: 14px;
+            transform: none;
+        }
 
-            .upload-area i {
-                font-size: 30px;
-            }
-
-            .upload-area p {
-                font-size: 13px;
-            }
-
-            #previewImage,
-            .landmark-photo-wrapper img {
-                max-width: 150px;
-                max-height: 120px;
-            }
+        .field-required {
+            color: #ef4444;
+            margin-left: 4px;
         }
     </style>
 </head>
@@ -1018,17 +1072,31 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     <div class="profile-acc">
                         <i class="fas fa-id-card"></i> Account #: <?php echo htmlspecialchars($userAccNumber); ?>
                     </div>
+                    
                 </div>
+            </div>
+
+            <!-- ===== PERSONAL INFORMATION SECTION ===== -->
+            <div style="margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                <h4 style="color: #0f172a; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-user-circle" style="color: #3b82f6;"></i> Personal Information
+                </h4>
             </div>
 
             <!-- Full Name (Editable) -->
             <div class="account-detail" data-field="f_name">
-                <span class="label"><i class="fas fa-user"></i> Fullname</span>
+                <span class="label"><i class="fas fa-user"></i> Full Name <span class="field-required">*</span></span>
                 <div class="value-wrapper">
                     <div class="value-display" id="display_f_name"><?php echo htmlspecialchars($userFullName); ?></div>
                     <div class="value-edit">
-                        <input type="text" class="edit-input" id="input_f_name"
-                            value="<?php echo htmlspecialchars($userFullName); ?>" placeholder="Enter your full name">
+                        <div class="input-group">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" class="edit-input" id="input_f_name"
+                                value="<?php echo htmlspecialchars($userFullName); ?>" 
+                                placeholder="Enter your full name"
+                                autocomplete="name">
+                        </div>
+                        <span class="field-hint">Enter your full name as it appears on official documents.</span>
                     </div>
                     <div class="btn-group">
                         <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
@@ -1041,16 +1109,29 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 </div>
             </div>
 
+            <!-- ===== ADDRESS INFORMATION SECTION ===== -->
+            <div style="margin: 16px 0 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                <h4 style="color: #0f172a; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-map-marker-alt" style="color: #3b82f6;"></i> Address Information
+                </h4>
+            </div>
+
             <!-- Street (Editable) -->
             <div class="account-detail" data-field="street">
-                <span class="label"><i class="fas fa-road"></i> Street</span>
+                <span class="label"><i class="fas fa-road"></i> Street <span class="field-required">*</span></span>
                 <div class="value-wrapper">
                     <div class="value-display" id="display_street">
                         <?php echo htmlspecialchars($userStreet ?: 'Not set'); ?>
                     </div>
                     <div class="value-edit">
-                        <input type="text" class="edit-input" id="input_street"
-                            value="<?php echo htmlspecialchars($userStreet); ?>" placeholder="Enter your street name">
+                        <div class="input-group">
+                            <i class="fas fa-road input-icon"></i>
+                            <input type="text" class="edit-input" id="input_street"
+                                value="<?php echo htmlspecialchars($userStreet); ?>" 
+                                placeholder="Enter your street name"
+                                autocomplete="address-line1">
+                        </div>
+                        <span class="field-hint">House number, street name, subdivision, etc.</span>
                     </div>
                     <div class="btn-group">
                         <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
@@ -1065,14 +1146,20 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
 
             <!-- Barangay (Editable) -->
             <div class="account-detail" data-field="barangay">
-                <span class="label"><i class="fas fa-building"></i> Barangay</span>
+                <span class="label"><i class="fas fa-building"></i> Barangay <span class="field-required">*</span></span>
                 <div class="value-wrapper">
                     <div class="value-display" id="display_barangay">
                         <?php echo htmlspecialchars($userBarangay ?: 'Not set'); ?>
                     </div>
                     <div class="value-edit">
-                        <input type="text" class="edit-input" id="input_barangay"
-                            value="<?php echo htmlspecialchars($userBarangay); ?>" placeholder="Enter your barangay">
+                        <div class="input-group">
+                            <i class="fas fa-building input-icon"></i>
+                            <input type="text" class="edit-input" id="input_barangay"
+                                value="<?php echo htmlspecialchars($userBarangay); ?>" 
+                                placeholder="Enter your barangay"
+                                autocomplete="address-level2">
+                        </div>
+                        <span class="field-hint">Your barangay or district.</span>
                     </div>
                     <div class="btn-group">
                         <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
@@ -1085,9 +1172,85 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 </div>
             </div>
 
+            <!-- ===== CONTACT INFORMATION SECTION ===== -->
+            <div style="margin: 16px 0 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                <h4 style="color: #0f172a; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-address-card" style="color: #3b82f6;"></i> Contact Information
+                </h4>
+            </div>
+
+            <!-- Email (Editable) -->
+            <div class="account-detail" data-field="email">
+                <span class="label"><i class="fas fa-envelope"></i> Email Address <span class="field-required">*</span></span>
+                <div class="value-wrapper">
+                    <div class="value-display" id="display_email">
+                        <?php echo htmlspecialchars($userEmail ?: 'Not set'); ?>
+                        <?php if ($isEmailVerified): ?>
+                            <span class="status-badge verified">
+                                <i class="fas fa-check-circle"></i> Verified
+                            </span>
+                        <?php else: ?>
+                            <span class="status-badge unverified">
+                                <i class="fas fa-exclamation-circle"></i> Unverified
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="value-edit">
+                        <div class="input-group">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" class="edit-input" id="input_email"
+                                value="<?php echo htmlspecialchars($userEmail); ?>" 
+                                placeholder="Enter your email address"
+                                autocomplete="email">
+                        </div>
+                        <span class="field-hint">We'll send order confirmations and updates to this email.</span>
+                    </div>
+                    <div class="btn-group">
+                        <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
+                            <i class="fas fa-pen"></i> Edit
+                        </button>
+                        <button class="cancel-btn" onclick="cancelEdit(this)" title="Cancel edit">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Number (Locked - Not Editable) -->
+            <div class="account-detail" data-field="phone_number">
+                <span class="label"><i class="fas fa-phone"></i> Contact Number <span class="field-required">*</span></span>
+                <div class="value-wrapper">
+                    <div class="value-display" id="display_phone_number">
+                        <?php echo htmlspecialchars($userContact ?: 'Not set'); ?>
+                    </div>
+                    <div class="value-edit">
+                        <div class="input-group">
+                            <i class="fas fa-phone input-icon"></i>
+                            <input type="tel" class="edit-input" id="input_phone_number"
+                                value="<?php echo htmlspecialchars($userContact); ?>" 
+                                placeholder="Enter your contact number"
+                                autocomplete="tel" disabled>
+                        </div>
+                        <span class="field-hint">Contact number cannot be changed. Please contact support for updates.</span>
+                    </div>
+                    <div class="btn-group">
+                        <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;" title="Contact number is locked">
+                            <i class="fas fa-lock"></i> Locked
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== DELIVERY INFORMATION SECTION ===== -->
+            <div style="margin: 16px 0 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                <h4 style="color: #0f172a; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-truck" style="color: #3b82f6;"></i> Delivery Information
+                </h4>
+            </div>
+
             <!-- Land Mark (Photo Upload) -->
             <div class="account-detail" data-field="land_mark">
-                <span class="label"><i class="fas fa-camera"></i> Land Mark Photo</span>
+                <span class="label"><i class="fas fa-camera"></i> Landmark Photo</span>
                 <div class="value-wrapper">
                     <div class="value-display" id="display_land_mark">
                         <?php if (!empty($userLandMark) && file_exists(__DIR__ . '/../' . $userLandMark)): ?>
@@ -1143,63 +1306,18 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 </div>
             </div>
 
-            <!-- Email (Editable) -->
-            <div class="account-detail" data-field="email">
-                <span class="label"><i class="fas fa-envelope"></i> Email</span>
-                <div class="value-wrapper">
-                    <div class="value-display" id="display_email">
-                        <?php echo htmlspecialchars($userEmail ?: 'Not set'); ?>
-                        <?php if ($isEmailVerified): ?>
-                            <span class="status-badge verified">
-                                <i class="fas fa-check-circle"></i> Verified
-                            </span>
-                        <?php else: ?>
-                            <span class="status-badge unverified">
-                                <i class="fas fa-exclamation-circle"></i> Unverified
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="value-edit">
-                        <input type="email" class="edit-input" id="input_email"
-                            value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Enter your email address">
-                    </div>
-                    <div class="btn-group">
-                        <button class="edit-btn" onclick="toggleEdit(this)" title="Edit field">
-                            <i class="fas fa-pen"></i> Edit
-                        </button>
-                        <button class="cancel-btn" onclick="cancelEdit(this)" title="Cancel edit">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contact Number (Not Editable) -->
-            <div class="account-detail" data-field="phone_number">
-                <span class="label"><i class="fas fa-phone"></i> Contact Number</span>
-                <div class="value-wrapper">
-                    <div class="value-display" id="display_phone_number">
-                        <?php echo htmlspecialchars($userContact ?: 'Not set'); ?>
-                    </div>
-                    <div class="value-edit">
-                        <input type="text" class="edit-input" id="input_phone_number"
-                            value="<?php echo htmlspecialchars($userContact); ?>"
-                            placeholder="Enter your contact number" disabled>
-                    </div>
-                    <div class="btn-group">
-                        <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;"
-                            title="Contact number cannot be edited">
-                            <i class="fas fa-lock"></i>
-                        </button>
-                    </div>
-                </div>
+            <!-- ===== ACCOUNT INFORMATION SECTION ===== -->
+            <div style="margin: 16px 0 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                <h4 style="color: #0f172a; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-lock" style="color: #3b82f6;"></i> Account Information
+                </h4>
             </div>
 
             <!-- Date Joined (Read Only) -->
             <div class="account-detail">
                 <span class="label"><i class="fas fa-calendar-check"></i> Date Joined</span>
                 <div class="value-wrapper">
-                    <div class="value-display"><?php echo htmlspecialchars($userJoined ?: 'N/A'); ?></div>
+                    <div class="value-display"><?php echo htmlspecialchars($userJoined ? date('F j, Y', strtotime($userJoined)) : 'N/A'); ?></div>
                     <div class="value-edit">
                         <input type="text" class="edit-input" value="<?php echo htmlspecialchars($userJoined); ?>"
                             disabled>
@@ -1207,11 +1325,40 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     <div class="btn-group">
                         <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;"
                             title="Read only field">
-                            <i class="fas fa-lock"></i>
+                            <i class="fas fa-lock"></i> Locked
                         </button>
                     </div>
                 </div>
             </div>
+
+            <!-- Account Status -->
+            <div class="account-detail">
+                <span class="label"><i class="fas fa-shield-alt"></i> Account Status</span>
+                <div class="value-wrapper">
+                    <div class="value-display">
+                        <?php if ($isEmailVerified): ?>
+                            <span style="color: #10b981; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-check-circle"></i> Active & Verified
+                            </span>
+                        <?php else: ?>
+                            <span style="color: #f59e0b; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-exclamation-triangle"></i> Pending Verification
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="value-edit">
+                        <input type="text" class="edit-input" value="Account Status" disabled>
+                    </div>
+                    <div class="btn-group">
+                        <button class="edit-btn" disabled style="opacity:0.5; cursor:not-allowed;"
+                            title="Read only field">
+                            <i class="fas fa-lock"></i> Locked
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+           
         </div>
     </main>
 
@@ -1308,9 +1455,9 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             detail.classList.add('editing');
 
             const input = detail.querySelector('.edit-input');
-            if (input) {
+            if (input && !input.disabled) {
                 setTimeout(() => input.focus(), 100);
-                if (input.tagName === 'INPUT' && input.type !== 'hidden') {
+                if (input.tagName === 'INPUT' && input.type !== 'hidden' && input.type !== 'file') {
                     input.select();
                 }
             }
@@ -1360,6 +1507,15 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     toggleEdit(this);
                 };
                 return;
+            }
+
+            // Email validation
+            if (field === 'email') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    showToast('Please enter a valid email address', 'error');
+                    return;
+                }
             }
 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -1536,7 +1692,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             formData.append('landmark_photo', selectedFile);
 
             try {
-                // FIX: Use the correct API endpoint
                 const response = await fetch('../Customer_API/edit_account.php', {
                     method: 'POST',
                     body: formData
@@ -1574,7 +1729,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 formData.append('csrf_token', csrfToken);
                 formData.append('acc_number', accNumber);
 
-                // FIX: Use the correct API endpoint
                 const response = await fetch('../Customer_API/edit_account.php', {
                     method: 'POST',
                     body: formData
@@ -1595,8 +1749,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 showToast('Network error. Please try again.', 'error');
             }
         }
-
-
 
         console.log('👤 Account page loaded');
         console.log('📧 Email verified: <?php echo $isEmailVerified ? 'Yes' : 'No'; ?>');
