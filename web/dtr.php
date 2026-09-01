@@ -703,13 +703,10 @@ function getUnreadCount($pdo, $accNumber)
                     <table class="inventory-table" id="dtrTable">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Account</th>
-                                <th>User ID</th>
                                 <th>Date</th>
                                 <th>Time In</th>
                                 <th>Time Out</th>
-                                <th>Status</th>
                                 <th>In Photo</th>
                                 <th>Out Photo</th>
                             </tr>
@@ -725,11 +722,9 @@ function getUnreadCount($pdo, $accNumber)
                             <?php else: ?>
                                 <?php foreach ($dtrRecords as $record): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($record['id']); ?></td>
                                         <td>
                                             <span class="customer-acc"><?php echo htmlspecialchars($record['acc_number'] ?? ''); ?></span>
                                         </td>
-                                        <td><?php echo htmlspecialchars($record['user_id']); ?></td>
                                         <td class="dtr-date">
                                             <?php echo date('M j, Y', strtotime($record['date'])); ?>
                                         </td>
@@ -747,25 +742,7 @@ function getUnreadCount($pdo, $accNumber)
                                                 <span class="dtr-time empty">—</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <?php
-                                            $statusClass = 'default';
-                                            $statusText = 'Present';
-                                            if ($record['status'] == 'late') {
-                                                $statusClass = 'late';
-                                                $statusText = 'Late';
-                                            } elseif ($record['status'] == 'absent') {
-                                                $statusClass = 'absent';
-                                                $statusText = 'Absent';
-                                            } elseif ($record['status'] == 'half_day') {
-                                                $statusClass = 'half_day';
-                                                $statusText = 'Half Day';
-                                            }
-                                            ?>
-                                            <span class="status-badge <?php echo $statusClass; ?>">
-                                                <?php echo $statusText; ?>
-                                            </span>
-                                        </td>
+                                       
                                         <td>
                                             <?php 
                                             $timeInPhoto = $record['time_in_photo'] ?? '';
