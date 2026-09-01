@@ -1,5 +1,5 @@
 <?php
-// public/account.php (account-details.php)
+// public/account-edit.php
 
 session_start();
 
@@ -96,7 +96,7 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="csrf-token" content="<?php echo $csrfToken; ?>">
-    <title>Account | Villaruz Print Shop & General Merchandise</title>
+    <title>Edit Account | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* ========== RESET & BASE STYLES ========== */
@@ -411,7 +411,10 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
             font-size: 16px;
         }
 
-
+        .form-group label .field-required {
+            color: #ef4444;
+            margin-left: 2px;
+        }
 
         .form-group .form-control {
             width: 100%;
@@ -488,7 +491,7 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
             flex-wrap: wrap;
         }
 
-        .btn-edit {
+        .btn-submit {
             padding: 14px 40px;
             border: none;
             border-radius: 8px;
@@ -499,21 +502,73 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
             display: flex;
             align-items: center;
             gap: 10px;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
             min-width: 160px;
+            justify-content: center;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-submit:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-submit .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-submit.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-submit.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn-cancel {
+            padding: 14px 30px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            color: #475569;
+            min-width: 120px;
             justify-content: center;
             text-decoration: none;
         }
 
-        .btn-edit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
-        }
-
-        .btn-edit:active {
-            transform: scale(0.95);
+        .btn-cancel:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
         }
 
         /* ========== LANDMARK PHOTO UPLOAD ========== */
@@ -734,7 +789,8 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 gap: 12px;
             }
 
-            .btn-edit {
+            .btn-submit,
+            .btn-cancel {
                 width: 100%;
                 padding: 14px 20px;
                 font-size: 15px;
@@ -797,7 +853,8 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 font-size: 11px;
             }
 
-            .btn-edit {
+            .btn-submit,
+            .btn-cancel {
                 font-size: 14px;
                 padding: 12px 16px;
             }
@@ -882,33 +939,6 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
             }
         }
-
-        @media print {
-            body {
-                padding-bottom: 0;
-            }
-
-            .bottom-nav {
-                display: none;
-            }
-
-            .btn-edit {
-                display: none !important;
-            }
-
-            .account-card {
-                box-shadow: none;
-                border: 1px solid #e2e8f0;
-            }
-
-            .main-content {
-                padding: 10px;
-            }
-
-            .upload-area {
-                border: 1px solid #e2e8f0;
-            }
-        }
     </style>
 </head>
 
@@ -934,7 +964,7 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="welcome">
-                <h3><i class="fas fa-user"></i> Account</h3>
+                <h3><i class="fas fa-edit"></i> Edit Account</h3>
             </div>
             <div class="user-badge">
                 <div class="avatar <?php echo $isVip ? 'vip' : ''; ?>">
@@ -964,7 +994,10 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 </div>
             </div>
 
-            <form class="account-form" id="accountForm">
+            <form class="account-form" id="accountForm" method="POST" enctype="multipart/form-data">
+                <!-- Hidden action field -->
+                <input type="hidden" name="action" value="update_all_fields">
+
                 <!-- ===== PERSONAL INFORMATION SECTION ===== -->
                 <div style="margin-bottom: 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
                     <h4 style="color: #0f172a; font-size: 15px; display: flex; align-items: center; gap: 8px;">
@@ -975,11 +1008,11 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 <!-- Full Name -->
                 <div class="form-group">
                     <label>
-                        Full Name
+                        Full Name <span class="field-required">*</span>
                     </label>
                     <input type="text" class="form-control" id="f_name" name="f_name"
                         value="<?php echo htmlspecialchars($userFullName); ?>" placeholder="Enter your full name"
-                        required disabled>
+                        required>
                     <span class="field-hint">Enter your full name as it appears on official documents.</span>
                 </div>
 
@@ -994,21 +1027,21 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 <div class="form-row">
                     <div class="form-group">
                         <label>
-                            Street
+                            Street <span class="field-required">*</span>
                         </label>
                         <input type="text" class="form-control" id="street" name="street"
                             value="<?php echo htmlspecialchars($userStreet); ?>" placeholder="Enter your street name"
-                            required disabled>
+                            required>
                         <span class="field-hint">House number, street name, subdivision, etc.</span>
                     </div>
 
                     <div class="form-group">
                         <label>
-                            Barangay
+                            Barangay <span class="field-required">*</span>
                         </label>
                         <input type="text" class="form-control" id="barangay" name="barangay"
                             value="<?php echo htmlspecialchars($userBarangay); ?>" placeholder="Enter your barangay"
-                            required disabled>
+                            required>
                         <span class="field-hint">Your barangay or district.</span>
                     </div>
                 </div>
@@ -1024,7 +1057,7 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 <div class="form-row">
                     <div class="form-group">
                         <label>
-                            Email Address
+                            Email Address <span class="field-required">*</span>
                             <?php if ($isEmailVerified): ?>
                                 <span class="status-badge verified">
                                     <i class="fas fa-check-circle"></i>
@@ -1037,13 +1070,13 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                         </label>
                         <input type="email" class="form-control" id="email" name="email"
                             value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Enter your email address"
-                            required disabled>
+                            required>
                         <span class="field-hint">We'll send order confirmations and updates to this email.</span>
                     </div>
 
                     <div class="form-group">
                         <label>
-                            Contact Number
+                            Contact Number <span class="field-required">*</span>
                         </label>
                         <input type="tel" class="form-control" id="phone_number" name="phone_number"
                             value="<?php echo htmlspecialchars($userContact); ?>"
@@ -1066,33 +1099,47 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                         Landmark Photo
                     </label>
                     <div class="photo-input-wrapper">
-                        <div class="upload-area" id="uploadArea" style="cursor: default; opacity: 0.7;">
+                        <div class="upload-area" id="uploadArea">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <p>Click or drag to upload</p>
                             <small>JPG, JPEG, PNG (Max 5MB)</small>
                             <input type="file" id="landmarkFileInput" name="landmark_photo" accept=".jpg,.jpeg,.png"
-                                style="display: none;" disabled>
+                                style="display: none;">
                         </div>
                         <?php if (!empty($userLandMark) && file_exists(__DIR__ . '/../' . $userLandMark)): ?>
                             <div class="landmark-photo-wrapper">
                                 <img src="../<?php echo htmlspecialchars($userLandMark); ?>" alt="Landmark Photo"
                                     class="photo-preview" id="landmarkPreview">
+                                <button type="button" class="remove-photo-btn" onclick="deleteLandmarkPhoto()"
+                                    title="Remove photo">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                         <?php endif; ?>
                     </div>
                     <div id="previewContainer" style="display: none; margin-top: 10px;">
                         <img id="previewImage" src="#" alt="Preview" class="photo-preview">
+                        <button type="button" class="remove-photo-btn" onclick="cancelPhotoUpload()"
+                            title="Cancel upload"
+                            style="position: relative; top: auto; right: auto; margin-top: 8px; display: inline-flex;">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
                     </div>
                     <span class="field-hint">Upload a photo of your landmark to help delivery drivers find you
                         easily.</span>
                 </div>
 
-                <!-- ===== EDIT BUTTON ===== -->
+                <!-- ===== SUBMIT BUTTON ===== -->
                 <div class="submit-container">
-                    <a href="account-edit.php" class="btn-edit">
-                        Edit Account
+                    <a href="account-details.php" class="btn-cancel">
+                        <i class="fas fa-times"></i> Cancel
                     </a>
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <span class="spinner"></span>
+                        <span class="btn-text">Save Changes</span>
+                    </button>
                 </div>
+
             </form>
         </div>
     </main>
@@ -1125,24 +1172,13 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
     </nav>
 
     <script>
-        // Check for success message from edit page
-        document.addEventListener('DOMContentLoaded', function () {
-            // Check if there's a success message in the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const success = urlParams.get('success');
-
-            if (success === '1') {
-                showNotification('Account updated successfully!', 'success');
-                // Remove the parameter from URL without reloading
-                const newUrl = window.location.pathname + window.location.search.replace(/[?&]success=1/, '').replace(/^&/, '?');
-                window.history.replaceState({}, document.title, newUrl);
-            }
-        });
+        const csrfToken = document.getElementById('csrfToken').value;
+        const accNumber = document.getElementById('userAccNumber').value;
 
         // ============================================================
         // NOTIFICATION MODAL
         // ============================================================
-        let isReloading = false;
+        let isRedirecting = false;
 
         function showNotification(message, type = 'success', title = '') {
             const overlay = document.getElementById('notificationOverlay');
@@ -1151,7 +1187,6 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
             const msgEl = document.getElementById('notifMessage');
             const btn = document.getElementById('notifBtn');
 
-            // Reset classes
             icon.className = 'icon-wrapper';
 
             if (type === 'success') {
@@ -1179,7 +1214,10 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
             msgEl.textContent = message;
             overlay.classList.add('active');
 
-            // Auto-close after 5 seconds
+            if (type === 'success') {
+                isRedirecting = true;
+            }
+
             clearTimeout(window.notificationTimeout);
             window.notificationTimeout = setTimeout(() => {
                 closeNotification();
@@ -1189,27 +1227,261 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
         function closeNotification() {
             document.getElementById('notificationOverlay').classList.remove('active');
             clearTimeout(window.notificationTimeout);
+
+            if (isRedirecting) {
+                window.location.href = 'account-details.php';
+            }
         }
 
-        // Close notification on button click
         document.getElementById('notifBtn').addEventListener('click', function () {
             closeNotification();
         });
 
-        // Close notification on overlay click
         document.getElementById('notificationOverlay').addEventListener('click', function (e) {
             if (e.target === this) {
                 closeNotification();
             }
         });
 
-        // Close notification on Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeNotification();
             }
         });
 
+        // ============================================================
+        // FORM SUBMISSION
+        // ============================================================
+        document.getElementById('accountForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const formData = new FormData(this);
+
+            // Validate required fields
+            const requiredFields = document.querySelectorAll('.form-control[required]');
+            let isValid = true;
+            let firstInvalid = null;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#ef4444';
+                    field.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.15)';
+                    if (!firstInvalid) firstInvalid = field;
+                } else {
+                    field.style.borderColor = '';
+                    field.style.boxShadow = '';
+                }
+            });
+
+            if (!isValid) {
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                showNotification('Please fill in all required fields.', 'error');
+                return;
+            }
+
+            // Email validation
+            const emailInput = document.getElementById('email');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value.trim())) {
+                showNotification('Please enter a valid email address.', 'error');
+                emailInput.focus();
+                emailInput.style.borderColor = '#ef4444';
+                emailInput.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.15)';
+                return;
+            }
+
+            // Add CSRF token to form data
+            formData.append('csrf_token', csrfToken);
+            formData.append('acc_number', accNumber);
+
+            // Show loading state
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('../Customer_API/edit_account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+
+                if (data.success) {
+                    showNotification(data.message || 'Account updated successfully!', 'success');
+                } else {
+                    showNotification(data.message || 'Error updating account.', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+                showNotification('Network error. Please try again.', 'error');
+            }
+        });
+
+        // ============================================================
+        // LANDMARK PHOTO UPLOAD
+        // ============================================================
+        let selectedFile = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('landmarkFileInput');
+
+        if (uploadArea && fileInput) {
+            uploadArea.addEventListener('click', function (e) {
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            uploadArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                this.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', function (e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', function (e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', function (e) {
+                if (this.files.length > 0) {
+                    handleFileSelect(this.files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(file) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!allowedTypes.includes(file.type)) {
+                showNotification('Only JPG, JPEG, and PNG files are allowed', 'error');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('File size exceeds 5MB limit', 'error');
+                return;
+            }
+
+            selectedFile = file;
+
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+                if (uploadArea) uploadArea.style.display = 'none';
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function cancelPhotoUpload() {
+            selectedFile = null;
+            document.getElementById('previewContainer').style.display = 'none';
+            document.getElementById('previewImage').src = '#';
+            if (uploadArea) uploadArea.style.display = 'block';
+            fileInput.value = '';
+        }
+
+        async function deleteLandmarkPhoto() {
+            if (!confirm('Are you sure you want to remove this photo?')) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'delete_landmark_photo');
+                formData.append('csrf_token', csrfToken);
+                formData.append('acc_number', accNumber);
+
+                const response = await fetch('../Customer_API/edit_account.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    const wrapper = document.querySelector('.landmark-photo-wrapper');
+                    if (wrapper) wrapper.remove();
+                    if (uploadArea) uploadArea.style.display = 'block';
+                } else {
+                    showNotification(data.message || 'Failed to remove photo', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Network error. Please try again.', 'error');
+            }
+        }
+
+        // ============================================================
+        // REAL-TIME VALIDATION
+        // ============================================================
+        document.querySelectorAll('.form-control[required]').forEach(field => {
+            field.addEventListener('blur', function () {
+                if (this.disabled) return;
+                if (this.value.trim()) {
+                    this.style.borderColor = '#22c55e';
+                    this.style.boxShadow = '0 0 0 4px rgba(34, 197, 94, 0.15)';
+                } else {
+                    this.style.borderColor = '';
+                    this.style.boxShadow = '';
+                }
+            });
+
+            field.addEventListener('focus', function () {
+                if (this.disabled) return;
+                this.style.borderColor = '#3b82f6';
+                this.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.15)';
+            });
+
+            field.addEventListener('input', function () {
+                if (this.disabled) return;
+                if (this.value.trim()) {
+                    this.style.borderColor = '#22c55e';
+                    this.style.boxShadow = '0 0 0 4px rgba(34, 197, 94, 0.15)';
+                } else {
+                    this.style.borderColor = '#e2e8f0';
+                    this.style.boxShadow = 'none';
+                }
+            });
+        });
+
+        document.getElementById('email').addEventListener('input', function () {
+            if (this.disabled) return;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (this.value.trim() && emailRegex.test(this.value.trim())) {
+                this.style.borderColor = '#22c55e';
+                this.style.boxShadow = '0 0 0 4px rgba(34, 197, 94, 0.15)';
+            } else if (this.value.trim()) {
+                this.style.borderColor = '#ef4444';
+                this.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.15)';
+            } else {
+                this.style.borderColor = '#e2e8f0';
+                this.style.boxShadow = 'none';
+            }
+        });
     </script>
 
 </body>

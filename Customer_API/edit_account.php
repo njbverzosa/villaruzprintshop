@@ -1,5 +1,5 @@
 <?php
-// edit_account.php
+// Customer_API/edit_account.php
 session_start();
 require_once __DIR__ . '/../DB_Conn/config.php';
 require_once __DIR__ . '/../Mail/PHPMailerAutoload.php';
@@ -123,7 +123,6 @@ try {
         error_log("Column check error: " . $e->getMessage());
     }
 
-    // Ensure address columns exist
     try {
         $stmt = $pdo->query("SHOW COLUMNS FROM customers LIKE 'street'");
         if ($stmt->rowCount() == 0) {
@@ -151,7 +150,6 @@ try {
         error_log("Column check error: " . $e->getMessage());
     }
 
-    // Ensure landmark_photo column exists
     try {
         $stmt = $pdo->query("SHOW COLUMNS FROM customers LIKE 'landmark_photo'");
         if ($stmt->rowCount() == 0) {
@@ -161,7 +159,160 @@ try {
         error_log("Column check error: " . $e->getMessage());
     }
 
+    // Get current user data
+    $stmt = $pdo->prepare("SELECT f_name, email FROM customers WHERE acc_number = ?");
+    $stmt->execute([$accNumber]);
+    $currentUserData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$currentUserData) {
+        echo json_encode(['success' => false, 'message' => 'User not found']);
+        exit();
+    }
+
     switch ($action) {
+        // ============================================================
+        // UPDATE ALL FIELDS - NEW ACTION FOR FORM SUBMISSION
+        // ============================================================
+        case 'update_all_fields':
+            // Get all fields from POST
+            $f_name = trim($_POST['f_name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $street = trim($_POST['street'] ?? '');
+            $barangay = trim($_POST['barangay'] ?? '');
+            
+            // Validate required fields
+            if (empty($f_name)) {
+                echo json_encode(['success' => false, 'message' => 'Full name is required']);
+                exit();
+            }
+            
+            if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => false, 'message' => 'Valid email is required']);
+                exit();
+            }
+            
+            if (empty($street)) {
+                echo json_encode(['success' => false, 'message' => 'Street is required']);
+                exit();
+            }
+            
+            if (empty($barangay)) {
+                echo json_encode(['success' => false, 'message' => 'Barangay is required']);
+                exit();
+            }
+
+            // Check if email changed
+            $emailChanged = ($email !== $currentUserData['email']);
+            $oldEmail = $currentUserData['email'];
+
+            // Start transaction
+            $pdo->beginTransaction();
+
+            try {
+                // Update all fields
+                $stmt = $pdo->prepare("UPDATE customers SET f_name = ?, email = ?, street = ?, barangay = ? WHERE acc_number = ?");
+                $result = $stmt->execute([$f_name, $email, $street, $barangay, $accNumber]);
+
+                if (!$result) {
+                    $pdo->rollBack();
+                    echo json_encode(['success' => false, 'message' => 'Failed to update account']);
+                    exit();
+                }
+
+                // Update session
+                $_SESSION['user']['f_name'] = $f_name;
+                $_SESSION['user']['email'] = $email;
+
+                // Handle landmark photo if uploaded
+                $photoUploaded = false;
+                $photoPath = null;
+
+                if (isset($_FILES['landmark_photo']) && $_FILES['landmark_photo']['error'] === UPLOAD_ERR_OK) {
+                    $file = $_FILES['landmark_photo'];
+                    $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    $allowedExtensions = ['jpg', 'jpeg', 'png'];
+
+                    if (in_array($fileExt, $allowedExtensions) && $file['size'] <= 5 * 1024 * 1024) {
+                        // Create upload directory
+                        $uploadDir = __DIR__ . '/../Landmark_Photos/';
+                        if (!file_exists($uploadDir)) {
+                            mkdir($uploadDir, 0777, true);
+                        }
+
+                        // Generate unique filename
+                        $newFileName = time() . '_' . $accNumber . '.' . $fileExt;
+                        $uploadPath = $uploadDir . $newFileName;
+                        $dbPath = 'Landmark_Photos/' . $newFileName;
+
+                        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+                            // Delete old landmark photo if exists
+                            if (!empty($currentUserData['landmark_photo'])) {
+                                $oldFilePath = __DIR__ . '/../' . $currentUserData['landmark_photo'];
+                                if (file_exists($oldFilePath)) {
+                                    unlink($oldFilePath);
+                                }
+                            }
+
+                            // Update database with new photo
+                            $photoStmt = $pdo->prepare("UPDATE customers SET landmark_photo = ? WHERE acc_number = ?");
+                            $photoStmt->execute([$dbPath, $accNumber]);
+                            $photoUploaded = true;
+                            $photoPath = $dbPath;
+                        }
+                    }
+                }
+
+                // Commit transaction
+                $pdo->commit();
+
+                // If email changed, send verification email
+                if ($emailChanged) {
+                    $otp = mt_rand(100000, 999999);
+                    $otpStmt = $pdo->prepare("UPDATE customers SET otp_code = ?, active_email = 0 WHERE acc_number = ?");
+                    $otpStmt->execute([$otp, $accNumber]);
+
+                    $_SESSION['verification_otp'] = $otp;
+                    $_SESSION['verification_email'] = $email;
+                    $_SESSION['verification_expires'] = time() + 600;
+
+                    $emailSent = sendVerificationEmail(
+                        $email,
+                        $f_name,
+                        $otp
+                    );
+
+                    $message = 'Account updated successfully!';
+                    if ($emailSent) {
+                        $message .= ' Verification email sent to ' . $email;
+                    } else {
+                        $message .= ' Please verify your email to activate your account.';
+                    }
+
+                    echo json_encode([
+                        'success' => true,
+                        'message' => $message,
+                        'email_changed' => true,
+                        'email_sent' => $emailSent,
+                        'photo_uploaded' => $photoUploaded
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Account updated successfully!',
+                        'email_changed' => false,
+                        'photo_uploaded' => $photoUploaded
+                    ]);
+                }
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                error_log("Update all fields error: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+            }
+            break;
+
+        // ============================================================
+        // UPDATE SINGLE FIELD (kept for backward compatibility)
+        // ============================================================
         case 'update_field':
             $field = $_POST['field'] ?? '';
             $value = $_POST['value'] ?? '';
@@ -182,16 +333,6 @@ try {
 
             if ($field === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
                 echo json_encode(['success' => false, 'message' => 'Invalid email format']);
-                exit();
-            }
-
-            // Get current user data
-            $stmt = $pdo->prepare("SELECT f_name, email FROM customers WHERE acc_number = ?");
-            $stmt->execute([$accNumber]);
-            $currentUserData = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$currentUserData) {
-                echo json_encode(['success' => false, 'message' => 'User not found']);
                 exit();
             }
 
@@ -308,7 +449,6 @@ try {
                 $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 // Create upload directory if it doesn't exist
-                // Landmark_Photos is at the same level as DB_Conn
                 $uploadDir = __DIR__ . '/../Landmark_Photos/';
                 if (!file_exists($uploadDir)) {
                     mkdir($uploadDir, 0777, true);
@@ -317,7 +457,6 @@ try {
                 // Generate unique filename
                 $newFileName = time() . '_' . $accNumber . '.' . $fileExt;
                 $uploadPath = $uploadDir . $newFileName;
-                // Store path relative to project root
                 $dbPath = 'Landmark_Photos/' . $newFileName;
 
                 // Move uploaded file
@@ -385,7 +524,7 @@ try {
             break;
 
         default:
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            echo json_encode(['success' => false, 'message' => 'Invalid action: ' . $action]);
             break;
     }
 } catch (PDOException $e) {

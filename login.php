@@ -170,7 +170,7 @@ function handleLogin($pdo)
             $loginSuccess = true;
 
 
-            $redirectUrl = 'public/shop.php';
+            $redirectUrl = 'public/account-edit.php';
         }
         $successMessage = 'Accessing your account..';
     }
