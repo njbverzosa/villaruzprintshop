@@ -1121,7 +1121,7 @@ $isDtrDisabled = false; // Always enabled
             <!-- ========== DTR NOTICE ========== -->
             <div class="dtr-notice no-print">
                 <span>
-                    Official use only.Camera offline? Close other camera tabs and refresh.
+                   Please allow camera access, close other tabs or apps using your camera, and refresh this page.
                 </span>
             </div>
 
@@ -1370,11 +1370,10 @@ $isDtrDisabled = false; // Always enabled
                     console.log('Camera started with fallback constraints.');
                 } catch (fallbackError) {
                     console.error('Fallback camera error:', fallbackError);
-                    showToast('Unable to access camera. Please allow camera permissions and refresh.', 'error');
+                    showToast('Please allow camera permissions and refresh to continue.', 'error');
                     cameraPlaceholder.innerHTML = `
                         <i class="fas fa-camera" style="font-size: 48px; color: #ef4444; margin-bottom: 10px; opacity: 0.6;"></i>
                         <span style="color: #ef4444;">Camera Unavailable</span>
-                        <span class="status-text" style="color: #94a3b8;">Please allow camera access</span>
                     `;
                     liveBadge.classList.remove('active');
                     statusDot.className = 'dot';
