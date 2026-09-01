@@ -44,7 +44,8 @@ $tablesToExport = [
     'location',
     'merchandise_inventory',
     'order_status_history',
-    'logs'
+    'logs',
+    'dtr'
 ];
 
 // ==============================================

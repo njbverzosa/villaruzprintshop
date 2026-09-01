@@ -95,10 +95,9 @@ function saveDtrPhoto($photoData, $accNumber, $action) {
     $timestamp = date('Ymd_His');
     $filename = $action . '_' . $accNumber . '_' . $timestamp . '.jpg';
     $filepath = $uploadDir . $filename;
-    $dbPath = 'DTR_Photos/' . $filename;
     
     if (file_put_contents($filepath, $photoData)) {
-        return $dbPath;
+        return $filename; // Return only the filename, not the path
     }
     return null;
 }

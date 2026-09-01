@@ -390,7 +390,7 @@
 
         <!-- Settings Dropdown -->
         <?php 
-        $settingsActive = in_array($currentPage, ['admin.php', 'database_manager.php', 'registered_customers.php', 'prompt_ai.php']);
+        $settingsActive = in_array($currentPage, ['admin.php', 'database_manager.php', 'registered_customers.php', 'dtr.php']);
         ?>
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('settingsDropdown')">
@@ -412,10 +412,10 @@
                     <span>Customers</span>
                 </a>
 
-                <!-- <a href="prompt_ai.php" class="nav-dropdown-item <?php echo $currentPage == 'prompt_ai.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-robot"></i>
-                    <span>Prompt AI</span>
-                </a> -->
+                <a href="dtr.php" class="nav-dropdown-item <?php echo $currentPage == 'dtr.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>DTR</span>
+                </a>
                
             </div>
         </div>
