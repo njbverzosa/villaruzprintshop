@@ -137,32 +137,9 @@ if ($dtrToday) {
 }
 
 // ==============================================
-// 8. CHECK WORKING HOURS
+// 8. CHECK WORKING HOURS - REMOVED LIMIT FOR TESTING
 // ==============================================
-$currentHour = date('H'); // 24-hour format
-$currentMinute = date('i');
-$currentTimeTotal = ($currentHour * 60) + $currentMinute; // Total minutes since midnight
-
-// Working hours: 8:00 AM to 5:00 PM (adjust as needed)
-$workStartHour = 8;   // 8:00 AM
-$workStartMinute = 0;
-$workEndHour = 17;    // 5:00 PM
-$workEndMinute = 0;
-
-$workStartTotal = ($workStartHour * 60) + $workStartMinute;
-$workEndTotal = ($workEndHour * 60) + $workEndMinute;
-
-// Check if current time is within working hours
-$isWithinWorkingHours = ($currentTimeTotal >= $workStartTotal && $currentTimeTotal <= $workEndTotal);
-
-// Check if today is a weekend (Saturday = 6, Sunday = 0)
-$dayOfWeek = date('w'); // 0 = Sunday, 6 = Saturday
-$isWeekend = ($dayOfWeek == 0 || $dayOfWeek == 6);
-
-// DTR is disabled if:
-// 1. It's a weekend, OR
-// 2. Current time is outside working hours
-$isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
+$isDtrDisabled = false; // Always enabled
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1118,6 +1095,12 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                     <video id="previewVideo" autoplay playsinline muted></video>
                     <div class="camera-placeholder" id="cameraPlaceholder">
                         <i class="fas fa-camera"></i>
+                        <span>Camera Ready</span>
+                        <span class="status-text">Click Time In/Out to capture</span>
+                    </div>
+                    <div class="camera-status-badge">
+                        <span class="dot inactive" id="statusDot"></span>
+                        <span id="statusText">Offline</span>
                     </div>
                 </div>
             </div>
@@ -1272,14 +1255,6 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         const csrfToken = document.getElementById('csrfToken').value;
         const accNumber = document.getElementById('userAccNumber').value;
 
-        // Working hours from PHP
-        const workStartHour = <?php echo $workStartHour; ?>;
-        const workStartMinute = <?php echo $workStartMinute; ?>;
-        const workEndHour = <?php echo $workEndHour; ?>;
-        const workEndMinute = <?php echo $workEndMinute; ?>;
-        const isWeekend = <?php echo $isWeekend ? 'true' : 'false'; ?>;
-        const isWithinWorkingHours = <?php echo $isWithinWorkingHours ? 'true' : 'false'; ?>;
-
         // ============================================================
         // CAMERA VARIABLES
         // ============================================================
@@ -1295,6 +1270,8 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
         const captureOverlay = document.getElementById('captureOverlay');
+        const timeInBtn = document.getElementById('timeInBtn');
+        const timeOutBtn = document.getElementById('timeOutBtn');
 
         // ============================================================
         // TOAST MESSAGES
@@ -1310,7 +1287,8 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
             }
             
             // Auto-start camera on page load
-            setTimeout(startCamera, 500);
+            console.log('Page loaded, starting camera...');
+            startCamera();
         });
 
         function showToast(message, type = 'success') {
@@ -1346,6 +1324,8 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         async function startCamera() {
             try {
+                console.log('Attempting to start camera...');
+                
                 // Try to get camera with facingMode: 'user' (front camera)
                 const constraints = {
                     video: {
@@ -1357,9 +1337,11 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 };
                 
                 previewStream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log('Camera stream obtained successfully');
                 
                 previewVideo.srcObject = previewStream;
                 await previewVideo.play();
+                console.log('Video playing');
                 
                 // Show video, hide placeholder
                 previewVideo.classList.add('active');
@@ -1376,12 +1358,14 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 
                 // Try without facingMode constraint as fallback
                 try {
+                    console.log('Trying fallback constraints...');
                     const fallbackConstraints = {
                         video: true,
                         audio: false
                     };
                     
                     previewStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    console.log('Fallback camera stream obtained');
                     
                     previewVideo.srcObject = previewStream;
                     await previewVideo.play();
@@ -1397,8 +1381,11 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
                 } catch (fallbackError) {
                     console.error('Fallback camera error:', fallbackError);
                     showToast('Unable to access camera. Please allow camera permissions and refresh.', 'error');
-                    cameraPlaceholder.querySelector('span').textContent = 'Camera Unavailable';
-                    cameraPlaceholder.querySelector('.status-text').textContent = 'Please allow camera access';
+                    cameraPlaceholder.innerHTML = `
+                        <i class="fas fa-camera" style="font-size: 48px; color: #ef4444; margin-bottom: 10px; opacity: 0.6;"></i>
+                        <span style="color: #ef4444;">Camera Unavailable</span>
+                        <span class="status-text" style="color: #94a3b8;">Please allow camera access</span>
+                    `;
                 }
             }
         }
@@ -1500,17 +1487,8 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         // TIME IN
         // ============================================================
-        document.getElementById('timeInBtn').addEventListener('click', function () {
-            // Check if DTR is disabled
-            if (isWeekend) {
-                showToast('DTR is disabled on weekends.', 'error');
-                return;
-            }
-            if (!isWithinWorkingHours) {
-                showToast('DTR is only available during working hours (8:00 AM - 5:00 PM).', 'error');
-                return;
-            }
-
+        timeInBtn.addEventListener('click', function () {
+            console.log('Time In button clicked');
             // Capture and submit
             captureAndSubmit('time_in');
         });
@@ -1518,17 +1496,8 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         // TIME OUT
         // ============================================================
-        document.getElementById('timeOutBtn').addEventListener('click', function () {
-            // Check if DTR is disabled
-            if (isWeekend) {
-                showToast('DTR is disabled on weekends.', 'error');
-                return;
-            }
-            if (!isWithinWorkingHours) {
-                showToast('DTR is only available during working hours (8:00 AM - 5:00 PM).', 'error');
-                return;
-            }
-
+        timeOutBtn.addEventListener('click', function () {
+            console.log('Time Out button clicked');
             // Capture and submit
             captureAndSubmit('time_out');
         });
@@ -1545,6 +1514,7 @@ $isDtrDisabled = $isWeekend || !$isWithinWorkingHours;
         // ============================================================
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden && !isPreviewActive) {
+                console.log('Tab became visible, restarting camera...');
                 startCamera();
             }
         });
