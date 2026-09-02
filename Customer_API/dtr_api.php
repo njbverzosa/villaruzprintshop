@@ -35,10 +35,27 @@ if (empty($csrfToken) || $csrfToken !== ($_SESSION['csrf_token'] ?? '')) {
 // ============================================================
 // CREATE UPLOAD DIRECTORY
 // ============================================================
-// DTR_Photos folder is at the same level as DB_Conn
+// DTR_Photos folder is at the same level as DB_Conn (root level)
 $uploadDir = __DIR__ . '/../DTR_Photos/';
+
+// Debug: Log the path
+error_log('Upload directory path: ' . $uploadDir);
+
+// Create directory if it doesn't exist
 if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0777, true);
+    $created = mkdir($uploadDir, 0777, true);
+    if (!$created) {
+        error_log('Failed to create directory: ' . $uploadDir);
+        echo json_encode(['success' => false, 'message' => 'Failed to create upload directory.']);
+        exit;
+    }
+}
+
+// Check if directory is writable
+if (!is_writable($uploadDir)) {
+    error_log('Directory is not writable: ' . $uploadDir);
+    echo json_encode(['success' => false, 'message' => 'Upload directory is not writable.']);
+    exit;
 }
 
 // ============================================================
@@ -92,14 +109,31 @@ try {
 function saveDtrPhoto($photoData, $accNumber, $action) {
     global $uploadDir;
     
+    // Generate unique filename
     $timestamp = date('Ymd_His');
     $filename = $action . '_' . $accNumber . '_' . $timestamp . '.jpg';
     $filepath = $uploadDir . $filename;
     
-    if (file_put_contents($filepath, $photoData)) {
-        return $filename; // Return only the filename, not the path
+    // Debug: Log the save attempt
+    error_log('Saving photo to: ' . $filepath);
+    error_log('Photo data size: ' . strlen($photoData) . ' bytes');
+    
+    // Save the file
+    $result = file_put_contents($filepath, $photoData);
+    
+    if ($result === false) {
+        error_log('Failed to save photo: ' . $filepath);
+        return null;
     }
-    return null;
+    
+    // Check if file was created
+    if (!file_exists($filepath)) {
+        error_log('File was not created: ' . $filepath);
+        return null;
+    }
+    
+    // Return only the filename (relative path)
+    return $filename;
 }
 
 // ============================================================
@@ -119,13 +153,19 @@ if ($action === 'time_in') {
     $photoPath = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
         $photoData = file_get_contents($_FILES['photo']['tmp_name']);
+        if ($photoData === false) {
+            echo json_encode(['success' => false, 'message' => 'Failed to read photo data.']);
+            exit;
+        }
         $photoPath = saveDtrPhoto($photoData, $accNumber, 'time_in');
         if (!$photoPath) {
-            echo json_encode(['success' => false, 'message' => 'Failed to save photo.']);
+            echo json_encode(['success' => false, 'message' => 'Failed to save photo. Please check directory permissions.']);
             exit;
         }
     } else {
-        echo json_encode(['success' => false, 'message' => 'Photo is required for time in.']);
+        $uploadError = isset($_FILES['photo']) ? $_FILES['photo']['error'] : 'No file uploaded';
+        error_log('Photo upload error: ' . $uploadError);
+        echo json_encode(['success' => false, 'message' => 'Photo is required for time in. Upload error: ' . $uploadError]);
         exit;
     }
 
@@ -156,10 +196,7 @@ if ($action === 'time_in') {
     $isLate = $nowTimestamp > $cutOffIn;
     $lateMinutes = $isLate ? floor(($nowTimestamp - $cutOffIn) / 60) : 0;
 
-    $message = 'Time in recorded';
-    // if ($isLate) {
-    //     $message .= ' Late Yarn!';
-    // }
+    $message = 'Time in recorded!';
 
     echo json_encode([
         'success' => true,
@@ -186,13 +223,19 @@ if ($action === 'time_out') {
     $photoPath = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
         $photoData = file_get_contents($_FILES['photo']['tmp_name']);
+        if ($photoData === false) {
+            echo json_encode(['success' => false, 'message' => 'Failed to read photo data.']);
+            exit;
+        }
         $photoPath = saveDtrPhoto($photoData, $accNumber, 'time_out');
         if (!$photoPath) {
-            echo json_encode(['success' => false, 'message' => 'Failed to save photo.']);
+            echo json_encode(['success' => false, 'message' => 'Failed to save photo. Please check directory permissions.']);
             exit;
         }
     } else {
-        echo json_encode(['success' => false, 'message' => 'Photo is required for time out.']);
+        $uploadError = isset($_FILES['photo']) ? $_FILES['photo']['error'] : 'No file uploaded';
+        error_log('Photo upload error: ' . $uploadError);
+        echo json_encode(['success' => false, 'message' => 'Photo is required for time out. Upload error: ' . $uploadError]);
         exit;
     }
 
@@ -223,10 +266,7 @@ if ($action === 'time_out') {
     $diff = $timeIn->diff($timeOut);
     $hoursWorked = $diff->h + ($diff->i / 60);
 
-    $message = 'Time out recorded';
-    // if ($isOT) {
-    //     $message .= ' O.T. Yarn!';
-    // }
+    $message = 'Time out recorded!';
 
     echo json_encode([
         'success' => true,
