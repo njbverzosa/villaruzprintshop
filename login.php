@@ -162,15 +162,19 @@ function handleLogin($pdo)
             $updateStmt->execute([$currentTime, $user['id']]);
             session_regenerate_id(true);
 
-            // ONLY 3 SESSION VARIABLES
             $_SESSION['user_role'] = 'Customer';
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['acc_number'] = $user['acc_number'];
 
             $loginSuccess = true;
 
+            $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
 
-            $redirectUrl = 'public/account-edit.php';
+            if ($isGuest) {
+                $redirectUrl = 'public/account-edit.php';
+            } else {
+                $redirectUrl = 'public/shop.php';
+            }
         }
         $successMessage = 'Accessing your account..';
     }

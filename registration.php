@@ -238,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Set registration success flag
                 $registrationSuccess = true;
-                $success = 'Creating your account. Please wait...';
+                $success = 'Creating your account for customer...';
             } else {
                 $errors[] = 'Failed to create account. Please try again.';
                 error_log("Registration failed for phone: $phone_number");
