@@ -107,7 +107,7 @@ try {
             }
             break;
 
-        case 'validate_delivery_number':
+        case 'validate_delivery':
             $deliveryNumber = $_POST['delivery_number'] ?? '';
 
             if (empty($deliveryNumber)) {
@@ -116,8 +116,8 @@ try {
                 exit();
             }
 
-            // Check if delivery number exists in for_deliveries
-            $stmt = $pdo->prepare("SELECT id, ordered_by, delivery_address, total_amount, status FROM for_deliveries WHERE delivery_number = ?");
+            // Check if delivery exists - NO acc_number filter
+            $stmt = $pdo->prepare("SELECT id, delivery_number, ordered_by, delivery_address, total_amount, status, delivery_date, charge, city, barangay FROM for_deliveries WHERE delivery_number = ?");
             $stmt->execute([$deliveryNumber]);
             $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -126,19 +126,29 @@ try {
                 echo json_encode([
                     'success' => true,
                     'exists' => true,
-                    'message' => 'Valid delivery number',
-                    'delivery_data' => $delivery
+                    'delivery_number' => $delivery['delivery_number'],
+                    'ordered_by' => $delivery['ordered_by'],
+                    'delivery_address' => $delivery['delivery_address'],
+                    'total_amount' => floatval($delivery['total_amount']),
+                    'status' => $delivery['status'] ?? 'PENDING',
+                    'delivery_date' => $delivery['delivery_date'],
+                    'charge' => $delivery['charge'] ?? 0,
+                    'city' => $delivery['city'] ?? '',
+                    'barangay' => $delivery['barangay'] ?? ''
                 ]);
             } else {
                 ob_end_clean();
                 echo json_encode([
                     'success' => true,
                     'exists' => false,
-                    'message' => 'Delivery number not found. Please check and try again.'
+                    'message' => 'Delivery number not found'
                 ]);
             }
             break;
 
+        // ============================================================
+        // ACTION: add_to_existing_delivery - NO acc_number filter
+        // ============================================================
         case 'add_to_existing_delivery':
             $userAccNumber = $_POST['acc_number'] ?? '';
             $existingDeliveryNumber = $_POST['delivery_number'] ?? '';
@@ -166,14 +176,21 @@ try {
                 exit();
             }
 
-            // Get existing delivery details
-            $stmt = $pdo->prepare("SELECT id, ordered_by, delivery_address, total_amount, charge, city, barangay FROM for_deliveries WHERE delivery_number = ?");
+            // Get existing delivery details - NO acc_number filter
+            $stmt = $pdo->prepare("SELECT id, ordered_by, delivery_address, total_amount, charge, city, barangay, status, delivery_number FROM for_deliveries WHERE delivery_number = ?");
             $stmt->execute([$existingDeliveryNumber]);
             $existingDelivery = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$existingDelivery) {
                 ob_end_clean();
                 echo json_encode(['success' => false, 'message' => 'Delivery number not found']);
+                exit();
+            }
+
+            // Check if delivery is already completed/paid
+            if (isset($existingDelivery['status']) && in_array(strtoupper($existingDelivery['status']), ['PAID', 'COMPLETED', 'DELIVERED', 'SHIPPED'])) {
+                ob_end_clean();
+                echo json_encode(['success' => false, 'message' => 'This delivery has already been completed/paid and cannot be modified.']);
                 exit();
             }
 
@@ -186,7 +203,7 @@ try {
             }
 
             // Calculate new total amount
-            $newTotalAmount = $existingDelivery['total_amount'] + $subtotalAmount;
+            $newTotalAmount = floatval($existingDelivery['total_amount']) + floatval($subtotalAmount);
 
             $dateTimeSold = date('D, j M Y g:i A');
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
@@ -246,9 +263,9 @@ try {
                 'delivery_number' => $existingDeliveryNumber,
                 'delivery_id' => $deliveryId,
                 'items_count' => $successCount,
-                'subtotal_added' => $subtotalAmount,
-                'previous_total' => $existingDelivery['total_amount'],
-                'new_total' => $newTotalAmount
+                'subtotal_added' => floatval($subtotalAmount),
+                'previous_total' => floatval($existingDelivery['total_amount']),
+                'new_total' => floatval($newTotalAmount)
             ]);
             break;
 

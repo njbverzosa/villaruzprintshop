@@ -4,27 +4,28 @@ session_start();
 
 try {
     require_once __DIR__ . '/../DB_Conn/config.php';
-    
+
     // Validate session
-    function isLoggedIn() {
+    function isLoggedIn()
+    {
         return isset($_SESSION['user_role'], $_SESSION['user_id'], $_SESSION['acc_number']);
     }
-    
+
     if (!isLoggedIn()) {
         $_SESSION['login_error'] = 'Please login first to access the shop.';
         header('Location: ../login.php');
         exit;
     }
-    
+
     // Validate and sanitize session data
     $userRole = filter_var($_SESSION['user_role'], FILTER_SANITIZE_STRING);
     $userId = filter_var($_SESSION['user_id'], FILTER_VALIDATE_INT);
     $accNumber = filter_var($_SESSION['acc_number'], FILTER_SANITIZE_STRING);
-    
+
     if ($userId === false || empty($accNumber)) {
         throw new Exception('Invalid session data');
     }
-    
+
     // Fetch user details with proper error handling
     $userData = null;
     if ($userRole === 'Admin') {
@@ -36,42 +37,41 @@ try {
         $stmt->execute([$userId]);
         $userData = $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    
+
     if (!$userData) {
         session_destroy();
         header('Location: ../login.php');
         exit;
     }
-    
+
     $user = $userData;
-    
+
     // Fetch cart items with verification that acc_number matches
     $stmt = $pdo->prepare("SELECT * FROM cart WHERE acc_number = ? ORDER BY id ASC");
     $stmt->execute([$accNumber]);
     $cartItems = $stmt->fetchAll();
-    
+
     // Calculate totals
     $totalItems = 0;
     $totalAmount = 0;
     foreach ($cartItems as $item) {
-        $totalItems += (int)$item['pieces'];
-        $totalAmount += (float)$item['total_amount'];
+        $totalItems += (int) $item['pieces'];
+        $totalAmount += (float) $item['total_amount'];
     }
-    
+
     // CSRF token
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
     $csrfToken = $_SESSION['csrf_token'];
-    
-    // Get cart item count - FIXED PARAMETER
+
+    // Get cart item count
     $cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
-    $cartCountStmt->execute([$accNumber]); // ✅ Fixed
+    $cartCountStmt->execute([$accNumber]);
     $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
     $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
-    
+
 } catch (PDOException $e) {
-    // Log error and show user-friendly message
     error_log("Database error: " . $e->getMessage());
     die("An error occurred. Please try again later.");
 } catch (Exception $e) {
@@ -119,18 +119,10 @@ try {
             -ms-user-select: text;
         }
 
-        /* Main content wrapper (no sidebar) */
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
-        }
-
-        /* Main content */
-        .main-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
         }
 
         .main-content {
@@ -157,7 +149,6 @@ try {
             color: #0f172a;
         }
 
-        /* Overlay background when menu is open */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -202,7 +193,6 @@ try {
             color: #3b82f6;
         }
 
-        /* ========== RIGHT SIDE MENU (OVERLAY) ========== */
         .side-menu {
             position: fixed;
             top: 0;
@@ -222,7 +212,6 @@ try {
             right: 0;
         }
 
-        /* Menu header with user info */
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
@@ -246,7 +235,6 @@ try {
             color: #3b82f6;
         }
 
-        /* Menu navigation list */
         .menu-nav {
             flex: 1;
             padding: 20px;
@@ -286,7 +274,6 @@ try {
             border-left: 3px solid #3b82f6;
         }
 
-        /* Dropdown Menu Styles */
         .nav-dropdown {
             margin-bottom: 8px;
         }
@@ -572,7 +559,6 @@ try {
             color: #94a3b8;
         }
 
-        /* Address Selection Styles - IMPROVED */
         .address-selection-group {
             margin-bottom: 15px;
         }
@@ -607,7 +593,6 @@ try {
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        /* Delivery Date Input - IMPROVED */
         .delivery-date-wrapper {
             position: relative;
             margin-top: 4px;
@@ -848,7 +833,6 @@ try {
             transform: translateY(-2px);
         }
 
-        /* ========== TOASTS & ALERTS ========== */
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -1017,14 +1001,10 @@ try {
             margin-right: 4px;
         }
 
-        /* ============================================================
-           RESPONSIVE
-           ============================================================ */
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
             }
-
 
             .cart-grid {
                 grid-template-columns: 1fr;
@@ -1054,7 +1034,6 @@ try {
                 position: relative;
                 top: 0;
             }
-
         }
 
         @media (max-width: 480px) {
@@ -1086,7 +1065,7 @@ try {
                 padding: 20px 30px;
                 border-radius: 10px;
             }
-          
+
             .cart-item-left .product-name {
                 font-size: 14px;
             }
@@ -1128,8 +1107,6 @@ try {
             .cart-summary h3 {
                 font-size: 17px;
             }
-
-
 
             .checkout-btn {
                 font-size: 14px;
@@ -1183,7 +1160,6 @@ try {
             }
         }
 
-        /* Safe area for iPhone notch */
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .bottom-nav {
                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
@@ -1244,13 +1220,15 @@ try {
                                 <div class="cart-item-center">
                                     <h5>QTY:</h5>
                                     <button class="qty-btn decrement" data-id="<?php echo $item['id']; ?>">-</button>
-                                    <span class="qty-value" id="qty-<?php echo $item['id']; ?>"><?php echo $item['pieces']; ?></span>
+                                    <span class="qty-value"
+                                        id="qty-<?php echo $item['id']; ?>"><?php echo $item['pieces']; ?></span>
                                     <button class="qty-btn increment" data-id="<?php echo $item['id']; ?>">+</button>
                                 </div>
 
                                 <div class="cart-item-right">
                                     <span class="item-total">₱ <?php echo number_format($item['total_amount'], 2); ?></span>
-                                    <button class="remove-btn remove-item" data-id="<?php echo $item['id']; ?>" title="Remove item">
+                                    <button class="remove-btn remove-item" data-id="<?php echo $item['id']; ?>"
+                                        title="Remove item">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
@@ -1266,7 +1244,7 @@ try {
                             <h3>Delivery Details</h3>
 
                             <div class="existing-order-section">
-                                <label><i class="fas fa-truck"></i> Add to Existing Order?</label>
+                                <label>Add to Existing Order?</label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-hashtag"></i>
                                     <input type="text" id="existingDeliveryNumber"
@@ -1274,7 +1252,8 @@ try {
                                 </div>
                                 <div id="existingOrderInfo" class="existing-order-info"></div>
                                 <div class="existing-order-hint">
-                                    <i class="fas fa-info-circle"></i> Enter a delivery number to combine items with an existing order in your account
+                                    <i class="fas fa-info-circle"></i> Enter a delivery number to combine items with an
+                                    existing order
                                 </div>
                             </div>
 
@@ -1284,8 +1263,7 @@ try {
                                     <label>
                                         <i class="fas fa-user"></i> Customer Name
                                     </label>
-                                    <input type="text" id="customerName"
-                                        placeholder="Enter customer name" value="">
+                                    <input type="text" id="customerName" placeholder="Enter customer name" value="">
                                 </div>
 
                                 <!-- Delivery Address -->
@@ -1293,11 +1271,11 @@ try {
                                     <label>
                                         <i class="fas fa-location-dot"></i> Delivery Address
                                     </label>
-                                    <input type="text" id="deliveryAddress"
-                                        placeholder="Enter delivery address" value="">
+                                    <input type="text" id="deliveryAddress" placeholder="Enter delivery address" value="">
                                 </div>
 
-                                <label style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 8px; margin-top: 4px;">
+                                <label
+                                    style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 8px; margin-top: 4px;">
                                     <i class="fas fa-calendar-day" style="color: #3b82f6;"></i> Select Delivery Date
                                 </label>
                                 <div class="delivery-date-wrapper">
@@ -1312,6 +1290,12 @@ try {
                     <?php if (!empty($cartItems)): ?>
                         <div class="cart-summary">
                             <h3>Order Summary</h3>
+                            <!-- Current Total - Hidden by default, shown with green bg when delivery found -->
+                            <div class="summary-row" id="currentTotalRow"
+                                style="display: none; background: #d1fae5; padding: 8px 12px; border-radius: 8px; margin: 4px 0;">
+                                <span>Current Total:</span>
+                                <span id="currentTotalDisplay" style="font-weight: 700; color: #065f46;">₱ 0.00</span>
+                            </div>
                             <div class="summary-row">
                                 <span>Total Items:</span>
                                 <span id="totalItems"><?php echo $totalItems; ?></span>
@@ -1321,7 +1305,7 @@ try {
                                 <span id="subtotal">₱ <?php echo number_format($totalAmount, 2); ?></span>
                             </div>
                             <div class="summary-row total">
-                                <span>Total:</span>
+                                <span>New Total:</span>
                                 <span id="totalAmountDisplay">₱ <?php echo number_format($totalAmount, 2); ?></span>
                             </div>
                             <button class="checkout-btn" id="checkoutBtn">
@@ -1342,7 +1326,8 @@ try {
         <div class="custom-alert-content">
             <i class="fas fa-check-circle"></i>
             <h3 id="alertTitle">Order Confirmed!</h3>
-            <p id="alertMessage">Thank you for your order! We will send a text message once your order is ready for delivery.</p>
+            <p id="alertMessage">Thank you for your order! We will send a text message once your order is ready for
+                delivery.</p>
             <button class="custom-alert-btn" onclick="closeCustomAlert()">OK</button>
         </div>
     </div>
@@ -1376,7 +1361,7 @@ try {
         }
 
         if (burgerBtn) {
-            burgerBtn.addEventListener('click', function(e) {
+            burgerBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 if (sideMenu.classList.contains('open')) {
                     closeMenu();
@@ -1390,48 +1375,40 @@ try {
             menuOverlay.addEventListener('click', closeMenu);
         }
 
-        // Close menu when clicking on any nav item
-        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(function(link) {
-            link.addEventListener('click', function() {
-                // Don't close if it's a dropdown toggle
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(function (link) {
+            link.addEventListener('click', function () {
                 if (!this.classList.contains('nav-dropdown-toggle')) {
                     closeMenu();
                 }
             });
         });
 
-        // Close menu on Escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeMenu();
             }
         });
 
-        // ============================================================
-        // DROPDOWN TOGGLE FUNCTION
-        // ============================================================
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
             const arrowId = dropdownId.replace('Dropdown', 'Arrow');
             const arrow = document.getElementById(arrowId);
 
             if (dropdown && arrow) {
-                // Close other dropdowns
                 const allDropdowns = document.querySelectorAll('.nav-dropdown-menu');
                 const allArrows = document.querySelectorAll('.dropdown-arrow');
 
-                allDropdowns.forEach(function(d) {
+                allDropdowns.forEach(function (d) {
                     if (d.id !== dropdownId && d.classList.contains('show')) {
                         d.classList.remove('show');
                     }
                 });
-                allArrows.forEach(function(a) {
+                allArrows.forEach(function (a) {
                     if (a.id !== arrowId && a.classList.contains('rotated')) {
                         a.classList.remove('rotated');
                     }
                 });
 
-                // Toggle the clicked dropdown
                 dropdown.classList.toggle('show');
                 arrow.classList.toggle('rotated');
             }
@@ -1440,7 +1417,7 @@ try {
         // ============================================================
         // MAIN CART FUNCTIONALITY
         // ============================================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const csrfToken = document.getElementById('csrfToken').value;
             const accNum = '<?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>';
             const subtotalAmount = <?php echo $totalAmount; ?>;
@@ -1452,7 +1429,6 @@ try {
             const existingDeliveryNumberInput = document.getElementById('existingDeliveryNumber');
             const existingOrderInfoDiv = document.getElementById('existingOrderInfo');
             const checkoutInputsDiv = document.getElementById('checkoutInputs');
-            const totalAmountDisplaySpan = document.getElementById('totalAmountDisplay');
 
             let currentTotalAmount = subtotalAmount;
             let existingOrderData = null;
@@ -1462,7 +1438,7 @@ try {
             // ============================================================
             let validateTimeout;
             if (existingDeliveryNumberInput) {
-                existingDeliveryNumberInput.addEventListener('input', function() {
+                existingDeliveryNumberInput.addEventListener('input', function () {
                     clearTimeout(validateTimeout);
                     const deliveryNumber = this.value.trim();
 
@@ -1470,11 +1446,12 @@ try {
                         existingOrderInfoDiv.style.display = 'none';
                         existingOrderData = null;
                         checkoutInputsDiv.classList.remove('hidden-fields');
+                        updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                         validateDeliveryInputs();
                         return;
                     }
 
-                    validateTimeout = setTimeout(function() {
+                    validateTimeout = setTimeout(function () {
                         validateDeliveryNumber(deliveryNumber);
                     }, 500);
                 });
@@ -1482,28 +1459,56 @@ try {
 
             async function validateDeliveryNumber(deliveryNumber) {
                 try {
+                    console.log('🔍 Validating delivery number:', deliveryNumber);
+
                     const formData = new FormData();
                     formData.append('action', 'validate_delivery');
                     formData.append('delivery_number', deliveryNumber);
-                    formData.append('acc_number', accNum);
                     formData.append('csrf_token', csrfToken);
 
-                    const response = await fetch('../Customer_API/cart_operations.php', {
+                    const response = await fetch('../API/cart_operations.php', {
                         method: 'POST',
                         body: formData
                     });
+
+                    console.log('📡 Response status:', response.status);
+
                     const data = await response.json();
+                    console.log('📊 Response data:', data);
 
                     if (data.success && data.exists) {
                         existingOrderData = data;
+                        console.log('✅ Delivery found:', data);
+
+                        const status = (data.status || '').toUpperCase();
+                        if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status === 'SHIPPED') {
+                            existingOrderInfoDiv.className = 'existing-order-info error';
+                            existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-circle info-icon"></i> This order has already been ' +
+                                data.status.toLowerCase() + '. You cannot add items to it.';
+                            existingOrderInfoDiv.style.display = 'block';
+                            checkoutInputsDiv.classList.remove('hidden-fields');
+                            if (checkoutBtn) checkoutBtn.disabled = true;
+                            // Reset button text
+                            updateCheckoutButtonText(false);
+                            return;
+                        }
+
+                        const currentTotal = parseFloat(data.total_amount) || 0;
+                        const newTotal = currentTotal + subtotalAmount;
+
                         existingOrderInfoDiv.className = 'existing-order-info success';
-                        existingOrderInfoDiv.innerHTML = '<i class="fas fa-check-circle info-icon"></i> Add to existing order? Existing total: ' + formatAmount(
-                            data.total_amount);
+                        existingOrderInfoDiv.innerHTML =
+                            'Customer: <strong>' + data.ordered_by + '</strong>';
                         existingOrderInfoDiv.style.display = 'block';
+
                         checkoutInputsDiv.classList.add('hidden-fields');
                         if (checkoutBtn) checkoutBtn.disabled = false;
 
-                        // Auto-fill customer name and address from existing order
+                        // CHANGE BUTTON TEXT TO "Add Now"
+                        updateCheckoutButtonText(true);
+
+                        updateTotalDisplay(currentTotal, newTotal, subtotalAmount);
+
                         const customerNameInput = document.getElementById('customerName');
                         const deliveryAddressInput = document.getElementById('deliveryAddress');
 
@@ -1514,30 +1519,78 @@ try {
                         if (deliveryAddressInput && existingOrderData.delivery_address) {
                             deliveryAddressInput.value = existingOrderData.delivery_address;
                         }
+
+                        if (deliveryDateInput && existingOrderData.delivery_date) {
+                            deliveryDateInput.value = existingOrderData.delivery_date;
+                        }
+
                     } else if (data.success && !data.exists) {
+                        console.log('❌ Delivery not found');
                         existingOrderData = null;
                         existingOrderInfoDiv.className = 'existing-order-info warning';
-                        existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-triangle info-icon"></i> Delivery number not found in your account, this will be processed as a new order.';
+                        existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-triangle info-icon"></i> Delivery number not found. This will be processed as a new order.';
                         existingOrderInfoDiv.style.display = 'block';
                         checkoutInputsDiv.classList.remove('hidden-fields');
+                        updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                         validateDeliveryInputs();
+                        // Reset button text to "Submit Order"
+                        updateCheckoutButtonText(false);
                     } else if (!data.success && data.message) {
+                        console.log('⚠️ Error:', data.message);
                         existingOrderData = null;
                         existingOrderInfoDiv.className = 'existing-order-info error';
                         existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-circle info-icon"></i> ' + data.message;
                         existingOrderInfoDiv.style.display = 'block';
                         checkoutInputsDiv.classList.remove('hidden-fields');
+                        updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                         validateDeliveryInputs();
+                        // Reset button text to "Submit Order"
+                        updateCheckoutButtonText(false);
                     }
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('❌ Validation error:', error);
                     existingOrderData = null;
                     existingOrderInfoDiv.className = 'existing-order-info error';
                     existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-circle info-icon"></i> Error validating delivery number. Please try again.';
                     existingOrderInfoDiv.style.display = 'block';
                     checkoutInputsDiv.classList.remove('hidden-fields');
+                    updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                     validateDeliveryInputs();
+                    // Reset button text to "Submit Order"
+                    updateCheckoutButtonText(false);
                 }
+            }
+
+            // ============================================================
+            // UPDATE TOTAL DISPLAY
+            // ============================================================
+            function updateTotalDisplay(currentTotal, newTotal, subtotal) {
+                const totalDisplay = document.getElementById('totalAmountDisplay');
+                const subtotalDisplay = document.getElementById('subtotal');
+                const currentTotalRow = document.getElementById('currentTotalRow');
+                const currentTotalDisplay = document.getElementById('currentTotalDisplay');
+
+                if (totalDisplay) {
+                    totalDisplay.textContent = formatAmount(newTotal);
+                }
+                if (subtotalDisplay) {
+                    subtotalDisplay.textContent = formatAmount(subtotal);
+                }
+
+                if (currentTotalRow && currentTotalDisplay) {
+                    if (currentTotal !== null && currentTotal !== undefined) {
+                        currentTotalRow.style.display = 'flex';
+                        currentTotalDisplay.textContent = formatAmount(currentTotal);
+                        currentTotalRow.style.background = '#d1fae5';
+                        currentTotalRow.style.padding = '8px 12px';
+                        currentTotalRow.style.borderRadius = '8px';
+                        currentTotalRow.style.margin = '4px 0';
+                    } else {
+                        currentTotalRow.style.display = 'none';
+                    }
+                }
+
+                currentTotalAmount = newTotal;
             }
 
             // ============================================================
@@ -1545,6 +1598,11 @@ try {
             // ============================================================
             function validateDeliveryInputs() {
                 if (existingOrderData && existingOrderData.exists) {
+                    const status = (existingOrderData.status || '').toUpperCase();
+                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status === 'SHIPPED') {
+                        if (checkoutBtn) checkoutBtn.disabled = true;
+                        return false;
+                    }
                     if (checkoutBtn) checkoutBtn.disabled = false;
                     return true;
                 }
@@ -1577,12 +1635,12 @@ try {
                     toast.style.background = '#f59e0b';
                 }
                 document.body.appendChild(toast);
-                setTimeout(function() {
+                setTimeout(function () {
                     toast.style.animation = 'slideOut 0.3s ease';
-                    setTimeout(function() {
+                    setTimeout(function () {
                         toast.remove();
                     }, 300);
-                }, 3000);
+                }, 4000);
             }
 
             function showLoading() {
@@ -1593,16 +1651,6 @@ try {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
 
-            function showCustomAlert(title, message) {
-                document.getElementById('alertTitle').innerHTML = title;
-                document.getElementById('alertMessage').innerHTML = message;
-                document.getElementById('customAlert').style.display = 'flex';
-            }
-
-            window.closeCustomAlert = function() {
-                document.getElementById('customAlert').style.display = 'none';
-                window.location.href = 'pending_folder.php';
-            }
 
             // ============================================================
             // CART OPERATIONS
@@ -1623,7 +1671,7 @@ try {
 
                     if (data.success) {
                         showToast(data.message, 'success');
-                        setTimeout(function() {
+                        setTimeout(function () {
                             location.reload();
                         }, 1000);
                     } else {
@@ -1655,7 +1703,7 @@ try {
 
                     if (data.success) {
                         showToast('Cart cleared successfully', 'success');
-                        setTimeout(function() {
+                        setTimeout(function () {
                             location.reload();
                         }, 1000);
                     } else {
@@ -1677,23 +1725,17 @@ try {
 
                 // If adding to existing order
                 if (existingOrderData && existingOrderData.exists) {
-                    if (existingOrderData.status && existingOrderData.status.toUpperCase() === 'PAID') {
-                        showToast('This order has already been paid/delivered. You cannot add items to it.', 'error');
+                    const status = (existingOrderData.status || '').toUpperCase();
+                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status === 'SHIPPED') {
+                        showToast('This order has already been ' + status.toLowerCase() + '. You cannot add items to it.', 'error');
                         return;
                     }
 
-                    let deliveryAddress = document.getElementById('deliveryAddress').value.trim();
+                    let deliveryAddress = existingOrderData.delivery_address || document.getElementById('deliveryAddress').value.trim();
+                    const newTotal = parseFloat(existingOrderData.total_amount) + subtotalAmount;
 
                     const confirmed = confirm(
-                        'Add Items to Existing Order\n\n' +
-                        'Order #: ' + existingOrderData.delivery_number + '\n' +
-                        'Customer: ' + existingOrderData.ordered_by + '\n' +
-                        'Current Total: ' + formatAmount(existingOrderData.total_amount) + '\n' +
-                        'Status: ' + existingOrderData.status + '\n' +
-                        'Address: ' + deliveryAddress + '\n' +
-                        'New Items Subtotal: ₱ ' + subtotalAmount.toFixed(2) + '\n' +
-                        'New Total Amount: ₱ ' + (existingOrderData.total_amount + subtotalAmount).toFixed(2) + '\n\n' +
-                        'Are you sure you want to add these items to the existing order?'
+                        'Click OK to proceed!'
                     );
 
                     if (!confirmed) return;
@@ -1701,15 +1743,10 @@ try {
                     showLoading();
                     try {
                         const formData = new FormData();
-                        formData.append('action', 'checkout');
+                        formData.append('action', 'add_to_existing_delivery');
                         formData.append('acc_number', accNum);
-                        formData.append('customer_name', existingOrderData.ordered_by);
-                        formData.append('delivery_address', deliveryAddress);
-                        formData.append('delivery_date', existingOrderData.delivery_date || '');
-                        formData.append('delivery_fee', 0);
-                        formData.append('total_amount_with_fee', subtotalAmount);
+                        formData.append('delivery_number', existingDeliveryNumber);
                         formData.append('csrf_token', csrfToken);
-                        formData.append('existing_delivery_number', existingDeliveryNumber);
 
                         const response = await fetch('../API/cart_operations.php', {
                             method: 'POST',
@@ -1717,19 +1754,24 @@ try {
                         });
                         const data = await response.json();
 
+                        hideLoading();
+
                         if (data.success) {
-                            hideLoading();
-                            showCustomAlert('Items Added to Existing Order!', 'Successfully added items to order #' + data
-                                .delivery_number + '. Total amount updated to ' + formatAmount(data.new_total_amount) +
-                                '.');
+                            showToast(
+                                'Item(s) added!',
+                                'success'
+                            );
+                            // Redirect after toast
+                            setTimeout(function () {
+                                window.location.href = 'pending_folder.php';
+                            }, 2000);
                         } else {
                             showToast(data.message || 'Error adding items to order', 'error');
-                            hideLoading();
                         }
                     } catch (err) {
                         console.error('Error:', err);
-                        showToast('Network error. Please try again.', 'error');
                         hideLoading();
+                        showToast('Network error. Please try again.', 'error');
                     }
                     return;
                 }
@@ -1757,13 +1799,7 @@ try {
                 });
 
                 const confirmed = confirm(
-                    '📋 Order Confirmation\n\n' +
-                    'Customer: ' + customerName + '\n' +
-                    'Address: ' + deliveryAddress + '\n' +
-                    'Delivery Date: ' + formattedDate + '\n' +
-                    'Subtotal: ₱ ' + subtotalAmount.toFixed(2) + '\n' +
-                    'Total Amount: ₱ ' + currentTotalAmount.toFixed(2) + '\n\n' +
-                    'Are you sure you want to place this order?'
+                    'Click OK to proceed!'
                 );
 
                 if (!confirmed) return;
@@ -1787,38 +1823,44 @@ try {
                     });
                     const data = await response.json();
 
+                    hideLoading();
+
                     if (data.success) {
-                        hideLoading();
-                        showCustomAlert('Order Confirmed!', 'Thank you for your order! Delivery #: ' + data.delivery_number +
-                            '. We will send a text message once your order is ready for delivery.');
+                        showToast(
+                            'Order placed!',
+                            'success'
+                        );
+                        // Redirect after toast
+                        setTimeout(function () {
+                            window.location.href = 'pending_folder.php';
+                        }, 2500);
                     } else {
                         showToast(data.message || 'Error placing order', 'error');
-                        hideLoading();
                     }
                 } catch (err) {
                     console.error('Error:', err);
-                    showToast('Network error. Please try again.', 'error');
                     hideLoading();
+                    showToast('Network error. Please try again.', 'error');
                 }
             }
 
             // ============================================================
             // EVENT LISTENERS
             // ============================================================
-            document.querySelectorAll('.decrement').forEach(function(btn) {
-                btn.addEventListener('click', function() {
+            document.querySelectorAll('.decrement').forEach(function (btn) {
+                btn.addEventListener('click', function () {
                     updateCartItem(this.dataset.id, 'decrement');
                 });
             });
 
-            document.querySelectorAll('.increment').forEach(function(btn) {
-                btn.addEventListener('click', function() {
+            document.querySelectorAll('.increment').forEach(function (btn) {
+                btn.addEventListener('click', function () {
                     updateCartItem(this.dataset.id, 'increment');
                 });
             });
 
-            document.querySelectorAll('.remove-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
+            document.querySelectorAll('.remove-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
                     if (confirm('Remove this item from cart?')) {
                         updateCartItem(this.dataset.id, 'remove');
                     }
@@ -1833,7 +1875,6 @@ try {
                 document.getElementById('checkoutBtn').addEventListener('click', proceedToCheckout);
             }
 
-            // Set minimum date to today
             const today = new Date().toISOString().split('T')[0];
             if (deliveryDateInput) {
                 deliveryDateInput.min = today;
@@ -1845,6 +1886,20 @@ try {
                 validateDeliveryInputs();
             }
         });
+
+        // ============================================================
+        // UPDATE BUTTON TEXT BASED ON EXISTING ORDER
+        // ============================================================
+        function updateCheckoutButtonText(isExistingOrder) {
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            if (checkoutBtn) {
+                if (isExistingOrder) {
+                    checkoutBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Now';
+                } else {
+                    checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Order';
+                }
+            }
+        }
     </script>
 </body>
 
