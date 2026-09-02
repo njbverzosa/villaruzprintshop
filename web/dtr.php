@@ -78,56 +78,6 @@ $stmt = $pdo->prepare("SELECT * FROM dtr ORDER BY date DESC, time_in DESC");
 $stmt->execute();
 $dtrRecords = $stmt->fetchAll();
 
-// ==============================================
-// FUNCTION TO DETERMINE ONLINE STATUS
-// ==============================================
-function getOnlineStatus($onlineTime)
-{
-    if (empty($onlineTime)) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => ''];
-    }
-
-    $storedTimestamp = strtotime($onlineTime);
-    if ($storedTimestamp === false) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => ''];
-    }
-
-    $currentTimestamp = time();
-    $diffSeconds = $currentTimestamp - $storedTimestamp;
-    $diffMinutes = floor($diffSeconds / 60);
-    $diffHours = floor($diffSeconds / 3600);
-    $diffDays = floor($diffSeconds / 86400);
-    $diffWeeks = floor($diffSeconds / 604800);
-
-    if ($diffMinutes <= 1) {
-        return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'time_diff' => ''];
-    } elseif ($diffMinutes >= 1 && $diffMinutes <= 60) {
-        return ['status' => 'away', 'class' => 'status-away', 'text' => '● Away', 'time_diff' => $diffMinutes . 'm'];
-    } elseif ($diffHours >= 1 && $diffHours < 24) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffHours . 'h'];
-    } elseif ($diffDays >= 1 && $diffDays < 7) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffDays . 'd'];
-    } elseif ($diffWeeks >= 1 && $diffWeeks < 4) {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffWeeks . 'w'];
-    } else {
-        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => '4w+'];
-    }
-}
-
-// ==============================================
-// FUNCTION TO GET UNREAD COUNT
-// ==============================================
-function getUnreadCount($pdo, $accNumber)
-{
-    try {
-        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM messages WHERE receiver_acc = ? AND is_read = 0");
-        $stmt->execute([$accNumber]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['count'] ?? 0;
-    } catch (Exception $e) {
-        return 0;
-    }
-}
 ?>
 
 <!DOCTYPE html>
