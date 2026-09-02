@@ -439,7 +439,8 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
 {
     $updatedCount = 0;
     $errors = [];
-    $currentDateTime = date('j M Y');
+    date_default_timezone_set('Asia/Manila');
+    $currentDateTime = date('j F Y g:i A');
 
     foreach ($items as $item) {
         // Validate required fields
@@ -590,8 +591,10 @@ if ($action === 'update_order_status') {
         // Start database transaction - all operations must succeed or rollback
         $pdo->beginTransaction();
 
+
         // Get current date for last_restocked field - Format: j M Y (e.g., "15 May 2026")
-        $currentDateTime = date('j M Y');
+        date_default_timezone_set('Asia/Manila');
+        $currentDateTime = date('j F Y g:i A');
 
         // STEP 1: Get current status before making any changes
         $deliveryInfo = getCurrentDeliveryStatus($pdo, $deliveryNumber);

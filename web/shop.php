@@ -58,7 +58,7 @@ $user = $userData;
 
 
 // Fetch all merchandise inventory
-$stmt = $pdo->prepare("SELECT * FROM merchandise_inventory");
+$stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
 
@@ -805,6 +805,245 @@ $allProducts = $stmt->fetchAll();
             }
 
         }
+
+        /* Add Product Button */
+        .add-product-wrapper {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 25px 15px 25px;
+        }
+
+        .add-product-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .add-product-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .add-product-btn i {
+            font-size: 16px;
+        }
+
+        /* Add Product Modal */
+        .add-product-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1300;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .add-product-modal-content {
+            background: #ffffff;
+            border-radius: 24px;
+            max-width: 550px;
+            width: 92%;
+            animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .add-product-modal-header {
+            background: linear-gradient(135deg, #10b981, #059669);
+            padding: 20px 28px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .add-product-modal-header h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .add-product-modal-header h3 i {
+            font-size: 24px;
+        }
+
+        .close-add-product-modal {
+            font-size: 32px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all 0.2s;
+            line-height: 1;
+            opacity: 0.8;
+        }
+
+        .close-add-product-modal:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .add-product-modal-body {
+            padding: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .form-group label i {
+            color: #10b981;
+            margin-right: 6px;
+        }
+
+        .form-group label .required {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group .hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .add-product-modal-footer {
+            padding: 20px 28px 28px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel-add {
+            padding: 12px 28px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            color: #475569;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel-add:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-submit-add {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-submit-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-submit-add:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-submit-add .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-submit-add.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-submit-add.loading .btn-text {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .add-product-modal-content {
+                width: 95%;
+            }
+
+            .add-product-modal-body {
+                padding: 20px;
+            }
+
+            .add-product-modal-footer {
+                flex-direction: column;
+            }
+
+            .btn-cancel-add,
+            .btn-submit-add {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 
@@ -854,6 +1093,13 @@ $allProducts = $stmt->fetchAll();
                     <div id="searchInfo" class="search-info"></div>
                 </div>
 
+                <!-- Add Product Button -->
+                <div class="add-product-wrapper">
+                    <button class="add-product-btn" id="addProductBtn">
+                        <i class="fas fa-plus-circle"></i> Add Product
+                    </button>
+                </div>
+
                 <!-- Products Grid -->
                 <div class="products-grid" id="productsGrid">
                     <?php foreach ($allProducts as $product): ?>
@@ -896,6 +1142,53 @@ $allProducts = $stmt->fetchAll();
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="add-product-modal">
+        <div class="add-product-modal-content">
+            <div class="add-product-modal-header">
+                <h3>
+                    <i class="fas fa-box"></i>
+                    Add New Product
+                </h3>
+                <span class="close-add-product-modal">&times;</span>
+            </div>
+            <div class="add-product-modal-body">
+                <form id="addProductForm">
+                    <div class="form-group">
+                        <label><i class="fas fa-tag"></i> Product Name <span class="required">*</span></label>
+                        <input type="text" id="product_name" placeholder="Enter product name" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-cube"></i> Unit <span class="required">*</span></label>
+                        <input type="text" id="unit" placeholder="e.g., Pcs, Box, Kg" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-sort-numeric-up"></i> Quantity <span class="required">*</span></label>
+                        <input type="number" id="quantity" placeholder="Enter initial quantity" required min="0"
+                            step="1">
+                        <div class="hint">Enter the initial stock quantity.</div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-coins"></i> Unit Cost <span class="required">*</span></label>
+                        <input type="number" id="selling_price" placeholder="0.00" required min="0" step="0.01">
+                        <div class="hint">Enter the selling price per unit.</div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-align-left"></i> Description</label>
+                        <textarea id="description" placeholder="Enter product description (optional)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="add-product-modal-footer">
+                <button class="btn-cancel-add" id="cancelAddProduct">Cancel</button>
+                <button class="btn-submit-add" id="submitAddProduct">
+                    <span class="spinner"></span>
+                    <span class="btn-text"><i class="fas fa-save"></i> Save Product</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Description Modal - Modern Design -->
@@ -999,6 +1292,140 @@ $allProducts = $stmt->fetchAll();
             document.body.style.overflow = '';
         }
 
+        // ========== ADD PRODUCT MODAL ==========
+        const addProductModal = document.getElementById('addProductModal');
+        const addProductBtn = document.getElementById('addProductBtn');
+        const closeAddProductModalBtn = document.querySelector('.close-add-product-modal');
+        const cancelAddProductBtn = document.getElementById('cancelAddProduct');
+        const submitAddProductBtn = document.getElementById('submitAddProduct');
+        const addProductForm = document.getElementById('addProductForm');
+
+        function openAddProductModal() {
+            addProductModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            // Reset form
+            addProductForm.reset();
+            submitAddProductBtn.disabled = false;
+            submitAddProductBtn.classList.remove('loading');
+        }
+
+        function closeAddProductModal() {
+            addProductModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        if (addProductBtn) {
+            addProductBtn.addEventListener('click', openAddProductModal);
+        }
+
+        if (closeAddProductModalBtn) {
+            closeAddProductModalBtn.addEventListener('click', closeAddProductModal);
+        }
+
+        if (cancelAddProductBtn) {
+            cancelAddProductBtn.addEventListener('click', closeAddProductModal);
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === addProductModal) {
+                closeAddProductModal();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && addProductModal.style.display === 'flex') {
+                closeAddProductModal();
+            }
+        });
+
+        // ========== SUBMIT ADD PRODUCT ==========
+        if (submitAddProductBtn) {
+            submitAddProductBtn.addEventListener('click', async function (e) {
+                e.preventDefault();
+
+                // Get form values - match backend field names
+                const productName = document.getElementById('product_name').value.trim();
+                const unit = document.getElementById('unit').value.trim();
+                const quantity = document.getElementById('quantity').value.trim();
+                const sellingPrice = document.getElementById('selling_price').value.trim();
+                const description = document.getElementById('description').value.trim();
+
+                // Validate required fields
+                if (!productName) {
+                    showToast('Please enter product name', 'error');
+                    document.getElementById('product_name').focus();
+                    return;
+                }
+
+                if (!unit) {
+                    showToast('Please enter unit', 'error');
+                    document.getElementById('unit').focus();
+                    return;
+                }
+
+                if (!quantity || parseInt(quantity) < 0) {
+                    showToast('Please enter valid quantity', 'error');
+                    document.getElementById('quantity').focus();
+                    return;
+                }
+
+                if (!sellingPrice || parseFloat(sellingPrice) <= 0) {
+                    showToast('Please enter valid unit cost (must be greater than 0)', 'error');
+                    document.getElementById('selling_price').focus();
+                    return;
+                }
+
+                // Show loading state
+                submitAddProductBtn.disabled = true;
+                submitAddProductBtn.classList.add('loading');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'add_product');
+                    formData.append('product_name', productName);
+                    formData.append('unit', unit);
+                    formData.append('quantity', quantity);
+                    formData.append('selling_price', sellingPrice);
+                    formData.append('description', description);
+                    formData.append('csrf_token', csrfToken);
+
+                    const response = await fetch('../API/add_product.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast(data.message || 'Product added successfully!', 'success');
+                        closeAddProductModal();
+                        // Reload page after a short delay to show new product
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showToast(data.message || 'Error adding product', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                    showToast('Network error. Please try again.', 'error');
+                } finally {
+                    submitAddProductBtn.disabled = false;
+                    submitAddProductBtn.classList.remove('loading');
+                }
+            });
+        }
+
+        // Allow Enter key to submit form (except in textarea)
+        document.getElementById('addProductForm').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                document.getElementById('submitAddProduct').click();
+            }
+        });
+
+
         if (closeDescModalBtn) closeDescModalBtn.addEventListener('click', closeDescriptionModal);
         if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
 
@@ -1010,7 +1437,7 @@ $allProducts = $stmt->fetchAll();
         });
 
         // Close on Escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && descModal.style.display === 'flex') {
                 closeDescriptionModal();
             }
@@ -1050,7 +1477,7 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeMenu();
             }
@@ -1080,7 +1507,7 @@ $allProducts = $stmt->fetchAll();
 
         function escapeHtml(str) {
             if (!str) return '';
-            return String(str).replace(/[&<>]/g, function(m) {
+            return String(str).replace(/[&<>]/g, function (m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -1170,7 +1597,7 @@ $allProducts = $stmt->fetchAll();
 
         // ========== QUANTITY CONTROL EVENT LISTENERS ==========
         document.querySelectorAll('.decrement-card').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtySpan = document.getElementById(`qty-${productId}`);
@@ -1183,7 +1610,7 @@ $allProducts = $stmt->fetchAll();
         });
 
         document.querySelectorAll('.increment-card').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const qtySpan = document.getElementById(`qty-${productId}`);
@@ -1195,7 +1622,7 @@ $allProducts = $stmt->fetchAll();
 
         // ========== ADD TO CART BUTTON EVENT LISTENERS ==========
         document.querySelectorAll('.add-to-cart-card').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productId = this.dataset.id;
                 const productName = this.dataset.name;
@@ -1209,7 +1636,7 @@ $allProducts = $stmt->fetchAll();
 
         // ========== DESCRIPTION BUTTON EVENT LISTENERS ==========
         document.querySelectorAll('.desc-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const productName = this.dataset.name;
                 const productUnit = this.dataset.unit;
@@ -1231,7 +1658,7 @@ $allProducts = $stmt->fetchAll();
 
         let searchTimeout;
         if (searchInput) {
-            searchInput.addEventListener('input', function() {
+            searchInput.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(performLiveSearch, 300);
             });

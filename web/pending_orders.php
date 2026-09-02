@@ -977,7 +977,11 @@ function formatDeliveryDate($date)
                                         </tr>
                                     <?php endforeach; ?>
                                     <tr class="total-row">
-                                        <td colspan="4" style="text-align: right; font-weight: 600;">TOTAL:</td>
+                                        <td colspan="2" style="text-align: right; font-weight: 600;">Total Items: <span
+                                                id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
+                                        </td>
+                                        <td></td>
+                                        <td colspan="1" style="text-align: right; font-weight: 600;">TOTAL:</td>
                                         <td style="font-weight: 600;" id="total-amount-display">₱
                                             <?= number_format($totalAmount, 2) ?>
                                         </td>
@@ -1388,18 +1392,69 @@ function formatDeliveryDate($date)
                 const sellingPriceInput = row.cells[3].querySelector('input');
                 const totalInput = row.cells[4].querySelector('input');
 
-                function calculateTotal() {
+                function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
                     const price = parseFloat(sellingPriceInput.value) || 0;
                     const newTotal = pieces * price;
                     totalInput.value = newTotal.toFixed(2);
+                    // Update grand total
+                    updateGrandTotal();
                 }
 
                 if (piecesInput && sellingPriceInput && totalInput) {
-                    piecesInput.addEventListener('input', calculateTotal);
-                    sellingPriceInput.addEventListener('input', calculateTotal);
+                    // Calculate on input change
+                    piecesInput.addEventListener('input', calculateRowTotal);
+                    sellingPriceInput.addEventListener('input', calculateRowTotal);
+
+                    // Also update on blur to ensure clean values
+                    piecesInput.addEventListener('blur', function () {
+                        if (this.value === '' || isNaN(this.value)) {
+                            this.value = 0;
+                        }
+                        calculateRowTotal();
+                    });
+
+                    sellingPriceInput.addEventListener('blur', function () {
+                        if (this.value === '' || isNaN(this.value)) {
+                            this.value = 0;
+                        }
+                        calculateRowTotal();
+                    });
                 }
             });
+
+            // Initial grand total calculation
+            setTimeout(updateGrandTotal, 100);
+        }
+
+        // ========== UPDATE GRAND TOTAL ==========
+        function updateGrandTotal() {
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            let grandTotal = 0;
+            let totalItems = 0;
+
+            rows.forEach(row => {
+                const piecesInput = row.cells[1]?.querySelector('input');
+                const totalInput = row.cells[4]?.querySelector('input');
+
+                const pieces = parseFloat(piecesInput?.value) || 0;
+                const total = parseFloat(totalInput?.value) || 0;
+
+                totalItems += pieces;
+                grandTotal += total;
+            });
+
+            // Update the total row
+            const totalDisplay = document.getElementById('total-amount-display');
+            if (totalDisplay) {
+                totalDisplay.innerHTML = `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            // Update the total items display if exists
+            const totalItemsDisplay = document.getElementById('totalItemsDisplay');
+            if (totalItemsDisplay) {
+                totalItemsDisplay.textContent = totalItems;
+            }
         }
 
         async function disableEditMode() {
@@ -1411,6 +1466,9 @@ function formatDeliveryDate($date)
             const dateInput = document.getElementById('deliveryDateInput');
             const updatedDeliveryDate = dateInput ? dateInput.value : '';
             const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
+
+            // Update grand total one last time before saving
+            updateGrandTotal();
 
             rows.forEach((row, index) => {
                 const productInput = row.cells[0].querySelector('input');

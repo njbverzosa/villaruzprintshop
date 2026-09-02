@@ -1,5 +1,5 @@
 <?php
-// Customer_API/add_to_cart.php
+// API/add_to_cart.php
 
 session_start();
 header('Content-Type: application/json');
@@ -25,7 +25,7 @@ if (!isLoggedIn()) {
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
-$userAccNumber = $_SESSION['acc_number']; // This is the session variable
+$userAccNumber = $_SESSION['acc_number'];
 
 // ==============================================
 // 3. VALIDATE REQUEST METHOD
@@ -95,14 +95,9 @@ try {
         exit();
     }
     
-    // Check if product is in stock
-    if ($product['qty_on_hand'] < $quantity) {
-        echo json_encode([
-            'success' => false, 
-            'message' => "Insufficient stock. Only {$product['qty_on_hand']} available."
-        ]);
-        exit();
-    }
+    // ==============================================
+    // STOCK CHECK REMOVED - Allow adding items regardless of stock
+    // ==============================================
     
     // ==============================================
     // 6. GET OR CREATE ORDER NUMBER FOR TODAY
@@ -127,7 +122,6 @@ try {
         $orderNumber = $existingOrder['order_number'];
     } else {
         // Generate new order number
-        // Find the highest sequence number used today
         $stmt = $pdo->prepare("
             SELECT order_number 
             FROM cart 
@@ -140,7 +134,6 @@ try {
         
         $sequence = 1;
         if ($lastOrder) {
-            // Extract sequence number from existing order
             preg_match('/' . preg_quote($userAccNumber, '/') . '_(\d+)_/', $lastOrder['order_number'], $matches);
             if (isset($matches[1])) {
                 $sequence = intval($matches[1]) + 1;
@@ -170,14 +163,7 @@ try {
         $newPieces = $existingItem['pieces'] + $quantity;
         $newTotalAmount = $product['selling_price'] * $newPieces;
         
-        // Check if new quantity exceeds stock
-        if ($newPieces > $product['qty_on_hand']) {
-            echo json_encode([
-                'success' => false, 
-                'message' => "Cannot add more. Only {$product['qty_on_hand']} available in stock."
-            ]);
-            exit();
-        }
+        // REMOVED: Stock check when updating quantity
         
         $stmt = $pdo->prepare("
             UPDATE cart 
