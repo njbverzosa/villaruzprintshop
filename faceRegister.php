@@ -178,10 +178,7 @@ if ($isLoggedIn) {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1);
-            -webkit-transform: scaleX(-1);
-            -moz-transform: scaleX(-1);
-            -ms-transform: scaleX(-1);
+            /* REMOVED transform: scaleX(-1) - fixed double mirror issue */
         }
 
         .camera-overlay {
@@ -511,7 +508,7 @@ if ($isLoggedIn) {
                 <p>Unable to access camera</p>
                 <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">${err.message}</p>
                 <button onclick="startCamera()" style="margin-top: 15px; background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    <i class="fas fa-redo"></i> Retry
+                    <i class="fas fa-redo"></i>
                 </button>
             `;
             showStatus('Error: ' + err.message, 'error');
@@ -531,6 +528,7 @@ if ($isLoggedIn) {
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         
+        // Apply mirror effect in JavaScript only (no CSS mirror on canvas)
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
