@@ -631,7 +631,7 @@ if ($isLoggedIn) {
             flex-wrap: wrap;
         }
 
-        .btn {
+        .controls .btn {
             flex: 1;
             padding: 14px 20px;
             border: none;
@@ -647,7 +647,7 @@ if ($isLoggedIn) {
             min-width: 100px;
         }
 
-        .btn:disabled {
+        .controls .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
@@ -680,16 +680,6 @@ if ($isLoggedIn) {
 
         .btn-secondary:hover:not(:disabled) {
             background: #cbd5e1;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: #dc2626;
-            transform: translateY(-2px);
         }
 
         .status-message {
@@ -727,13 +717,6 @@ if ($isLoggedIn) {
             font-size: 18px;
         }
 
-        .status-message.quality {
-            display: flex;
-            background: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fde68a;
-        }
-
         .spinner {
             display: inline-block;
             width: 20px;
@@ -767,39 +750,6 @@ if ($isLoggedIn) {
             font-weight: 600;
         }
 
-        /* Quality Indicators */
-        .quality-indicators {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            justify-content: center;
-        }
-
-        .quality-indicator {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            padding: 3px 10px;
-            border-radius: 12px;
-            background: #f1f5f9;
-            color: #64748b;
-        }
-
-        .quality-indicator.good {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .quality-indicator.bad {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .quality-indicator i {
-            font-size: 12px;
-        }
-
         @media (max-width: 480px) {
             .auth-card {
                 padding: 20px;
@@ -813,7 +763,7 @@ if ($isLoggedIn) {
                 flex-direction: column;
             }
 
-            .btn {
+            .controls .btn {
                 width: 100%;
             }
 
@@ -945,30 +895,10 @@ if ($isLoggedIn) {
                 </div>
             </div>
 
-            <!-- Quality Indicators -->
-            <div class="quality-indicators" id="qualityIndicators">
-                <span class="quality-indicator" id="brightnessIndicator">
-                    Lighting: --
-                </span>
-                <span class="quality-indicator" id="clarityIndicator">
-                    Clarity: --
-                </span>
-                <span class="quality-indicator" id="faceSizeIndicator">
-                    Face: --
-                </span>
-            </div>
-
             <!-- Status Message -->
             <div class="status-message" id="statusMessage">
                 <i class="fas fa-info-circle"></i>
                 <span id="statusText">Ready</span>
-            </div>
-
-            <!-- Retry Button -->
-            <div style="display: flex; justify-content: center; margin-top: 15px; gap: 12px;">
-                <button onclick="reload()" class="btn-retry">
-                    <i class="fas fa-sync-alt"></i> Retry
-                </button>
             </div>
 
             <!-- Controls -->
@@ -976,11 +906,11 @@ if ($isLoggedIn) {
                 <button class="btn btn-primary" id="captureBtn" disabled>
                     <i class="fas fa-camera"></i> Auto Capture
                 </button>
-                <button class="btn btn-success" id="registerBtn" disabled>
-                    <i class="fas fa-save"></i> Register Face
+                <button class="btn btn-secondary" id="retryBtn" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Retry
                 </button>
-                <button class="btn btn-secondary" id="restartBtn">
-                    <i class="fas fa-sync"></i> Restart
+                <button class="btn btn-success" id="registerBtn" disabled>
+                    <i class="fas fa-save"></i> Register Now
                 </button>
             </div>
 
@@ -1009,7 +939,7 @@ if ($isLoggedIn) {
         const cameraOverlay = document.getElementById('cameraOverlay');
         const captureBtn = document.getElementById('captureBtn');
         const registerBtn = document.getElementById('registerBtn');
-        const restartBtn = document.getElementById('restartBtn');
+        const retryBtn = document.getElementById('retryBtn');
         const statusMessage = document.getElementById('statusMessage');
         const statusText = document.getElementById('statusText');
         const faceGuide = document.getElementById('faceGuide');
@@ -1021,9 +951,6 @@ if ($isLoggedIn) {
         const registeredOverlay = document.getElementById('registeredOverlay');
         const registeredFacePreview = document.getElementById('registeredFacePreview');
         const registeredFaceName = document.getElementById('registeredFaceName');
-        const brightnessIndicator = document.getElementById('brightnessIndicator');
-        const clarityIndicator = document.getElementById('clarityIndicator');
-        const faceSizeIndicator = document.getElementById('faceSizeIndicator');
 
         let stream = null;
         let capturedImageData = null;
@@ -1059,115 +986,24 @@ if ($isLoggedIn) {
         }
 
         // ============================================================
-        // FACE DETECTION & QUALITY CHECK
-        // ============================================================
-        function checkImageQuality(imageData) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 200;
-            canvas.height = 200;
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            img.onload = function () {
-                ctx.drawImage(img, 0, 0, 200, 200);
-                const imageData = ctx.getImageData(0, 0, 200, 200);
-                const data = imageData.data;
-
-                // Check brightness
-                let totalBrightness = 0;
-                for (let i = 0; i < data.length; i += 4) {
-                    const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                    totalBrightness += luminance;
-                }
-                const avgBrightness = totalBrightness / (data.length / 4);
-                const isWellLit = avgBrightness > 60 && avgBrightness < 200;
-
-                // Check contrast (simple variance)
-                let mean = avgBrightness;
-                let variance = 0;
-                let pixelCount = 0;
-                for (let i = 0; i < data.length; i += 4) {
-                    const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                    variance += Math.pow(luminance - mean, 2);
-                    pixelCount++;
-                }
-                variance /= pixelCount;
-                const isClear = variance > 500;
-
-                // Check face size (using center region)
-                let centerPixels = 0;
-                let centerCount = 0;
-                for (let y = 60; y < 140; y++) {
-                    for (let x = 60; x < 140; x++) {
-                        const idx = (y * 200 + x) * 4;
-                        const luminance = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-                        centerPixels += luminance;
-                        centerCount++;
-                    }
-                }
-                const centerAvg = centerPixels / centerCount;
-                const faceSize = centerAvg > 80;
-
-                // Update indicators
-                updateQualityIndicators(isWellLit, isClear, faceSize);
-
-                // Show status
-                if (!isWellLit) {
-                    showStatus('Too dark or too bright. Adjust lighting.', 'quality');
-                    return false;
-                }
-                if (!isClear) {
-                    showStatus('Image is blurry. Please hold steady.', 'quality');
-                    return false;
-                }
-                if (!faceSize) {
-                    showStatus('Face too small. Move closer to camera.', 'quality');
-                    return false;
-                }
-
-                return true;
-            };
-            img.src = imageData;
-            return true;
-        }
-
-        function reload() {
-            location.reload();
-        }
-
-        function updateQualityIndicators(isWellLit, isClear, faceSize) {
-            brightnessIndicator.className = 'quality-indicator ' + (isWellLit ? 'good' : 'bad');
-            brightnessIndicator.innerHTML = `Lighting: ${isWellLit ? 'Good' : 'Poor'}`;
-
-            clarityIndicator.className = 'quality-indicator ' + (isClear ? 'good' : 'bad');
-            clarityIndicator.innerHTML = `Clarity: ${isClear ? 'Clear' : 'Blurry'}`;
-
-            faceSizeIndicator.className = 'quality-indicator ' + (faceSize ? 'good' : 'bad');
-            faceSizeIndicator.innerHTML = `Face: ${faceSize ? 'Good Size' : 'Too Small'}`;
-        }
-
-        // ============================================================
         // FACE DETECTION PREVIEW
         // ============================================================
         function detectFace(frame) {
-            // Simple face detection using canvas analysis
-            // In production, use a proper face detection library
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = 200;
             tempCanvas.height = 200;
             const ctx = tempCanvas.getContext('2d');
             const img = new Image();
-            img.onload = function () {
+            img.onload = function() {
                 ctx.drawImage(img, 0, 0, 200, 200);
                 const imageData = ctx.getImageData(0, 0, 200, 200);
                 const data = imageData.data;
 
-                // Simple detection: check for face-like region in center
                 let centerBrightness = 0;
                 let edgeBrightness = 0;
                 let centerCount = 0;
                 let edgeCount = 0;
 
-                // Center region (face area)
                 for (let y = 50; y < 150; y++) {
                     for (let x = 50; x < 150; x++) {
                         const idx = (y * 200 + x) * 4;
@@ -1177,7 +1013,6 @@ if ($isLoggedIn) {
                     }
                 }
 
-                // Edge region (background)
                 for (let y = 0; y < 200; y++) {
                     for (let x = 0; x < 200; x++) {
                         if (x < 30 || x > 170 || y < 30 || y > 170) {
@@ -1193,7 +1028,6 @@ if ($isLoggedIn) {
                 const edgeAvg = edgeBrightness / edgeCount;
                 const diff = Math.abs(centerAvg - edgeAvg);
 
-                // If there's significant difference, assume face detected
                 const faceDetected = diff > 20 && centerAvg > 60 && centerAvg < 200;
 
                 if (faceDetected) {
@@ -1228,7 +1062,6 @@ if ($isLoggedIn) {
                 if (count > 0) {
                     countdownNumber.textContent = count;
                     countdownNumber.className = 'countdown-number';
-                    // Play vibration effect
                     countdownNumber.style.animation = 'none';
                     setTimeout(() => {
                         countdownNumber.style.animation = 'countdown-pop 0.8s ease';
@@ -1240,7 +1073,6 @@ if ($isLoggedIn) {
                     setTimeout(() => {
                         countdownOverlay.classList.remove('active');
                         isCountdownActive = false;
-                        // Auto capture
                         captureFace();
                     }, 600);
                 }
@@ -1257,9 +1089,9 @@ if ($isLoggedIn) {
             try {
                 cameraPlaceholder.style.display = 'block';
                 cameraPlaceholder.innerHTML = `
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Starting camera...</p>
-            `;
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Starting camera...</p>
+                `;
                 cameraOverlay.style.display = 'none';
 
                 stream = await navigator.mediaDevices.getUserMedia({
@@ -1285,10 +1117,8 @@ if ($isLoggedIn) {
 
                 updateGuideStatus('default');
 
-                // Start face detection interval
                 qualityCheckInterval = setInterval(() => {
                     if (cameraStarted && !isCountdownActive) {
-                        // Capture frame for detection
                         const tempCanvas = document.createElement('canvas');
                         tempCanvas.width = video.videoWidth;
                         tempCanvas.height = video.videoHeight;
@@ -1300,7 +1130,6 @@ if ($isLoggedIn) {
 
                 showStatus('Camera is ready. Click "Auto Capture" or wait for countdown.', 'info');
 
-                // Auto start countdown after 3 seconds
                 setTimeout(() => {
                     if (cameraStarted && !isCaptured) {
                         startCountdown();
@@ -1311,13 +1140,13 @@ if ($isLoggedIn) {
                 console.error('Camera error:', err);
                 cameraPlaceholder.style.display = 'block';
                 cameraPlaceholder.innerHTML = `
-                <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-                <p>Unable to access camera</p>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">${err.message}</p>
-                <button onclick="startCamera()" style="margin-top: 15px; background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    <i class="fas fa-redo"></i>
-                </button>
-            `;
+                    <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                    <p>Unable to access camera</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">${err.message}</p>
+                    <button onclick="startCamera()" style="margin-top: 15px; background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                `;
                 showStatus('Error: ' + err.message, 'error');
             }
         }
@@ -1327,7 +1156,7 @@ if ($isLoggedIn) {
         // ============================================================
         function captureFace() {
             if (!stream || !cameraStarted) {
-                showStatus('Camera not started. Please wait or restart the camera.', 'error');
+                showStatus('Camera not started. Please wait or restart.', 'error');
                 return;
             }
 
@@ -1340,23 +1169,7 @@ if ($isLoggedIn) {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-            const imageData = canvas.toDataURL('image/jpeg', 0.9);
-
-            // Check image quality
-            const qualityPassed = checkImageQuality(imageData);
-            if (!qualityPassed) {
-                // Retry countdown after quality check
-                captureBtn.disabled = false;
-                captureBtn.innerHTML = '<i class="fas fa-camera"></i> Retry Capture';
-                setTimeout(() => {
-                    if (!isCaptured && cameraStarted) {
-                        startCountdown();
-                    }
-                }, 2000);
-                return;
-            }
-
-            capturedImageData = imageData;
+            capturedImageData = canvas.toDataURL('image/jpeg', 0.9);
             isCaptured = true;
 
             video.style.display = 'none';
@@ -1365,16 +1178,15 @@ if ($isLoggedIn) {
             faceDetectionBox.style.display = 'none';
 
             captureBtn.innerHTML = '<i class="fas fa-redo"></i> Recapture';
-            captureBtn.onclick = recaptureFace;
+            captureBtn.onclick = function() { recaptureFace(); };
             registerBtn.disabled = false;
             updateGuideStatus('detected');
 
-            // Show registered overlay
             registeredOverlay.classList.add('active');
             registeredFacePreview.src = capturedImageData;
             registeredFaceName.textContent = userName || 'Your Face';
 
-            showStatus('Face captured. Click "Register Face" to save.', 'success');
+            showStatus('✅ Face captured! Click "Register Now" to save.', 'success');
         }
 
         // ============================================================
@@ -1389,13 +1201,12 @@ if ($isLoggedIn) {
             registeredOverlay.classList.remove('active');
 
             captureBtn.innerHTML = '<i class="fas fa-camera"></i> Auto Capture';
-            captureBtn.onclick = captureFace;
+            captureBtn.onclick = startCountdown;
             registerBtn.disabled = true;
             updateGuideStatus('default');
 
             showStatus('Camera resumed. Click "Auto Capture" or wait for countdown.', 'info');
 
-            // Auto start countdown again
             setTimeout(() => {
                 if (cameraStarted && !isCaptured && !isCountdownActive) {
                     startCountdown();
@@ -1404,7 +1215,7 @@ if ($isLoggedIn) {
         }
 
         // ============================================================
-        // REGISTER FACE
+        // REGISTER FACE - Then Redirect to Login
         // ============================================================
         async function registerFace() {
             if (!isLoggedIn) {
@@ -1439,17 +1250,24 @@ if ($isLoggedIn) {
                 const data = await response.json();
 
                 if (data.success) {
-                    showStatus('✅ ' + data.message, 'success');
+                    showStatus('✅ ' + data.message + ' Redirecting to login...', 'success');
                     registerBtn.innerHTML = '<i class="fas fa-check-circle"></i> Registered!';
                     updateGuideStatus('detected');
-                    setTimeout(() => {
-                        recaptureFace();
-                        registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Face';
-                        registerBtn.disabled = true;
+
+                    // End session and redirect to login.php after 2 seconds
+                    setTimeout(function() {
+                        // Clear session
+                        fetch('logout.php', { method: 'POST', credentials: 'same-origin' })
+                            .then(() => {
+                                window.location.href = 'login.php';
+                            })
+                            .catch(() => {
+                                window.location.href = 'login.php';
+                            });
                     }, 2000);
                 } else {
                     showStatus('❌ ' + data.message, 'error');
-                    registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Face';
+                    registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Now';
                     registerBtn.disabled = false;
                     captureBtn.disabled = false;
                     updateGuideStatus('error');
@@ -1461,7 +1279,7 @@ if ($isLoggedIn) {
             } catch (err) {
                 console.error('Registration error:', err);
                 showStatus('Error: ' + err.message, 'error');
-                registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Face';
+                registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Now';
                 registerBtn.disabled = false;
                 captureBtn.disabled = false;
                 updateGuideStatus('error');
@@ -1485,52 +1303,26 @@ if ($isLoggedIn) {
         // ============================================================
         captureBtn.addEventListener('click', startCountdown);
         registerBtn.addEventListener('click', registerFace);
-        restartBtn.addEventListener('click', function () {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            if (qualityCheckInterval) {
-                clearInterval(qualityCheckInterval);
-            }
-            cameraStarted = false;
-            isCountdownActive = false;
-            video.style.display = 'block';
-            canvas.style.display = 'none';
-            cameraOverlay.style.display = 'none';
-            faceDetectionBox.style.display = 'none';
-            countdownOverlay.classList.remove('active');
-            registeredOverlay.classList.remove('active');
-            captureBtn.innerHTML = '<i class="fas fa-camera"></i> Auto Capture';
-            captureBtn.onclick = startCountdown;
-            registerBtn.disabled = true;
-            registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Face';
-            isCaptured = false;
-            capturedImageData = null;
-            updateGuideStatus('default');
-            showStatus('Restarting camera...', 'info');
-            setTimeout(startCamera, 300);
-        });
 
         // ============================================================
         // INITIALIZE - AUTO START ON PAGE LOAD
         // ============================================================
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             if (isLoggedIn) {
                 setTimeout(startCamera, 300);
             } else {
                 showStatus('Please login to register your face.', 'info');
                 cameraPlaceholder.style.display = 'block';
                 cameraPlaceholder.innerHTML = `
-                <i class="fas fa-lock" style="color: #f59e0b;"></i>
-                <p>Please login first</p>
-                <a href="login.php" style="color: #3b82f6; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 10px;">Login here</a>
-            `;
+                    <i class="fas fa-lock" style="color: #f59e0b;"></i>
+                    <p>Please login first</p>
+                    <a href="login.php" style="color: #3b82f6; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 10px;">Login here</a>
+                `;
             }
         });
 
         // Stop camera when page is hidden to save resources
-        document.addEventListener('visibilitychange', function () {
+        document.addEventListener('visibilitychange', function() {
             if (document.hidden && stream && cameraStarted) {
                 stream.getTracks().forEach(track => track.stop());
                 cameraStarted = false;
