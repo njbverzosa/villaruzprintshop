@@ -344,7 +344,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
         .camera-container {
             position: relative;
-            background: #f8fafc;
+            background: #0f172a;
             border-radius: 14px;
             overflow: hidden;
             border: 2px solid #e2e8f0;
@@ -353,6 +353,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             justify-content: center;
             align-items: center;
             margin-bottom: 15px;
+        }
+
+        /* Dark overlay for better guide visibility */
+        .camera-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.2) 70%);
+            pointer-events: none;
+            z-index: 3;
         }
 
         .camera-container video {
@@ -373,26 +386,155 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             object-fit: cover;
         }
 
+        /* Enhanced Camera Overlay */
         .camera-overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            border: 3px dashed rgba(59, 130, 246, 0.4);
-            border-radius: 50%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             pointer-events: none;
             display: none;
+            z-index: 5;
         }
 
-        .camera-overlay .face-guide {
+        .camera-overlay.active {
+            display: block;
+        }
+
+        /* Face Guide Circle - Larger and More Visible */
+        .face-guide {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(59, 130, 246, 0.2);
-            font-size: 60px;
+            width: 280px;
+            height: 280px;
+            border: 4px solid rgba(59, 130, 246, 0.5);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 0 2px rgba(59, 130, 246, 0.1),
+                inset 0 0 40px rgba(59, 130, 246, 0.05),
+                0 0 60px rgba(59, 130, 246, 0.1);
+            animation: pulse-guide 2s ease-in-out infinite;
+        }
+
+        /* Face Guide Inner Ring */
+        .face-guide::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border: 2px dashed rgba(59, 130, 246, 0.2);
+            border-radius: 50%;
+        }
+
+        /* Face Guide Icon */
+        .face-guide .face-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(59, 130, 246, 0.15);
+            font-size: 100px;
+            pointer-events: none;
+        }
+
+        /* Corner Marks */
+        .face-guide .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: rgba(59, 130, 246, 0.4);
+            border-style: solid;
+            border-width: 0;
+        }
+
+        .face-guide .corner.tl {
+            top: -3px;
+            left: -3px;
+            border-top-width: 4px;
+            border-left-width: 4px;
+            border-radius: 4px 0 0 0;
+        }
+
+        .face-guide .corner.tr {
+            top: -3px;
+            right: -3px;
+            border-top-width: 4px;
+            border-right-width: 4px;
+            border-radius: 0 4px 0 0;
+        }
+
+        .face-guide .corner.bl {
+            bottom: -3px;
+            left: -3px;
+            border-bottom-width: 4px;
+            border-left-width: 4px;
+            border-radius: 0 0 0 4px;
+        }
+
+        .face-guide .corner.br {
+            bottom: -3px;
+            right: -3px;
+            border-bottom-width: 4px;
+            border-right-width: 4px;
+            border-radius: 0 0 4px 0;
+        }
+
+        /* Guide Text */
+        .face-guide .guide-text {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            letter-spacing: 0.5px;
+        }
+
+        .face-guide .guide-text i {
+            margin-right: 6px;
+            color: #3b82f6;
+        }
+
+        /* Pulse Animation for Guide */
+        @keyframes pulse-guide {
+            0%, 100% {
+                border-color: rgba(59, 130, 246, 0.5);
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), inset 0 0 40px rgba(59, 130, 246, 0.05);
+            }
+            50% {
+                border-color: rgba(59, 130, 246, 0.8);
+                box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15), inset 0 0 60px rgba(59, 130, 246, 0.08);
+            }
+        }
+
+        /* Face Detected - Change to Green */
+        .face-guide.detected {
+            border-color: rgba(16, 185, 129, 0.6) !important;
+            animation: none;
+        }
+
+        .face-guide.detected::before {
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+
+        .face-guide.detected .guide-text {
+            color: #10b981;
+        }
+
+        .face-guide.detected .guide-text i {
+            color: #10b981;
         }
 
         .camera-placeholder {
@@ -404,6 +546,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             text-align: center;
             padding: 20px;
             width: 100%;
+            z-index: 2;
         }
 
         .camera-placeholder i {
@@ -614,6 +757,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             }
         }
 
+        /* Retry Button */
+        .btn-retry {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-retry:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 500px) {
             .auth-card {
                 padding: 30px 25px;
@@ -623,13 +787,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 width: 75px;
             }
 
-            .camera-overlay {
-                width: 150px;
-                height: 150px;
+            .face-guide {
+                width: 200px;
+                height: 200px;
             }
 
-            .camera-overlay .face-guide {
-                font-size: 40px;
+            .face-guide::before {
+                width: 130px;
+                height: 130px;
+            }
+
+            .face-guide .face-icon {
+                font-size: 70px;
+            }
+
+            .face-guide .corner {
+                width: 20px;
+                height: 20px;
+            }
+
+            .face-guide .guide-text {
+                font-size: 11px;
+                padding: 4px 12px;
+                bottom: -42px;
+            }
+
+            .btn-retry {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .face-guide {
+                width: 160px;
+                height: 160px;
+            }
+
+            .face-guide::before {
+                width: 100px;
+                height: 100px;
+            }
+
+            .face-guide .face-icon {
+                font-size: 50px;
             }
         }
     </style>
@@ -669,19 +870,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                 <input type="hidden" name="face_image" id="faceImageInput" value="">
 
-                <!-- Camera -->
+                <!-- Camera Container -->
                 <div class="camera-container" id="cameraContainer">
                     <video id="video" autoplay playsinline></video>
                     <canvas id="canvas"></canvas>
-                    <div class="camera-overlay" id="cameraOverlay">
-                        <div class="face-guide">
-                            <i class="fas fa-user-circle"></i>
+
+                    <!-- Enhanced Face Guide Overlay -->
+                    <div class="camera-overlay active" id="cameraOverlay">
+                        <div class="face-guide" id="faceGuide">
+                            <!-- Corner Marks -->
+                            <div class="corner tl"></div>
+                            <div class="corner tr"></div>
+                            <div class="corner bl"></div>
+                            <div class="corner br"></div>
+
+                            <!-- Face Icon -->
+                            <div class="face-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+
+                            <!-- Guide Text -->
+                            <div class="guide-text" id="guideText">
+                                <i class="fas fa-arrow-up"></i> Position your face here
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Placeholder -->
                     <div class="camera-placeholder" id="cameraPlaceholder">
                         <i class="fas fa-camera"></i>
                         <p>Starting camera...</p>
                     </div>
+
+                    <!-- Scanning Overlay -->
                     <div class="scanning-overlay" id="scanningOverlay">
                         <div class="scan-text">
                             <i class="fas fa-spinner fa-spin"></i> Scanning for face...
@@ -699,12 +920,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
                 <!-- Retry Button -->
                 <div style="display: flex; justify-content: center; margin-top: 15px; gap: 12px;">
-                    <button onclick="location.reload()" class="btn-retry" style="display: inline-flex; align-items: center; gap: 8px; 
-                   padding: 10px 24px; background: #3b82f6; color: white; 
-                   border: none; border-radius: 8px; font-weight: 600; 
-                   font-size: 14px; cursor: pointer; transition: all 0.3s ease;"
-                        onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-2px)';"
-                        onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)';">
+                    <button onclick="location.reload()" class="btn-retry">
                         <i class="fas fa-sync-alt"></i> Retry Scanning
                     </button>
                 </div>
@@ -749,12 +965,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         const faceStatus = document.getElementById('faceStatus');
         const faceImageInput = document.getElementById('faceImageInput');
         const loginForm = document.getElementById('loginForm');
+        const faceGuide = document.getElementById('faceGuide');
+        const guideText = document.getElementById('guideText');
 
         let stream = null;
         let cameraStarted = false;
         let isScanning = false;
         let scanInterval = null;
         let isProcessing = false;
+
+        // ==============================================
+        // FACE GUIDE CONTROL
+        // ==============================================
+        function updateGuideStatus(status) {
+            const guide = document.getElementById('faceGuide');
+            const guideText = document.getElementById('guideText');
+
+            if (status === 'scanning') {
+                guide.classList.remove('detected');
+                guideText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
+                guideText.style.color = '#94a3b8';
+            } else if (status === 'detected') {
+                guide.classList.add('detected');
+                guideText.innerHTML = '<i class="fas fa-check-circle"></i> Face Detected!';
+                guideText.style.color = '#10b981';
+            } else if (status === 'error') {
+                guide.classList.remove('detected');
+                guideText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Try again';
+                guideText.style.color = '#ef4444';
+            } else {
+                // Default: looking
+                guide.classList.remove('detected');
+                guideText.innerHTML = '<i class="fas fa-arrow-up"></i> Position your face here';
+                guideText.style.color = '#94a3b8';
+            }
+        }
 
         // ==============================================
         // START CAMERA
@@ -787,6 +1032,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
                 faceStatus.className = 'face-status info';
                 faceStatus.innerHTML = '<i class="fas fa-eye"></i> Camera ready. Looking for your face...';
+                updateGuideStatus('default');
 
                 // Start scanning after camera is ready
                 setTimeout(startScanning, 1000);
@@ -816,6 +1062,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             isScanning = true;
             scanningOverlay.classList.add('active');
             scanProgress.classList.add('active');
+            updateGuideStatus('default');
 
             // Capture and verify face every 3 seconds
             scanInterval = setInterval(captureAndVerify, 3000);
@@ -844,6 +1091,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             if (!cameraStarted || !stream || isProcessing) return;
 
             isProcessing = true;
+
+            // Show scanning status
+            updateGuideStatus('scanning');
 
             try {
                 // Capture current frame
@@ -876,11 +1126,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                     data = JSON.parse(text);
                 } catch (e) {
                     console.error('Invalid JSON response:', text);
+                    updateGuideStatus('error');
                     return;
                 }
 
                 if (data.success) {
                     // Face recognized!
+                    updateGuideStatus('detected');
                     stopScanning();
                     faceStatus.className = 'face-status success';
                     faceStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
@@ -901,10 +1153,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                     const errorMsg = data.message || 'Face not recognized. Keep looking at the camera...';
                     faceStatus.className = 'face-status error';
                     faceStatus.innerHTML = `<i class="fas fa-times-circle"></i> ${errorMsg}`;
+                    updateGuideStatus('error');
 
                     // If this is a critical error (like no faces registered), stop scanning
                     if (errorMsg.includes('No registered faces') || errorMsg.includes('register your face')) {
                         stopScanning();
+                    } else {
+                        // Reset guide after error
+                        setTimeout(() => {
+                            updateGuideStatus('default');
+                        }, 2000);
                     }
                 }
 
@@ -912,6 +1170,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 console.error('Error during face verification:', err);
                 faceStatus.className = 'face-status error';
                 faceStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Connection error. Retrying...';
+                updateGuideStatus('error');
+                setTimeout(() => {
+                    updateGuideStatus('default');
+                }, 2000);
             } finally {
                 isProcessing = false;
             }
