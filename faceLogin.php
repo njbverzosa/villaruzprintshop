@@ -557,10 +557,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         }
 
         @keyframes pulse-guide {
-            0%, 100% {
+
+            0%,
+            100% {
                 border-color: rgba(59, 130, 246, 0.5);
                 box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), inset 0 0 40px rgba(59, 130, 246, 0.05);
             }
+
             50% {
                 border-color: rgba(59, 130, 246, 0.8);
                 box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15), inset 0 0 60px rgba(59, 130, 246, 0.08);
@@ -572,20 +575,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 top: 0%;
                 opacity: 1;
             }
+
             50% {
                 top: 100%;
                 opacity: 1;
             }
+
             51% {
                 opacity: 0;
             }
+
             52% {
                 top: 0%;
                 opacity: 0;
             }
+
             53% {
                 opacity: 1;
             }
+
             100% {
                 top: 100%;
                 opacity: 1;
@@ -596,16 +604,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             0% {
                 transform: translateY(0);
             }
+
             100% {
                 transform: translateY(9px);
             }
         }
 
         @keyframes pulse-icon {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 0.15;
                 transform: translate(-50%, -50%) scale(1);
             }
+
             50% {
                 opacity: 0.2;
                 transform: translate(-50%, -50%) scale(1.05);
@@ -673,9 +685,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         }
 
         @keyframes pulse-error {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translate(-50%, -50%) scale(1);
             }
+
             50% {
                 transform: translate(-50%, -50%) scale(1.03);
             }
@@ -756,6 +771,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -827,9 +843,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         }
 
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 1;
             }
+
             50% {
                 opacity: 0.3;
             }
@@ -861,9 +880,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             0% {
                 width: 0%;
             }
+
             50% {
                 width: 70%;
             }
+
             100% {
                 width: 100%;
             }
@@ -942,6 +963,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
             .face-guide .face-icon {
                 font-size: 50px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .camera-container {
+                height: 290px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .camera-container {
+                height: 290px;
             }
         }
     </style>
@@ -1272,11 +1305,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         // ==============================================
         // INITIALIZE
         // ==============================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             setTimeout(startCamera, 300);
         });
 
-        document.addEventListener('visibilitychange', function() {
+        document.addEventListener('visibilitychange', function () {
             if (document.hidden) {
                 stopScanning();
                 if (stream && cameraStarted) {
@@ -1288,7 +1321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             }
         });
 
-        window.addEventListener('beforeunload', function() {
+        window.addEventListener('beforeunload', function () {
             stopScanning();
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());

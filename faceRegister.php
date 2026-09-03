@@ -742,7 +742,7 @@ if ($isLoggedIn) {
    ============================================================ */
         @media (max-width: 768px) {
             .camera-container {
-                height: 280px;
+                height: 390px;
             }
         }
 
@@ -756,7 +756,7 @@ if ($isLoggedIn) {
             }
 
             .camera-container {
-                height: 250px;
+                height: 390px;
             }
 
             .button-row {
