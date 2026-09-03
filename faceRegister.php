@@ -75,9 +75,6 @@ if ($isLoggedIn) {
     <title>Face Registration | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* ============================================================
-           ORIGINAL STYLES - PRESERVED
-           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -92,8 +89,6 @@ if ($isLoggedIn) {
             display: flex;
             flex-direction: column;
         }
-
-        
 
         .auth-container {
             flex: 1;
@@ -111,21 +106,6 @@ if ($isLoggedIn) {
             max-width: 450px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
-        }
-
-        .auth-title {
-            font-size: 32px;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-align: center;
-            color: #0f172a;
-        }
-
-        .auth-title span {
-            background: linear-gradient(145deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .auth-sub {
@@ -227,19 +207,26 @@ if ($isLoggedIn) {
         }
 
         .camera-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             color: #94a3b8;
             text-align: center;
-            padding: 40px;
+            padding: 20px;
+            width: 100%;
         }
 
         .camera-placeholder i {
             font-size: 64px;
             margin-bottom: 15px;
             color: #94a3b8;
+            display: block;
         }
 
         .camera-placeholder p {
             font-size: 14px;
+            margin: 0;
         }
 
         .controls {
@@ -288,16 +275,6 @@ if ($isLoggedIn) {
 
         .btn-success:hover:not(:disabled) {
             background: #059669;
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: #dc2626;
             transform: translateY(-2px);
         }
 
@@ -360,51 +337,6 @@ if ($isLoggedIn) {
             100% { transform: rotate(360deg); }
         }
 
-        .registered-users {
-            margin-top: 20px;
-            background: #f8fafc;
-            border-radius: 5px;
-            padding: 15px;
-            border: 1px solid #e2e8f0;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .registered-users h4 {
-            color: #64748b;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .registered-users .user-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: #ffffff;
-            border-radius: 5px;
-            margin-bottom: 6px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .registered-users .user-item .name {
-            color: #0f172a;
-            font-weight: 500;
-        }
-
-        .registered-users .user-item .badge {
-            background: #10b981;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .registered-users .user-item .badge.inactive {
-            background: #ef4444;
-        }
-
         .auth-footer {
             text-align: center;
             margin-top: 25px;
@@ -418,21 +350,9 @@ if ($isLoggedIn) {
             font-weight: 600;
         }
 
-        footer {
-            background: #ffffff;
-            padding: 20px 5%;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-            color: #94a3b8;
-        }
-
         @media (max-width: 480px) {
             .auth-card {
                 padding: 20px;
-            }
-
-            .auth-title {
-                font-size: 24px;
             }
 
             .auth-sub {
@@ -513,20 +433,11 @@ if ($isLoggedIn) {
             </button>
         </div>
 
-        <!-- Registered Users List -->
-        <div class="registered-users" id="registeredUsers">
-            <h4><i class="fas fa-users"></i> Registered Users</h4>
-            <div id="userList">
-                <p style="color: #94a3b8; font-size: 13px;">Loading...</p>
-            </div>
-        </div>
-
         <div class="auth-footer">
             <a href="login.php"><i class="fas fa-arrow-left"></i> Back to Login</a>
         </div>
     </div>
 </div>
-
 
 <script>
     // ============================================================
@@ -561,17 +472,14 @@ if ($isLoggedIn) {
     // ============================================================
     async function startCamera() {
         try {
-            // Show placeholder with loading message
             cameraPlaceholder.style.display = 'block';
             cameraPlaceholder.innerHTML = `
                 <i class="fas fa-spinner fa-spin"></i>
                 <p>Starting camera...</p>
             `;
             
-            // Hide overlay initially
             cameraOverlay.style.display = 'none';
 
-            // Get camera stream
             stream = await navigator.mediaDevices.getUserMedia({
                 video: { 
                     facingMode: 'user',
@@ -584,12 +492,10 @@ if ($isLoggedIn) {
             video.srcObject = stream;
             await video.play();
 
-            // Hide placeholder, show video and overlay
             cameraPlaceholder.style.display = 'none';
             video.style.display = 'block';
             cameraOverlay.style.display = 'block';
 
-            // Enable capture button
             captureBtn.disabled = false;
             registerBtn.disabled = true;
             isCaptured = false;
@@ -597,7 +503,19 @@ if ($isLoggedIn) {
 
             showStatus('Camera is ready. Look at the camera and click "Capture Face".', 'info');
 
-        } 
+        } catch (err) {
+            console.error('Camera error:', err);
+            cameraPlaceholder.style.display = 'block';
+            cameraPlaceholder.innerHTML = `
+                <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                <p>Unable to access camera</p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">${err.message}</p>
+                <button onclick="startCamera()" style="margin-top: 15px; background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            `;
+            showStatus('Error: ' + err.message, 'error');
+        }
     }
 
     // ============================================================
@@ -609,29 +527,22 @@ if ($isLoggedIn) {
             return;
         }
 
-        // Draw video frame to canvas with mirror effect
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         
-        // Apply mirror effect to captured image
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Reset transform
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        // Get image data as base64
         capturedImageData = canvas.toDataURL('image/jpeg', 0.9);
         isCaptured = true;
 
-        // Show captured image
         video.style.display = 'none';
         canvas.style.display = 'block';
         cameraOverlay.style.display = 'none';
 
-        // Update button states
         captureBtn.innerHTML = '<i class="fas fa-redo"></i> Recapture';
         captureBtn.onclick = recaptureFace;
         registerBtn.disabled = false;
@@ -670,7 +581,6 @@ if ($isLoggedIn) {
             return;
         }
 
-        // Disable buttons during processing
         registerBtn.disabled = true;
         captureBtn.disabled = true;
         registerBtn.innerHTML = '<span class="spinner"></span> Registering...';
@@ -694,9 +604,6 @@ if ($isLoggedIn) {
             if (data.success) {
                 showStatus('✅ ' + data.message, 'success');
                 registerBtn.innerHTML = '<i class="fas fa-check-circle"></i> Registered!';
-                // Load registered users
-                loadRegisteredUsers();
-                // Reset capture state
                 setTimeout(() => {
                     recaptureFace();
                     registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Face';
@@ -728,53 +635,6 @@ if ($isLoggedIn) {
     }
 
     // ============================================================
-    // LOAD REGISTERED USERS
-    // ============================================================
-    async function loadRegisteredUsers() {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'get_registered_users');
-            formData.append('csrf_token', csrfToken);
-
-            const response = await fetch('../API/face_recognition_api.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-
-            const userList = document.getElementById('userList');
-            if (data.success && data.users) {
-                if (data.users.length === 0) {
-                    userList.innerHTML = '<p style="color: #94a3b8; font-size: 13px;">No registered users yet.</p>';
-                } else {
-                    userList.innerHTML = data.users.map(user => `
-                        <div class="user-item">
-                            <span class="name">${escapeHtml(user.user_name)}</span>
-                            <span class="badge ${user.status === 'active' ? '' : 'inactive'}">${user.status}</span>
-                        </div>
-                    `).join('');
-                }
-            } else {
-                userList.innerHTML = '<p style="color: #94a3b8; font-size: 13px;">No registered users yet.</p>';
-            }
-        } catch (err) {
-            console.error('Error loading users:', err);
-            document.getElementById('userList').innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Error loading users.</p>';
-        }
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    // ============================================================
     // EVENT LISTENERS
     // ============================================================
     captureBtn.addEventListener('click', captureFace);
@@ -802,12 +662,7 @@ if ($isLoggedIn) {
     // INITIALIZE - AUTO START ON PAGE LOAD
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Load registered users
-        loadRegisteredUsers();
-        
-        // Check if logged in
         if (isLoggedIn) {
-            // Auto-start camera
             setTimeout(startCamera, 300);
         } else {
             showStatus('Please login to register your face.', 'info');
@@ -815,7 +670,7 @@ if ($isLoggedIn) {
             cameraPlaceholder.innerHTML = `
                 <i class="fas fa-lock" style="color: #f59e0b;"></i>
                 <p>Please login first</p>
-                <a href="login.php" style="color: #3b82f6; text-decoration: none; font-weight: 600;">Login here</a>
+                <a href="login.php" style="color: #3b82f6; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 10px;">Login here</a>
             `;
         }
     });
@@ -826,7 +681,6 @@ if ($isLoggedIn) {
             stream.getTracks().forEach(track => track.stop());
             cameraStarted = false;
         } else if (!document.hidden && isLoggedIn && !cameraStarted && !stream) {
-            // Restart camera when page becomes visible again
             setTimeout(startCamera, 300);
         }
     });
