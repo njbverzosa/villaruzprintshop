@@ -215,6 +215,10 @@ if ($isLoggedIn) {
             height: 100%;
             object-fit: cover;
             display: block;
+            transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            -moz-transform: scaleX(-1);
+            -ms-transform: scaleX(-1);
         }
 
         .camera-container canvas {
@@ -222,6 +226,10 @@ if ($isLoggedIn) {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            -moz-transform: scaleX(-1);
+            -ms-transform: scaleX(-1);
         }
 
         .camera-overlay {
@@ -651,11 +659,18 @@ if ($isLoggedIn) {
             return;
         }
 
-        // Draw video frame to canvas
+        // Draw video frame to canvas with mirror effect
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
+        
+        // Apply mirror effect to captured image
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Reset transform
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         // Get image data as base64
         capturedImageData = canvas.toDataURL('image/jpeg', 0.9);

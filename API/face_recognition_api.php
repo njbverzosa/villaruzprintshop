@@ -21,15 +21,14 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
     echo json_encode(['success' => false, 'message' => 'Invalid security token']);
     exit;
 }
-
 // ============================================================
 // 3. CREATE UPLOAD DIRECTORY
 // ============================================================
-$uploadDir = __DIR__ . '/../uploads/faces/';
+// Go up 2 levels from API/ to project root, then to uploads/faces/
+$uploadDir = __DIR__ . '/../faceVerification';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
-
 // ============================================================
 // 4. PROCESS ACTION
 // ============================================================
