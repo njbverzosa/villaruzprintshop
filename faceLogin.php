@@ -1024,12 +1024,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                     <i class="fas fa-info-circle"></i> Looking for your face...
                 </div>
 
-                <!-- Retry Button -->
-                <div style="display: flex; justify-content: center; margin-top: 15px; gap: 12px;">
-                    <button onclick="window.location.href='faceLogin.php'" class="btn-retry">
-                        <i class="fas fa-sync-alt"></i> Retry
-                    </button>
-                </div>
+               
 
                 <div class="auth-footer">
                     <div style="background: #f1f5f9; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px;">
