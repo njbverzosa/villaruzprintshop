@@ -697,6 +697,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                     <i class="fas fa-info-circle"></i> Looking for your face...
                 </div>
 
+                <!-- Retry Button -->
+                <div style="display: flex; justify-content: center; margin-top: 15px; gap: 12px;">
+                    <button onclick="location.reload()" class="btn-retry" style="display: inline-flex; align-items: center; gap: 8px; 
+                   padding: 10px 24px; background: #3b82f6; color: white; 
+                   border: none; border-radius: 8px; font-weight: 600; 
+                   font-size: 14px; cursor: pointer; transition: all 0.3s ease;"
+                        onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-2px)';"
+                        onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)';">
+                        <i class="fas fa-sync-alt"></i> Retry Scanning
+                    </button>
+                </div>
+
                 <div class="auth-footer">
                     <div style="background: #f1f5f9; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px;">
                         <div style="font-size: 13px; color: #475569;">
