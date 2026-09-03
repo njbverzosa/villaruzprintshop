@@ -705,15 +705,30 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                         <a href="forgot_password.php"><i class="fas fa-key"></i> Forgot password?</a>
                     </div>
                 </div>
+                
 
-                <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
-                    <i class="fas fa-sign-in-alt"></i> Log In
-                </button>
+                <!-- Login Options -->
+                <div style="margin-top: 20px;">
+                    <!-- Password Login Button -->
+                    <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?> style="width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> Log In
+                    </button>
 
-                <a href="faceLogin.php" class="btn-primary" id="loginBtn"
-                    style="text-decoration: none; display: block; text-align: center;">
-                    <i class="fas fa-camera"></i> Log In with Face
-                </a>
+                    <!-- OR Divider -->
+                    <div style="display: flex; align-items: center; margin: 20px 0; gap: 15px;">
+                        <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
+                        <span
+                            style="color: #94a3b8; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">OR</span>
+                        <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
+                    </div>
+
+                    <!-- Face Login Link -->
+                    <a href="faceLogin.php" class="btn-primary" id="faceLoginBtn"
+                        style="text-decoration: none; display: block; text-align: center; background: linear-gradient(145deg, #8b5cf6, #6366f1);">
+                        <i class="fas fa-camera"></i> Log In with Face
+                    </a>
+                </div>
+
 
                 <div class="auth-footer">
                     Don't have an account? <a href="registration.php">Sign Up</a>
