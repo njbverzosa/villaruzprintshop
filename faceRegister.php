@@ -604,84 +604,6 @@ if ($isLoggedIn) {
             margin: 0;
         }
 
-        .btn-retry {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 24px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-retry:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-        }
-
-        .controls {
-            display: flex;
-            gap: 12px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .controls .btn {
-            flex: 1;
-            padding: 14px 20px;
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            min-width: 100px;
-        }
-
-        .controls .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: #2563eb;
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-success:hover:not(:disabled) {
-            background: #059669;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #475569;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #cbd5e1;
-        }
-
         .status-message {
             margin-top: 15px;
             padding: 12px 16px;
@@ -750,6 +672,67 @@ if ($isLoggedIn) {
             font-weight: 600;
         }
 
+        /* Button Row */
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .button-row .btn {
+            flex: 1;
+            padding: 14px 10px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .button-row .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .button-row .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .button-row .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .button-row .btn-secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .button-row .btn-secondary:hover:not(:disabled) {
+            background: #cbd5e1;
+            transform: translateY(-2px);
+        }
+
+        .button-row .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .button-row .btn-success:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 480px) {
             .auth-card {
                 padding: 20px;
@@ -759,12 +742,15 @@ if ($isLoggedIn) {
                 font-size: 20px;
             }
 
-            .controls {
-                flex-direction: column;
+            .button-row {
+                flex-wrap: wrap;
             }
 
-            .controls .btn {
-                width: 100%;
+            .button-row .btn {
+                flex: 1 1 calc(33.33% - 10px);
+                font-size: 12px;
+                padding: 12px 6px;
+                white-space: normal;
             }
 
             .face-guide {
@@ -790,11 +776,6 @@ if ($isLoggedIn) {
                 font-size: 11px;
                 padding: 4px 12px;
                 bottom: -42px;
-            }
-
-            .btn-retry {
-                width: 100%;
-                justify-content: center;
             }
 
             .countdown-number {
@@ -824,6 +805,11 @@ if ($isLoggedIn) {
 
             .countdown-number {
                 font-size: 60px;
+            }
+
+            .button-row .btn {
+                font-size: 10px;
+                padding: 10px 4px;
             }
         }
     </style>
@@ -901,12 +887,12 @@ if ($isLoggedIn) {
                 <span id="statusText">Ready</span>
             </div>
 
-            <!-- Controls -->
-            <div class="controls">
+            <!-- Button Row -->
+            <div class="button-row">
                 <button class="btn btn-primary" id="captureBtn" disabled>
                     <i class="fas fa-camera"></i> Auto Capture
                 </button>
-                <button class="btn btn-secondary" id="retryBtn" onclick="location.reload()">
+                <button class="btn btn-secondary" id="retryBtn">
                     <i class="fas fa-sync-alt"></i> Retry
                 </button>
                 <button class="btn btn-success" id="registerBtn" disabled>
@@ -1303,6 +1289,9 @@ if ($isLoggedIn) {
         // ============================================================
         captureBtn.addEventListener('click', startCountdown);
         registerBtn.addEventListener('click', registerFace);
+        retryBtn.addEventListener('click', function() {
+            location.reload();
+        });
 
         // ============================================================
         // INITIALIZE - AUTO START ON PAGE LOAD
