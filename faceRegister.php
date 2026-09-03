@@ -192,6 +192,84 @@ if ($isLoggedIn) {
             object-fit: cover;
         }
 
+        /* Face Detection Box Overlay */
+        .face-detection-box {
+            position: absolute;
+            border: 3px solid #10b981;
+            border-radius: 8px;
+            z-index: 6;
+            display: none;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+            animation: box-pulse 1.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .face-detection-box .corner-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        @keyframes box-pulse {
+            0%, 100% { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+            50% { border-color: rgba(16, 185, 129, 1); box-shadow: 0 0 40px rgba(16, 185, 129, 0.4); }
+        }
+
+        /* Registered Face Overlay */
+        .registered-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 10px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+            min-width: 100px;
+        }
+
+        .registered-overlay.active {
+            display: block;
+        }
+
+        .registered-overlay .label {
+            color: #94a3b8;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .registered-overlay .face-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #10b981;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .registered-overlay .face-name {
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        /* Enhanced Camera Overlay */
         .camera-overlay {
             position: absolute;
             top: 0;
@@ -207,6 +285,7 @@ if ($isLoggedIn) {
             display: block;
         }
 
+        /* Face Guide Circle */
         .face-guide {
             position: absolute;
             top: 50%;
@@ -361,23 +440,43 @@ if ($isLoggedIn) {
         .face-guide.detected::before { border-color: rgba(16, 185, 129, 0.3) !important; }
         .face-guide.detected .guide-text { color: #10b981; }
         .face-guide.detected .guide-text i { color: #10b981; }
-        .face-guide.detected .scanner { background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.8), #10b981, rgba(16, 185, 129, 0.8), transparent); box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.2); }
-        .face-guide.detected .scan-lines::before { background: repeating-linear-gradient(0deg, transparent 0px, transparent 8px, rgba(16, 185, 129, 0.3) 8px, rgba(16, 185, 129, 0.3) 9px); }
-        .face-guide.detected .corner { border-color: rgba(16, 185, 129, 0.6); }
 
-        .face-guide.error {
-            border-color: rgba(239, 68, 68, 0.6) !important;
-            animation: pulse-error 0.8s ease-in-out 3;
+        /* Countdown Overlay */
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            backdrop-filter: blur(4px);
         }
-        .face-guide.error::before { border-color: rgba(239, 68, 68, 0.3) !important; }
-        .face-guide.error .guide-text { color: #ef4444; }
-        .face-guide.error .guide-text i { color: #ef4444; }
-        .face-guide.error .scanner { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.8), #ef4444, rgba(239, 68, 68, 0.8), transparent); box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 60px rgba(239, 68, 68, 0.2); }
-        .face-guide.error .corner { border-color: rgba(239, 68, 68, 0.6); }
 
-        @keyframes pulse-error {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.03); }
+        .countdown-overlay.active {
+            display: flex;
+        }
+
+        .countdown-number {
+            font-size: 120px;
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 0 60px rgba(59, 130, 246, 0.5);
+            animation: countdown-pop 0.8s ease;
+        }
+
+        @keyframes countdown-pop {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .countdown-number.ready {
+            color: #10b981;
+            font-size: 60px;
         }
 
         .camera-placeholder {
@@ -479,6 +578,15 @@ if ($isLoggedIn) {
             background: #cbd5e1;
         }
 
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
         .status-message {
             margin-top: 15px;
             padding: 12px 16px;
@@ -511,6 +619,13 @@ if ($isLoggedIn) {
             font-size: 18px;
         }
 
+        .status-message.quality {
+            display: flex;
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
         .spinner {
             display: inline-block;
             width: 20px;
@@ -539,6 +654,39 @@ if ($isLoggedIn) {
             font-weight: 600;
         }
 
+        /* Quality Indicators */
+        .quality-indicators {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: center;
+        }
+
+        .quality-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .quality-indicator.good {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .quality-indicator.bad {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .quality-indicator i {
+            font-size: 12px;
+        }
+
         @media (max-width: 480px) {
             .auth-card { padding: 20px; }
             .auth-sub { font-size: 20px; }
@@ -550,12 +698,15 @@ if ($isLoggedIn) {
             .face-guide .corner { width: 20px; height: 20px; }
             .face-guide .guide-text { font-size: 11px; padding: 4px 12px; bottom: -42px; }
             .btn-retry { width: 100%; justify-content: center; }
+            .countdown-number { font-size: 80px; }
+            .registered-overlay .face-preview { width: 60px; height: 60px; }
         }
 
         @media (max-width: 380px) {
             .face-guide { width: 160px; height: 160px; }
             .face-guide::before { width: 100px; height: 100px; }
             .face-guide .face-icon { font-size: 50px; }
+            .countdown-number { font-size: 60px; }
         }
     </style>
 </head>
@@ -585,6 +736,18 @@ if ($isLoggedIn) {
             <video id="video" autoplay playsinline></video>
             <canvas id="canvas"></canvas>
 
+            <!-- Face Detection Box -->
+            <div class="face-detection-box" id="faceDetectionBox">
+                <span class="corner-label">✅ Face Detected</span>
+            </div>
+
+            <!-- Registered Face Overlay -->
+            <div class="registered-overlay" id="registeredOverlay">
+                <div class="label"><i class="fas fa-check-circle" style="color: #10b981;"></i> Registered</div>
+                <img class="face-preview" id="registeredFacePreview" src="" alt="Registered Face">
+                <div class="face-name" id="registeredFaceName">Your Face</div>
+            </div>
+
             <div class="camera-overlay active" id="cameraOverlay">
                 <div class="face-guide" id="faceGuide">
                     <div class="scanner" id="scannerLine"></div>
@@ -602,10 +765,28 @@ if ($isLoggedIn) {
                 </div>
             </div>
 
+            <!-- Countdown Overlay -->
+            <div class="countdown-overlay" id="countdownOverlay">
+                <div class="countdown-number" id="countdownNumber">3</div>
+            </div>
+
             <div class="camera-placeholder" id="cameraPlaceholder">
                 <i class="fas fa-camera"></i>
                 <p>Starting camera...</p>
             </div>
+        </div>
+
+        <!-- Quality Indicators -->
+        <div class="quality-indicators" id="qualityIndicators">
+            <span class="quality-indicator" id="brightnessIndicator">
+                <i class="fas fa-sun"></i> Lighting: --
+            </span>
+            <span class="quality-indicator" id="clarityIndicator">
+                <i class="fas fa-eye"></i> Clarity: --
+            </span>
+            <span class="quality-indicator" id="faceSizeIndicator">
+                <i class="fas fa-arrows-alt"></i> Face: --
+            </span>
         </div>
 
         <!-- Status Message -->
@@ -624,7 +805,7 @@ if ($isLoggedIn) {
         <!-- Controls -->
         <div class="controls">
             <button class="btn btn-primary" id="captureBtn" disabled>
-                <i class="fas fa-camera"></i> Capture Face
+                <i class="fas fa-camera"></i> Auto Capture
             </button>
             <button class="btn btn-success" id="registerBtn" disabled>
                 <i class="fas fa-save"></i> Register Face
@@ -665,11 +846,22 @@ if ($isLoggedIn) {
     const faceGuide = document.getElementById('faceGuide');
     const guideText = document.getElementById('guideText');
     const scannerLine = document.getElementById('scannerLine');
+    const faceDetectionBox = document.getElementById('faceDetectionBox');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownNumber = document.getElementById('countdownNumber');
+    const registeredOverlay = document.getElementById('registeredOverlay');
+    const registeredFacePreview = document.getElementById('registeredFacePreview');
+    const registeredFaceName = document.getElementById('registeredFaceName');
+    const brightnessIndicator = document.getElementById('brightnessIndicator');
+    const clarityIndicator = document.getElementById('clarityIndicator');
+    const faceSizeIndicator = document.getElementById('faceSizeIndicator');
 
     let stream = null;
     let capturedImageData = null;
     let isCaptured = false;
     let cameraStarted = false;
+    let isCountdownActive = false;
+    let qualityCheckInterval = null;
 
     // ============================================================
     // FACE GUIDE CONTROL
@@ -695,6 +887,194 @@ if ($isLoggedIn) {
             guideText.innerHTML = '<i class="fas fa-arrow-up"></i> Position your face here';
             guideText.style.color = '#94a3b8';
         }
+    }
+
+    // ============================================================
+    // FACE DETECTION & QUALITY CHECK
+    // ============================================================
+    function checkImageQuality(imageData) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, 200, 200);
+            const imageData = ctx.getImageData(0, 0, 200, 200);
+            const data = imageData.data;
+
+            // Check brightness
+            let totalBrightness = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const luminance = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+                totalBrightness += luminance;
+            }
+            const avgBrightness = totalBrightness / (data.length / 4);
+            const isWellLit = avgBrightness > 60 && avgBrightness < 200;
+
+            // Check contrast (simple variance)
+            let mean = avgBrightness;
+            let variance = 0;
+            let pixelCount = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const luminance = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+                variance += Math.pow(luminance - mean, 2);
+                pixelCount++;
+            }
+            variance /= pixelCount;
+            const isClear = variance > 500;
+
+            // Check face size (using center region)
+            let centerPixels = 0;
+            let centerCount = 0;
+            for (let y = 60; y < 140; y++) {
+                for (let x = 60; x < 140; x++) {
+                    const idx = (y * 200 + x) * 4;
+                    const luminance = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                    centerPixels += luminance;
+                    centerCount++;
+                }
+            }
+            const centerAvg = centerPixels / centerCount;
+            const faceSize = centerAvg > 80;
+
+            // Update indicators
+            updateQualityIndicators(isWellLit, isClear, faceSize);
+
+            // Show status
+            if (!isWellLit) {
+                showStatus('⚠️ Too dark or too bright. Adjust lighting.', 'quality');
+                return false;
+            }
+            if (!isClear) {
+                showStatus('⚠️ Image is blurry. Please hold steady.', 'quality');
+                return false;
+            }
+            if (!faceSize) {
+                showStatus('⚠️ Face too small. Move closer to camera.', 'quality');
+                return false;
+            }
+
+            return true;
+        };
+        img.src = imageData;
+        return true;
+    }
+
+    function updateQualityIndicators(isWellLit, isClear, faceSize) {
+        brightnessIndicator.className = 'quality-indicator ' + (isWellLit ? 'good' : 'bad');
+        brightnessIndicator.innerHTML = `<i class="fas fa-sun"></i> Lighting: ${isWellLit ? 'Good' : 'Poor'}`;
+
+        clarityIndicator.className = 'quality-indicator ' + (isClear ? 'good' : 'bad');
+        clarityIndicator.innerHTML = `<i class="fas fa-eye"></i> Clarity: ${isClear ? 'Clear' : 'Blurry'}`;
+
+        faceSizeIndicator.className = 'quality-indicator ' + (faceSize ? 'good' : 'bad');
+        faceSizeIndicator.innerHTML = `<i class="fas fa-arrows-alt"></i> Face: ${faceSize ? 'Good Size' : 'Too Small'}`;
+    }
+
+    // ============================================================
+    // FACE DETECTION PREVIEW
+    // ============================================================
+    function detectFace(frame) {
+        // Simple face detection using canvas analysis
+        // In production, use a proper face detection library
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 200;
+        tempCanvas.height = 200;
+        const ctx = tempCanvas.getContext('2d');
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, 200, 200);
+            const imageData = ctx.getImageData(0, 0, 200, 200);
+            const data = imageData.data;
+
+            // Simple detection: check for face-like region in center
+            let centerBrightness = 0;
+            let edgeBrightness = 0;
+            let centerCount = 0;
+            let edgeCount = 0;
+
+            // Center region (face area)
+            for (let y = 50; y < 150; y++) {
+                for (let x = 50; x < 150; x++) {
+                    const idx = (y * 200 + x) * 4;
+                    const luminance = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                    centerBrightness += luminance;
+                    centerCount++;
+                }
+            }
+
+            // Edge region (background)
+            for (let y = 0; y < 200; y++) {
+                for (let x = 0; x < 200; x++) {
+                    if (x < 30 || x > 170 || y < 30 || y > 170) {
+                        const idx = (y * 200 + x) * 4;
+                        const luminance = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                        edgeBrightness += luminance;
+                        edgeCount++;
+                    }
+                }
+            }
+
+            const centerAvg = centerBrightness / centerCount;
+            const edgeAvg = edgeBrightness / edgeCount;
+            const diff = Math.abs(centerAvg - edgeAvg);
+
+            // If there's significant difference, assume face detected
+            const faceDetected = diff > 20 && centerAvg > 60 && centerAvg < 200;
+
+            if (faceDetected) {
+                faceDetectionBox.style.display = 'block';
+                faceDetectionBox.style.width = '60%';
+                faceDetectionBox.style.height = '60%';
+                faceDetectionBox.style.top = '20%';
+                faceDetectionBox.style.left = '20%';
+                updateGuideStatus('detected');
+            } else {
+                faceDetectionBox.style.display = 'none';
+                updateGuideStatus('default');
+            }
+        };
+        img.src = frame;
+    }
+
+    // ============================================================
+    // COUNTDOWN TIMER
+    // ============================================================
+    function startCountdown() {
+        if (isCountdownActive || !cameraStarted) return;
+
+        isCountdownActive = true;
+        let count = 3;
+        countdownOverlay.classList.add('active');
+        countdownNumber.textContent = count;
+        countdownNumber.className = 'countdown-number';
+
+        const interval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownNumber.textContent = count;
+                countdownNumber.className = 'countdown-number';
+                // Play vibration effect
+                countdownNumber.style.animation = 'none';
+                setTimeout(() => {
+                    countdownNumber.style.animation = 'countdown-pop 0.8s ease';
+                }, 10);
+            } else {
+                clearInterval(interval);
+                countdownNumber.textContent = '📸';
+                countdownNumber.className = 'countdown-number ready';
+                setTimeout(() => {
+                    countdownOverlay.classList.remove('active');
+                    isCountdownActive = false;
+                    // Auto capture
+                    captureFace();
+                }, 600);
+            }
+        }, 1000);
+
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Capturing...';
     }
 
     // ============================================================
@@ -732,7 +1112,27 @@ if ($isLoggedIn) {
 
             updateGuideStatus('default');
 
-            showStatus('Camera is ready. Look at the camera and click "Capture Face".', 'info');
+            // Start face detection interval
+            qualityCheckInterval = setInterval(() => {
+                if (cameraStarted && !isCountdownActive) {
+                    // Capture frame for detection
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = video.videoWidth;
+                    tempCanvas.height = video.videoHeight;
+                    const ctx = tempCanvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0);
+                    detectFace(tempCanvas.toDataURL('image/jpeg', 0.7));
+                }
+            }, 1000);
+
+            showStatus('Camera is ready. Click "Auto Capture" or wait for countdown.', 'info');
+
+            // Auto start countdown after 3 seconds
+            setTimeout(() => {
+                if (cameraStarted && !isCaptured) {
+                    startCountdown();
+                }
+            }, 3000);
 
         } catch (err) {
             console.error('Camera error:', err);
@@ -767,19 +1167,41 @@ if ($isLoggedIn) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        capturedImageData = canvas.toDataURL('image/jpeg', 0.9);
+        const imageData = canvas.toDataURL('image/jpeg', 0.9);
+
+        // Check image quality
+        const qualityPassed = checkImageQuality(imageData);
+        if (!qualityPassed) {
+            // Retry countdown after quality check
+            captureBtn.disabled = false;
+            captureBtn.innerHTML = '<i class="fas fa-camera"></i> Retry Capture';
+            setTimeout(() => {
+                if (!isCaptured && cameraStarted) {
+                    startCountdown();
+                }
+            }, 2000);
+            return;
+        }
+
+        capturedImageData = imageData;
         isCaptured = true;
 
         video.style.display = 'none';
         canvas.style.display = 'block';
         cameraOverlay.style.display = 'none';
+        faceDetectionBox.style.display = 'none';
 
         captureBtn.innerHTML = '<i class="fas fa-redo"></i> Recapture';
         captureBtn.onclick = recaptureFace;
         registerBtn.disabled = false;
         updateGuideStatus('detected');
 
-        showStatus('Face captured successfully! Click "Register Face" to save.', 'success');
+        // Show registered overlay
+        registeredOverlay.classList.add('active');
+        registeredFacePreview.src = capturedImageData;
+        registeredFaceName.textContent = userName || 'Your Face';
+
+        showStatus('✅ Face captured successfully! Click "Register Face" to save.', 'success');
     }
 
     // ============================================================
@@ -791,13 +1213,21 @@ if ($isLoggedIn) {
         cameraOverlay.style.display = 'block';
         isCaptured = false;
         capturedImageData = null;
+        registeredOverlay.classList.remove('active');
         
-        captureBtn.innerHTML = '<i class="fas fa-camera"></i> Capture Face';
+        captureBtn.innerHTML = '<i class="fas fa-camera"></i> Auto Capture';
         captureBtn.onclick = captureFace;
         registerBtn.disabled = true;
         updateGuideStatus('default');
         
-        showStatus('Camera resumed. Capture your face again.', 'info');
+        showStatus('Camera resumed. Click "Auto Capture" or wait for countdown.', 'info');
+
+        // Auto start countdown again
+        setTimeout(() => {
+            if (cameraStarted && !isCaptured && !isCountdownActive) {
+                startCountdown();
+            }
+        }, 3000);
     }
 
     // ============================================================
@@ -880,19 +1310,26 @@ if ($isLoggedIn) {
     // ============================================================
     // EVENT LISTENERS
     // ============================================================
-    captureBtn.addEventListener('click', captureFace);
+    captureBtn.addEventListener('click', startCountdown);
     registerBtn.addEventListener('click', registerFace);
     restartBtn.addEventListener('click', function() {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             stream = null;
         }
+        if (qualityCheckInterval) {
+            clearInterval(qualityCheckInterval);
+        }
         cameraStarted = false;
+        isCountdownActive = false;
         video.style.display = 'block';
         canvas.style.display = 'none';
         cameraOverlay.style.display = 'none';
-        captureBtn.innerHTML = '<i class="fas fa-camera"></i> Capture Face';
-        captureBtn.onclick = captureFace;
+        faceDetectionBox.style.display = 'none';
+        countdownOverlay.classList.remove('active');
+        registeredOverlay.classList.remove('active');
+        captureBtn.innerHTML = '<i class="fas fa-camera"></i> Auto Capture';
+        captureBtn.onclick = startCountdown;
         registerBtn.disabled = true;
         registerBtn.innerHTML = '<i class="fas fa-save"></i> Register Face';
         isCaptured = false;
