@@ -93,35 +93,7 @@ if ($isLoggedIn) {
             flex-direction: column;
         }
 
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 5%;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-
-        .logo img {
-            width: 100px;
-            height: auto;
-            object-fit: contain;
-        }
-
-        .nav-link {
-            color: #64748b;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
-        }
-
-        .nav-link:hover {
-            color: #3b82f6;
-        }
+        
 
         .auth-container {
             flex: 1;
@@ -488,15 +460,6 @@ if ($isLoggedIn) {
 </head>
 <body>
 
-<nav>
-    <div class="logo">
-        <img src="logo/logo.jpeg" alt="Villaruz Print Shop Logo">
-    </div>
-    <div>
-        <a href="index.php" class="nav-link">Home</a>
-    </div>
-</nav>
-
 <div class="auth-container">
     <div class="auth-card">
         <p class="auth-sub">Face Registration</p>
@@ -564,7 +527,6 @@ if ($isLoggedIn) {
     </div>
 </div>
 
-<?php include 'footer.php'; ?>
 
 <script>
     // ============================================================
@@ -635,19 +597,7 @@ if ($isLoggedIn) {
 
             showStatus('Camera is ready. Look at the camera and click "Capture Face".', 'info');
 
-        } catch (err) {
-            console.error('Camera error:', err);
-            cameraPlaceholder.style.display = 'block';
-            cameraPlaceholder.innerHTML = `
-                <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-                <p>Unable to access camera</p>
-                <p style="font-size: 12px; color: #94a3b8;">${err.message}</p>
-                <button onclick="startCamera()" style="margin-top: 15px; background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    <i class="fas fa-redo"></i> Retry
-                </button>
-            `;
-            showStatus('Error: ' + err.message, 'error');
-        }
+        } 
     }
 
     // ============================================================
