@@ -62,7 +62,8 @@ $tables = [
     'merchandise_inventory' => 'Merchandise Inventory',
     'customers' => 'Customers',
     'order_status_history' => 'Order Status History',
-    'dtr' => 'Date Time Record'
+    'dtr' => 'Date Time Record',
+    'face_recognition' => 'Face Recognition'
 ];
 
 // Handle reset ID request
