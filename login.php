@@ -710,6 +710,11 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                     <i class="fas fa-sign-in-alt"></i> Log In
                 </button>
 
+                <a href="faceLogin.php" class="btn-primary" id="loginBtn"
+                    style="text-decoration: none; display: block; text-align: center;">
+                    <i class="fas fa-camera"></i> Log In with Face
+                </a>
+
                 <div class="auth-footer">
                     Don't have an account? <a href="registration.php">Sign Up</a>
                 </div>
