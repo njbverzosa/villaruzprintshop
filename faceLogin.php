@@ -698,8 +698,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 </div>
 
                 <div class="auth-footer">
-                    Don't have a registered face? <a href="faceRegister.php">Register Now</a><br>
-                    <small><a href="login.php">Login with Password</a></small>
+                    <div style="background: #f1f5f9; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px;">
+                        <div style="font-size: 13px; color: #475569;">
+                            <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
+                            <strong>First time using Face Login?</strong>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                            <a href="login.php" style="color: #3b82f6; text-decoration: none; font-weight: 600;">Log
+                                in</a> with password →
+                            Go to <strong>Account Details</strong> →
+                            Click <strong>"Register Face"</strong> →
+                            Capture your face → <strong>Logout</strong> & try again!
+                        </div>
+                    </div>
+                    <small>
+                        <a href="login.php" style="color: #3b82f6; text-decoration: none; font-weight: 600;">
+                            <i class="fas fa-arrow-left"></i> Back to Password Login
+                        </a>
+                    </small>
                 </div>
 
             </form>

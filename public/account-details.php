@@ -954,7 +954,7 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                 <div class="profile-avatar">
                     <?php echo strtoupper(substr($userFullName, 0, 1) ?: '?'); ?>
                 </div>
-                <div>
+                <div style="flex: 1;">
                     <div class="profile-name" id="profileName">
                         <?php echo htmlspecialchars($userFullName ?: 'Guest'); ?>
                     </div>
@@ -962,6 +962,16 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
                         <i class="fas fa-id-card"></i> Account #: <?php echo htmlspecialchars($userAccNumber); ?>
                     </div>
                 </div>
+                <!-- Register Face Button -->
+                <a href="../faceRegister.php" class="btn-face-register" style="display: inline-flex; align-items: center; gap: 8px; 
+              padding: 10px 20px; background: linear-gradient(145deg, #8b5cf6, #6366f1); 
+              color: white; border: none; border-radius: 8px; 
+              font-weight: 600; font-size: 14px; cursor: pointer; 
+              text-decoration: none; transition: all 0.3s ease; 
+              white-space: nowrap;">
+                    <i class="fas fa-camera" style="font-size: 16px;"></i>
+                    Register Face
+                </a>
             </div>
 
             <form class="account-form" id="accountForm">

@@ -427,7 +427,7 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
             background: linear-gradient(145deg, #3b82f6, #6366f1);
             border: none;
             padding: 14px;
-            border-radius: 40px;
+            border-radius: 5px;
             font-weight: 700;
             font-size: 16px;
             color: white;
@@ -714,31 +714,18 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
 
                 <div style="margin-top: 20px;">
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?> style="width: 100%;">
-                        <i class="fas fa-sign-in-alt"></i> Log In
+                        <i class="fas fa-sign-in-alt"></i> Login
                     </button>
 
                     <div style="display: flex; align-items: center; margin: 20px 0; gap: 15px;">
                         <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
-                        <span
-                            style="color: #94a3b8; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">OR</span>
+                        <span style="color: #94a3b8; font-weight: 600; font-size: 14px;">— OR —</span>
                         <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
                     </div>
 
                     <a href="faceLogin.php" class="btn-primary" id="faceLoginBtn"
                         style="text-decoration: none; display: block; text-align: center; background: linear-gradient(145deg, #8b5cf6, #6366f1);">
-                        <i class="fas fa-camera"></i> Log In with Face
-                    </a>
-
-                    <div style="display: flex; align-items: center; margin: 20px 0; gap: 15px;">
-                        <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
-                        <span
-                            style="color: #94a3b8; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">OR</span>
-                        <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
-                    </div>
-
-                    <a href="faceRegister.php" class="btn-primary" id="faceLoginBtn"
-                        style="text-decoration: none; display: block; text-align: center; background: linear-gradient(145deg, #8b5cf6, #6366f1);">
-                        <i class="fas fa-camera"></i> Register with Face
+                        <i class="fas fa-camera"></i> Face Login
                     </a>
                 </div>
 
