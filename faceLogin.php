@@ -412,45 +412,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             height: 280px;
             border: 4px solid rgba(59, 130, 246, 0.5);
             border-radius: 50%;
-            box-shadow: 
+            box-shadow:
                 0 0 0 2px rgba(59, 130, 246, 0.1),
                 inset 0 0 40px rgba(59, 130, 246, 0.05),
                 0 0 60px rgba(59, 130, 246, 0.1);
             animation: pulse-guide 2s ease-in-out infinite;
+            overflow: hidden;
         }
 
-        /* Face Guide Inner Ring */
-        .face-guide::before {
+        /* Scanner Animation Inside Circle */
+        .face-guide .scanner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.8), #3b82f6, rgba(59, 130, 246, 0.8), transparent);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 60px rgba(59, 130, 246, 0.2);
+            animation: scan-line 2.5s ease-in-out infinite;
+            z-index: 6;
+            border-radius: 2px;
+        }
+
+        /* Scanner Glow Effect */
+        .face-guide .scanner::after {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 180px;
-            height: 180px;
-            border: 2px dashed rgba(59, 130, 246, 0.2);
-            border-radius: 50%;
+            top: -10px;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.3), transparent 70%);
+            filter: blur(10px);
         }
 
-        /* Face Guide Icon */
-        .face-guide .face-icon {
+        /* Scanning Lines (Multiple lines for sci-fi effect) */
+        .face-guide .scan-lines {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(59, 130, 246, 0.15);
-            font-size: 100px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 5;
             pointer-events: none;
+            opacity: 0.15;
         }
 
-        /* Corner Marks */
+        .face-guide .scan-lines::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(0deg,
+                    transparent 0px,
+                    transparent 8px,
+                    rgba(59, 130, 246, 0.3) 8px,
+                    rgba(59, 130, 246, 0.3) 9px);
+            animation: scan-lines 1s linear infinite;
+        }
+
+        /* Corner Marks with Scanner Effect */
         .face-guide .corner {
             position: absolute;
             width: 30px;
             height: 30px;
-            border-color: rgba(59, 130, 246, 0.4);
+            border-color: rgba(59, 130, 246, 0.6);
             border-style: solid;
             border-width: 0;
+            z-index: 7;
+            transition: all 0.3s;
         }
 
         .face-guide .corner.tl {
@@ -485,6 +517,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             border-radius: 0 0 4px 0;
         }
 
+        /* Face Guide Inner Ring */
+        .face-guide::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border: 2px dashed rgba(59, 130, 246, 0.2);
+            border-radius: 50%;
+            z-index: 4;
+        }
+
+        /* Face Guide Icon */
+        .face-guide .face-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(59, 130, 246, 0.15);
+            font-size: 100px;
+            pointer-events: none;
+            z-index: 4;
+            animation: pulse-icon 3s ease-in-out infinite;
+        }
+
         /* Guide Text */
         .face-guide .guide-text {
             position: absolute;
@@ -500,6 +559,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             border-radius: 20px;
             backdrop-filter: blur(4px);
             letter-spacing: 0.5px;
+            z-index: 10;
         }
 
         .face-guide .guide-text i {
@@ -509,13 +569,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
         /* Pulse Animation for Guide */
         @keyframes pulse-guide {
-            0%, 100% {
+            0%,
+            100% {
                 border-color: rgba(59, 130, 246, 0.5);
                 box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), inset 0 0 40px rgba(59, 130, 246, 0.05);
             }
+
             50% {
                 border-color: rgba(59, 130, 246, 0.8);
                 box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15), inset 0 0 60px rgba(59, 130, 246, 0.08);
+            }
+        }
+
+        /* Scanner Line Animation */
+        @keyframes scan-line {
+            0% {
+                top: 0%;
+                opacity: 1;
+            }
+            50% {
+                top: 100%;
+                opacity: 1;
+            }
+            51% {
+                opacity: 0;
+            }
+            52% {
+                top: 0%;
+                opacity: 0;
+            }
+            53% {
+                opacity: 1;
+            }
+            100% {
+                top: 100%;
+                opacity: 1;
+            }
+        }
+
+        /* Scan Lines Background Animation */
+        @keyframes scan-lines {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(9px);
+            }
+        }
+
+        @keyframes pulse-icon {
+            0%,
+            100% {
+                opacity: 0.15;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 0.2;
+                transform: translate(-50%, -50%) scale(1.05);
             }
         }
 
@@ -535,6 +645,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
         .face-guide.detected .guide-text i {
             color: #10b981;
+        }
+
+        .face-guide.detected .scanner {
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.8), #10b981, rgba(16, 185, 129, 0.8), transparent);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.2);
+        }
+
+        .face-guide.detected .scan-lines::before {
+            background: repeating-linear-gradient(0deg,
+                    transparent 0px,
+                    transparent 8px,
+                    rgba(16, 185, 129, 0.3) 8px,
+                    rgba(16, 185, 129, 0.3) 9px);
+        }
+
+        .face-guide.detected .corner {
+            border-color: rgba(16, 185, 129, 0.6);
+        }
+
+        /* Face Error - Change to Red */
+        .face-guide.error {
+            border-color: rgba(239, 68, 68, 0.6) !important;
+            animation: pulse-error 0.8s ease-in-out 3;
+        }
+
+        .face-guide.error::before {
+            border-color: rgba(239, 68, 68, 0.3) !important;
+        }
+
+        .face-guide.error .guide-text {
+            color: #ef4444;
+        }
+
+        .face-guide.error .guide-text i {
+            color: #ef4444;
+        }
+
+        .face-guide.error .scanner {
+            background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.8), #ef4444, rgba(239, 68, 68, 0.8), transparent);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 60px rgba(239, 68, 68, 0.2);
+        }
+
+        .face-guide.error .corner {
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+
+        @keyframes pulse-error {
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.03);
+            }
         }
 
         .camera-placeholder {
@@ -878,6 +1042,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                     <!-- Enhanced Face Guide Overlay -->
                     <div class="camera-overlay active" id="cameraOverlay">
                         <div class="face-guide" id="faceGuide">
+                            <!-- Scanner Line -->
+                            <div class="scanner" id="scannerLine"></div>
+
+                            <!-- Scanning Lines Background -->
+                            <div class="scan-lines"></div>
+
                             <!-- Corner Marks -->
                             <div class="corner tl"></div>
                             <div class="corner tr"></div>
@@ -920,8 +1090,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
                 <!-- Retry Button -->
                 <div style="display: flex; justify-content: center; margin-top: 15px; gap: 12px;">
-                    <button onclick="location.reload()" class="btn-retry">
-                        <i class="fas fa-sync-alt"></i> Retry Scanning
+                    <button onclick="window.location.href='faceLogin.php'" class="btn-retry">
+                        <i class="fas fa-sync-alt"></i> Retry
                     </button>
                 </div>
 
@@ -967,6 +1137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         const loginForm = document.getElementById('loginForm');
         const faceGuide = document.getElementById('faceGuide');
         const guideText = document.getElementById('guideText');
+        const scannerLine = document.getElementById('scannerLine');
 
         let stream = null;
         let cameraStarted = false;
@@ -981,8 +1152,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             const guide = document.getElementById('faceGuide');
             const guideText = document.getElementById('guideText');
 
+            // Remove all status classes
+            guide.classList.remove('detected', 'error');
+
             if (status === 'scanning') {
-                guide.classList.remove('detected');
                 guideText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
                 guideText.style.color = '#94a3b8';
             } else if (status === 'detected') {
@@ -990,12 +1163,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 guideText.innerHTML = '<i class="fas fa-check-circle"></i> Face Detected!';
                 guideText.style.color = '#10b981';
             } else if (status === 'error') {
-                guide.classList.remove('detected');
+                guide.classList.add('error');
                 guideText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Try again';
                 guideText.style.color = '#ef4444';
             } else {
                 // Default: looking
-                guide.classList.remove('detected');
                 guideText.innerHTML = '<i class="fas fa-arrow-up"></i> Position your face here';
                 guideText.style.color = '#94a3b8';
             }
@@ -1064,6 +1236,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             scanProgress.classList.add('active');
             updateGuideStatus('default');
 
+            // Reset scanner animation
+            scannerLine.style.animation = 'none';
+            setTimeout(() => {
+                scannerLine.style.animation = 'scan-line 2.5s ease-in-out infinite';
+            }, 10);
+
             // Capture and verify face every 3 seconds
             scanInterval = setInterval(captureAndVerify, 3000);
 
@@ -1082,6 +1260,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 clearInterval(scanInterval);
                 scanInterval = null;
             }
+            // Stop scanner animation
+            scannerLine.style.animation = 'none';
         }
 
         // ==============================================
