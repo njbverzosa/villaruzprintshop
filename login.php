@@ -705,16 +705,18 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                         <a href="forgot_password.php"><i class="fas fa-key"></i> Forgot password?</a>
                     </div>
                 </div>
-                
 
-                <!-- Login Options -->
-                <div style="margin-top: 20px;">
-                    <!-- Password Login Button -->
+
+                <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>
+                    style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Log In
+                </button>
+
+                <!-- <div style="margin-top: 20px;">
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?> style="width: 100%;">
                         <i class="fas fa-sign-in-alt"></i> Log In
                     </button>
 
-                    <!-- OR Divider -->
                     <div style="display: flex; align-items: center; margin: 20px 0; gap: 15px;">
                         <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
                         <span
@@ -722,12 +724,11 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                         <hr style="flex: 1; border: none; border-top: 2px solid #e2e8f0;">
                     </div>
 
-                    <!-- Face Login Link -->
                     <a href="faceLogin.php" class="btn-primary" id="faceLoginBtn"
                         style="text-decoration: none; display: block; text-align: center; background: linear-gradient(145deg, #8b5cf6, #6366f1);">
                         <i class="fas fa-camera"></i> Log In with Face
                     </a>
-                </div>
+                </div> -->
 
 
                 <div class="auth-footer">
