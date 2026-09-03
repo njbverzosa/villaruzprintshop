@@ -21,14 +21,16 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
     echo json_encode(['success' => false, 'message' => 'Invalid security token']);
     exit;
 }
+
 // ============================================================
 // 3. CREATE UPLOAD DIRECTORY
 // ============================================================
-// Go up 2 levels from API/ to project root, then to uploads/faces/
-$uploadDir = __DIR__ . '/../faceVerification';
+// Go up 2 levels from API/ to project root, then to faceVerification/
+$uploadDir = __DIR__ . '/../faceVerification/';  // ← ADDED TRAILING SLASH
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
+
 // ============================================================
 // 4. PROCESS ACTION
 // ============================================================
@@ -85,7 +87,7 @@ function registerFace($pdo, $uploadDir) {
     // Save image
     $timestamp = date('Ymd_His');
     $filename = 'face_' . $accNumber . '_' . $timestamp . '.jpg';
-    $filepath = $uploadDir . $filename;
+    $filepath = $uploadDir . $filename;  // Now this creates: /path/to/faceVerification/filename.jpg
     
     if (!file_put_contents($filepath, $imageData)) {
         echo json_encode(['success' => false, 'message' => 'Failed to save image']);
@@ -144,3 +146,4 @@ function getRegisteredUsers($pdo) {
         'users' => $users
     ]);
 }
+?>
