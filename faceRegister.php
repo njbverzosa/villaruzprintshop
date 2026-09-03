@@ -162,7 +162,6 @@ if ($isLoggedIn) {
             margin-bottom: 15px;
         }
 
-        /* Dark overlay for better guide visibility */
         .camera-container::after {
             content: '';
             position: absolute;
@@ -193,7 +192,6 @@ if ($isLoggedIn) {
             object-fit: cover;
         }
 
-        /* Enhanced Camera Overlay */
         .camera-overlay {
             position: absolute;
             top: 0;
@@ -209,7 +207,6 @@ if ($isLoggedIn) {
             display: block;
         }
 
-        /* Face Guide Circle - Larger and More Visible */
         .face-guide {
             position: absolute;
             top: 50%;
@@ -219,15 +216,11 @@ if ($isLoggedIn) {
             height: 280px;
             border: 4px solid rgba(59, 130, 246, 0.5);
             border-radius: 50%;
-            box-shadow:
-                0 0 0 2px rgba(59, 130, 246, 0.1),
-                inset 0 0 40px rgba(59, 130, 246, 0.05),
-                0 0 60px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), inset 0 0 40px rgba(59, 130, 246, 0.05), 0 0 60px rgba(59, 130, 246, 0.1);
             animation: pulse-guide 2s ease-in-out infinite;
             overflow: hidden;
         }
 
-        /* Scanner Animation Inside Circle */
         .face-guide .scanner {
             position: absolute;
             top: 0;
@@ -241,7 +234,6 @@ if ($isLoggedIn) {
             border-radius: 2px;
         }
 
-        /* Scanner Glow Effect */
         .face-guide .scanner::after {
             content: '';
             position: absolute;
@@ -253,7 +245,6 @@ if ($isLoggedIn) {
             filter: blur(10px);
         }
 
-        /* Scanning Lines (Multiple lines for sci-fi effect) */
         .face-guide .scan-lines {
             position: absolute;
             top: 0;
@@ -272,15 +263,10 @@ if ($isLoggedIn) {
             left: 0;
             right: 0;
             bottom: 0;
-            background: repeating-linear-gradient(0deg,
-                    transparent 0px,
-                    transparent 8px,
-                    rgba(59, 130, 246, 0.3) 8px,
-                    rgba(59, 130, 246, 0.3) 9px);
+            background: repeating-linear-gradient(0deg, transparent 0px, transparent 8px, rgba(59, 130, 246, 0.3) 8px, rgba(59, 130, 246, 0.3) 9px);
             animation: scan-lines 1s linear infinite;
         }
 
-        /* Corner Marks with Scanner Effect */
         .face-guide .corner {
             position: absolute;
             width: 30px;
@@ -292,39 +278,11 @@ if ($isLoggedIn) {
             transition: all 0.3s;
         }
 
-        .face-guide .corner.tl {
-            top: -3px;
-            left: -3px;
-            border-top-width: 4px;
-            border-left-width: 4px;
-            border-radius: 4px 0 0 0;
-        }
+        .face-guide .corner.tl { top: -3px; left: -3px; border-top-width: 4px; border-left-width: 4px; border-radius: 4px 0 0 0; }
+        .face-guide .corner.tr { top: -3px; right: -3px; border-top-width: 4px; border-right-width: 4px; border-radius: 0 4px 0 0; }
+        .face-guide .corner.bl { bottom: -3px; left: -3px; border-bottom-width: 4px; border-left-width: 4px; border-radius: 0 0 0 4px; }
+        .face-guide .corner.br { bottom: -3px; right: -3px; border-bottom-width: 4px; border-right-width: 4px; border-radius: 0 0 4px 0; }
 
-        .face-guide .corner.tr {
-            top: -3px;
-            right: -3px;
-            border-top-width: 4px;
-            border-right-width: 4px;
-            border-radius: 0 4px 0 0;
-        }
-
-        .face-guide .corner.bl {
-            bottom: -3px;
-            left: -3px;
-            border-bottom-width: 4px;
-            border-left-width: 4px;
-            border-radius: 0 0 0 4px;
-        }
-
-        .face-guide .corner.br {
-            bottom: -3px;
-            right: -3px;
-            border-bottom-width: 4px;
-            border-right-width: 4px;
-            border-radius: 0 0 4px 0;
-        }
-
-        /* Face Guide Inner Ring */
         .face-guide::before {
             content: '';
             position: absolute;
@@ -338,7 +296,6 @@ if ($isLoggedIn) {
             z-index: 4;
         }
 
-        /* Face Guide Icon */
         .face-guide .face-icon {
             position: absolute;
             top: 50%;
@@ -351,7 +308,6 @@ if ($isLoggedIn) {
             animation: pulse-icon 3s ease-in-out infinite;
         }
 
-        /* Guide Text */
         .face-guide .guide-text {
             position: absolute;
             bottom: -50px;
@@ -374,134 +330,54 @@ if ($isLoggedIn) {
             color: #3b82f6;
         }
 
-        /* Pulse Animation for Guide */
         @keyframes pulse-guide {
-            0%, 100% {
-                border-color: rgba(59, 130, 246, 0.5);
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), inset 0 0 40px rgba(59, 130, 246, 0.05);
-            }
-            50% {
-                border-color: rgba(59, 130, 246, 0.8);
-                box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15), inset 0 0 60px rgba(59, 130, 246, 0.08);
-            }
+            0%, 100% { border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), inset 0 0 40px rgba(59, 130, 246, 0.05); }
+            50% { border-color: rgba(59, 130, 246, 0.8); box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15), inset 0 0 60px rgba(59, 130, 246, 0.08); }
         }
 
-        /* Scanner Line Animation */
         @keyframes scan-line {
-            0% {
-                top: 0%;
-                opacity: 1;
-            }
-            50% {
-                top: 100%;
-                opacity: 1;
-            }
-            51% {
-                opacity: 0;
-            }
-            52% {
-                top: 0%;
-                opacity: 0;
-            }
-            53% {
-                opacity: 1;
-            }
-            100% {
-                top: 100%;
-                opacity: 1;
-            }
+            0% { top: 0%; opacity: 1; }
+            50% { top: 100%; opacity: 1; }
+            51% { opacity: 0; }
+            52% { top: 0%; opacity: 0; }
+            53% { opacity: 1; }
+            100% { top: 100%; opacity: 1; }
         }
 
-        /* Scan Lines Background Animation */
         @keyframes scan-lines {
-            0% {
-                transform: translateY(0);
-            }
-            100% {
-                transform: translateY(9px);
-            }
+            0% { transform: translateY(0); }
+            100% { transform: translateY(9px); }
         }
 
         @keyframes pulse-icon {
-            0%, 100% {
-                opacity: 0.15;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            50% {
-                opacity: 0.2;
-                transform: translate(-50%, -50%) scale(1.05);
-            }
+            0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.2; transform: translate(-50%, -50%) scale(1.05); }
         }
 
-        /* Face Detected - Change to Green */
         .face-guide.detected {
             border-color: rgba(16, 185, 129, 0.6) !important;
             animation: none;
         }
+        .face-guide.detected::before { border-color: rgba(16, 185, 129, 0.3) !important; }
+        .face-guide.detected .guide-text { color: #10b981; }
+        .face-guide.detected .guide-text i { color: #10b981; }
+        .face-guide.detected .scanner { background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.8), #10b981, rgba(16, 185, 129, 0.8), transparent); box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.2); }
+        .face-guide.detected .scan-lines::before { background: repeating-linear-gradient(0deg, transparent 0px, transparent 8px, rgba(16, 185, 129, 0.3) 8px, rgba(16, 185, 129, 0.3) 9px); }
+        .face-guide.detected .corner { border-color: rgba(16, 185, 129, 0.6); }
 
-        .face-guide.detected::before {
-            border-color: rgba(16, 185, 129, 0.3) !important;
-        }
-
-        .face-guide.detected .guide-text {
-            color: #10b981;
-        }
-
-        .face-guide.detected .guide-text i {
-            color: #10b981;
-        }
-
-        .face-guide.detected .scanner {
-            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.8), #10b981, rgba(16, 185, 129, 0.8), transparent);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.2);
-        }
-
-        .face-guide.detected .scan-lines::before {
-            background: repeating-linear-gradient(0deg,
-                    transparent 0px,
-                    transparent 8px,
-                    rgba(16, 185, 129, 0.3) 8px,
-                    rgba(16, 185, 129, 0.3) 9px);
-        }
-
-        .face-guide.detected .corner {
-            border-color: rgba(16, 185, 129, 0.6);
-        }
-
-        /* Face Error - Change to Red */
         .face-guide.error {
             border-color: rgba(239, 68, 68, 0.6) !important;
             animation: pulse-error 0.8s ease-in-out 3;
         }
-
-        .face-guide.error::before {
-            border-color: rgba(239, 68, 68, 0.3) !important;
-        }
-
-        .face-guide.error .guide-text {
-            color: #ef4444;
-        }
-
-        .face-guide.error .guide-text i {
-            color: #ef4444;
-        }
-
-        .face-guide.error .scanner {
-            background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.8), #ef4444, rgba(239, 68, 68, 0.8), transparent);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 60px rgba(239, 68, 68, 0.2);
-        }
-
-        .face-guide.error .corner {
-            border-color: rgba(239, 68, 68, 0.6);
-        }
+        .face-guide.error::before { border-color: rgba(239, 68, 68, 0.3) !important; }
+        .face-guide.error .guide-text { color: #ef4444; }
+        .face-guide.error .guide-text i { color: #ef4444; }
+        .face-guide.error .scanner { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.8), #ef4444, rgba(239, 68, 68, 0.8), transparent); box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 60px rgba(239, 68, 68, 0.2); }
+        .face-guide.error .corner { border-color: rgba(239, 68, 68, 0.6); }
 
         @keyframes pulse-error {
-            0%, 100% {
-                transform: translate(-50%, -50%) scale(1);
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.03);
-            }
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.03); }
         }
 
         .camera-placeholder {
@@ -528,96 +404,24 @@ if ($isLoggedIn) {
             margin: 0;
         }
 
-        /* Brightness Controls */
-        .brightness-controls {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            padding: 10px 15px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 15px;
-        }
-
-        .brightness-controls label {
-            display: flex;
+        .btn-retry {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #475569;
-            flex: 1;
-        }
-
-        .brightness-controls label i {
-            color: #f59e0b;
-            font-size: 16px;
-        }
-
-        .brightness-controls input[type="range"] {
-            flex: 1;
-            height: 4px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: #e2e8f0;
-            border-radius: 2px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .brightness-controls input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
+            padding: 10px 24px;
             background: #3b82f6;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .brightness-controls input[type="range"]::-webkit-slider-thumb:hover {
-            background: #2563eb;
-            transform: scale(1.1);
-        }
-
-        .brightness-controls input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
+            color: white;
             border: none;
-        }
-
-        .brightness-value {
-            min-width: 40px;
-            text-align: center;
+            border-radius: 8px;
             font-weight: 600;
             font-size: 14px;
-            color: #0f172a;
-        }
-
-        .btn-auto-brightness {
-            background: #f59e0b;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
-            font-size: 13px;
             cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
+            transition: all 0.3s ease;
         }
 
-        .btn-auto-brightness:hover {
-            background: #d97706;
-            transform: scale(1.05);
+        .btn-retry:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
         }
 
         .controls {
@@ -653,7 +457,6 @@ if ($isLoggedIn) {
             background: #3b82f6;
             color: white;
         }
-
         .btn-primary:hover:not(:disabled) {
             background: #2563eb;
             transform: translateY(-2px);
@@ -663,7 +466,6 @@ if ($isLoggedIn) {
             background: #10b981;
             color: white;
         }
-
         .btn-success:hover:not(:disabled) {
             background: #059669;
             transform: translateY(-2px);
@@ -673,7 +475,6 @@ if ($isLoggedIn) {
             background: #e2e8f0;
             color: #475569;
         }
-
         .btn-secondary:hover:not(:disabled) {
             background: #cbd5e1;
         }
@@ -694,21 +495,18 @@ if ($isLoggedIn) {
             color: #065f46;
             border: 1px solid #bbf7d0;
         }
-
         .status-message.error {
             display: flex;
             background: #fef2f2;
             color: #dc2626;
             border: 1px solid #fecaca;
         }
-
         .status-message.info {
             display: flex;
             background: #eff6ff;
             color: #1e40af;
             border: 1px solid #bfdbfe;
         }
-
         .status-message i {
             font-size: 18px;
         }
@@ -741,84 +539,23 @@ if ($isLoggedIn) {
             font-weight: 600;
         }
 
-        .brightness-hint {
-            font-size: 11px;
-            color: #94a3b8;
-            text-align: center;
-            margin-top: 5px;
-        }
-
         @media (max-width: 480px) {
-            .auth-card {
-                padding: 20px;
-            }
-
-            .auth-sub {
-                font-size: 20px;
-            }
-
-            .controls {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            .face-guide {
-                width: 200px;
-                height: 200px;
-            }
-
-            .face-guide::before {
-                width: 130px;
-                height: 130px;
-            }
-
-            .face-guide .face-icon {
-                font-size: 70px;
-            }
-
-            .face-guide .corner {
-                width: 20px;
-                height: 20px;
-            }
-
-            .face-guide .guide-text {
-                font-size: 11px;
-                padding: 4px 12px;
-                bottom: -42px;
-            }
-
-            .brightness-controls {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .brightness-controls label {
-                width: 100%;
-            }
-
-            .btn-auto-brightness {
-                width: 100%;
-                justify-content: center;
-            }
+            .auth-card { padding: 20px; }
+            .auth-sub { font-size: 20px; }
+            .controls { flex-direction: column; }
+            .btn { width: 100%; }
+            .face-guide { width: 200px; height: 200px; }
+            .face-guide::before { width: 130px; height: 130px; }
+            .face-guide .face-icon { font-size: 70px; }
+            .face-guide .corner { width: 20px; height: 20px; }
+            .face-guide .guide-text { font-size: 11px; padding: 4px 12px; bottom: -42px; }
+            .btn-retry { width: 100%; justify-content: center; }
         }
 
         @media (max-width: 380px) {
-            .face-guide {
-                width: 160px;
-                height: 160px;
-            }
-
-            .face-guide::before {
-                width: 100px;
-                height: 100px;
-            }
-
-            .face-guide .face-icon {
-                font-size: 50px;
-            }
+            .face-guide { width: 160px; height: 160px; }
+            .face-guide::before { width: 100px; height: 100px; }
+            .face-guide .face-icon { font-size: 50px; }
         }
     </style>
 </head>
@@ -848,27 +585,17 @@ if ($isLoggedIn) {
             <video id="video" autoplay playsinline></video>
             <canvas id="canvas"></canvas>
 
-            <!-- Enhanced Face Guide Overlay -->
             <div class="camera-overlay active" id="cameraOverlay">
                 <div class="face-guide" id="faceGuide">
-                    <!-- Scanner Line -->
                     <div class="scanner" id="scannerLine"></div>
-
-                    <!-- Scanning Lines Background -->
                     <div class="scan-lines"></div>
-
-                    <!-- Corner Marks -->
                     <div class="corner tl"></div>
                     <div class="corner tr"></div>
                     <div class="corner bl"></div>
                     <div class="corner br"></div>
-
-                    <!-- Face Icon -->
                     <div class="face-icon">
                         <i class="fas fa-user-circle"></i>
                     </div>
-
-                    <!-- Guide Text -->
                     <div class="guide-text" id="guideText">
                         <i class="fas fa-arrow-up"></i> Position your face here
                     </div>
@@ -881,26 +608,17 @@ if ($isLoggedIn) {
             </div>
         </div>
 
-        <!-- Brightness Controls -->
-        <div class="brightness-controls">
-            <label>
-                <i class="fas fa-sun"></i>
-                <span>Brightness</span>
-            </label>
-            <input type="range" id="brightnessSlider" min="50" max="200" value="100">
-            <span class="brightness-value" id="brightnessValue">100%</span>
-            <button class="btn-auto-brightness" id="autoBrightnessBtn" title="Auto adjust brightness">
-                <i class="fas fa-magic"></i> Auto
-            </button>
-        </div>
-        <div class="brightness-hint">
-            <i class="fas fa-info-circle"></i> Adjust brightness for better face detection
-        </div>
-
         <!-- Status Message -->
         <div class="status-message" id="statusMessage">
             <i class="fas fa-info-circle"></i>
             <span id="statusText">Ready</span>
+        </div>
+
+        <!-- Retry Button -->
+        <div style="display: flex; justify-content: center; margin-top: 15px; gap: 12px;">
+            <button onclick="window.location.href='faceRegister.php'" class="btn-retry">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
         </div>
 
         <!-- Controls -->
@@ -944,9 +662,6 @@ if ($isLoggedIn) {
     const restartBtn = document.getElementById('restartBtn');
     const statusMessage = document.getElementById('statusMessage');
     const statusText = document.getElementById('statusText');
-    const brightnessSlider = document.getElementById('brightnessSlider');
-    const brightnessValue = document.getElementById('brightnessValue');
-    const autoBrightnessBtn = document.getElementById('autoBrightnessBtn');
     const faceGuide = document.getElementById('faceGuide');
     const guideText = document.getElementById('guideText');
     const scannerLine = document.getElementById('scannerLine');
@@ -963,7 +678,6 @@ if ($isLoggedIn) {
         const guide = document.getElementById('faceGuide');
         const guideText = document.getElementById('guideText');
 
-        // Remove all status classes
         guide.classList.remove('detected', 'error');
 
         if (status === 'scanning') {
@@ -978,74 +692,10 @@ if ($isLoggedIn) {
             guideText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Try again';
             guideText.style.color = '#ef4444';
         } else {
-            // Default: looking
             guideText.innerHTML = '<i class="fas fa-arrow-up"></i> Position your face here';
             guideText.style.color = '#94a3b8';
         }
     }
-
-    // ============================================================
-    // BRIGHTNESS CONTROL
-    // ============================================================
-    function applyBrightness(value) {
-        brightnessValue.textContent = value + '%';
-        if (video) {
-            video.style.filter = `brightness(${value / 100})`;
-            video.style.webkitFilter = `brightness(${value / 100})`;
-        }
-    }
-
-    brightnessSlider.addEventListener('input', function() {
-        applyBrightness(this.value);
-    });
-
-    // Auto brightness - analyzes image and adjusts
-    function autoBrightness() {
-        if (!stream || !cameraStarted) {
-            showStatus('Please start camera first.', 'info');
-            return;
-        }
-
-        // Capture a frame to analyze
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-
-        let totalBrightness = 0;
-        let pixelCount = 0;
-        
-        for (let i = 0; i < data.length; i += 40) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-            totalBrightness += luminance;
-            pixelCount++;
-        }
-
-        const avgBrightness = totalBrightness / pixelCount;
-        const targetBrightness = 128;
-        let factor = targetBrightness / avgBrightness;
-        factor = Math.max(0.5, Math.min(2.0, factor));
-        
-        let percentage = Math.round(factor * 100);
-        percentage = Math.max(50, Math.min(200, percentage));
-        
-        brightnessSlider.value = percentage;
-        applyBrightness(percentage);
-        
-        showStatus(`Auto brightness set to ${percentage}%`, 'success');
-    }
-
-    autoBrightnessBtn.addEventListener('click', autoBrightness);
 
     // ============================================================
     // START CAMERA - AUTO ON PAGE LOAD
@@ -1057,7 +707,6 @@ if ($isLoggedIn) {
                 <i class="fas fa-spinner fa-spin"></i>
                 <p>Starting camera...</p>
             `;
-            
             cameraOverlay.style.display = 'none';
 
             stream = await navigator.mediaDevices.getUserMedia({
@@ -1076,19 +725,14 @@ if ($isLoggedIn) {
             video.style.display = 'block';
             cameraOverlay.style.display = 'block';
 
-            // Apply initial brightness
-            applyBrightness(brightnessSlider.value);
-            updateGuideStatus('default');
-
             captureBtn.disabled = false;
             registerBtn.disabled = true;
             isCaptured = false;
             cameraStarted = true;
 
-            showStatus('Camera is ready. Look at the camera and click "Capture Face".', 'info');
+            updateGuideStatus('default');
 
-            // Auto adjust brightness after 1.5 seconds
-            setTimeout(autoBrightness, 1500);
+            showStatus('Camera is ready. Look at the camera and click "Capture Face".', 'info');
 
         } catch (err) {
             console.error('Camera error:', err);
@@ -1118,7 +762,6 @@ if ($isLoggedIn) {
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         
-        // Apply mirror effect in JavaScript only
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -1152,9 +795,6 @@ if ($isLoggedIn) {
         captureBtn.innerHTML = '<i class="fas fa-camera"></i> Capture Face';
         captureBtn.onclick = captureFace;
         registerBtn.disabled = true;
-        
-        // Re-apply brightness and update guide
-        applyBrightness(brightnessSlider.value);
         updateGuideStatus('default');
         
         showStatus('Camera resumed. Capture your face again.', 'info');
