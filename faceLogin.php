@@ -25,35 +25,30 @@ function handleFaceLogin($pdo)
         return [
             'errors' => $errors,
             'loginSuccess' => $loginSuccess,
-            'matchedUser' => $matchedUser
+            'matchedUser' => $matchedUser,
+            'redirectUrl' => $redirectUrl,
+            'successMessage' => $successMessage
         ];
     }
 
     // CSRF validation
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        die('Invalid CSRF token');
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
     }
 
     $faceImage = $_POST['face_image'] ?? '';
 
     if (empty($faceImage)) {
-        $errors[] = 'No face image captured.';
-        return [
-            'errors' => $errors,
-            'loginSuccess' => $loginSuccess,
-            'matchedUser' => $matchedUser
-        ];
+        echo json_encode(['success' => false, 'message' => 'No face image captured.']);
+        exit;
     }
 
     // Process the captured face image
     $capturedImageData = base64_decode(preg_replace('#^data:image/[^;]+;base64,#', '', $faceImage));
     if ($capturedImageData === false) {
-        $errors[] = 'Invalid image data.';
-        return [
-            'errors' => $errors,
-            'loginSuccess' => $loginSuccess,
-            'matchedUser' => $matchedUser
-        ];
+        echo json_encode(['success' => false, 'message' => 'Invalid image data.']);
+        exit;
     }
 
     // Get all registered faces
@@ -62,31 +57,17 @@ function handleFaceLogin($pdo)
     $registeredFaces = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($registeredFaces)) {
-        $errors[] = 'No registered faces found. Please register your face first.';
-        return [
-            'errors' => $errors,
-            'loginSuccess' => $loginSuccess,
-            'matchedUser' => $matchedUser
-        ];
+        echo json_encode(['success' => false, 'message' => 'No registered faces found. Please register your face first.']);
+        exit;
     }
-
-    // For demo purposes, we'll do a simple comparison
-    // In production, use a proper face recognition library
-    // For now, we'll check if the captured image matches any registered face
-    // This is a placeholder - actual face recognition would use proper algorithms
     
     $matched = false;
     $matchedAccNumber = null;
     $matchedUserId = null;
     $matchedUserName = null;
 
-    // For demonstration, we're using a simple check
-    // In production, replace this with actual face matching (OpenCV, FaceNet, etc.)
-    // Since we don't have a proper face recognition library installed,
-    // we'll use a basic approach: check if the image is similar enough
-    
     // Create temp directory for comparison
-    $tempDir = __DIR__ . '/../faceVerification/';
+    $tempDir = __DIR__ . '/faceVerification/';
     if (!is_dir($tempDir)) {
         mkdir($tempDir, 0777, true);
     }
@@ -121,12 +102,8 @@ function handleFaceLogin($pdo)
     }
 
     if (!$matched) {
-        $errors[] = 'Face not recognized. Please try again or register your face first.';
-        return [
-            'errors' => $errors,
-            'loginSuccess' => $loginSuccess,
-            'matchedUser' => $matchedUser
-        ];
+        echo json_encode(['success' => false, 'message' => 'Face not recognized. Please try again.']);
+        exit;
     }
 
     // Find user in admins or customers table
@@ -152,12 +129,8 @@ function handleFaceLogin($pdo)
     }
 
     if (!$userData) {
-        $errors[] = 'User account not found.';
-        return [
-            'errors' => $errors,
-            'loginSuccess' => $loginSuccess,
-            'matchedUser' => $matchedUser
-        ];
+        echo json_encode(['success' => false, 'message' => 'User account not found.']);
+        exit;
     }
 
     // ==============================================
@@ -191,19 +164,18 @@ function handleFaceLogin($pdo)
         $successMessage = 'Welcome back, ' . $userData['f_name'] . '!';
     }
 
-    $matchedUser = [
-        'name' => $userData['f_name'],
-        'acc_number' => $userData['acc_number'],
-        'role' => $userRole
-    ];
-
-    return [
-        'errors' => $errors,
-        'loginSuccess' => $loginSuccess,
-        'redirectUrl' => $redirectUrl,
-        'successMessage' => $successMessage,
-        'matchedUser' => $matchedUser
-    ];
+    // Return JSON response with redirect URL
+    echo json_encode([
+        'success' => true,
+        'message' => $successMessage,
+        'redirect' => $redirectUrl,
+        'user' => [
+            'name' => $userData['f_name'],
+            'acc_number' => $userData['acc_number'],
+            'role' => $userRole
+        ]
+    ]);
+    exit;
 }
 
 // ==============================================
@@ -240,13 +212,11 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Handle form submission
-$loginResult = handleFaceLogin($pdo);
-$errors = $loginResult['errors'] ?? [];
-$loginSuccess = $loginResult['loginSuccess'] ?? false;
-$redirectUrl = $loginResult['redirectUrl'] ?? '';
-$successMessage = $loginResult['successMessage'] ?? '';
-$matchedUser = $loginResult['matchedUser'] ?? null;
+// For AJAX requests, handle the login and return JSON
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
+    handleFaceLogin($pdo);
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -318,20 +288,6 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
             max-width: 450px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
-        }
-
-        .auth-title {
-            font-size: 32px;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-align: center;
-            color: #0f172a;
-        }
-
-        .auth-title span {
-            background: linear-gradient(145deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
         .auth-sub {
@@ -617,29 +573,9 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
                 <span class="version-badge">V5.30.42</span>
             </div>
 
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error">
-                    <?php foreach ($errors as $error): ?>
-                        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?><br>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($loginSuccess && $successMessage): ?>
-                <div class="alert alert-success" id="successAlert">
-                    <div class="spinner-container">
-                        <div class="spinner-small"></div>
-                    </div>
-                    <span><?php echo htmlspecialchars($successMessage); ?></span>
-                    <?php if ($matchedUser): ?>
-                        <br><small>Logged in as: <?php echo htmlspecialchars($matchedUser['name']); ?> (<?php echo htmlspecialchars($matchedUser['acc_number']); ?>)</small>
-                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 
@@ -705,6 +641,7 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
         let cameraStarted = false;
         let isScanning = false;
         let scanInterval = null;
+        let isProcessing = false;
 
         // ==============================================
         // START CAMERA
@@ -766,8 +703,8 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
             isScanning = true;
             scanningOverlay.classList.add('active');
             
-            // Capture and verify face every 2 seconds
-            scanInterval = setInterval(captureAndVerify, 2000);
+            // Capture and verify face every 3 seconds
+            scanInterval = setInterval(captureAndVerify, 3000);
             
             // First capture immediately
             setTimeout(captureAndVerify, 500);
@@ -789,7 +726,9 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
         // CAPTURE AND VERIFY FACE
         // ==============================================
         async function captureAndVerify() {
-            if (!cameraStarted || !stream) return;
+            if (!cameraStarted || !stream || isProcessing) return;
+
+            isProcessing = true;
 
             try {
                 // Capture current frame
@@ -810,49 +749,42 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
                 formData.append('csrf_token', '<?php echo $_SESSION['csrf_token']; ?>');
                 formData.append('face_image', imageData);
 
-                const response = await fetch('faceLogin.php', {
+                const response = await fetch(window.location.href, {
                     method: 'POST',
                     body: formData
                 });
 
-                const html = await response.text();
+                const data = await response.json();
                 
-                // Check if login was successful by looking for success indicators
-                // If the response contains redirect or success message, it means face matched
-                if (html.includes('loginSuccess') || html.includes('Welcome back')) {
-                    // Success - stop scanning and redirect
+                if (data.success) {
+                    // Face recognized!
                     stopScanning();
                     faceStatus.className = 'face-status success';
-                    faceStatus.innerHTML = '<i class="fas fa-check-circle"></i> Face recognized! Redirecting...';
+                    faceStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
                     
-                    // Extract redirect URL from response
-                    const match = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/);
-                    if (match) {
-                        setTimeout(() => {
-                            window.location.href = match[1];
-                        }, 1500);
-                    } else {
-                        // Reload page to process login
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
+                    // Show user info
+                    if (data.user) {
+                        faceStatus.innerHTML += `<br><small class="matched-user">Welcome ${data.user.name} (${data.user.acc_number})</small>`;
                     }
-                    return;
-                }
-
-                // Check for errors
-                if (html.includes('alert-error')) {
-                    // Face not recognized - keep scanning
-                    faceStatus.className = 'face-status error';
-                    faceStatus.innerHTML = '<i class="fas fa-times-circle"></i> Face not recognized. Keep looking at the camera...';
+                    
+                    // Redirect after 2 seconds
+                    if (data.redirect) {
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 2000);
+                    }
                 } else {
-                    // Still scanning
-                    faceStatus.className = 'face-status info';
-                    faceStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning for your face...';
+                    // Face not recognized
+                    faceStatus.className = 'face-status error';
+                    faceStatus.innerHTML = `<i class="fas fa-times-circle"></i> ${data.message || 'Face not recognized. Keep looking at the camera...'}`;
                 }
 
             } catch (err) {
                 console.error('Error during face verification:', err);
+                faceStatus.className = 'face-status error';
+                faceStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error connecting to server. Retrying...';
+            } finally {
+                isProcessing = false;
             }
         }
 
@@ -860,12 +792,7 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
         // INITIALIZE
         // ==============================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if already logged in (success response)
-            <?php if ($loginSuccess): ?>
-                // Already logged in, will redirect via PHP
-            <?php else: ?>
-                setTimeout(startCamera, 300);
-            <?php endif; ?>
+            setTimeout(startCamera, 300);
         });
 
         // Stop camera and scanning when page is hidden
@@ -878,7 +805,6 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
                 }
             } else if (!cameraStarted && !stream) {
                 setTimeout(startCamera, 300);
-                setTimeout(startScanning, 1500);
             }
         });
 
@@ -890,15 +816,6 @@ $matchedUser = $loginResult['matchedUser'] ?? null;
             }
         });
     </script>
-
-    <?php if ($loginSuccess): ?>
-        <script>
-            // Auto redirect after successful login
-            setTimeout(function() {
-                window.location.href = '<?php echo $redirectUrl; ?>';
-            }, 2000);
-        </script>
-    <?php endif; ?>
 
 </body>
 
