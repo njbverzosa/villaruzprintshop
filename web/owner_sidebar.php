@@ -389,6 +389,12 @@
             </div>
         </div>
 
+        <!-- Shop Link -->
+        <a href="../faceRegister.php" class="nav-item">
+            <i class="fas fa-camera"></i>
+            <span>Register Face</span>
+        </a>
+
         <!-- Logout -->
         <a href="closed.php" class="nav-item <?php echo $currentPage == 'closed.php' ? 'active' : ''; ?>">
             <i class="fas fa-sign-out-alt"></i>
