@@ -13,59 +13,50 @@ require_once __DIR__ . '/DB_Conn/config.php';
 // ==============================================
 // FUNCTION TO COMPARE IMAGES USING GD
 // ==============================================
-function compareFaces($image1Path, $image2Path)
+function compareFacesGD($image1Path, $image2Path)
 {
     // Load images
     $img1 = imagecreatefromjpeg($image1Path);
     $img2 = imagecreatefromjpeg($image2Path);
-    
+
     if (!$img1 || !$img2) {
+        error_log("Failed to load images for comparison");
         return false;
     }
-    
-    // Resize both images to a small size for comparison
-    $width = 50;
-    $height = 50;
-    
-    $resized1 = imagecreatetruecolor($width, $height);
-    $resized2 = imagecreatetruecolor($width, $height);
-    
-    imagecopyresampled($resized1, $img1, 0, 0, 0, 0, $width, $height, imagesx($img1), imagesy($img1));
-    imagecopyresampled($resized2, $img2, 0, 0, 0, 0, $width, $height, imagesx($img2), imagesy($img2));
-    
-    // Calculate the average color difference
-    $totalDiff = 0;
-    for ($x = 0; $x < $width; $x++) {
-        for ($y = 0; $y < $height; $y++) {
-            $rgb1 = imagecolorat($resized1, $x, $y);
-            $rgb2 = imagecolorat($resized2, $x, $y);
-            
-            $r1 = ($rgb1 >> 16) & 0xFF;
-            $g1 = ($rgb1 >> 8) & 0xFF;
-            $b1 = $rgb1 & 0xFF;
-            
-            $r2 = ($rgb2 >> 16) & 0xFF;
-            $g2 = ($rgb2 >> 8) & 0xFF;
-            $b2 = $rgb2 & 0xFF;
-            
-            $diff = abs($r1 - $r2) + abs($g1 - $g2) + abs($b1 - $b2);
-            $totalDiff += $diff;
+
+    // Resize to small size for faster comparison
+    $size = 32;
+    $r1 = imagecreatetruecolor($size, $size);
+    $r2 = imagecreatetruecolor($size, $size);
+
+    imagecopyresampled($r1, $img1, 0, 0, 0, 0, $size, $size, imagesx($img1), imagesy($img1));
+    imagecopyresampled($r2, $img2, 0, 0, 0, 0, $size, $size, imagesx($img2), imagesy($img2));
+
+    // Convert to grayscale and compare
+    $diff = 0;
+    for ($x = 0; $x < $size; $x++) {
+        for ($y = 0; $y < $size; $y++) {
+            $c1 = imagecolorat($r1, $x, $y) & 0xFF;
+            $c2 = imagecolorat($r2, $x, $y) & 0xFF;
+            $diff += abs($c1 - $c2);
         }
     }
-    
-    // Calculate average difference
-    $totalPixels = $width * $height;
-    $averageDiff = $totalDiff / $totalPixels;
-    
-    // Free memory
+
+    $avgDiff = $diff / ($size * $size);
+
+    // Clean up
     imagedestroy($img1);
     imagedestroy($img2);
-    imagedestroy($resized1);
-    imagedestroy($resized2);
-    
-    // Return similarity score (0 = identical, higher = more different)
-    // Threshold: less than 50 means similar enough
-    return $averageDiff;
+    imagedestroy($r1);
+    imagedestroy($r2);
+
+    // In compareFacesGD() function
+    $threshold = 25; // Try: 15 (strict), 20, 25, 30, 35 (lenient)
+    $matched = $avgDiff < $threshold;
+
+    error_log("GD Comparison: avgDiff=$avgDiff, threshold=$threshold, matched=" . ($matched ? 'true' : 'false'));
+
+    return $matched;
 }
 
 // ==============================================
@@ -107,59 +98,44 @@ function handleFaceLogin($pdo)
         echo json_encode(['success' => false, 'message' => 'No registered faces found. Please register your face first.']);
         exit;
     }
-    
+
     // Create temp directory for comparison
     $tempDir = __DIR__ . '/faceVerification/';
     if (!is_dir($tempDir)) {
         mkdir($tempDir, 0777, true);
     }
-    
+
     // Save captured image temporarily
     $tempFile = $tempDir . 'temp_capture_' . time() . '.jpg';
     file_put_contents($tempFile, $capturedImageData);
-    
+
+    // Compare captured face with all registered faces using GD
     $matched = false;
     $matchedAccNumber = null;
     $matchedUserId = null;
     $matchedUserName = null;
-    $bestMatchScore = 9999;
-    $bestMatchAccNumber = null;
-    $bestMatchUserId = null;
-    $bestMatchUserName = null;
 
-    // Compare captured face with all registered faces using image similarity
     foreach ($registeredFaces as $face) {
         $registeredImagePath = __DIR__ . '/faceVerification/' . $face['face_image'];
         if (file_exists($registeredImagePath)) {
-            try {
-                $similarityScore = compareFaces($tempFile, $registeredImagePath);
-                
-                // If similarity score is good enough (lower = more similar)
-                if ($similarityScore !== false && $similarityScore < 50) { // Threshold
-                    if ($similarityScore < $bestMatchScore) {
-                        $bestMatchScore = $similarityScore;
-                        $bestMatchAccNumber = $face['acc_number'];
-                        $bestMatchUserId = $face['user_id'];
-                        $bestMatchUserName = $face['user_name'];
-                    }
-                }
-            } catch (Exception $e) {
-                continue;
+            $verified = compareFacesGD($tempFile, $registeredImagePath);
+
+            if ($verified) {
+                $matched = true;
+                $matchedAccNumber = $face['acc_number'];
+                $matchedUserId = $face['user_id'];
+                $matchedUserName = $face['user_name'];
+                error_log("✅ Face matched! Account: " . $matchedAccNumber);
+                break;
             }
+        } else {
+            error_log("❌ Registered image not found: " . $registeredImagePath);
         }
     }
-    
+
     // Clean up temp file
     if (file_exists($tempFile)) {
         unlink($tempFile);
-    }
-    
-    // Check if we have a good match
-    if ($bestMatchAccNumber && $bestMatchScore < 50) {
-        $matched = true;
-        $matchedAccNumber = $bestMatchAccNumber;
-        $matchedUserId = $bestMatchUserId;
-        $matchedUserName = $bestMatchUserName;
     }
 
     if (!$matched) {
@@ -493,6 +469,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -519,6 +496,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
             0% {
                 transform: rotate(0deg);
             }
+
             100% {
                 transform: rotate(360deg);
             }
@@ -589,8 +567,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
         }
 
         .scan-progress {
@@ -616,9 +601,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         }
 
         @keyframes scanProgress {
-            0% { width: 0%; }
-            50% { width: 70%; }
-            100% { width: 100%; }
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 70%;
+            }
+
+            100% {
+                width: 100%;
+            }
         }
 
         @media (max-width: 500px) {
@@ -766,7 +759,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
 
                 faceStatus.className = 'face-status info';
                 faceStatus.innerHTML = '<i class="fas fa-eye"></i> Camera ready. Looking for your face...';
-                
+
                 // Start scanning after camera is ready
                 setTimeout(startScanning, 1000);
 
@@ -791,14 +784,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         // ==============================================
         function startScanning() {
             if (isScanning || !cameraStarted) return;
-            
+
             isScanning = true;
             scanningOverlay.classList.add('active');
             scanProgress.classList.add('active');
-            
+
             // Capture and verify face every 3 seconds
             scanInterval = setInterval(captureAndVerify, 3000);
-            
+
             // First capture immediately
             setTimeout(captureAndVerify, 500);
         }
@@ -829,7 +822,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
-                
+
                 // Apply mirror effect
                 ctx.translate(canvas.width, 0);
                 ctx.scale(-1, 1);
@@ -837,7 +830,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
 
                 const imageData = canvas.toDataURL('image/jpeg', 0.9);
-                
+
                 // Send to server for verification
                 const formData = new FormData();
                 formData.append('csrf_token', '<?php echo $_SESSION['csrf_token']; ?>');
@@ -857,18 +850,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                     console.error('Invalid JSON response:', text);
                     return;
                 }
-                
+
                 if (data.success) {
                     // Face recognized!
                     stopScanning();
                     faceStatus.className = 'face-status success';
                     faceStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
-                    
+
                     // Show user info
                     if (data.user) {
                         faceStatus.innerHTML += `<br><small class="matched-user">Welcome ${data.user.name} (${data.user.acc_number})</small>`;
                     }
-                    
+
                     // Redirect after 2 seconds
                     if (data.redirect) {
                         setTimeout(() => {
@@ -880,7 +873,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
                     const errorMsg = data.message || 'Face not recognized. Keep looking at the camera...';
                     faceStatus.className = 'face-status error';
                     faceStatus.innerHTML = `<i class="fas fa-times-circle"></i> ${errorMsg}`;
-                    
+
                     // If this is a critical error (like no faces registered), stop scanning
                     if (errorMsg.includes('No registered faces') || errorMsg.includes('register your face')) {
                         stopScanning();
@@ -899,12 +892,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         // ==============================================
         // INITIALIZE
         // ==============================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             setTimeout(startCamera, 300);
         });
 
         // Stop camera and scanning when page is hidden
-        document.addEventListener('visibilitychange', function() {
+        document.addEventListener('visibilitychange', function () {
             if (document.hidden) {
                 stopScanning();
                 if (stream && cameraStarted) {
@@ -917,7 +910,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['face_image'])) {
         });
 
         // Handle page unload
-        window.addEventListener('beforeunload', function() {
+        window.addEventListener('beforeunload', function () {
             stopScanning();
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
