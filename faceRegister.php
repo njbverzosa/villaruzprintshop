@@ -150,13 +150,17 @@ if ($isLoggedIn) {
             font-size: 16px;
         }
 
+        /* ============================================================
+   CAMERA CONTAINER - FIXED HEIGHT
+   ============================================================ */
         .camera-container {
             position: relative;
             background: #0f172a;
             border-radius: 5px;
             overflow: hidden;
             border: 2px solid #e2e8f0;
-            aspect-ratio: 4/3;
+            width: 100%;
+            height: 320px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -733,6 +737,15 @@ if ($isLoggedIn) {
             transform: translateY(-2px);
         }
 
+        /* ============================================================
+   RESPONSIVE - Adjust camera height for smaller screens
+   ============================================================ */
+        @media (max-width: 768px) {
+            .camera-container {
+                height: 280px;
+            }
+        }
+
         @media (max-width: 480px) {
             .auth-card {
                 padding: 20px;
@@ -740,6 +753,10 @@ if ($isLoggedIn) {
 
             .auth-sub {
                 font-size: 20px;
+            }
+
+            .camera-container {
+                height: 250px;
             }
 
             .button-row {
@@ -789,6 +806,10 @@ if ($isLoggedIn) {
         }
 
         @media (max-width: 380px) {
+            .camera-container {
+                height: 200px;
+            }
+
             .face-guide {
                 width: 160px;
                 height: 160px;
@@ -980,7 +1001,7 @@ if ($isLoggedIn) {
             tempCanvas.height = 200;
             const ctx = tempCanvas.getContext('2d');
             const img = new Image();
-            img.onload = function() {
+            img.onload = function () {
                 ctx.drawImage(img, 0, 0, 200, 200);
                 const imageData = ctx.getImageData(0, 0, 200, 200);
                 const data = imageData.data;
@@ -1164,7 +1185,7 @@ if ($isLoggedIn) {
             faceDetectionBox.style.display = 'none';
 
             captureBtn.innerHTML = '<i class="fas fa-redo"></i> Recapture';
-            captureBtn.onclick = function() { recaptureFace(); };
+            captureBtn.onclick = function () { recaptureFace(); };
             registerBtn.disabled = false;
             updateGuideStatus('detected');
 
@@ -1241,7 +1262,7 @@ if ($isLoggedIn) {
                     updateGuideStatus('detected');
 
                     // End session and redirect to login.php after 2 seconds
-                    setTimeout(function() {
+                    setTimeout(function () {
                         // Clear session
                         fetch('logout.php', { method: 'POST', credentials: 'same-origin' })
                             .then(() => {
@@ -1289,14 +1310,14 @@ if ($isLoggedIn) {
         // ============================================================
         captureBtn.addEventListener('click', startCountdown);
         registerBtn.addEventListener('click', registerFace);
-        retryBtn.addEventListener('click', function() {
+        retryBtn.addEventListener('click', function () {
             location.reload();
         });
 
         // ============================================================
         // INITIALIZE - AUTO START ON PAGE LOAD
         // ============================================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (isLoggedIn) {
                 setTimeout(startCamera, 300);
             } else {
@@ -1311,7 +1332,7 @@ if ($isLoggedIn) {
         });
 
         // Stop camera when page is hidden to save resources
-        document.addEventListener('visibilitychange', function() {
+        document.addEventListener('visibilitychange', function () {
             if (document.hidden && stream && cameraStarted) {
                 stream.getTracks().forEach(track => track.stop());
                 cameraStarted = false;
