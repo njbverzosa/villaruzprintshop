@@ -890,13 +890,13 @@ if ($isLoggedIn) {
             <!-- Button Row -->
             <div class="button-row">
                 <button class="btn btn-primary" id="captureBtn" disabled>
-                    <i class="fas fa-camera"></i> Auto Capture
+                    Auto Capture
                 </button>
                 <button class="btn btn-secondary" id="retryBtn">
-                    <i class="fas fa-sync-alt"></i> Retry
+                    Retry
                 </button>
                 <button class="btn btn-success" id="registerBtn" disabled>
-                    <i class="fas fa-save"></i> Register Now
+                    Register Now
                 </button>
             </div>
 
