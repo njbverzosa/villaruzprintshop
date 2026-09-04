@@ -253,6 +253,22 @@
         color: #f59e0b;
     }
 
+    /* ===== CUSTOMERS (Teal) ===== */
+    .nav-dropdown-item.active_customers {
+        background: #eff6ff;
+        color: #0d9488;
+        border-left: 3px solid #14b8a6;
+    }
+
+    .nav-dropdown-item.active_customers:hover {
+        background: #ccfbf1;
+        color: #0f766e;
+    }
+
+    .nav-dropdown-item.active_customers i {
+        color: #14b8a6;
+    }
+
     /* ===== DB MANAGER (Blue) ===== */
     .nav-dropdown-item.active_database {
         background: #eff6ff;
@@ -266,22 +282,6 @@
     }
 
     .nav-dropdown-item.active_database i {
-        color: #3b82f6;
-    }
-
-    /* ===== CUSTOMERS (Blue) ===== */
-    .nav-dropdown-item.active_customers {
-        background: #eff6ff;
-        color: #2563eb;
-        border-left: 3px solid #3b82f6;
-    }
-
-    .nav-dropdown-item.active_customers:hover {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-
-    .nav-dropdown-item.active_customers i {
         color: #3b82f6;
     }
 
@@ -331,19 +331,6 @@
 
     .nav-dropdown-item.active_spreadsheet i {
         color: #10b981;
-    }
-
-    /* ===== SETTINGS DROPDOWN - Keep settings toggle with gear icon ===== */
-    #settingsDropdown .nav-dropdown-item {
-        border-radius: 10px;
-    }
-
-    #settingsDropdown .nav-dropdown-item.active_database,
-    #settingsDropdown .nav-dropdown-item.active_customers,
-    #settingsDropdown .nav-dropdown-item.active_dtr,
-    #settingsDropdown .nav-dropdown-item.active_prompt,
-    #settingsDropdown .nav-dropdown-item.active_spreadsheet {
-        border-radius: 10px 0 0 10px;
     }
 
     /* ===== DROPDOWN MENU CONTAINER ===== */
@@ -461,6 +448,8 @@
         </div>
     </div>
 
+
+
     <!-- Purchase Order Dropdown - Visible to ALL -->
     <?php
     $poActive = in_array($currentPage, [
@@ -476,13 +465,35 @@
                 id="addOrderArrow"></i>
         </div>
         <div class="nav-dropdown-menu <?php echo $poActive ? 'show' : ''; ?>" id="addOrderDropdown">
-            <a href="shop.php" class="nav-dropdown-item <?php echo $currentPage == 'shop.php' ? 'active_shop_po' : ''; ?>">
+            <a href="shop.php"
+                class="nav-dropdown-item <?php echo $currentPage == 'shop.php' ? 'active_shop_po' : ''; ?>">
                 <i class="fas fa-store"></i>
                 <span>Shop</span>
             </a>
-            <a href="cart.php" class="nav-dropdown-item <?php echo $currentPage == 'cart.php' ? 'active_cart_po' : ''; ?>">
+            <a href="cart.php"
+                class="nav-dropdown-item <?php echo $currentPage == 'cart.php' ? 'active_cart_po' : ''; ?>">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Cart</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Customers Dropdown - Visible to ALL -->
+    <?php
+    $customersActive = in_array($currentPage, ['registered_customers.php']);
+    ?>
+    <div class="nav-dropdown">
+        <div class="nav-dropdown-toggle" onclick="toggleDropdown('customersDropdown')">
+            <i class="fas fa-user-friends"></i>
+            <span>Customers</span>
+            <i class="fas fa-chevron-down dropdown-arrow <?php echo $customersActive ? 'rotated' : ''; ?>"
+                id="customersArrow"></i>
+        </div>
+        <div class="nav-dropdown-menu <?php echo $customersActive ? 'show' : ''; ?>" id="customersDropdown">
+            <a href="registered_customers.php"
+                class="nav-dropdown-item <?php echo $currentPage == 'registered_customers.php' ? 'active_customers' : ''; ?>">
+                <i class="fas fa-user"></i>
+                <span>Registered Customers</span>
             </a>
         </div>
     </div>
@@ -494,7 +505,6 @@
         $settingsActive = in_array($currentPage, [
             'prompt_ai.php',
             'database_manager.php',
-            'registered_customers.php',
             'dtr.php',
             'blank_spreadsheet.php'
         ]);
@@ -502,7 +512,7 @@
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('settingsDropdown')">
                 <i class="fas fa-cog"></i>
-                <span>Settings</span>
+                <span>Tools</span>
                 <i class="fas fa-chevron-down dropdown-arrow <?php echo $settingsActive ? 'rotated' : ''; ?>"
                     id="settingsArrow"></i>
             </div>
@@ -512,25 +522,20 @@
                     <i class="fas fa-database"></i>
                     <span>DB Manager</span>
                 </a>
-                <a href="registered_customers.php"
-                    class="nav-dropdown-item <?php echo $currentPage == 'registered_customers.php' ? 'active_customers' : ''; ?>">
-                    <i class="fas fa-user-friends"></i>
-                    <span>Customers</span>
-                </a>
-                <!-- <a href="dtr.php" class="nav-dropdown-item <?php echo $currentPage == 'dtr.php' ? 'active_dtr' : ''; ?>">
+                <a href="dtr.php" class="nav-dropdown-item <?php echo $currentPage == 'dtr.php' ? 'active_dtr' : ''; ?>">
                     <i class="fas fa-calendar-alt"></i>
                     <span>DTR</span>
-                </a> -->
-                <!-- <a href="prompt_ai.php"
+                </a>
+                <a href="prompt_ai.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'prompt_ai.php' ? 'active_prompt' : ''; ?>">
                     <i class="fas fa-robot"></i>
                     <span>Joesph AI</span>
-                </a> -->
-                <!-- <a href="blank_spreadsheet.php"
+                </a>
+                <a href="blank_spreadsheet.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'blank_spreadsheet.php' ? 'active_spreadsheet' : ''; ?>">
                     <i class="fas fa-table"></i>
                     <span>Spread Sheet</span>
-                </a> -->
+                </a>
             </div>
         </div>
     <?php endif; ?>

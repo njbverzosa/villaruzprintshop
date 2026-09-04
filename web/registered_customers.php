@@ -50,6 +50,9 @@ if (!$userData) {
 // ==============================================
 $user = $userData;
 
+// Store authorize_access for conditional logic
+$authorizeAccess = isset($user['authorize_access']) ? (int) $user['authorize_access'] : 0;
+
 // Set timezone
 date_default_timezone_set('Asia/Manila');
 $currentDateTime = date('D, j M Y g:i A');
@@ -131,8 +134,10 @@ function getOnlineStatus($onlineTime)
         return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => '4w+'];
     }
 }
-?>
 
+// Get current page for sidebar
+$currentPage = basename($_SERVER['PHP_SELF']);
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -373,8 +378,6 @@ function getOnlineStatus($onlineTime)
             padding: 20px;
             overflow-y: auto;
         }
-
-        
 
         .merchandise-section {
             background: #ffffff;
@@ -1163,14 +1166,16 @@ function getOnlineStatus($onlineTime)
                                 <th>Chat</th>
                                 <th>Phone Number</th>
                                 <th>Email</th>
-                                <th>Action</th>
-                                <th>User / Pass</th>
+                                <?php if ($authorizeAccess == 0): ?>
+                                    <th>Action</th>
+                                    <th>User / Pass</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="8" style="text-align: center; padding: 40px;">No customers found</td>
+                                    <td colspan="<?php echo $authorizeAccess == 0 ? '8' : '6'; ?>" style="text-align: center; padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
@@ -1254,51 +1259,53 @@ function getOnlineStatus($onlineTime)
                                                 title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
                                             </span>
                                         </td>
-                                        <td>
-                                            <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
-                                                <?php if ($isAccountActive): ?>
-                                                    <button class="lock-btn"
-                                                        onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                        <i class="fas fa-lock"></i>
+                                        <?php if ($authorizeAccess == 0): ?>
+                                            <td>
+                                                <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
+                                                    <?php if ($isAccountActive): ?>
+                                                        <button class="lock-btn"
+                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                            <i class="fas fa-lock"></i>
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <button class="unlock-btn"
+                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                            <i class="fas fa-unlock"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <button class="delete-btn"
+                                                        onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                        <i class="fas fa-trash-alt"></i>
                                                     </button>
-                                                <?php else: ?>
-                                                    <button class="unlock-btn"
-                                                        onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                        <i class="fas fa-unlock"></i>
+                                                </div>
+                                            </td>
+                                            <td style="white-space: nowrap;">
+                                                <div class="password-wrapper">
+                                                    <span style="color: #475569; font-weight: 500;">
+                                                        <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                                    </span>
+                                                    <span style="color: #94a3b8;">/</span>
+                                                    <span class="password-text" id="pass_<?php echo $customer['id']; ?>"
+                                                        style="display: none;">
+                                                        <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
+                                                    </span>
+                                                    <span class="password-placeholder"
+                                                        id="placeholder_<?php echo $customer['id']; ?>">
+                                                        ••••••••
+                                                    </span>
+                                                    <button class="copy-btn copy-btn-eye"
+                                                        onclick="togglePassword(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['text_pass'] ?? ''); ?>')"
+                                                        title="Show/Hide password">
+                                                        <i class="fas fa-eye" id="eye_<?php echo $customer['id']; ?>"></i>
                                                     </button>
-                                                <?php endif; ?>
-                                                <button class="delete-btn"
-                                                    onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td style="white-space: nowrap;">
-                                            <div class="password-wrapper">
-                                                <span style="color: #475569; font-weight: 500;">
-                                                    <?php echo htmlspecialchars($customer['acc_number']); ?>
-                                                </span>
-                                                <span style="color: #94a3b8;">/</span>
-                                                <span class="password-text" id="pass_<?php echo $customer['id']; ?>"
-                                                    style="display: none;">
-                                                    <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
-                                                </span>
-                                                <span class="password-placeholder"
-                                                    id="placeholder_<?php echo $customer['id']; ?>">
-                                                    ••••••••
-                                                </span>
-                                                <button class="copy-btn copy-btn-eye"
-                                                    onclick="togglePassword(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['text_pass'] ?? ''); ?>')"
-                                                    title="Show/Hide password">
-                                                    <i class="fas fa-eye" id="eye_<?php echo $customer['id']; ?>"></i>
-                                                </button>
-                                                <button class="copy-btn copy-btn-copy"
-                                                    onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>', <?php echo $customer['id']; ?>)"
-                                                    title="Copy password">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                                                    <button class="copy-btn copy-btn-copy"
+                                                        onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>', <?php echo $customer['id']; ?>)"
+                                                        title="Copy password">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -1356,14 +1363,14 @@ function getOnlineStatus($onlineTime)
         }
 
         if (burgerBtn) {
-            burgerBtn.addEventListener('click', function (e) {
+            burgerBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
         }
 
         if (sidebarCloseBtn) {
-            sidebarCloseBtn.addEventListener('click', function (e) {
+            sidebarCloseBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 closeSidebar();
             });
@@ -1375,7 +1382,7 @@ function getOnlineStatus($onlineTime)
 
         // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
-            link.addEventListener('click', function () {
+            link.addEventListener('click', function() {
                 if (window.innerWidth <= 768) {
                     // Don't close if it's a dropdown toggle
                     if (!this.closest('.nav-dropdown-toggle')) {
@@ -1398,7 +1405,7 @@ function getOnlineStatus($onlineTime)
         }
 
         // ========== BURGER VISIBILITY ON RESIZE ==========
-        window.addEventListener('resize', function () {
+        window.addEventListener('resize', function() {
             if (window.innerWidth > 768) {
                 // Desktop: close sidebar if open and hide overlay
                 if (isSidebarOpen) {
@@ -1659,13 +1666,13 @@ function getOnlineStatus($onlineTime)
             container.scrollLeft = 0;
         }
 
-        document.getElementById('landmarkModal').addEventListener('click', function (e) {
+        document.getElementById('landmarkModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeLandmarkModal();
             }
         });
 
-        document.getElementById('landmarkModalImage').addEventListener('click', function (e) {
+        document.getElementById('landmarkModalImage').addEventListener('click', function(e) {
             e.stopPropagation();
             if (currentZoom === 1) {
                 zoomIn();
@@ -1674,7 +1681,7 @@ function getOnlineStatus($onlineTime)
             }
         });
 
-        document.getElementById('landmarkModalImage').addEventListener('wheel', function (e) {
+        document.getElementById('landmarkModalImage').addEventListener('wheel', function(e) {
             e.preventDefault();
             if (e.deltaY < 0) {
                 zoomIn();
@@ -1683,7 +1690,7 @@ function getOnlineStatus($onlineTime)
             }
         });
 
-        window.addEventListener('resize', function () {
+        window.addEventListener('resize', function() {
             if (document.getElementById('landmarkModal').style.display === 'block') {
                 resetZoom();
             }
@@ -1739,6 +1746,7 @@ function getOnlineStatus($onlineTime)
         console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
         console.log('👥 Registered Customers page loaded');
         console.log('🔐 Password hidden by default - click eye to show');
+        console.log('🔑 authorize_access: <?php echo $authorizeAccess; ?>');
     </script>
 </body>
 
