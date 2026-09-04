@@ -448,8 +448,6 @@
         </div>
     </div>
 
-
-
     <!-- Purchase Order Dropdown - Visible to ALL -->
     <?php
     $poActive = in_array($currentPage, [
@@ -480,7 +478,8 @@
 
     <!-- Customers Dropdown - Visible to ALL -->
     <?php
-    $customersActive = in_array($currentPage, ['registered_customers.php']);
+    // Check if current page is registered_customers.php OR chat_view.php (for chat page)
+    $customersActive = in_array($currentPage, ['registered_customers.php', 'chat_view.php']);
     ?>
     <div class="nav-dropdown">
         <div class="nav-dropdown-toggle" onclick="toggleDropdown('customersDropdown')">
@@ -491,7 +490,7 @@
         </div>
         <div class="nav-dropdown-menu <?php echo $customersActive ? 'show' : ''; ?>" id="customersDropdown">
             <a href="registered_customers.php"
-                class="nav-dropdown-item <?php echo $currentPage == 'registered_customers.php' ? 'active_customers' : ''; ?>">
+                class="nav-dropdown-item <?php echo in_array($currentPage, ['registered_customers.php', 'chat_view.php']) ? 'active_customers' : ''; ?>">
                 <i class="fas fa-user"></i>
                 <span>Registered Customers</span>
             </a>
