@@ -3,7 +3,6 @@
 
 session_start();
 
-
 // ==============================================
 // 1. FIX PATHS - config.php is in DB_Conn folder at root level
 // ==============================================
@@ -53,6 +52,10 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrfToken = $_SESSION['csrf_token'];
+
+// Get current page for sidebar
+$currentPage = basename($_SERVER['PHP_SELF']);
+$authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['authorize_access'] : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -86,10 +89,152 @@ $csrfToken = $_SESSION['csrf_token'];
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 20px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
         .main-content {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+                margin-left: 0 !important;
+                padding-top: 10px;
+            }
         }
 
         .dashboard-header {
@@ -103,6 +248,57 @@ $csrfToken = $_SESSION['csrf_token'];
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .welcome h4 i {
+            color: #3b82f6;
+            margin-right: 8px;
+        }
+
+        .menu-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
+        }
+
+        .menu-header .user-name {
+            font-weight: 700;
+            font-size: 18px;
+            color: #0f172a;
+            margin-top: 8px;
+        }
+
+        .menu-header .user-greeting {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .menu-header i {
+            font-size: 40px;
+            color: #3b82f6;
+        }
+
+        .menu-nav {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        
+
 
         /* ========== CHAT CONTAINER ========== */
         .chat-container {
@@ -464,132 +660,6 @@ $csrfToken = $_SESSION['csrf_token'];
             }
         }
 
-        /* ========== BURGER MENU ========== */
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-        }
-
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
-        }
-
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
-        }
-
-        .menu-header {
-            padding: 25px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            background: #f8fafc;
-        }
-
-        .menu-header .user-name {
-            font-weight: 700;
-            font-size: 18px;
-            color: #0f172a;
-            margin-top: 8px;
-        }
-
-        .menu-header .user-greeting {
-            font-size: 13px;
-            color: #64748b;
-        }
-
-        .menu-header i {
-            font-size: 40px;
-            color: #3b82f6;
-        }
-
-        .menu-nav {
-            flex: 1;
-            padding: 20px;
-        }
-
-        .menu-nav .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 12px;
-            border-radius: 14px;
-            color: #475569;
-            text-decoration: none;
-            transition: all 0.2s;
-            margin-bottom: 8px;
-        }
-
-        .menu-nav .nav-item i {
-            width: 24px;
-            font-size: 20px;
-            color: #3b82f6;
-        }
-
-        .menu-nav .nav-item span {
-            font-size: 15px;
-            font-weight: 500;
-        }
-
-        .menu-nav .nav-item:hover {
-            background: #eff6ff;
-            color: #1e293b;
-        }
-
-        .menu-nav .nav-item.active {
-            background: #eff6ff;
-            color: #3b82f6;
-            border-left: 3px solid #3b82f6;
-        }
-
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
-        }
-
-        .menu-overlay.active {
-            display: block;
-        }
-
         /* ========== TOAST ========== */
         .toast-notification {
             position: fixed;
@@ -644,6 +714,7 @@ $csrfToken = $_SESSION['csrf_token'];
         @media (max-width: 768px) {
             .main-content {
                 padding: 10px;
+                padding-top: 10px;
             }
 
             .dashboard-header {
@@ -651,7 +722,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 border-radius: 10px;
             }
 
-            .dashboard-header .welcome h4 {
+            .welcome h4 {
                 font-size: 15px;
             }
 
@@ -711,18 +782,25 @@ $csrfToken = $_SESSION['csrf_token'];
                 padding: 10px 16px;
                 font-size: 13px;
             }
-
-            .burger-btn {
-                top: 15px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
         }
 
         @media (max-width: 480px) {
+            .main-content {
+                padding: 8px;
+                padding-top: 8px;
+            }
+
+            .dashboard-header {
+                padding: 10px 12px;
+            }
+
+            .welcome h4 {
+                font-size: 13px;
+            }
+
             .chat-container {
                 border-radius: 10px;
+                height: calc(100vh - 80px);
             }
 
             .chat-header-inner {
@@ -763,7 +841,7 @@ $csrfToken = $_SESSION['csrf_token'];
             }
 
             .chat-input-area {
-                padding: 10px 12px;
+                padding: 8px 10px;
                 border-radius: 0 0 10px 10px;
             }
 
@@ -786,33 +864,32 @@ $csrfToken = $_SESSION['csrf_token'];
 
 <body>
     <div class="app-wrapper">
-        <!-- Burger Button -->
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
-
-        <!-- Overlay for menu background -->
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <main class="main-content">
             <input type="hidden" id="csrfToken" value="<?php echo $csrfToken; ?>">
-            <input type="hidden" id="targetAcc" value="<?php echo htmlspecialchars($targetAcc); ?>">
             <input type="hidden" id="myAcc" value="<?php echo htmlspecialchars($accNumber); ?>">
 
             <!-- Dashboard Header -->
             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4><i class="fas fa-code"></i> SQL Executer</h4>
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4><i class="fas fa-code"></i> SQL Executer</h4>
+                    </div>
                 </div>
             </div>
 
@@ -827,14 +904,11 @@ $csrfToken = $_SESSION['csrf_token'];
                         </div>
                         <div class="user-info">
                             <span class="user-name">
-
                                 Jo Seph AI
                                 <span class="ai-badge"><i class="fas fa-brain"></i> AI</span>
                             </span>
-
                         </div>
                     </div>
-
                 </div>
 
                 <!-- Chat Messages -->
@@ -864,13 +938,95 @@ $csrfToken = $_SESSION['csrf_token'];
         </main>
     </div>
 
+    <?php
+    include '../footer.php';
+    ?>
+
     <script>
-        // ==============================================
-        // CSRF TOKEN
-        // ==============================================
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
+        const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
+
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
+            menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ========== CSRF TOKEN ==========
         const csrfToken = document.getElementById('csrfToken').value;
-        const targetAcc = document.getElementById('targetAcc').value;
-        const myAcc = document.getElementById('myAcc').value;
 
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
@@ -879,42 +1035,6 @@ $csrfToken = $_SESSION['csrf_token'];
 
         let isSending = false;
         let shouldAutoScroll = true;
-
-        // ==============================================
-        // BURGER MENU
-        // ==============================================
-        const burgerBtn = document.getElementById('burgerBtn');
-        const sideMenu = document.getElementById('sideMenu');
-        const menuOverlay = document.getElementById('menuOverlay');
-
-        function openMenu() {
-            sideMenu.classList.add('open');
-            menuOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeMenu() {
-            sideMenu.classList.remove('open');
-            menuOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        burgerBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (sideMenu.classList.contains('open')) {
-                closeMenu();
-            } else {
-                openMenu();
-            }
-        });
-
-        menuOverlay.addEventListener('click', closeMenu);
-        document.querySelectorAll('.side-menu .nav-item').forEach(link => {
-            link.addEventListener('click', closeMenu);
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeMenu();
-        });
 
         // ==============================================
         // TOAST
@@ -981,121 +1101,76 @@ $csrfToken = $_SESSION['csrf_token'];
             scrollToBottom();
         }
 
-        // Replace the sendMessage function with this:
-function sendMessage(messageText) {
-    const message = messageText || messageInput.value.trim();
-    if (!message || isSending) return;
-
-    isSending = true;
-    sendBtn.disabled = true;
-    messageInput.disabled = true;
-    const originalBtnHTML = sendBtn.innerHTML;
-    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Thinking...';
-
-    // Show typing indicator
-    typingIndicator.style.display = 'block';
-    scrollToBottom();
-
-    const formData = new FormData();
-    formData.append('action', 'process');
-    formData.append('prompt', message);
-    formData.append('csrf_token', csrfToken);
-
-    fetch('../API/prompter.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Hide typing indicator
-        typingIndicator.style.display = 'none';
-
-        // Add the user message to chat
-        const now = new Date();
-        const formattedTime = now.toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        addMessageToChat(message, true, formattedTime);
-
-        // Clear input
-        if (!messageText) {
-            messageInput.value = '';
-        }
-
-        // Add AI response
-        const responseMessage = data.success ? '🤖 ' + data.message : '❌ ' + data.message;
-        addMessageToChat(responseMessage, false, formattedTime);
-
-        if (data.success) {
-            showToast('✅ Command executed successfully!', 'success');
-        } else {
-            showToast('❌ Command failed. Try again.', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        typingIndicator.style.display = 'none';
-        showToast('⚠️ Network error. Please try again.', 'error');
-    })
-    .finally(() => {
-        isSending = false;
-        sendBtn.disabled = false;
-        messageInput.disabled = false;
-        sendBtn.innerHTML = originalBtnHTML;
-        messageInput.focus();
-    });
-}
-
         // ==============================================
-        // SIMULATE AI RESPONSE
+        // SEND MESSAGE
         // ==============================================
-        function simulateAIResponse(userMessage) {
+        function sendMessage(messageText) {
+            const message = messageText || messageInput.value.trim();
+            if (!message || isSending) return;
+
+            isSending = true;
+            sendBtn.disabled = true;
+            messageInput.disabled = true;
+            const originalBtnHTML = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Thinking...';
+
             // Show typing indicator
             typingIndicator.style.display = 'block';
             scrollToBottom();
 
-            // Simulate AI thinking delay (2-4 seconds)
-            const delay = 1500 + Math.random() * 2000;
+            const formData = new FormData();
+            formData.append('action', 'process');
+            formData.append('prompt', message);
+            formData.append('csrf_token', csrfToken);
 
-            setTimeout(() => {
-                // Hide typing indicator
-                typingIndicator.style.display = 'none';
+            fetch('../API/prompter.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide typing indicator
+                    typingIndicator.style.display = 'none';
 
-                // Generate AI response
-                let response = "✅ SQL command executed successfully!";
+                    // Add the user message to chat
+                    const now = new Date();
+                    const formattedTime = now.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
 
-                // Check for specific keywords
-                const lowerMsg = userMessage.toLowerCase();
-                if (lowerMsg.includes('select') || lowerMsg.includes('show') || lowerMsg.includes('get')) {
-                    response = "📊 Query executed successfully!\n\nRows returned: 42\nExecution time: 0.023s";
-                } else if (lowerMsg.includes('insert') || lowerMsg.includes('add') || lowerMsg.includes('create')) {
-                    response = "📝 Insert/Update completed!\n\nAffected rows: 1\nNew ID: " + Math.floor(Math.random() * 1000);
-                } else if (lowerMsg.includes('delete') || lowerMsg.includes('drop') || lowerMsg.includes('remove')) {
-                    response = "🗑️ Delete/Drop completed!\n\nAffected rows: 3\nOperation: Successful";
-                } else if (lowerMsg.includes('update') || lowerMsg.includes('modify')) {
-                    response = "🔄 Update completed!\n\nAffected rows: 5\nOperation: Successful";
-                } else {
-                    response = "✅ Command processed successfully!\n\nStatus: OK\nTime: " + new Date().toLocaleTimeString();
-                }
+                    addMessageToChat(message, true, formattedTime);
 
-                // Add AI response
-                const now = new Date();
-                const formattedTime = now.toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
+                    // Clear input
+                    if (!messageText) {
+                        messageInput.value = '';
+                    }
+
+                    // Add AI response
+                    const responseMessage = data.success ? '🤖 ' + data.message : '❌ ' + data.message;
+                    addMessageToChat(responseMessage, false, formattedTime);
+
+                    if (data.success) {
+                        showToast('✅ Command executed successfully!', 'success');
+                    } else {
+                        showToast('❌ Command failed. Try again.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    typingIndicator.style.display = 'none';
+                    showToast('⚠️ Network error. Please try again.', 'error');
+                })
+                .finally(() => {
+                    isSending = false;
+                    sendBtn.disabled = false;
+                    messageInput.disabled = false;
+                    sendBtn.innerHTML = originalBtnHTML;
+                    messageInput.focus();
                 });
-
-                addMessageToChat(response, false, formattedTime);
-                showToast('AI response generated', 'info');
-            }, delay);
         }
 
         // ==============================================
@@ -1128,9 +1203,10 @@ function sendMessage(messageText) {
         // ==============================================
         scrollToBottom();
 
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
         console.log('🤖 Jo Seph AI - SQL Executer loaded');
         console.log('💡 Type a SQL command to execute');
-        console.log('ℹ️  This is a UI demo - no backend calls');
     </script>
 </body>
 

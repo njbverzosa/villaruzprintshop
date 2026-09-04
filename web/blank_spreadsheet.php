@@ -313,192 +313,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
             overflow-y: auto;
         }
 
-        .menu-nav .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 12px;
-            border-radius: 14px;
-            color: #475569;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            margin-bottom: 8px;
-        }
-
-        .menu-nav .nav-item i {
-            width: 24px;
-            font-size: 20px;
-            color: #3b82f6;
-        }
-
-        .menu-nav .nav-item span {
-            font-size: 15px;
-            font-weight: 500;
-        }
-
-        .menu-nav .nav-item:hover {
-            background: #eff6ff;
-            color: #1e293b;
-            transform: translateX(4px);
-        }
-
-        .menu-nav .nav-item.active {
-            background: #eff6ff;
-            color: #3b82f6;
-            border-left: 3px solid #3b82f6;
-        }
-
-        .menu-nav .nav-item.shop {
-            background: #eff6ff;
-            color: #3b82f6;
-            border-left: 3px solid #3b82f6;
-        }
-
-        /* ========== DROPDOWN STYLES ========== */
-        .nav-dropdown {
-            margin-bottom: 8px;
-        }
-
-        .nav-dropdown-toggle {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 12px;
-            border-radius: 14px;
-            color: #475569;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .nav-dropdown-toggle:hover {
-            background: #eff6ff;
-            color: #1e293b;
-            transform: translateX(4px);
-        }
-
-        .nav-dropdown-toggle i:first-child {
-            width: 24px;
-            font-size: 20px;
-            color: #3b82f6;
-        }
-
-        .nav-dropdown-toggle span {
-            flex: 1;
-            font-size: 15px;
-            font-weight: 500;
-        }
-
-        .dropdown-arrow {
-            font-size: 12px !important;
-            transition: transform 0.3s ease;
-            width: auto !important;
-        }
-
-        .dropdown-arrow.rotated {
-            transform: rotate(180deg);
-        }
-
-        .nav-dropdown-menu {
-            display: none;
-            margin-left: 35px;
-            margin-top: 5px;
-            margin-bottom: 5px;
-            border-left: 2px solid #e2e8f0;
-        }
-
-        .nav-dropdown-menu.show {
-            display: block;
-        }
-
-        .nav-dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            color: #475569;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
-
-        .nav-dropdown-item:hover {
-            background: #eff6ff;
-            color: #1e293b;
-            transform: translateX(4px);
-        }
-
-        .nav-dropdown-item i {
-            width: 20px;
-            font-size: 14px;
-            color: #3b82f6;
-        }
-
-        .nav-dropdown-item span {
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .nav-dropdown-item.active {
-            background: #eff6ff;
-            color: #3b82f6;
-            border-left: 3px solid #3b82f6;
-        }
-
-        .nav-dropdown-item.active_paid {
-            background: #eff6ff;
-            color: green;
-            border-left: 3px solid green;
-        }
-
-        .nav-dropdown-item.active_paid:hover {
-            background: #d1fae5;
-            color: #065f46;
-            transform: translateX(4px);
-        }
-
-        .nav-dropdown-item.active_pending {
-            background: #eff6ff;
-            color: orange;
-            border-left: 3px solid orange;
-        }
-
-        .nav-dropdown-item.active_pending:hover {
-            background: #fef3c7;
-            color: #92400e;
-            transform: translateX(4px);
-        }
-
-        .nav-dropdown-item.active_outside {
-            background: #eff6ff;
-            color: #3b82f6;
-            border-left: 3px solid #3b82f6;
-        }
-
-        .nav-dropdown-item.active_outside:hover {
-            background: #dbeafe;
-            color: #1e40af;
-            transform: translateX(4px);
-        }
-
-        .nav-dropdown-item.active_credit {
-            background: #eff6ff;
-            color: red;
-            border-left: 3px solid red;
-        }
-
-        .nav-dropdown-item.active_credit:hover {
-            background: #fee2e2;
-            color: #991b1b;
-            transform: translateX(4px);
-        }
-
-        .nav-dropdown-item.shop {
-            background: #eff6ff;
-            color: #3b82f6;
-            border-left: 3px solid #3b82f6;
-        }
+        
 
         /* Table Controls */
         .table-controls {
@@ -876,24 +691,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
         <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <!-- Close Button (Mobile Only) -->
-                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-
-                <div class="menu-header">
-                    <i class="fas fa-store"></i>
-                    <div class="user-greeting">Logged in as</div>
-                    <div class="user-name">
-                        <?php
-                        echo htmlspecialchars($user['user_name'] ?? 'User');
-                        ?>
-                    </div>
-                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
-                    </div>
-                </div>
-                 <?php
+                <?php
                 include 'sidebar.php';
                 ?>
             </div>
@@ -908,7 +706,8 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
                     </button>
                     <div class="welcome">
                         <h4><i class="fas fa-table"></i> Excel-like Spreadsheet</h4>
-                        <p style="font-size: 13px; color: #64748b; margin-top: 5px;">20 columns (A-T) | Click any cell to
+                        <p style="font-size: 13px; color: #64748b; margin-top: 5px;">20 columns (A-T) | Click any cell
+                            to
                             edit | Click headers to rename</p>
                     </div>
                 </div>
@@ -998,14 +797,14 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
         }
 
         if (burgerBtn) {
-            burgerBtn.addEventListener('click', function(e) {
+            burgerBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
         }
 
         if (sidebarCloseBtn) {
-            sidebarCloseBtn.addEventListener('click', function(e) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 closeSidebar();
             });
@@ -1017,7 +816,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
 
         // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
-            link.addEventListener('click', function() {
+            link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
                     if (!this.closest('.nav-dropdown-toggle')) {
                         closeSidebar();
@@ -1039,7 +838,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
         }
 
         // ========== BURGER VISIBILITY ON RESIZE ==========
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
                 if (isSidebarOpen) {
                     closeSidebar();
@@ -1128,7 +927,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
                 headerInput.setAttribute('data-col', j);
                 headerInput.classList.add('header-input');
 
-                headerInput.addEventListener('change', function() {
+                headerInput.addEventListener('change', function () {
                     const colIdx = parseInt(this.getAttribute('data-col'));
                     columnHeaders[colIdx] = this.value;
                     showToast(`Column ${getColumnLetter(colIdx)} renamed to "${this.value}"`, 'success');
@@ -1161,7 +960,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
                     input.setAttribute('data-row', i);
                     input.setAttribute('data-col', j);
 
-                    input.addEventListener('focus', function() {
+                    input.addEventListener('focus', function () {
                         activeRow = parseInt(this.getAttribute('data-row'));
                         activeCol = parseInt(this.getAttribute('data-col'));
                         activeCell = this;
@@ -1169,7 +968,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
                         document.getElementById('formulaInput').value = (spreadsheetData[activeRow] && spreadsheetData[activeRow][activeCol] !== undefined) ? spreadsheetData[activeRow][activeCol] : '';
                     });
 
-                    input.addEventListener('input', function() {
+                    input.addEventListener('input', function () {
                         const rowIdx = parseInt(this.getAttribute('data-row'));
                         const colIdx = parseInt(this.getAttribute('data-col'));
                         if (!spreadsheetData[rowIdx]) spreadsheetData[rowIdx] = [];
@@ -1333,7 +1132,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
         }
 
         // Formula bar update
-        document.getElementById('formulaInput').addEventListener('change', function() {
+        document.getElementById('formulaInput').addEventListener('change', function () {
             if (activeCell) {
                 const value = this.value;
                 activeCell.value = value;
@@ -1351,7 +1150,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
         document.getElementById('clearAllBtn').addEventListener('click', clearAll);
 
         // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (activeCell) {
                 let newRow = activeRow;
                 let newCol = activeCol;
@@ -1393,7 +1192,7 @@ $authorizeAccess = isset($userData['authorize_access']) ? (int) $userData['autho
         });
 
         // Ctrl+S shortcut
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
                 saveToLocal();
