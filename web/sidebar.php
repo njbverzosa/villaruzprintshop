@@ -517,20 +517,20 @@
                     <i class="fas fa-user-friends"></i>
                     <span>Customers</span>
                 </a>
-                <a href="dtr.php" class="nav-dropdown-item <?php echo $currentPage == 'dtr.php' ? 'active_dtr' : ''; ?>">
+                <!-- <a href="dtr.php" class="nav-dropdown-item <?php echo $currentPage == 'dtr.php' ? 'active_dtr' : ''; ?>">
                     <i class="fas fa-calendar-alt"></i>
                     <span>DTR</span>
-                </a>
-                <a href="prompt_ai.php"
+                </a> -->
+                <!-- <a href="prompt_ai.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'prompt_ai.php' ? 'active_prompt' : ''; ?>">
                     <i class="fas fa-robot"></i>
                     <span>Joesph AI</span>
-                </a>
-                <a href="blank_spreadsheet.php"
+                </a> -->
+                <!-- <a href="blank_spreadsheet.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'blank_spreadsheet.php' ? 'active_spreadsheet' : ''; ?>">
                     <i class="fas fa-table"></i>
                     <span>Spread Sheet</span>
-                </a>
+                </a> -->
             </div>
         </div>
     <?php endif; ?>
