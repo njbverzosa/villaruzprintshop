@@ -581,7 +581,7 @@ if (isset($_SESSION['success'])) {
         <div class="auth-card">
             <p class="auth-sub">Create Account</p>
             <div style="text-align: center; margin-bottom: 20px;">
-                <span class="version-badge">V5.30.41</span>
+                <span class="version-badge">V11.50.41</span>
             </div>
 
             <?php if (!empty($errors)): ?>

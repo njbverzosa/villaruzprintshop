@@ -1,58 +1,62 @@
 <?php
-// paid_folder_with.php
+// credit_orders.php
 session_start();
 
-// Generate CSRF token if not exists
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
+// ==============================================
+// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 
-// Check if user is logged in with acc_number
-if (!isset($_SESSION['acc_number'])) {
-    header('Location: ../login.php');
-    exit();
+// ==============================================
+// STORE USER NAME IN SESSION FOR API USE
+// ==============================================
+if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
+    $_SESSION['user_name'] = $userData['f_name'];
 }
 
-// Fetch full user data from admins table
-$stmt = $pdo->prepare("SELECT * FROM admins WHERE acc_number = ?");
-$stmt->execute([$_SESSION['acc_number']]);
-$user = $stmt->fetch();
+// ==============================================
+// 2. CHECK LOGIN STATUS
+// ==============================================
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
+}
 
-if (!$user) {
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    $_SESSION['login_error'] = 'Please login first to access the shop.';
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 3. GET USER DATA FROM SESSION
+// ==============================================
+$userRole = $_SESSION['user_role'];
+$userId = $_SESSION['user_id'];
+$accNumber = $_SESSION['acc_number'];
+
+// Fetch user details from database
+$userData = null;
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+if (!$userData) {
+    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
-    exit();
+    exit;
 }
 
-
-// Store user role in session for easy access
-$_SESSION['role'] = $user['role'];
-
-// Set timezone
-date_default_timezone_set('Asia/Manila');
-$currentDateTime = date('D, j M Y g:i A');
-
-// Daily login bonus / update last login date
-$storedDate = $user['last_login_date'] ?? '';
-if ($storedDate !== $currentDateTime) {
-    $updateStmt = $pdo->prepare("UPDATE admins SET last_login_date = ? WHERE acc_number = ?");
-    $updateStmt->execute([$currentDateTime, $_SESSION['acc_number']]);
-
-    // Refresh user data
-    $stmt = $pdo->prepare("SELECT * FROM admins WHERE acc_number = ?");
-    $stmt->execute([$_SESSION['acc_number']]);
-    $user = $stmt->fetch();
-}
-
-// Update status to online (1 = online, 0 = offline)
-$stmt = $pdo->prepare("UPDATE admins SET status = 1 WHERE acc_number = ?");
-$stmt->execute([$_SESSION['acc_number']]);
-
+// ==============================================
+// 4. USE $userData INSTEAD OF $user
+// ==============================================
+$user = $userData;
 // Get delivery_number from URL
 $selectedDeliveryNumber = isset($_GET['delivery_number']) ? $_GET['delivery_number'] : '';
 
@@ -101,8 +105,9 @@ if (!$deliveryInfo && !empty($orderItems)) {
     $deliveryInfo = [
         'ordered_by' => $firstItem['ordered_by'] ?? ($firstItem['customer_name'] ?? 'Unknown Customer'),
         'delivery_m_y' => $firstItem['delivery_m_y'] ?? '',
-        'status' => $firstItem['status'] ?? 'CREDIT',
-        'delivery_number' => $selectedDeliveryNumber
+        'status' => $firstItem['status'] ?? 'PENDING',
+        'delivery_number' => $selectedDeliveryNumber,
+        'delivery_date' => $firstItem['delivery_date'] ?? null
     ];
 }
 
@@ -111,8 +116,9 @@ if (!$deliveryInfo) {
     $deliveryInfo = [
         'ordered_by' => 'Customer Information Not Found',
         'delivery_m_y' => '',
-        'status' => 'CREDIT',
-        'delivery_number' => $selectedDeliveryNumber
+        'status' => 'PENDING',
+        'delivery_number' => $selectedDeliveryNumber,
+        'delivery_date' => null
     ];
 }
 
@@ -131,12 +137,35 @@ if (empty($customerName) && !empty($orderItems)) {
 
 $monthYear = $deliveryInfo['delivery_m_y'] ?? '';
 $deliveryNumber = $deliveryInfo['delivery_number'] ?? $selectedDeliveryNumber;
-$currentStatus = $deliveryInfo['status'] ?? 'CREDIT';
+$currentStatus = $deliveryInfo['status'] ?? 'PENDING';
 
 // Calculate total amount
 $totalAmount = 0;
 foreach ($orderItems as $item) {
     $totalAmount += floatval($item['total_amount'] ?? 0);
+}
+
+// Encode monthYear for JavaScript
+$encodedMonthYear = urlencode($monthYear);
+
+/**
+ * Format delivery date for display
+ * 
+ * @param string|null $date Date in Y-m-d format
+ * @return string Formatted date (e.g., "26 August 2026")
+ */
+function formatDeliveryDate($date)
+{
+    if (empty($date) || $date === '0000-00-00' || $date === '1970-01-01') {
+        return '';
+    }
+
+    $timestamp = strtotime($date);
+    if ($timestamp === false || $timestamp <= 0) {
+        return '';
+    }
+
+    return date('j F Y', $timestamp);
 }
 ?>
 <!DOCTYPE html>
@@ -171,10 +200,152 @@ foreach ($orderItems as $item) {
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
         }
 
         .dashboard-header {
@@ -188,6 +359,12 @@ foreach ($orderItems as $item) {
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
             gap: 15px;
         }
 
@@ -207,57 +384,12 @@ foreach ($orderItems as $item) {
             color: #f59e0b;
         }
 
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-        }
-
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
-        }
-
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
-        }
-
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
         .menu-header .user-name {
@@ -280,6 +412,7 @@ foreach ($orderItems as $item) {
         .menu-nav {
             flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .menu-nav .nav-item {
@@ -290,7 +423,7 @@ foreach ($orderItems as $item) {
             border-radius: 14px;
             color: #475569;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             margin-bottom: 8px;
         }
 
@@ -308,6 +441,7 @@ foreach ($orderItems as $item) {
         .menu-nav .nav-item:hover {
             background: #eff6ff;
             color: #1e293b;
+            transform: translateX(4px);
         }
 
         .menu-nav .nav-item.active {
@@ -316,20 +450,150 @@ foreach ($orderItems as $item) {
             border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
+        .menu-nav .nav-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay.active {
+        /* ========== DROPDOWN STYLES ========== */
+        .nav-dropdown {
+            margin-bottom: 8px;
+        }
+
+        .nav-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .nav-dropdown-toggle:hover {
+            background: #eff6ff;
+            color: #1e293b;
+            transform: translateX(4px);
+        }
+
+        .nav-dropdown-toggle i:first-child {
+            width: 24px;
+            font-size: 20px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-toggle span {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .dropdown-arrow {
+            font-size: 12px !important;
+            transition: transform 0.3s ease;
+            width: auto !important;
+        }
+
+        .dropdown-arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .nav-dropdown-menu {
+            display: none;
+            margin-left: 35px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .nav-dropdown-menu.show {
             display: block;
+        }
+
+        .nav-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #eff6ff;
+            color: #1e293b;
+            transform: translateX(4px);
+        }
+
+        .nav-dropdown-item i {
+            width: 20px;
+            font-size: 14px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-item span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-item.active {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_paid {
+            background: #eff6ff;
+            color: green;
+            border-left: 3px solid green;
+        }
+
+        .nav-dropdown-item.active_paid:hover {
+            background: #d1fae5;
+            color: #065f46;
+            transform: translateX(4px);
+        }
+
+        .nav-dropdown-item.active_pending {
+            background: #eff6ff;
+            color: orange;
+            border-left: 3px solid orange;
+        }
+
+        .nav-dropdown-item.active_pending:hover {
+            background: #fef3c7;
+            color: #92400e;
+            transform: translateX(4px);
+        }
+
+        .nav-dropdown-item.active_outside {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_outside:hover {
+            background: #dbeafe;
+            color: #1e40af;
+            transform: translateX(4px);
+        }
+
+        .nav-dropdown-item.active_credit {
+            background: #eff6ff;
+            color: red;
+            border-left: 3px solid red;
+        }
+
+        .nav-dropdown-item.active_credit:hover {
+            background: #fee2e2;
+            color: #991b1b;
+            transform: translateX(4px);
         }
 
         .orders-container {
@@ -395,7 +659,6 @@ foreach ($orderItems as $item) {
         }
 
         /* Buttons */
-
         .receipt-actions {
             display: flex;
             justify-content: center;
@@ -419,20 +682,18 @@ foreach ($orderItems as $item) {
             font-weight: 500;
             transition: all 0.3s;
             cursor: pointer;
-            border: 1;
+            border: 1px solid #ccc;
             font-size: 14px;
         }
 
         .receipt-btn:hover {
-            background: gray;
+            background: #f0f0f0;
             transform: translateY(-2px);
         }
 
         .receipt-btn i {
             font-size: 18px;
         }
-
-
 
         /* Custom Select Styles */
         .status-select {
@@ -447,12 +708,12 @@ foreach ($orderItems as $item) {
             font-weight: 500;
             transition: all 0.3s;
             cursor: pointer;
-            border: 1;
+            border: 1px solid #ccc;
             font-size: 14px;
         }
 
         .status-select:hover {
-            background: gray;
+            background: #f0f0f0;
             transform: translateY(-2px);
         }
 
@@ -460,22 +721,6 @@ foreach ($orderItems as $item) {
             background: white;
             color: #1e293b;
             padding: 10px;
-        }
-
-        .status-select option[value="PAID"] {
-            color: black;
-        }
-
-        .status-select option[value="CANCELLED"] {
-            color: black;
-        }
-
-        .status-select option[value="PENDING"] {
-            color: black;
-        }
-
-        .status-select option[value="CREDIT"] {
-            color: black;
         }
 
         .status-wrapper i {
@@ -540,8 +785,6 @@ foreach ($orderItems as $item) {
             font-size: 16px;
             color: #64748b;
         }
-
-
 
         /* Computer-Style Modal Dialog */
         .system-modal-overlay {
@@ -710,6 +953,53 @@ foreach ($orderItems as $item) {
             border-color: #0078d7;
         }
 
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2001;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 14px;
+        }
+
+        .toast-success {
+            background: #10b981;
+        }
+
+        .toast-error {
+            background: #ef4444;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
         @media (max-width: 480px) {
             .system-modal {
                 min-width: 300px;
@@ -734,17 +1024,7 @@ foreach ($orderItems as $item) {
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
-            }
-
-            .burger-btn {
-                top: 15px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
-
-            .side-menu {
-                width: 260px;
+                padding-top: 20px;
             }
 
             .orders-table td {
@@ -755,15 +1035,6 @@ foreach ($orderItems as $item) {
             .delivery-header {
                 font-size: 12px;
                 padding: 10px 15px;
-            }
-
-            .breadcrumb {
-                padding: 10px 15px;
-            }
-
-            .breadcrumb-item,
-            .breadcrumb-current {
-                font-size: 11px;
             }
 
             .welcome h4 {
@@ -778,59 +1049,86 @@ foreach ($orderItems as $item) {
             .receipt-btn i {
                 font-size: 14px;
             }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
         }
 
         @media (max-width: 480px) {
             .main-content {
                 padding: 15px;
+                padding-top: 15px;
             }
 
-
             .dashboard-header {
-                padding: 20px 30px;
+                padding: 12px 15px;
                 border-radius: 10px;
             }
 
-            .welcome h1 {
-                font-size: 18px;
+            .welcome h4 {
+                font-size: 13px;
             }
 
+            .orders-table td {
+                padding: 4px 6px;
+                font-size: 10px;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="app-wrapper">
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
-
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <!-- Close Button (Mobile Only) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="menu-header">
+                    <i class="fas fa-store"></i>
+                    <div class="user-greeting">Logged in as</div>
+                    <div class="user-name">
+                        <?php
+                        echo htmlspecialchars($user['user_name'] ?? 'User');
+                        ?>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+                    </div>
+                </div>
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <main class="main-content">
             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4>
-                        <a href="credit_folder.php"><i class="fas fa-folder-open"></i> Credit Folders </a>
-                        <?php if ($monthYear): ?>
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4>
+                            <a href="credit_folder.php"><i class="fas fa-folder-open"></i> Credit Folders </a>
+                            <?php if ($monthYear): ?>
+                                <i class="fas fa-chevron-right"></i>
+                                <a href="credit_folder_with.php?month=<?= urlencode($monthYear) ?>">
+                                    <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
+                                </a>
+                            <?php endif; ?>
                             <i class="fas fa-chevron-right"></i>
-                            <a href="credit_folder_with.php?month=<?= urlencode($monthYear) ?>">
-                                <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
-                            </a>
-                        <?php endif; ?>
-                        <i class="fas fa-chevron-right"></i>
-                        <i class="fas fa-folder-open"></i> <?= htmlspecialchars($deliveryNumber) ?>
-                    </h4>
+                            <i class="fas fa-folder-open"></i> <?= htmlspecialchars($deliveryNumber) ?>
+                        </h4>
+                    </div>
                 </div>
             </div>
 
@@ -891,22 +1189,17 @@ foreach ($orderItems as $item) {
                                 <i class="fas fa-file-excel"></i> Download Excel
                             </button>
                             <button class="receipt-btn edit-mode-btn" id="edit-mode-btn">
-                                <i class="fas fa-edit"></i>
+                                <i class="fas fa-edit"></i> Edit
                             </button>
 
                             <!-- Update Status Dropdown -->
                             <div class="status-wrapper">
                                 <select class="status-select" id="status-select"
                                     data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
-
-                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>><i
-                                            class="fas fa-pending"></i> PAID</option>
-                                    <!-- <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>><i
-                                            class="fas fa-pending"></i> CANCELLED</option> -->
-                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>><i
-                                            class="fas fa-pending"></i> CREDIT</option>
-                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>><i
-                                            class="fas fa-pending"></i> PENDING</option>
+                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING
+                                    </option>
+                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
+                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
                                 </select>
                             </div>
                         </div>
@@ -921,26 +1214,94 @@ foreach ($orderItems as $item) {
     ?>
 
     <script>
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
+        const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
+
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
+            menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    // Don't close if it's a dropdown toggle
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                // Desktop: close sidebar if open and hide overlay
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ========== EXISTING FUNCTIONS ==========
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
         let isEditMode = false;
         let originalData = new Map(); // Store original data for each row
-
-        // Burger menu functionality
-        const burgerBtn = document.getElementById('burgerBtn');
-        const menuOverlay = document.getElementById('menuOverlay');
-        const sideMenu = document.querySelector('.side-menu');
-
-        if (burgerBtn && menuOverlay && sideMenu) {
-            burgerBtn.addEventListener('click', () => {
-                sideMenu.classList.add('open');
-                menuOverlay.classList.add('active');
-            });
-
-            menuOverlay.addEventListener('click', () => {
-                sideMenu.classList.remove('open');
-                menuOverlay.classList.remove('active');
-            });
-        }
 
         function generateReceipt(type) {
             const deliveryNumber = '<?= htmlspecialchars($selectedDeliveryNumber) ?>';
@@ -1003,12 +1364,12 @@ foreach ($orderItems as $item) {
 
             // Set column widths
             ws['!cols'] = [
-                { wch: 5 },   // #
-                { wch: 10 },  // Unit
-                { wch: 35 },  // Item Description
-                { wch: 10 },  // Quantity
-                { wch: 12 },  // Unit Cost
-                { wch: 15 }   // Total Cost
+                { wch: 5 }, // #
+                { wch: 10 }, // Unit
+                { wch: 35 }, // Item Description
+                { wch: 10 }, // Quantity
+                { wch: 12 }, // Unit Cost
+                { wch: 15 } // Total Cost
             ];
 
             // Apply center alignment to all cells
@@ -1065,7 +1426,7 @@ foreach ($orderItems as $item) {
             XLSX.writeFile(wb, `Order_${deliveryNumber}.xlsx`);
 
             // Show success message
-            showMessageModal('EXPORT SUCCESS', `Order data has been exported to Excel successfully!`, 'success');
+            showMessageModal('EXPORT SUCCESS', 'Order data has been exported to Excel successfully!', 'success');
         });
 
         // ========== COMPUTER-STYLE SYSTEM MODAL ==========
@@ -1181,7 +1542,7 @@ foreach ($orderItems as $item) {
 
         function enableEditMode() {
             isEditMode = true;
-            editModeBtn.innerHTML = '<i class="fas fa-save"></i>';
+            editModeBtn.innerHTML = '<i class="fas fa-save"></i> UPDATE';
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
@@ -1205,8 +1566,10 @@ foreach ($orderItems as $item) {
                 });
 
                 // Replace with editable inputs
-                row.cells[0].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
-                row.cells[1].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
+                row.cells[0].innerHTML =
+                    `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
+                row.cells[1].innerHTML =
+                    `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
                 row.cells[2].innerHTML = `
                     <select class="editable-select" data-field="unit">
                         <option value="PCS" ${originalUnit === 'PCS' ? 'selected' : ''}>PCS</option>
@@ -1215,8 +1578,10 @@ foreach ($orderItems as $item) {
                         <option value="SET" ${originalUnit === 'SET' ? 'selected' : ''}>SET</option>
                     </select>
                 `;
-                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
-                row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
+                row.cells[3].innerHTML =
+                    `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
+                row.cells[4].innerHTML =
+                    `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
 
                 // Add auto-calculation: when pieces or selling price changes, update total
                 const piecesInput = row.cells[1].querySelector('input');
@@ -1228,6 +1593,8 @@ foreach ($orderItems as $item) {
                     const price = parseFloat(sellingPriceInput.value) || 0;
                     const newTotal = pieces * price;
                     totalInput.value = newTotal.toFixed(2);
+                    // Update grand total
+                    updateGrandTotal();
                 }
 
                 if (piecesInput && sellingPriceInput && totalInput) {
@@ -1235,6 +1602,27 @@ foreach ($orderItems as $item) {
                     sellingPriceInput.addEventListener('input', calculateTotal);
                 }
             });
+
+            // Initial grand total calculation
+            setTimeout(updateGrandTotal, 100);
+        }
+
+        // ========== UPDATE GRAND TOTAL ==========
+        function updateGrandTotal() {
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            let grandTotal = 0;
+
+            rows.forEach(row => {
+                const totalInput = row.cells[4]?.querySelector('input');
+                const total = parseFloat(totalInput?.value) || 0;
+                grandTotal += total;
+            });
+
+            const totalDisplay = document.getElementById('total-amount-display');
+            if (totalDisplay) {
+                totalDisplay.innerHTML =
+                    `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
         }
 
         async function disableEditMode() {
@@ -1242,6 +1630,9 @@ foreach ($orderItems as $item) {
             const updatedItems = [];
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             let isValid = true;
+
+            // Update grand total one last time before saving
+            updateGrandTotal();
 
             rows.forEach((row, index) => {
                 const productInput = row.cells[0].querySelector('input');
@@ -1263,7 +1654,9 @@ foreach ($orderItems as $item) {
 
                 if (!newProduct || !newPieces || newPieces <= 0 || newSellingPrice < 0 || newTotal <= 0) {
                     isValid = false;
-                    showMessageModal('INVALID DATA', 'Please fill all fields with valid values (Product name, pieces > 0, selling price >= 0, total > 0)', 'error');
+                    showMessageModal('INVALID DATA',
+                        'Please fill all fields with valid values (Product name, pieces > 0, selling price >= 0, total > 0)',
+                        'error');
                     return;
                 }
 
@@ -1309,9 +1702,6 @@ foreach ($orderItems as $item) {
                 async () => {
                     // Send update to server
                     await updateOrderItems(updatedItems);
-                },
-                () => {
-                    // User cancelled, stay in edit mode
                 }
             );
         }
@@ -1342,7 +1732,6 @@ foreach ($orderItems as $item) {
                 if (data.success) {
                     showMessageModal('SUCCESS', data.message, 'success', () => {
                         window.location.href = 'credit_folder.php';
-                        window.location.reload();
                     });
                 } else {
                     showMessageModal('ERROR', data.message || 'Failed to update items', 'error');
@@ -1384,11 +1773,9 @@ foreach ($orderItems as $item) {
                         'CONFIRM STATUS CHANGE',
                         `Clicking CONFIRM orders with Delivery No. ${deliveryNumber} have been paid by the customer.`,
                         async () => {
-                            // On Confirm - proceed with update
                             await updateStatus(deliveryNumber, newStatus);
                         },
                         () => {
-                            // On Cancel - revert selection
                             statusSelect.value = previousStatus;
                         }
                     );
@@ -1446,11 +1833,12 @@ foreach ($orderItems as $item) {
         }
 
         // ========== REMOVE ITEM FUNCTIONALITY ==========
-        // Attach event listeners to all remove buttons
         document.querySelectorAll('.remove-btn').forEach(button => {
             button.addEventListener('click', async function () {
                 if (isEditMode) {
-                    showMessageModal('EDIT MODE ACTIVE', 'Please click UPDATE to save changes or refresh the page to cancel edit mode.', 'warning');
+                    showMessageModal('EDIT MODE ACTIVE',
+                        'Please click UPDATE to save changes or refresh the page to cancel edit mode.',
+                        'warning');
                     return;
                 }
 
@@ -1460,27 +1848,16 @@ foreach ($orderItems as $item) {
                 const totalAmount = row.cells[4]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
                 const deliveryNumber = '<?= htmlspecialchars($selectedDeliveryNumber) ?>';
 
-                // Show confirmation modal before removing
                 showConfirmModal(
                     'REMOVE ITEM',
                     `Are you sure you want to remove "${productName}" (${pieces} pcs) from this order?\n\nThis action cannot be undone.`,
                     async () => {
-                        // On Confirm - proceed with removal
                         await removeOrderItem(deliveryNumber, productName, pieces, totalAmount, row);
                     }
                 );
             });
         });
 
-        /**
-         * Remove an item from order_status_history
-         * 
-         * @param {string} deliveryNumber - Delivery number
-         * @param {string} productName - Product name to remove
-         * @param {string|number} pieces - Quantity
-         * @param {string|number} totalAmount - Total amount of the item
-         * @param {HTMLElement} row - The table row to remove
-         */
         async function removeOrderItem(deliveryNumber, productName, pieces, totalAmount, row) {
             try {
                 const formData = new FormData();
@@ -1507,12 +1884,12 @@ foreach ($orderItems as $item) {
                     const currentTotal = parseFloat(currentTotalText) || 0;
                     const newTotal = currentTotal - parseFloat(totalAmount);
 
-                    totalDisplay.innerHTML = `₱ ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    totalDisplay.innerHTML =
+                        `₱ ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
                     // Check if there are no more items left
                     const remainingRows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)').length;
                     if (remainingRows === 0) {
-                        // Show empty state and redirect after a moment
                         showMessageModal('ORDER EMPTY', 'No items remaining in this order. Redirecting...', 'info', () => {
                             window.location.href = 'credit_folder.php';
                         });
@@ -1527,6 +1904,9 @@ foreach ($orderItems as $item) {
                 showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
             }
         }
+
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
     </script>
 </body>
 

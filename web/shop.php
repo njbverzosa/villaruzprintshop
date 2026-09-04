@@ -38,10 +38,6 @@ if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
@@ -94,10 +90,153 @@ $allProducts = $stmt->fetchAll();
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
+        /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
         }
 
         .dashboard-header {
@@ -110,68 +249,38 @@ $allProducts = $stmt->fetchAll();
             border-radius: 20px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
-        .welcome h1 {
-            font-size: 28px;
-            font-weight: 700;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome h4 {
+            font-size: 20px;
+            font-weight: 600;
             color: #0f172a;
         }
 
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
+        .welcome h4 a {
+            text-decoration: none;
+            color: #0f172a;
+            transition: color 0.3s;
         }
 
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
+        .welcome h4 a:hover {
+            color: #f59e0b;
         }
 
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-
-        /* ========== RIGHT SIDE MENU (OVERLAY) ========== */
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
-        }
-
-        /* Menu header with user info */
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
         .menu-header .user-name {
@@ -191,10 +300,10 @@ $allProducts = $stmt->fetchAll();
             color: #3b82f6;
         }
 
-        /* Menu navigation list */
         .menu-nav {
             flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .menu-nav .nav-item {
@@ -231,21 +340,244 @@ $allProducts = $stmt->fetchAll();
             border-left: 3px solid #3b82f6;
         }
 
-        /* Overlay background when menu is open */
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
+        .menu-nav .nav-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay.active {
+        /* ========== DROPDOWN STYLES ========== */
+        .nav-dropdown {
+            margin-bottom: 8px;
+        }
+
+        .nav-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-dropdown-toggle:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-toggle i:first-child {
+            width: 24px;
+            font-size: 20px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-toggle span {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .dropdown-arrow {
+            font-size: 12px !important;
+            transition: transform 0.3s ease;
+            width: auto !important;
+        }
+
+        .dropdown-arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .nav-dropdown-menu {
+            display: none;
+            margin-left: 35px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .nav-dropdown-menu.show {
             display: block;
+        }
+
+        .nav-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-dropdown-item i {
+            width: 20px;
+            font-size: 14px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-item span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-item.active {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_paid {
+            background: #eff6ff;
+            color: green;
+            border-left: 3px solid green;
+        }
+
+        .nav-dropdown-item.active_paid:hover {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .nav-dropdown-item.active_pending {
+            background: #eff6ff;
+            color: orange;
+            border-left: 3px solid orange;
+        }
+
+        .nav-dropdown-item.active_pending:hover {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .nav-dropdown-item.active_outside {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_outside:hover {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .nav-dropdown-item.active_credit {
+            background: #eff6ff;
+            color: red;
+            border-left: 3px solid red;
+        }
+
+        .nav-dropdown-item.active_credit:hover {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ========== SEARCH & ADD PRODUCT - STRAIGHT ALIGNED ========== */
+        .shop-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 25px;
+            flex-wrap: nowrap;
+        }
+
+        .search-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .search-input {
+            flex: 1;
+            position: relative;
+            min-width: 0;
+        }
+
+        .search-input i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .search-input input {
+            width: 100%;
+            padding: 10px 15px 10px 45px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 30px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .search-input input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .clear-search-btn {
+            background: #e2e8f0;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clear-search-btn:hover {
+            background: #cbd5e1;
+        }
+
+        .add-product-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            flex-shrink: 0;
+        }
+
+        .add-product-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .add-product-btn i {
+            font-size: 14px;
+        }
+
+        .search-info {
+            font-size: 13px;
+            color: #64748b;
+            padding: 0 25px 10px 25px;
         }
 
         /* Products Grid */
@@ -390,67 +722,6 @@ $allProducts = $stmt->fetchAll();
         .card-desc-btn:hover {
             background: #7c3aed;
             transform: scale(0.97);
-        }
-
-        /* Search Bar */
-        .search-section {
-            padding: 15px 25px;
-        }
-
-        .search-wrapper {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-input {
-            flex: 1;
-            position: relative;
-        }
-
-        .search-input i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-        }
-
-        .search-input input {
-            width: 100%;
-            padding: 12px 15px 12px 45px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 30px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .search-input input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .clear-search-btn {
-            background: #e2e8f0;
-            border: none;
-            border-radius: 30px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-
-        .clear-search-btn:hover {
-            background: #cbd5e1;
-        }
-
-        .search-info {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: 8px;
         }
 
         /* Description Modal - Modern Design */
@@ -694,8 +965,6 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-
-
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -745,97 +1014,6 @@ $allProducts = $stmt->fetchAll();
             100% {
                 transform: rotate(360deg);
             }
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 20px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-                gap: 12px;
-                padding: 15px;
-            }
-
-            .burger-btn {
-                top: 55px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
-
-            .side-menu {
-                width: 260px;
-            }
-
-            .desc-modal-content {
-                width: 95%;
-            }
-
-            .desc-modal-header h3 {
-                font-size: 18px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .main-content {
-                padding: 15px;
-            }
-
-
-            .dashboard-header {
-                padding: 20px 30px;
-                border-radius: 10px;
-            }
-
-            .welcome h1 {
-                font-size: 18px;
-            }
-
-            .burger-btn {
-                width: 50px;
-                height: 50px;
-                top: 12px;
-                right: 12px;
-            }
-
-            .burger-btn i {
-                font-size: 20px;
-            }
-
-        }
-
-        /* Add Product Button */
-        .add-product-wrapper {
-            display: flex;
-            justify-content: flex-end;
-            padding: 0 25px 15px 25px;
-        }
-
-        .add-product-btn {
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            padding: 12px 28px;
-            border-radius: 30px;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .add-product-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        .add-product-btn i {
-            font-size: 16px;
         }
 
         /* Add Product Modal */
@@ -1025,7 +1203,123 @@ $allProducts = $stmt->fetchAll();
             display: none;
         }
 
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: 12px;
+                padding: 15px;
+            }
+
+            .desc-modal-content {
+                width: 95%;
+            }
+
+            .desc-modal-header h3 {
+                font-size: 18px;
+            }
+
+            .welcome h4 {
+                font-size: 14px;
+            }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
+
+            .shop-controls {
+                padding: 12px 15px;
+                gap: 8px;
+                flex-wrap: nowrap;
+            }
+
+            .search-wrapper {
+                gap: 8px;
+            }
+
+            .clear-search-btn {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+
+            .add-product-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+
+            .add-product-btn i {
+                font-size: 12px;
+            }
+        }
+
         @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+                padding-top: 15px;
+            }
+
+            .dashboard-header {
+                padding: 12px 15px;
+                border-radius: 10px;
+            }
+
+            .welcome h4 {
+                font-size: 13px;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 10px;
+                padding: 10px;
+            }
+
+            .shop-controls {
+                padding: 10px 12px;
+                gap: 6px;
+                flex-wrap: nowrap;
+            }
+
+            .search-input input {
+                padding: 8px 12px 8px 35px;
+                font-size: 12px;
+            }
+
+            .search-input i {
+                left: 12px;
+                font-size: 12px;
+            }
+
+            .clear-search-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+                gap: 4px;
+            }
+
+            .clear-search-btn i {
+                font-size: 11px;
+            }
+
+            .add-product-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+                gap: 4px;
+            }
+
+            .add-product-btn i {
+                font-size: 11px;
+            }
+
+            .search-info {
+                font-size: 11px;
+                padding: 0 15px 8px 15px;
+            }
+
             .add-product-modal-content {
                 width: 95%;
             }
@@ -1044,42 +1338,95 @@ $allProducts = $stmt->fetchAll();
                 justify-content: center;
             }
         }
+
+        /* Extra small screens - prevent wrapping */
+        @media (max-width: 380px) {
+            .shop-controls {
+                gap: 4px;
+                padding: 8px 10px;
+            }
+
+            .search-wrapper {
+                gap: 4px;
+            }
+
+            .clear-search-btn {
+                padding: 5px 8px;
+                font-size: 10px;
+            }
+
+            .add-product-btn {
+                padding: 5px 10px;
+                font-size: 10px;
+            }
+
+            .add-product-btn i {
+                font-size: 10px;
+            }
+
+            .search-input input {
+                padding: 6px 10px 6px 30px;
+                font-size: 11px;
+            }
+
+            .search-input i {
+                left: 10px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div class="app-wrapper">
-        <!-- Burger Button (Fixed) -->
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
-
-        <!-- Overlay for menu background -->
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <!-- Close Button (Mobile Only) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="menu-header">
+                    <i class="fas fa-store"></i>
+                    <div class="user-greeting">Logged in as</div>
+                    <div class="user-name">
+                        <?php
+                        echo htmlspecialchars($user['user_name'] ?? 'User');
+                        ?>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+                    </div>
+                </div>
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <main class="main-content">
             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4>
-                        Purchase Order
-                    </h4>
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4>
+                            Purchase Order
+                        </h4>
+                    </div>
                 </div>
             </div>
 
             <!-- Products Grid -->
             <div class="merchandise-section">
-                <!-- Search Bar -->
-                <div class="search-section">
+                <!-- Search Bar & Add Product - Straight Aligned -->
+                <div class="shop-controls">
                     <div class="search-wrapper">
                         <div class="search-input">
                             <i class="fas fa-search"></i>
@@ -1090,15 +1437,11 @@ $allProducts = $stmt->fetchAll();
                             <i class="fas fa-times"></i> Clear
                         </button>
                     </div>
-                    <div id="searchInfo" class="search-info"></div>
-                </div>
-
-                <!-- Add Product Button -->
-                <div class="add-product-wrapper">
                     <button class="add-product-btn" id="addProductBtn">
                         <i class="fas fa-plus-circle"></i> Add Product
                     </button>
                 </div>
+                <div id="searchInfo" class="search-info"></div>
 
                 <!-- Products Grid -->
                 <div class="products-grid" id="productsGrid">
@@ -1109,9 +1452,6 @@ $allProducts = $stmt->fetchAll();
                             data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>"
                             data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>">
-                            <!-- <div class="product-icon">
-                                <i class="fas fa-tag"></i>
-                            </div> -->
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                             <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
@@ -1265,13 +1605,94 @@ $allProducts = $stmt->fetchAll();
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
         const accNum = '<?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>';
 
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
+        const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
+
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
+            menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
         // ========== DESCRIPTION MODAL FUNCTIONS ==========
         const descModal = document.getElementById('descriptionModal');
         const closeDescModalBtn = document.querySelector('.close-desc-modal');
         const closeDescFooterBtn = document.querySelector('.close-desc-btn');
 
         function openDescriptionModal(productName, productUnit, productPrice, productDescription) {
-            // Populate modal fields
             document.getElementById('descProductName').textContent = productName;
             document.getElementById('descProductUnit').textContent = productUnit;
             document.getElementById('descProductPrice').textContent = '₱ ' + productPrice;
@@ -1292,6 +1713,21 @@ $allProducts = $stmt->fetchAll();
             document.body.style.overflow = '';
         }
 
+        if (closeDescModalBtn) closeDescModalBtn.addEventListener('click', closeDescriptionModal);
+        if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
+
+        window.addEventListener('click', (e) => {
+            if (e.target === descModal) {
+                closeDescriptionModal();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && descModal.style.display === 'flex') {
+                closeDescriptionModal();
+            }
+        });
+
         // ========== ADD PRODUCT MODAL ==========
         const addProductModal = document.getElementById('addProductModal');
         const addProductBtn = document.getElementById('addProductBtn');
@@ -1303,7 +1739,6 @@ $allProducts = $stmt->fetchAll();
         function openAddProductModal() {
             addProductModal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            // Reset form
             addProductForm.reset();
             submitAddProductBtn.disabled = false;
             submitAddProductBtn.classList.remove('loading');
@@ -1326,14 +1761,12 @@ $allProducts = $stmt->fetchAll();
             cancelAddProductBtn.addEventListener('click', closeAddProductModal);
         }
 
-        // Close modal when clicking outside
         window.addEventListener('click', (e) => {
             if (e.target === addProductModal) {
                 closeAddProductModal();
             }
         });
 
-        // Close on Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && addProductModal.style.display === 'flex') {
                 closeAddProductModal();
@@ -1345,14 +1778,12 @@ $allProducts = $stmt->fetchAll();
             submitAddProductBtn.addEventListener('click', async function (e) {
                 e.preventDefault();
 
-                // Get form values - match backend field names
                 const productName = document.getElementById('product_name').value.trim();
                 const unit = document.getElementById('unit').value.trim();
                 const quantity = document.getElementById('quantity').value.trim();
                 const sellingPrice = document.getElementById('selling_price').value.trim();
                 const description = document.getElementById('description').value.trim();
 
-                // Validate required fields
                 if (!productName) {
                     showToast('Please enter product name', 'error');
                     document.getElementById('product_name').focus();
@@ -1377,7 +1808,6 @@ $allProducts = $stmt->fetchAll();
                     return;
                 }
 
-                // Show loading state
                 submitAddProductBtn.disabled = true;
                 submitAddProductBtn.classList.add('loading');
 
@@ -1400,7 +1830,6 @@ $allProducts = $stmt->fetchAll();
                     if (data.success) {
                         showToast(data.message || 'Product added successfully!', 'success');
                         closeAddProductModal();
-                        // Reload page after a short delay to show new product
                         setTimeout(() => {
                             window.location.reload();
                         }, 1500);
@@ -1417,7 +1846,6 @@ $allProducts = $stmt->fetchAll();
             });
         }
 
-        // Allow Enter key to submit form (except in textarea)
         document.getElementById('addProductForm').addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
@@ -1425,69 +1853,12 @@ $allProducts = $stmt->fetchAll();
             }
         });
 
-
-        if (closeDescModalBtn) closeDescModalBtn.addEventListener('click', closeDescriptionModal);
-        if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
-
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === descModal) {
-                closeDescriptionModal();
-            }
-        });
-
-        // Close on Escape key
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && descModal.style.display === 'flex') {
-                closeDescriptionModal();
-            }
-        });
-
-        // ========== BURGER MENU TOGGLE ==========
-        const burgerBtn = document.getElementById('burgerBtn');
-        const sideMenu = document.getElementById('sideMenu');
-        const menuOverlay = document.getElementById('menuOverlay');
-
-        function openMenu() {
-            sideMenu.classList.add('open');
-            menuOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeMenu() {
-            sideMenu.classList.remove('open');
-            menuOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        burgerBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (sideMenu.classList.contains('open')) {
-                closeMenu();
-            } else {
-                openMenu();
-            }
-        });
-
-        menuOverlay.addEventListener('click', closeMenu);
-
-        document.querySelectorAll('.side-menu .nav-item').forEach(link => {
-            link.addEventListener('click', () => {
-                closeMenu();
-            });
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                closeMenu();
-            }
-        });
-
         // ========== TOAST NOTIFICATION ==========
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            toast.innerHTML =
+                `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
             document.body.appendChild(toast);
             setTimeout(() => {
                 toast.style.animation = 'slideOut 0.3s ease';
@@ -1516,8 +1887,6 @@ $allProducts = $stmt->fetchAll();
         }
 
         // ========== SEARCH FUNCTIONALITY ==========
-        let activeCategory = 'all';
-
         function filterProducts() {
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const cards = productsGrid.querySelectorAll('.product-card');
@@ -1543,7 +1912,8 @@ $allProducts = $stmt->fetchAll();
             if (searchTerm === '') {
                 searchInfo.innerHTML = `<i class="fas fa-info-circle"></i> Showing all ${visibleCount} products`;
             } else {
-                searchInfo.innerHTML = `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
+                searchInfo.innerHTML =
+                    `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
             }
         }
 
@@ -1672,8 +2042,10 @@ $allProducts = $stmt->fetchAll();
             });
         }
 
-        // Initial search display
         performLiveSearch();
+
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
     </script>
 </body>
 

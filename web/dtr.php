@@ -37,10 +37,6 @@ if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
@@ -49,6 +45,9 @@ if (!$userData) {
     exit;
 }
 
+// ==============================================
+// 4. USE $userData INSTEAD OF $user
+// ==============================================
 $user = $userData;
 
 // Set timezone
@@ -77,6 +76,9 @@ $stmt->execute([$_SESSION['acc_number']]);
 $stmt = $pdo->prepare("SELECT * FROM dtr ORDER BY date DESC, time_in DESC");
 $stmt->execute();
 $dtrRecords = $stmt->fetchAll();
+
+// Get current page for sidebar
+$currentPage = basename($_SERVER['PHP_SELF']);
 
 ?>
 
@@ -112,10 +114,152 @@ $dtrRecords = $stmt->fetchAll();
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
         }
 
         .dashboard-header {
@@ -130,62 +274,30 @@ $dtrRecords = $stmt->fetchAll();
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
         .welcome h1 {
             font-size: 28px;
             font-weight: 700;
             color: #0f172a;
         }
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-        }
 
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
-        }
-
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
+        .welcome h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
         }
 
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
         .menu-header .user-name {
@@ -208,6 +320,7 @@ $dtrRecords = $stmt->fetchAll();
         .menu-nav {
             flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .menu-nav .nav-item {
@@ -244,20 +357,124 @@ $dtrRecords = $stmt->fetchAll();
             border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
+        .menu-nav .nav-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay.active {
+        /* ========== DROPDOWN STYLES ========== */
+        .nav-dropdown {
+            margin-bottom: 8px;
+        }
+
+        .nav-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-dropdown-toggle:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-toggle i:first-child {
+            width: 24px;
+            font-size: 20px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-toggle span {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .dropdown-arrow {
+            font-size: 12px !important;
+            transition: transform 0.3s ease;
+            width: auto !important;
+        }
+
+        .dropdown-arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .nav-dropdown-menu {
+            display: none;
+            margin-left: 35px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .nav-dropdown-menu.show {
             display: block;
+        }
+
+        .nav-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-dropdown-item i {
+            width: 20px;
+            font-size: 14px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-item span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-item.active_paid {
+            background: #eff6ff;
+            color: green;
+            border-left: 3px solid green;
+        }
+
+        .nav-dropdown-item.active_pending {
+            background: #eff6ff;
+            color: orange;
+            border-left: 3px solid orange;
+        }
+
+        .nav-dropdown-item.active_outside {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_credit {
+            background: #eff6ff;
+            color: red;
+            border-left: 3px solid red;
+        }
+
+        .nav-dropdown-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
         }
 
         .merchandise-section {
@@ -521,23 +738,13 @@ $dtrRecords = $stmt->fetchAll();
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
+                padding-top: 20px;
             }
 
             .inventory-table th,
             .inventory-table td {
                 padding: 10px 8px;
                 font-size: 12px;
-            }
-
-            .burger-btn {
-                top: 15px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
-
-            .side-menu {
-                width: 260px;
             }
 
             .status-badge {
@@ -569,9 +776,27 @@ $dtrRecords = $stmt->fetchAll();
                 padding: 8px 14px;
                 font-size: 12px;
             }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
         }
 
         @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+                padding-top: 15px;
+            }
+
+            .dashboard-header {
+                padding: 12px 15px;
+                border-radius: 10px;
+            }
+
+            .welcome h4 {
+                font-size: 14px;
+            }
+
             .inventory-table th,
             .inventory-table td {
                 padding: 6px 4px;
@@ -623,28 +848,45 @@ $dtrRecords = $stmt->fetchAll();
 
 <body>
     <div class="app-wrapper">
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
-
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <!-- Close Button (Mobile Only) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="menu-header">
+                    <i class="fas fa-store"></i>
+                    <div class="user-greeting">Logged in as</div>
+                    <div class="user-name">
+                        <?php
+                        echo htmlspecialchars($user['user_name'] ?? 'User');
+                        ?>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+                    </div>
+                </div>
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <main class="main-content">
-             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4>
-                        DTR
-                    </h4>
+            <div class="dashboard-header">
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4>DTR</h4>
+                    </div>
                 </div>
             </div>
 
@@ -664,8 +906,9 @@ $dtrRecords = $stmt->fetchAll();
                         <tbody>
                             <?php if (empty($dtrRecords)): ?>
                                 <tr>
-                                    <td colspan="9" style="text-align: center; padding: 40px; color: #94a3b8;">
-                                        <i class="fas fa-clock" style="font-size: 40px; display: block; margin-bottom: 10px; color: #cbd5e1;"></i>
+                                    <td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                        <i class="fas fa-clock"
+                                            style="font-size: 40px; display: block; margin-bottom: 10px; color: #cbd5e1;"></i>
                                         No DTR records found
                                     </td>
                                 </tr>
@@ -673,52 +916,53 @@ $dtrRecords = $stmt->fetchAll();
                                 <?php foreach ($dtrRecords as $record): ?>
                                     <tr>
                                         <td>
-                                            <span class="customer-acc"><?php echo htmlspecialchars($record['acc_number'] ?? ''); ?></span>
+                                            <span
+                                                class="customer-acc"><?php echo htmlspecialchars($record['acc_number'] ?? ''); ?></span>
                                         </td>
                                         <td class="dtr-date">
                                             <?php echo date('M j, Y', strtotime($record['date'])); ?>
                                         </td>
                                         <td>
                                             <?php if ($record['time_in']): ?>
-                                                <span class="dtr-time"><?php echo date('h:i A', strtotime($record['time_in'])); ?></span>
+                                                <span
+                                                    class="dtr-time"><?php echo date('h:i A', strtotime($record['time_in'])); ?></span>
                                             <?php else: ?>
                                                 <span class="dtr-time empty">—</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($record['time_out']): ?>
-                                                <span class="dtr-time"><?php echo date('h:i A', strtotime($record['time_out'])); ?></span>
+                                                <span
+                                                    class="dtr-time"><?php echo date('h:i A', strtotime($record['time_out'])); ?></span>
                                             <?php else: ?>
                                                 <span class="dtr-time empty">—</span>
                                             <?php endif; ?>
                                         </td>
-                                       
+
                                         <td>
-                                            <?php 
+                                            <?php
                                             $timeInPhoto = $record['time_in_photo'] ?? '';
-                                            if (!empty($timeInPhoto)): 
+                                            if (!empty($timeInPhoto)):
                                                 $photoPath = '../DTR_Photos/' . $timeInPhoto;
-                                            ?>
-                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" 
-                                                     alt="Time In Photo" 
-                                                     class="photo-thumb time-in-photo"
-                                                     onclick="openPhotoModal('../DTR_Photos/<?php echo htmlspecialchars($photoPath); ?>', 'Time In - <?php echo htmlspecialchars($record['acc_number']); ?> - <?php echo date('M j, Y', strtotime($record['date'])); ?>')"
-                                                     title="Click to view full size">
+                                                ?>
+                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" alt="Time In Photo"
+                                                    class="photo-thumb time-in-photo"
+                                                    onclick="openPhotoModal('<?php echo htmlspecialchars($photoPath); ?>', 'Time In - <?php echo htmlspecialchars($record['acc_number']); ?> - <?php echo date('M j, Y', strtotime($record['date'])); ?>')"
+                                                    title="Click to view full size">
                                             <?php else: ?>
                                                 <span class="no-photo">No photo</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <?php 
+                                            <?php
                                             $timeOutPhoto = $record['time_out_photo'] ?? '';
-                                            if (!empty($timeOutPhoto)): 
+                                            if (!empty($timeOutPhoto)):
                                                 $photoPath = '../DTR_Photos/' . $timeOutPhoto;
-                                            ?>
-                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" 
-                                                     alt="Time Out Photo" 
-                                                     class="photo-thumb time-out-photo"
-                                                     onclick="openPhotoModal('../DTR_Photos/<?php echo htmlspecialchars($photoPath); ?>', 'Time Out - <?php echo htmlspecialchars($record['acc_number']); ?> - <?php echo date('M j, Y', strtotime($record['date'])); ?>')"
-                                                     title="Click to view full size">
+                                                ?>
+                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" alt="Time Out Photo"
+                                                    class="photo-thumb time-out-photo"
+                                                    onclick="openPhotoModal('<?php echo htmlspecialchars($photoPath); ?>', 'Time Out - <?php echo htmlspecialchars($record['acc_number']); ?> - <?php echo date('M j, Y', strtotime($record['date'])); ?>')"
+                                                    title="Click to view full size">
                                             <?php else: ?>
                                                 <span class="no-photo">No photo</span>
                                             <?php endif; ?>
@@ -747,35 +991,94 @@ $dtrRecords = $stmt->fetchAll();
         </div>
     </div>
 
+    <?php include '../footer.php'; ?>
+
     <script>
-        // ============================================================
-        // SIDE MENU
-        // ============================================================
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
         const burgerBtn = document.getElementById('burgerBtn');
-        const sideMenu = document.getElementById('sideMenu');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
         const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
 
-        function toggleMenu() {
-            sideMenu.classList.toggle('open');
-            menuOverlay.classList.toggle('active');
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
         }
 
-        function closeMenu() {
-            sideMenu.classList.remove('open');
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
             menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
         }
 
-        burgerBtn.addEventListener('click', toggleMenu);
-        menuOverlay.addEventListener('click', closeMenu);
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
 
-        // Close menu on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeMenu();
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    // Don't close if it's a dropdown toggle
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
         });
 
-        // ============================================================
-        // PHOTO MODAL
-        // ============================================================
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                // Desktop: close sidebar if open and hide overlay
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ========== PHOTO MODAL ==========
         let currentZoom = 1;
 
         function openPhotoModal(imageSrc, captionText) {
@@ -825,14 +1128,14 @@ $dtrRecords = $stmt->fetchAll();
         }
 
         // Click on modal background to close
-        document.getElementById('photoModal').addEventListener('click', function(e) {
+        document.getElementById('photoModal').addEventListener('click', function (e) {
             if (e.target === this || e.target === document.getElementById('photoModalImage')) {
                 closePhotoModal();
             }
         });
 
         // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             // Escape to close
             if (e.key === 'Escape') {
                 const modal = document.getElementById('photoModal');
@@ -856,7 +1159,7 @@ $dtrRecords = $stmt->fetchAll();
         });
 
         // Mouse wheel zoom for modal
-        document.getElementById('photoModal').addEventListener('wheel', function(e) {
+        document.getElementById('photoModal').addEventListener('wheel', function (e) {
             if (this.classList.contains('active')) {
                 e.preventDefault();
                 if (e.deltaY < 0) {
@@ -866,9 +1169,10 @@ $dtrRecords = $stmt->fetchAll();
                 }
             }
         }, { passive: false });
-    </script>
 
-    <?php include '../footer.php'; ?>
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
+    </script>
 </body>
 
 </html>

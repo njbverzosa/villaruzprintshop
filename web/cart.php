@@ -2,82 +2,80 @@
 // web/cart.php
 session_start();
 
-try {
-    require_once __DIR__ . '/../DB_Conn/config.php';
+// ==============================================
+// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// ==============================================
+require_once __DIR__ . '/../DB_Conn/config.php';
 
-    // Validate session
-    function isLoggedIn()
-    {
-        return isset($_SESSION['user_role'], $_SESSION['user_id'], $_SESSION['acc_number']);
-    }
-
-    if (!isLoggedIn()) {
-        $_SESSION['login_error'] = 'Please login first to access the shop.';
-        header('Location: ../login.php');
-        exit;
-    }
-
-    // Validate and sanitize session data
-    $userRole = filter_var($_SESSION['user_role'], FILTER_SANITIZE_STRING);
-    $userId = filter_var($_SESSION['user_id'], FILTER_VALIDATE_INT);
-    $accNumber = filter_var($_SESSION['acc_number'], FILTER_SANITIZE_STRING);
-
-    if ($userId === false || empty($accNumber)) {
-        throw new Exception('Invalid session data');
-    }
-
-    // Fetch user details with proper error handling
-    $userData = null;
-    if ($userRole === 'Admin') {
-        $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
-        $stmt->execute([$userId]);
-        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-    } elseif ($userRole === 'Customer') {
-        $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
-        $stmt->execute([$userId]);
-        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    if (!$userData) {
-        session_destroy();
-        header('Location: ../login.php');
-        exit;
-    }
-
-    $user = $userData;
-
-    // Fetch cart items with verification that acc_number matches
-    $stmt = $pdo->prepare("SELECT * FROM cart WHERE acc_number = ? ORDER BY id ASC");
-    $stmt->execute([$accNumber]);
-    $cartItems = $stmt->fetchAll();
-
-    // Calculate totals
-    $totalItems = 0;
-    $totalAmount = 0;
-    foreach ($cartItems as $item) {
-        $totalItems += (int) $item['pieces'];
-        $totalAmount += (float) $item['total_amount'];
-    }
-
-    // CSRF token
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-    $csrfToken = $_SESSION['csrf_token'];
-
-    // Get cart item count
-    $cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
-    $cartCountStmt->execute([$accNumber]);
-    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
-    $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
-
-} catch (PDOException $e) {
-    error_log("Database error: " . $e->getMessage());
-    die("An error occurred. Please try again later.");
-} catch (Exception $e) {
-    error_log("Error: " . $e->getMessage());
-    die("An error occurred. Please try again later.");
+// ==============================================
+// 2. CHECK LOGIN STATUS
+// ==============================================
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
+
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    $_SESSION['login_error'] = 'Please login first to access the shop.';
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 3. GET USER DATA FROM SESSION
+// ==============================================
+$userRole = $_SESSION['user_role'];
+$userId = $_SESSION['user_id'];
+$accNumber = $_SESSION['acc_number'];
+
+// Fetch user details from database
+$userData = null;
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+if (!$userData) {
+    // User not found in database, logout
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 4. USE $userData INSTEAD OF $user
+// ==============================================
+$user = $userData;
+
+// Fetch cart items with verification that acc_number matches
+$stmt = $pdo->prepare("SELECT * FROM cart WHERE acc_number = ? ORDER BY id ASC");
+$stmt->execute([$accNumber]);
+$cartItems = $stmt->fetchAll();
+
+// Calculate totals
+$totalItems = 0;
+$totalAmount = 0;
+foreach ($cartItems as $item) {
+    $totalItems += (int) $item['pieces'];
+    $totalAmount += (float) $item['total_amount'];
+}
+
+// CSRF token
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_token'];
+
+// Get cart item count
+$cartCountStmt = $pdo->prepare("SELECT SUM(pieces) as total_items FROM cart WHERE acc_number = ?");
+$cartCountStmt->execute([$accNumber]);
+$cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
+$cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -125,10 +123,152 @@ try {
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
         }
 
         .dashboard-header {
@@ -141,81 +281,39 @@ try {
             border-radius: 20px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
-        .welcome h1 {
-            font-size: 28px;
-            font-weight: 700;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome h4 {
+            font-size: 20px;
+            font-weight: 600;
             color: #0f172a;
         }
 
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
+        .welcome h4 a {
+            text-decoration: none;
+            color: #0f172a;
+            transition: color 0.3s;
         }
 
-        .menu-overlay.active {
-            display: block;
+        .welcome h4 a:hover {
+            color: #f59e0b;
         }
 
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-        }
-
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
-        }
-
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
-        }
 
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
         .menu-header .user-name {
@@ -238,6 +336,7 @@ try {
         .menu-nav {
             flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .menu-nav .nav-item {
@@ -248,7 +347,7 @@ try {
             border-radius: 14px;
             color: #475569;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             margin-bottom: 8px;
         }
 
@@ -266,6 +365,7 @@ try {
         .menu-nav .nav-item:hover {
             background: #eff6ff;
             color: #1e293b;
+            transform: translateX(4px);
         }
 
         .menu-nav .nav-item.active {
@@ -274,6 +374,13 @@ try {
             border-left: 3px solid #3b82f6;
         }
 
+        .menu-nav .nav-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        /* ========== DROPDOWN STYLES ========== */
         .nav-dropdown {
             margin-bottom: 8px;
         }
@@ -286,13 +393,14 @@ try {
             border-radius: 14px;
             color: #475569;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             cursor: pointer;
         }
 
         .nav-dropdown-toggle:hover {
             background: #eff6ff;
             color: #1e293b;
+            transform: translateX(4px);
         }
 
         .nav-dropdown-toggle i:first-child {
@@ -337,8 +445,14 @@ try {
             border-radius: 10px;
             color: #475569;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             font-size: 14px;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #eff6ff;
+            color: #1e293b;
+            transform: translateX(4px);
         }
 
         .nav-dropdown-item i {
@@ -352,15 +466,16 @@ try {
             font-weight: 500;
         }
 
-        .nav-dropdown-item:hover {
-            background: #eff6ff;
-            color: #1e293b;
-        }
-
         .nav-dropdown-item.active_paid {
             background: #eff6ff;
             color: green;
             border-left: 3px solid green;
+        }
+
+        .nav-dropdown-item.active_paid:hover {
+            background: #d1fae5;
+            color: #065f46;
+            transform: translateX(4px);
         }
 
         .nav-dropdown-item.active_pending {
@@ -369,10 +484,34 @@ try {
             border-left: 3px solid orange;
         }
 
+        .nav-dropdown-item.active_pending:hover {
+            background: #fef3c7;
+            color: #92400e;
+            transform: translateX(4px);
+        }
+
+        .nav-dropdown-item.active {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active:hover {
+            background: #dbeafe;
+            color: #1e40af;
+            transform: translateX(4px);
+        }
+
         .nav-dropdown-item.shop {
             background: #eff6ff;
             color: #3b82f6;
             border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.shop:hover {
+            background: #dbeafe;
+            color: #1e40af;
+            transform: translateX(4px);
         }
 
         /* ========== CART GRID ========== */
@@ -446,6 +585,11 @@ try {
             justify-content: center;
         }
 
+        .cart-item-center .qty-btn:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
         .cart-item-center .qty-value {
             font-size: 15px;
             font-weight: 600;
@@ -476,6 +620,11 @@ try {
             padding: 6px;
             transition: 0.2s;
             font-size: 16px;
+        }
+
+        .cart-item-right .remove-btn:hover {
+            color: #ef4444;
+            transform: scale(1.1);
         }
 
         .cart-summary {
@@ -1004,6 +1153,7 @@ try {
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
+                padding-top: 20px;
             }
 
             .cart-grid {
@@ -1034,11 +1184,16 @@ try {
                 position: relative;
                 top: 0;
             }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
         }
 
         @media (max-width: 480px) {
             .main-content {
                 padding: 12px 12px 16px;
+                padding-top: 15px;
             }
 
             body {
@@ -1050,20 +1205,13 @@ try {
                 gap: 8px;
             }
 
-            .burger-btn {
-                width: 50px;
-                height: 50px;
-                top: 12px;
-                right: 12px;
-            }
-
-            .burger-btn i {
-                font-size: 20px;
-            }
-
             .dashboard-header {
-                padding: 20px 30px;
+                padding: 12px 15px;
                 border-radius: 10px;
+            }
+
+            .welcome h4 {
+                font-size: 14px;
             }
 
             .cart-item-left .product-name {
@@ -1171,33 +1319,50 @@ try {
 <body>
 
     <div class="app-wrapper">
-        <!-- Burger Button (Fixed) -->
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
-
-        <!-- Overlay for menu background -->
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <!-- Close Button (Mobile Only) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="menu-header">
+                    <i class="fas fa-store"></i>
+                    <div class="user-greeting">Logged in as</div>
+                    <div class="user-name">
+                        <?php
+                        echo htmlspecialchars($user['user_name'] ?? 'User');
+                        ?>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+                    </div>
+                </div>
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <!-- ========== MAIN CONTENT ========== -->
         <main class="main-content">
             <input type="hidden" id="csrfToken" value="<?php echo $csrfToken; ?>">
 
             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4>
-                        Purchase Cart
-                    </h4>
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4>
+                            Cart
+                        </h4>
+                    </div>
                 </div>
             </div>
 
@@ -1206,6 +1371,7 @@ try {
                 <div class="cart-items" id="cartItemsContainer">
                     <?php if (empty($cartItems)): ?>
                         <div class="empty-cart">
+                            <i class="fas fa-shopping-cart"></i>
                             <h4>Your cart is empty</h4>
                             <p>Looks like you haven't added any items to your cart yet.</p>
                         </div>
@@ -1342,77 +1508,90 @@ try {
 
     <script>
         // ============================================================
-        // BURGER MENU TOGGLE
+        // SIDEBAR TOGGLE (Mobile Only)
         // ============================================================
         const burgerBtn = document.getElementById('burgerBtn');
-        const sideMenu = document.getElementById('sideMenu');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
         const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
 
-        function openMenu() {
-            sideMenu.classList.add('open');
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
             menuOverlay.classList.add('active');
+            isSidebarOpen = true;
             document.body.style.overflow = 'hidden';
         }
 
-        function closeMenu() {
-            sideMenu.classList.remove('open');
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
             menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
             document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
         }
 
         if (burgerBtn) {
             burgerBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                if (sideMenu.classList.contains('open')) {
-                    closeMenu();
-                } else {
-                    openMenu();
-                }
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
             });
         }
 
         if (menuOverlay) {
-            menuOverlay.addEventListener('click', closeMenu);
+            menuOverlay.addEventListener('click', closeSidebar);
         }
 
-        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(function (link) {
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
-                if (!this.classList.contains('nav-dropdown-toggle')) {
-                    closeMenu();
+                if (window.innerWidth <= 768) {
+                    // Don't close if it's a dropdown toggle
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
                 }
             });
         });
 
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                closeMenu();
-            }
-        });
-
+        // ========== DROPDOWN TOGGLE ==========
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
             const arrowId = dropdownId.replace('Dropdown', 'Arrow');
             const arrow = document.getElementById(arrowId);
 
             if (dropdown && arrow) {
-                const allDropdowns = document.querySelectorAll('.nav-dropdown-menu');
-                const allArrows = document.querySelectorAll('.dropdown-arrow');
-
-                allDropdowns.forEach(function (d) {
-                    if (d.id !== dropdownId && d.classList.contains('show')) {
-                        d.classList.remove('show');
-                    }
-                });
-                allArrows.forEach(function (a) {
-                    if (a.id !== arrowId && a.classList.contains('rotated')) {
-                        a.classList.remove('rotated');
-                    }
-                });
-
                 dropdown.classList.toggle('show');
                 arrow.classList.toggle('rotated');
             }
         }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                // Desktop: close sidebar if open and hide overlay
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
 
         // ============================================================
         // MAIN CART FUNCTIONALITY
@@ -1448,6 +1627,7 @@ try {
                         checkoutInputsDiv.classList.remove('hidden-fields');
                         updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                         validateDeliveryInputs();
+                        updateCheckoutButtonText(false);
                         return;
                     }
 
@@ -1478,17 +1658,18 @@ try {
 
                     if (data.success && data.exists) {
                         existingOrderData = data;
-                        console.log('✅ Delivery found:', data);
+                        console.log('Delivery found:', data);
 
                         const status = (data.status || '').toUpperCase();
-                        if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status === 'SHIPPED') {
+                        if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status ===
+                            'SHIPPED') {
                             existingOrderInfoDiv.className = 'existing-order-info error';
-                            existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-circle info-icon"></i> This order has already been ' +
+                            existingOrderInfoDiv.innerHTML =
+                                'This order has already been ' +
                                 data.status.toLowerCase() + '. You cannot add items to it.';
                             existingOrderInfoDiv.style.display = 'block';
                             checkoutInputsDiv.classList.remove('hidden-fields');
                             if (checkoutBtn) checkoutBtn.disabled = true;
-                            // Reset button text
                             updateCheckoutButtonText(false);
                             return;
                         }
@@ -1498,15 +1679,13 @@ try {
 
                         existingOrderInfoDiv.className = 'existing-order-info success';
                         existingOrderInfoDiv.innerHTML =
-                            'Customer: <strong>' + data.ordered_by + '</strong>';
+                            '</strong>Customer: <strong>' + data.ordered_by + '</strong>';
                         existingOrderInfoDiv.style.display = 'block';
 
                         checkoutInputsDiv.classList.add('hidden-fields');
                         if (checkoutBtn) checkoutBtn.disabled = false;
 
-                        // CHANGE BUTTON TEXT TO "Add Now"
                         updateCheckoutButtonText(true);
-
                         updateTotalDisplay(currentTotal, newTotal, subtotalAmount);
 
                         const customerNameInput = document.getElementById('customerName');
@@ -1528,35 +1707,35 @@ try {
                         console.log('❌ Delivery not found');
                         existingOrderData = null;
                         existingOrderInfoDiv.className = 'existing-order-info warning';
-                        existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-triangle info-icon"></i> Delivery number not found. This will be processed as a new order.';
+                        existingOrderInfoDiv.innerHTML =
+                            '<i class="fas fa-exclamation-triangle info-icon"></i> Delivery number not found. This will be processed as a new order.';
                         existingOrderInfoDiv.style.display = 'block';
                         checkoutInputsDiv.classList.remove('hidden-fields');
                         updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                         validateDeliveryInputs();
-                        // Reset button text to "Submit Order"
                         updateCheckoutButtonText(false);
                     } else if (!data.success && data.message) {
                         console.log('⚠️ Error:', data.message);
                         existingOrderData = null;
                         existingOrderInfoDiv.className = 'existing-order-info error';
-                        existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-circle info-icon"></i> ' + data.message;
+                        existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-circle info-icon"></i> ' + data
+                            .message;
                         existingOrderInfoDiv.style.display = 'block';
                         checkoutInputsDiv.classList.remove('hidden-fields');
                         updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                         validateDeliveryInputs();
-                        // Reset button text to "Submit Order"
                         updateCheckoutButtonText(false);
                     }
                 } catch (error) {
                     console.error('❌ Validation error:', error);
                     existingOrderData = null;
                     existingOrderInfoDiv.className = 'existing-order-info error';
-                    existingOrderInfoDiv.innerHTML = '<i class="fas fa-exclamation-circle info-icon"></i> Error validating delivery number. Please try again.';
+                    existingOrderInfoDiv.innerHTML =
+                        '<i class="fas fa-exclamation-circle info-icon"></i> Error validating delivery number. Please try again.';
                     existingOrderInfoDiv.style.display = 'block';
                     checkoutInputsDiv.classList.remove('hidden-fields');
                     updateTotalDisplay(null, subtotalAmount, subtotalAmount);
                     validateDeliveryInputs();
-                    // Reset button text to "Submit Order"
                     updateCheckoutButtonText(false);
                 }
             }
@@ -1599,7 +1778,8 @@ try {
             function validateDeliveryInputs() {
                 if (existingOrderData && existingOrderData.exists) {
                     const status = (existingOrderData.status || '').toUpperCase();
-                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status === 'SHIPPED') {
+                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status ===
+                        'SHIPPED') {
                         if (checkoutBtn) checkoutBtn.disabled = true;
                         return false;
                     }
@@ -1620,6 +1800,17 @@ try {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
+            }
+
+            function updateCheckoutButtonText(isExistingOrder) {
+                const checkoutBtn = document.getElementById('checkoutBtn');
+                if (checkoutBtn) {
+                    if (isExistingOrder) {
+                        checkoutBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Now';
+                    } else {
+                        checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Order';
+                    }
+                }
             }
 
             // ============================================================
@@ -1650,7 +1841,6 @@ try {
             function hideLoading() {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
-
 
             // ============================================================
             // CART OPERATIONS
@@ -1721,17 +1911,21 @@ try {
             // CHECKOUT
             // ============================================================
             async function proceedToCheckout() {
-                const existingDeliveryNumber = existingDeliveryNumberInput ? existingDeliveryNumberInput.value.trim() : '';
+                const existingDeliveryNumber = existingDeliveryNumberInput ? existingDeliveryNumberInput.value.trim() :
+                    '';
 
                 // If adding to existing order
                 if (existingOrderData && existingOrderData.exists) {
                     const status = (existingOrderData.status || '').toUpperCase();
-                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status === 'SHIPPED') {
-                        showToast('This order has already been ' + status.toLowerCase() + '. You cannot add items to it.', 'error');
+                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status ===
+                        'SHIPPED') {
+                        showToast('This order has already been ' + status.toLowerCase() +
+                            '. You cannot add items to it.', 'error');
                         return;
                     }
 
-                    let deliveryAddress = existingOrderData.delivery_address || document.getElementById('deliveryAddress').value.trim();
+                    let deliveryAddress = existingOrderData.delivery_address || document.getElementById('deliveryAddress')
+                        .value.trim();
                     const newTotal = parseFloat(existingOrderData.total_amount) + subtotalAmount;
 
                     const confirmed = confirm(
@@ -1761,7 +1955,6 @@ try {
                                 'Item(s) added!',
                                 'success'
                             );
-                            // Redirect after toast
                             setTimeout(function () {
                                 window.location.href = 'pending_folder.php';
                             }, 2000);
@@ -1830,7 +2023,6 @@ try {
                             'Order placed!',
                             'success'
                         );
-                        // Redirect after toast
                         setTimeout(function () {
                             window.location.href = 'pending_folder.php';
                         }, 2500);
@@ -1887,19 +2079,8 @@ try {
             }
         });
 
-        // ============================================================
-        // UPDATE BUTTON TEXT BASED ON EXISTING ORDER
-        // ============================================================
-        function updateCheckoutButtonText(isExistingOrder) {
-            const checkoutBtn = document.getElementById('checkoutBtn');
-            if (checkoutBtn) {
-                if (isExistingOrder) {
-                    checkoutBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Now';
-                } else {
-                    checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Order';
-                }
-            }
-        }
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
     </script>
 </body>
 

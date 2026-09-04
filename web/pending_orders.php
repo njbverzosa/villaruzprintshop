@@ -37,10 +37,6 @@ if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
@@ -198,10 +194,153 @@ function formatDeliveryDate($date)
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
+        /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
         }
 
         .dashboard-header {
@@ -215,6 +354,12 @@ function formatDeliveryDate($date)
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
             gap: 15px;
         }
 
@@ -234,57 +379,12 @@ function formatDeliveryDate($date)
             color: #f59e0b;
         }
 
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-        }
-
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
-        }
-
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
-        }
-
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
         .menu-header .user-name {
@@ -307,6 +407,7 @@ function formatDeliveryDate($date)
         .menu-nav {
             flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .menu-nav .nav-item {
@@ -343,20 +444,144 @@ function formatDeliveryDate($date)
             border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
+        .menu-nav .nav-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay.active {
+        /* ========== DROPDOWN STYLES ========== */
+        .nav-dropdown {
+            margin-bottom: 8px;
+        }
+
+        .nav-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-dropdown-toggle:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-toggle i:first-child {
+            width: 24px;
+            font-size: 20px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-toggle span {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .dropdown-arrow {
+            font-size: 12px !important;
+            transition: transform 0.3s ease;
+            width: auto !important;
+        }
+
+        .dropdown-arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .nav-dropdown-menu {
+            display: none;
+            margin-left: 35px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .nav-dropdown-menu.show {
             display: block;
+        }
+
+        .nav-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-dropdown-item i {
+            width: 20px;
+            font-size: 14px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-item span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-item.active {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_paid {
+            background: #eff6ff;
+            color: green;
+            border-left: 3px solid green;
+        }
+
+        .nav-dropdown-item.active_paid:hover {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .nav-dropdown-item.active_pending {
+            background: #eff6ff;
+            color: orange;
+            border-left: 3px solid orange;
+        }
+
+        .nav-dropdown-item.active_pending:hover {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .nav-dropdown-item.active_outside {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_outside:hover {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .nav-dropdown-item.active_credit {
+            background: #eff6ff;
+            color: red;
+            border-left: 3px solid red;
+        }
+
+        .nav-dropdown-item.active_credit:hover {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         .orders-container {
@@ -372,21 +597,43 @@ function formatDeliveryDate($date)
             overflow: hidden;
         }
 
+        /* ========== DELIVERY HEADER ========== */
         .delivery-header {
             background: black;
             color: white;
             padding: 12px 20px;
             font-weight: 600;
             font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .delivery-header .customer-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .delivery-header .delivery-date-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .delivery-header i {
-            margin-right: 10px;
+            margin-right: 5px;
         }
 
         #deliveryDateInput {
             background: white;
             color: #1e293b;
+            padding: 4px 8px;
+            border: 2px solid #8b5cf6;
+            border-radius: 6px;
+            font-size: 13px;
         }
 
         #deliveryDateInput:focus {
@@ -395,11 +642,40 @@ function formatDeliveryDate($date)
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
+        /* Mobile View (480px and below) */
         @media (max-width: 480px) {
-            #deliveryDateInput {
+            .delivery-header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px 15px;
+                gap: 6px;
+            }
+
+            .delivery-header .customer-info {
+                font-size: 12px;
+                width: 100%;
+            }
+
+            .delivery-header .delivery-date-info {
+                font-size: 12px;
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .delivery-header .delivery-date-info #deliveryDateDisplay {
+                font-size: 12px;
+            }
+
+            .delivery-header .delivery-date-info #deliveryDateInput {
                 font-size: 11px;
-                padding: 4px 6px;
+                padding: 3px 6px;
                 max-width: 140px;
+            }
+
+            .delivery-header i {
+                font-size: 12px;
+                width: 16px;
+                margin-right: 3px;
             }
         }
 
@@ -832,17 +1108,7 @@ function formatDeliveryDate($date)
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
-            }
-
-            .burger-btn {
-                top: 15px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
-
-            .side-menu {
-                width: 260px;
+                padding-top: 20px;
             }
 
             .orders-table td {
@@ -867,20 +1133,25 @@ function formatDeliveryDate($date)
             .welcome h4 {
                 font-size: 14px;
             }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
         }
 
         @media (max-width: 480px) {
             .main-content {
                 padding: 15px;
+                padding-top: 15px;
             }
 
             .dashboard-header {
-                padding: 20px 30px;
+                padding: 12px 15px;
                 border-radius: 10px;
             }
 
-            .welcome h1 {
-                font-size: 18px;
+            .welcome h4 {
+                font-size: 13px;
             }
         }
     </style>
@@ -888,39 +1159,58 @@ function formatDeliveryDate($date)
 
 <body>
     <div class="app-wrapper">
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
-
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <!-- Close Button (Mobile Only) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="menu-header">
+                    <i class="fas fa-store"></i>
+                    <div class="user-greeting">Logged in as</div>
+                    <div class="user-name">
+                        <?php
+                        echo htmlspecialchars($user['user_name'] ?? 'User');
+                        ?>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+                    </div>
+                </div>
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <main class="main-content">
             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4>
-                        <a href="pending_folder.php"><i class="fas fa-folder-open"></i> Pending Folders </a>
-                        <?php if ($monthYear): ?>
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4>
+                            <a href="pending_folder.php"><i class="fas fa-folder-open"></i> Pending Folders </a>
+                            <?php if ($monthYear): ?>
+                                <i class="fas fa-chevron-right"></i>
+                                <a href="pending_folder_with.php?month=<?= urlencode($monthYear) ?>">
+                                    <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
+                                </a>
+                            <?php endif; ?>
                             <i class="fas fa-chevron-right"></i>
-                            <a href="pending_folder_with.php?month=<?= urlencode($monthYear) ?>">
-                                <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
-                            </a>
-                        <?php endif; ?>
-                        <i class="fas fa-chevron-right"></i>
-                        <i class="fas fa-folder-open"></i>
-                        <span id="deliveryNumber"><?= htmlspecialchars($deliveryNumber) ?></span>
-                        <i class="fas fa-copy" style="cursor: pointer; color: #3b82f6;" onclick="copyDeliveryNumber()"
-                            title="Copy delivery number"></i>
-                    </h4>
+                            <i class="fas fa-folder-open"></i>
+                            <span id="deliveryNumber"><?= htmlspecialchars($deliveryNumber) ?></span>
+                            <i class="fas fa-copy" style="cursor: pointer; color: #3b82f6;"
+                                onclick="copyDeliveryNumber()" title="Copy delivery number"></i>
+                        </h4>
+                    </div>
                 </div>
             </div>
 
@@ -932,8 +1222,7 @@ function formatDeliveryDate($date)
             <?php else: ?>
                 <div class="orders-container">
                     <div class="delivery-group">
-                        <div class="delivery-header"
-                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div class="delivery-header">
                             <div class="customer-info">
                                 <i class="fas fa-user"></i> Ordered By: <?= htmlspecialchars($customerName) ?>
                             </div>
@@ -945,8 +1234,7 @@ function formatDeliveryDate($date)
                                     echo htmlspecialchars($formattedDate);
                                     ?>
                                 </span>
-                                <input type="date" id="deliveryDateInput"
-                                    style="display: none; padding: 4px 8px; border: 2px solid #8b5cf6; border-radius: 6px; font-size: 13px;"
+                                <input type="date" id="deliveryDateInput" style="display: none;"
                                     value="<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>">
                             </div>
                         </div>
@@ -1034,9 +1322,93 @@ function formatDeliveryDate($date)
     ?>
 
     <script>
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
+        const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
+
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
+            menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    // Don't close if it's a dropdown toggle
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                // Desktop: close sidebar if open and hide overlay
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ========== EXISTING FUNCTIONS ==========
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
         const deliveryNumber = '<?= htmlspecialchars($selectedDeliveryNumber) ?>';
-        // ====== ADDED: MonthYear for redirect ======
         const monthYear = '<?= htmlspecialchars($monthYear) ?>';
         const encodedMonthYear = '<?= $encodedMonthYear ?>';
 
@@ -1045,23 +1417,6 @@ function formatDeliveryDate($date)
         let isEditMode = false;
         let originalData = new Map(); // Store original data for each row
         let isProcessing = false;
-
-        // Burger menu functionality
-        const burgerBtn = document.getElementById('burgerBtn');
-        const menuOverlay = document.getElementById('menuOverlay');
-        const sideMenu = document.querySelector('.side-menu');
-
-        if (burgerBtn && menuOverlay && sideMenu) {
-            burgerBtn.addEventListener('click', () => {
-                sideMenu.classList.add('open');
-                menuOverlay.classList.add('active');
-            });
-
-            menuOverlay.addEventListener('click', () => {
-                sideMenu.classList.remove('open');
-                menuOverlay.classList.remove('active');
-            });
-        }
 
         function generateReceipt(type) {
             if (type === 'delivery') {
@@ -1152,7 +1507,7 @@ function formatDeliveryDate($date)
             XLSX.utils.book_append_sheet(wb, ws, `Order_${deliveryNumber}`);
             XLSX.writeFile(wb, `Order_${deliveryNumber}.xlsx`);
 
-            showMessageModal('EXPORT SUCCESS', `Order data has been exported to Excel successfully!`, 'success');
+            showMessageModal('EXPORT SUCCESS', 'Order data has been exported to Excel successfully!', 'success');
         });
 
         // ========== COMPUTER-STYLE SYSTEM MODAL ==========
@@ -1352,7 +1707,7 @@ function formatDeliveryDate($date)
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
-            // ====== ADD: Show date input and hide display ======
+            // Show date input and hide display
             const dateDisplay = document.getElementById('deliveryDateDisplay');
             const dateInput = document.getElementById('deliveryDateInput');
             if (dateDisplay && dateInput) {
@@ -1397,16 +1752,13 @@ function formatDeliveryDate($date)
                     const price = parseFloat(sellingPriceInput.value) || 0;
                     const newTotal = pieces * price;
                     totalInput.value = newTotal.toFixed(2);
-                    // Update grand total
                     updateGrandTotal();
                 }
 
                 if (piecesInput && sellingPriceInput && totalInput) {
-                    // Calculate on input change
                     piecesInput.addEventListener('input', calculateRowTotal);
                     sellingPriceInput.addEventListener('input', calculateRowTotal);
 
-                    // Also update on blur to ensure clean values
                     piecesInput.addEventListener('blur', function () {
                         if (this.value === '' || isNaN(this.value)) {
                             this.value = 0;
@@ -1423,7 +1775,6 @@ function formatDeliveryDate($date)
                 }
             });
 
-            // Initial grand total calculation
             setTimeout(updateGrandTotal, 100);
         }
 
@@ -1444,13 +1795,12 @@ function formatDeliveryDate($date)
                 grandTotal += total;
             });
 
-            // Update the total row
             const totalDisplay = document.getElementById('total-amount-display');
             if (totalDisplay) {
-                totalDisplay.innerHTML = `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                totalDisplay.innerHTML =
+                    `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
 
-            // Update the total items display if exists
             const totalItemsDisplay = document.getElementById('totalItemsDisplay');
             if (totalItemsDisplay) {
                 totalItemsDisplay.textContent = totalItems;
@@ -1462,12 +1812,10 @@ function formatDeliveryDate($date)
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             let isValid = true;
 
-            // ====== GET UPDATED DELIVERY DATE ======
             const dateInput = document.getElementById('deliveryDateInput');
             const updatedDeliveryDate = dateInput ? dateInput.value : '';
             const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
 
-            // Update grand total one last time before saving
             updateGrandTotal();
 
             rows.forEach((row, index) => {
@@ -1512,7 +1860,6 @@ function formatDeliveryDate($date)
 
             if (!isValid) return;
 
-            // Check if delivery date changed
             const dateChanged = updatedDeliveryDate && updatedDeliveryDate !== originalDeliveryDate;
 
             let hasChanges = false;
@@ -1532,7 +1879,6 @@ function formatDeliveryDate($date)
                 return;
             }
 
-            // Build confirmation message
             let confirmMessage = 'Are you sure you want to update the order?';
             if (dateChanged) {
                 confirmMessage += '\n\n📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
@@ -1562,7 +1908,6 @@ function formatDeliveryDate($date)
                     total_amount: item.updated.total
                 }))));
 
-                // ====== ADD DELIVERY DATE TO FORM DATA ======
                 if (dateChanged && updatedDeliveryDate) {
                     formData.append('delivery_date', updatedDeliveryDate);
                 }
@@ -1609,7 +1954,6 @@ function formatDeliveryDate($date)
                 const newStatus = this.value;
 
                 if (newStatus === 'PAID') {
-                    // Show warning modal with OK button
                     showSystemModal(
                         '⚠️ PAYMENT CONFIRMATION',
                         `
@@ -1633,7 +1977,6 @@ function formatDeliveryDate($date)
                     });
                     statusSelect.value = previousStatus;
                 } else if (newStatus === 'CANCELLED') {
-                    // Show confirmation modal for cancellation
                     showSystemModal(
                         '⚠️ CANCELLATION CONFIRMATION',
                         `<strong>Delivery #${deliveryNumber}</strong><br>
@@ -1661,7 +2004,6 @@ function formatDeliveryDate($date)
                     });
                     statusSelect.value = previousStatus;
                 } else {
-                    // For other status changes (PENDING, CREDIT), update directly
                     await updateStatusDirect(newStatus);
                 }
             });
@@ -1771,23 +2113,18 @@ function formatDeliveryDate($date)
         }
 
         function copyDeliveryNumber() {
-            // Get the delivery number text
             const deliveryNumber = document.getElementById('deliveryNumber').textContent;
 
-            // Create a temporary input element
             const tempInput = document.createElement('input');
             tempInput.value = deliveryNumber;
             document.body.appendChild(tempInput);
 
-            // Select and copy the text
             tempInput.select();
-            tempInput.setSelectionRange(0, 99999); // For mobile devices
+            tempInput.setSelectionRange(0, 99999);
             document.execCommand('copy');
 
-            // Remove the temporary element
             document.body.removeChild(tempInput);
 
-            // Optional: Show a success message or change the icon temporarily
             const copyIcon = document.querySelector('.fa-copy');
             copyIcon.className = 'fas fa-check-circle';
             copyIcon.style.color = '#16a34a';
@@ -1796,6 +2133,9 @@ function formatDeliveryDate($date)
                 copyIcon.style.color = '#3b82f6';
             }, 2000);
         }
+
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
     </script>
 </body>
 

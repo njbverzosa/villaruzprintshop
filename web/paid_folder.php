@@ -11,10 +11,11 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
-function isLoggedIn() {
-    return isset($_SESSION['user_role']) && 
-           isset($_SESSION['user_id']) && 
-           isset($_SESSION['acc_number']);
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
@@ -35,10 +36,6 @@ $accNumber = $_SESSION['acc_number'];
 $userData = null;
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -168,10 +165,153 @@ foreach ($availableYears as $year) {
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
+        /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
         }
 
         .dashboard-header {
@@ -186,63 +326,24 @@ foreach ($availableYears as $year) {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
         .welcome h4 {
             font-size: 15px;
             font-weight: 600;
             color: #0f172a;
         }
 
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-        }
-
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
-        }
-
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
-        }
-
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
         .menu-header .user-name {
@@ -265,6 +366,7 @@ foreach ($availableYears as $year) {
         .menu-nav {
             flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .menu-nav .nav-item {
@@ -301,20 +403,144 @@ foreach ($availableYears as $year) {
             border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
+        .menu-nav .nav-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay.active {
+        /* ========== DROPDOWN STYLES ========== */
+        .nav-dropdown {
+            margin-bottom: 8px;
+        }
+
+        .nav-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-dropdown-toggle:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-toggle i:first-child {
+            width: 24px;
+            font-size: 20px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-toggle span {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .dropdown-arrow {
+            font-size: 12px !important;
+            transition: transform 0.3s ease;
+            width: auto !important;
+        }
+
+        .dropdown-arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .nav-dropdown-menu {
+            display: none;
+            margin-left: 35px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .nav-dropdown-menu.show {
             display: block;
+        }
+
+        .nav-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-dropdown-item i {
+            width: 20px;
+            font-size: 14px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-item span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-item.active {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_paid {
+            background: #eff6ff;
+            color: green;
+            border-left: 3px solid green;
+        }
+
+        .nav-dropdown-item.active_paid:hover {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .nav-dropdown-item.active_pending {
+            background: #eff6ff;
+            color: orange;
+            border-left: 3px solid orange;
+        }
+
+        .nav-dropdown-item.active_pending:hover {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .nav-dropdown-item.active_outside {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_outside:hover {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .nav-dropdown-item.active_credit {
+            background: #eff6ff;
+            color: red;
+            border-left: 3px solid red;
+        }
+
+        .nav-dropdown-item.active_credit:hover {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         .folders-grid {
@@ -556,22 +782,10 @@ foreach ($availableYears as $year) {
             background: #c0c0c0;
         }
 
-    
-
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
-            }
-
-            .burger-btn {
-                top: 15px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
-
-            .side-menu {
-                width: 260px;
+                padding-top: 20px;
             }
 
             .folders-grid {
@@ -588,48 +802,98 @@ foreach ($availableYears as $year) {
             .amount-value {
                 font-size: 13px;
             }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
         }
 
         @media (max-width: 480px) {
             .main-content {
                 padding: 15px;
+                padding-top: 15px;
             }
 
-            
             .dashboard-header {
-                padding: 20px 30px;
+                padding: 12px 15px;
                 border-radius: 10px;
             }
 
-            .welcome h1 {
-                font-size: 18px;
+            .welcome h4 {
+                font-size: 14px;
             }
 
+            .folders-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 10px;
+            }
+
+            .folder-item {
+                padding: 20px 15px;
+                width: 100%;
+            }
+
+            .folder-icon i {
+                font-size: 36px;
+            }
+
+            .folder-name {
+                font-size: 12px;
+            }
+
+            .sales-modal {
+                max-width: 98%;
+            }
+
+            .year-btn-simple {
+                font-size: 11px;
+                padding: 4px 12px;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="app-wrapper">
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <!-- Close Button (Mobile Only) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="menu-header">
+                    <i class="fas fa-store"></i>
+                    <div class="user-greeting">Logged in as</div>
+                    <div class="user-name">
+                        <?php
+                        echo htmlspecialchars($user['user_name'] ?? 'User');
+                        ?>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+                    </div>
+                </div>
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <main class="main-content">
             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4><i class="fas fa-folder-open"></i> Paid Folders <i class="fas fa-chevron-right"></i></h4>
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4><i class="fas fa-folder-open"></i> Paid Folders <i class="fas fa-chevron-right"></i></h4>
+                    </div>
                 </div>
             </div>
 
@@ -682,11 +946,95 @@ foreach ($availableYears as $year) {
     </div>
 
     <?php
-        include '../footer.php';
+    include '../footer.php';
     ?>
 
-
     <script>
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
+        const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
+
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
+            menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    // Don't close if it's a dropdown toggle
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                // Desktop: close sidebar if open and hide overlay
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ========== EXISTING FUNCTIONS ==========
         // PHP data passed to JavaScript
         const salesData = <?php echo json_encode($salesData); ?>;
         const availableYears = <?php echo json_encode($availableYears); ?>;
@@ -825,22 +1173,6 @@ foreach ($availableYears as $year) {
             }
         });
 
-        // Burger menu functionality
-        const burgerBtn = document.getElementById('burgerBtn');
-        const menuOverlayElem = document.getElementById('menuOverlay');
-        const sideMenuElem = document.querySelector('.side-menu');
-
-        if (burgerBtn && menuOverlayElem && sideMenuElem) {
-            burgerBtn.addEventListener('click', () => {
-                sideMenuElem.classList.add('open');
-                menuOverlayElem.classList.add('active');
-            });
-            menuOverlayElem.addEventListener('click', () => {
-                sideMenuElem.classList.remove('open');
-                menuOverlayElem.classList.remove('active');
-            });
-        }
-
         function viewMonth(monthYear) {
             window.location.href = 'paid_folder_with.php?month=' + encodeURIComponent(monthYear);
         }
@@ -864,6 +1196,9 @@ foreach ($availableYears as $year) {
                 }
             }
         });
+
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
     </script>
 </body>
 

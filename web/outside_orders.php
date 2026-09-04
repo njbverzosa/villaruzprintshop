@@ -1,6 +1,5 @@
 <?php
-// web/outside_orders.php
-
+// web/pending_orders.php
 session_start();
 
 // ==============================================
@@ -36,10 +35,6 @@ $accNumber = $_SESSION['acc_number'];
 $userData = null;
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-} elseif ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -106,7 +101,7 @@ if (!$deliveryInfo && !empty($orderItems)) {
         'delivery_m_y' => $firstItem['delivery_m_y'] ?? '',
         'status' => $firstItem['status'] ?? 'PENDING',
         'delivery_number' => $selectedDeliveryNumber,
-        'total_amount' => 0
+        'delivery_date' => $firstItem['delivery_date'] ?? null
     ];
 }
 
@@ -117,7 +112,7 @@ if (!$deliveryInfo) {
         'delivery_m_y' => '',
         'status' => 'PENDING',
         'delivery_number' => $selectedDeliveryNumber,
-        'total_amount' => 0
+        'delivery_date' => null
     ];
 }
 
@@ -138,31 +133,34 @@ $monthYear = $deliveryInfo['delivery_m_y'] ?? '';
 $deliveryNumber = $deliveryInfo['delivery_number'] ?? $selectedDeliveryNumber;
 $currentStatus = $deliveryInfo['status'] ?? 'PENDING';
 
-// ==============================================
-// CALCULATE TOTAL AMOUNT - FIXED
-// ==============================================
+// Calculate total amount
 $totalAmount = 0;
-
-// First, calculate from order items
 foreach ($orderItems as $item) {
     $totalAmount += floatval($item['total_amount'] ?? 0);
 }
 
-// If deliveryInfo has a total_amount and it's greater than 0, use it
-if ($deliveryInfo && isset($deliveryInfo['total_amount']) && floatval($deliveryInfo['total_amount']) > 0) {
-    $totalAmount = floatval($deliveryInfo['total_amount']);
-} elseif ($totalAmount > 0) {
-    // If we calculated a total but deliveryInfo doesn't have it, update the database
-    try {
-        $updateStmt = $pdo->prepare("UPDATE for_deliveries SET total_amount = ? WHERE delivery_number = ?");
-        $updateStmt->execute([$totalAmount, $selectedDeliveryNumber]);
-    } catch (Exception $e) {
-        error_log("Failed to update delivery total: " . $e->getMessage());
-    }
-}
-
 // Encode monthYear for JavaScript
 $encodedMonthYear = urlencode($monthYear);
+
+/**
+ * Format delivery date for display
+ * 
+ * @param string|null $date Date in Y-m-d format
+ * @return string Formatted date (e.g., "26 August 2026")
+ */
+function formatDeliveryDate($date)
+{
+    if (empty($date) || $date === '0000-00-00' || $date === '1970-01-01') {
+        return '';
+    }
+
+    $timestamp = strtotime($date);
+    if ($timestamp === false || $timestamp <= 0) {
+        return '';
+    }
+
+    return date('j F Y', $timestamp);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -196,10 +194,153 @@ $encodedMonthYear = urlencode($monthYear);
             flex-direction: column;
         }
 
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
+        /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
         }
 
         .dashboard-header {
@@ -213,6 +354,12 @@ $encodedMonthYear = urlencode($monthYear);
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
             gap: 15px;
         }
 
@@ -232,57 +379,12 @@ $encodedMonthYear = urlencode($monthYear);
             color: #f59e0b;
         }
 
-        .burger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-        }
-
-        .burger-btn:hover {
-            background: #f8fafc;
-            transform: scale(1.02);
-        }
-
-        .burger-btn i {
-            font-size: 24px;
-            color: #3b82f6;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -320px;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-            z-index: 1002;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #e2e8f0;
-        }
-
-        .side-menu.open {
-            right: 0;
-        }
-
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
             background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
         .menu-header .user-name {
@@ -305,6 +407,7 @@ $encodedMonthYear = urlencode($monthYear);
         .menu-nav {
             flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .menu-nav .nav-item {
@@ -341,20 +444,144 @@ $encodedMonthYear = urlencode($monthYear);
             border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            display: none;
+        .menu-nav .nav-item.shop {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
         }
 
-        .menu-overlay.active {
+        /* ========== DROPDOWN STYLES ========== */
+        .nav-dropdown {
+            margin-bottom: 8px;
+        }
+
+        .nav-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-dropdown-toggle:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-toggle i:first-child {
+            width: 24px;
+            font-size: 20px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-toggle span {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .dropdown-arrow {
+            font-size: 12px !important;
+            transition: transform 0.3s ease;
+            width: auto !important;
+        }
+
+        .dropdown-arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .nav-dropdown-menu {
+            display: none;
+            margin-left: 35px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .nav-dropdown-menu.show {
             display: block;
+        }
+
+        .nav-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-dropdown-item i {
+            width: 20px;
+            font-size: 14px;
+            color: #3b82f6;
+        }
+
+        .nav-dropdown-item span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-item:hover {
+            background: #eff6ff;
+            color: #1e293b;
+        }
+
+        .nav-dropdown-item.active {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_paid {
+            background: #eff6ff;
+            color: green;
+            border-left: 3px solid green;
+        }
+
+        .nav-dropdown-item.active_paid:hover {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .nav-dropdown-item.active_pending {
+            background: #eff6ff;
+            color: orange;
+            border-left: 3px solid orange;
+        }
+
+        .nav-dropdown-item.active_pending:hover {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .nav-dropdown-item.active_outside {
+            background: #eff6ff;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .nav-dropdown-item.active_outside:hover {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .nav-dropdown-item.active_credit {
+            background: #eff6ff;
+            color: red;
+            border-left: 3px solid red;
+        }
+
+        .nav-dropdown-item.active_credit:hover {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         .orders-container {
@@ -370,16 +597,86 @@ $encodedMonthYear = urlencode($monthYear);
             overflow: hidden;
         }
 
+        /* ========== DELIVERY HEADER ========== */
         .delivery-header {
             background: black;
             color: white;
             padding: 12px 20px;
             font-weight: 600;
             font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .delivery-header .customer-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .delivery-header .delivery-date-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .delivery-header i {
-            margin-right: 10px;
+            margin-right: 5px;
+        }
+
+        #deliveryDateInput {
+            background: white;
+            color: #1e293b;
+            padding: 4px 8px;
+            border: 2px solid #8b5cf6;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        #deliveryDateInput:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        /* Mobile View (480px and below) */
+        @media (max-width: 480px) {
+            .delivery-header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px 15px;
+                gap: 6px;
+            }
+
+            .delivery-header .customer-info {
+                font-size: 12px;
+                width: 100%;
+            }
+
+            .delivery-header .delivery-date-info {
+                font-size: 12px;
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .delivery-header .delivery-date-info #deliveryDateDisplay {
+                font-size: 12px;
+            }
+
+            .delivery-header .delivery-date-info #deliveryDateInput {
+                font-size: 11px;
+                padding: 3px 6px;
+                max-width: 140px;
+            }
+
+            .delivery-header i {
+                font-size: 12px;
+                width: 16px;
+                margin-right: 3px;
+            }
         }
 
         .orders-table {
@@ -420,18 +717,6 @@ $encodedMonthYear = urlencode($monthYear);
         }
 
         /* Buttons */
-
-        .receipt-actions {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            padding: 20px;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            flex-wrap: wrap;
-        }
-
         .receipt-btn {
             display: inline-flex;
             align-items: center;
@@ -495,6 +780,79 @@ $encodedMonthYear = urlencode($monthYear);
             font-size: 14px;
         }
 
+        /* ========== RECEIPT ACTIONS - MOBILE ALIGNMENT ONLY ========== */
+        /* Desktop view - stays exactly as it was */
+        .receipt-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+        }
+
+        /* Mobile View - ONLY changes for mobile devices */
+        @media (max-width: 768px) {
+            .receipt-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                padding: 15px;
+            }
+
+            .receipt-actions .receipt-btn {
+                width: 100%;
+                justify-content: center;
+                margin: 0;
+            }
+
+            .receipt-actions .status-wrapper {
+                width: 100%;
+                grid-column: 1 / -1;
+            }
+
+            .receipt-actions .status-select {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Only change button sizes on small mobile (480px and below) */
+        @media (max-width: 480px) {
+            .receipt-actions {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                padding: 12px;
+            }
+
+            .receipt-btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            .receipt-btn i {
+                font-size: 12px;
+            }
+
+            .status-select {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .receipt-actions {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .receipt-actions .status-wrapper {
+                grid-column: 1;
+            }
+        }
+
         /* Editable input styles */
         .editable-input {
             width: 100%;
@@ -548,14 +906,6 @@ $encodedMonthYear = urlencode($monthYear);
             color: #64748b;
         }
 
-        footer {
-            background: #ffffff;
-            padding: 20px 5%;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-            color: #94a3b8;
-            font-size: 12px;
-        }
 
         /* Computer-Style Modal Dialog */
         .system-modal-overlay {
@@ -758,17 +1108,7 @@ $encodedMonthYear = urlencode($monthYear);
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
-            }
-
-            .burger-btn {
-                top: 15px;
-                right: 15px;
-                width: 42px;
-                height: 42px;
-            }
-
-            .side-menu {
-                width: 260px;
+                padding-top: 20px;
             }
 
             .orders-table td {
@@ -794,78 +1134,109 @@ $encodedMonthYear = urlencode($monthYear);
                 font-size: 14px;
             }
 
-            .receipt-btn {
-                padding: 8px 16px;
-                font-size: 12px;
-            }
-
-            .receipt-btn i {
-                font-size: 14px;
+            .dashboard-header {
+                padding: 15px 20px;
             }
         }
 
         @media (max-width: 480px) {
             .main-content {
                 padding: 15px;
+                padding-top: 15px;
             }
 
-
             .dashboard-header {
-                padding: 20px 30px;
+                padding: 12px 15px;
                 border-radius: 10px;
             }
 
-            .welcome h1 {
-                font-size: 18px;
+            .welcome h4 {
+                font-size: 13px;
             }
-
         }
     </style>
 </head>
 
 <body>
     <div class="app-wrapper">
-        <div class="burger-btn" id="burgerBtn">
-            <i class="fas fa-bars"></i>
-        </div>
-
+        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <?php
-        if ($user['authorize_access'] == 0) {
-            include 'system_sidebar.php';
-        } elseif ($user['authorize_access'] == 1) {
-            include 'owner_sidebar.php';
-        } elseif ($user['authorize_access'] == 2) {
-            include 'admin_sidebar.php';
-        }
-        ?>
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <!-- Close Button (Mobile Only) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="menu-header">
+                    <i class="fas fa-store"></i>
+                    <div class="user-greeting">Logged in as</div>
+                    <div class="user-name">
+                        <?php
+                        echo htmlspecialchars($user['user_name'] ?? 'User');
+                        ?>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+                    </div>
+                </div>
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
 
         <main class="main-content">
             <div class="dashboard-header">
-                <div class="welcome">
-                    <h4>
-                        <a href="outside_folder.php"><i class="fas fa-folder-open"></i> Outsider Folders </a>
-                        <?php if ($monthYear): ?>
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4>
+                            <a href="outside_folder.php"><i class="fas fa-folder-open"></i> Outside Folders </a>
+                            <?php if ($monthYear): ?>
+                                <i class="fas fa-chevron-right"></i>
+                                <a href="outside_folder_with.php?month=<?= urlencode($monthYear) ?>">
+                                    <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
+                                </a>
+                            <?php endif; ?>
                             <i class="fas fa-chevron-right"></i>
-                            <a href="outside_folder_with.php?month=<?= urlencode($monthYear) ?>">
-                                <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
-                            </a>
-                        <?php endif; ?>
-                        <i class="fas fa-chevron-right"></i>
-                        <i class="fas fa-folder-open"></i>
-                        <span id="deliveryNumber"><?= htmlspecialchars($deliveryNumber) ?></span>
-                        <i class="fas fa-copy" style="cursor: pointer; color: #3b82f6;" onclick="copyDeliveryNumber()" title="Copy delivery number"></i>
-                    </h4>
+                            <i class="fas fa-folder-open"></i>
+                            <span id="deliveryNumber"><?= htmlspecialchars($deliveryNumber) ?></span>
+                            <i class="fas fa-copy" style="cursor: pointer; color: #3b82f6;"
+                                onclick="copyDeliveryNumber()" title="Copy delivery number"></i>
+                        </h4>
+                    </div>
                 </div>
             </div>
 
             <?php if (empty($orderItems)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <p>No order items found for this delivery.</p>
+                </div>
             <?php else: ?>
                 <div class="orders-container">
                     <div class="delivery-group">
                         <div class="delivery-header">
-                            <i class="fas fa-user"></i> Customer: <?= htmlspecialchars($customerName) ?>
+                            <div class="customer-info">
+                                <i class="fas fa-user"></i> Ordered By: <?= htmlspecialchars($customerName) ?>
+                            </div>
+                            <div class="delivery-date-info" id="deliveryDateWrapper">
+                                <i class="fas fa-calendar"></i> Delivery Date:
+                                <span id="deliveryDateDisplay">
+                                    <?php
+                                    $formattedDate = formatDeliveryDate($deliveryInfo['delivery_date'] ?? '');
+                                    echo htmlspecialchars($formattedDate);
+                                    ?>
+                                </span>
+                                <input type="date" id="deliveryDateInput" style="display: none;"
+                                    value="<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>">
+                            </div>
                         </div>
                         <div class="orders-table-container">
                             <table class="orders-table" id="orders-table">
@@ -877,11 +1248,13 @@ $encodedMonthYear = urlencode($monthYear);
                                             data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
                                             data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
-                                            <td class="product-name"><?= htmlspecialchars($item['product_name'] ?? 'N/A') ?>
+                                            <td class="product-name">
+                                                <?= htmlspecialchars($item['product_name'] ?? 'N/A') ?>
                                             </td>
                                             <td class="pieces"><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
                                             <td class="unit"><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
-                                            <td class="selling_price">₱ <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?>
+                                            <td class="selling_price">₱
+                                                <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?>
                                             </td>
                                             <td class="total-amount">
                                                 ₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?>
@@ -892,7 +1265,11 @@ $encodedMonthYear = urlencode($monthYear);
                                         </tr>
                                     <?php endforeach; ?>
                                     <tr class="total-row">
-                                        <td colspan="4" style="text-align: right; font-weight: 600;">TOTAL:</td>
+                                        <td colspan="2" style="text-align: right; font-weight: 600;">Total Items: <span
+                                                id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
+                                        </td>
+                                        <td></td>
+                                        <td colspan="1" style="text-align: right; font-weight: 600;">TOTAL:</td>
                                         <td style="font-weight: 600;" id="total-amount-display">₱
                                             <?= number_format($totalAmount, 2) ?>
                                         </td>
@@ -904,28 +1281,33 @@ $encodedMonthYear = urlencode($monthYear);
                         <!-- Receipt Buttons and Status Update -->
                         <div class="receipt-actions">
                             <button class="receipt-btn delivery-receipt" onclick="generateReceipt('delivery')">
-                                <i class="fas fa-truck"></i> Delivery Receipt
+                                Delivery Receipt
+                            </button>
+                            <button class="receipt-btn billing-receipt" onclick="generateReceipt('billing')">
+                                Billing Receipt
                             </button>
                             <button class="receipt-btn download-excel" id="download-excel-btn">
-                                <i class="fas fa-file-excel"></i> Download Excel
+                                Download Excel
                             </button>
                             <button class="receipt-btn edit-mode-btn" id="edit-mode-btn">
-                                <i class="fas fa-edit"></i> Edit
+                                Edit
                             </button>
 
                             <!-- Update Status Dropdown -->
                             <div class="status-wrapper">
                                 <select class="status-select" id="status-select"
                                     data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
-                                    
-                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
-                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING</option>
-                                    <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>CANCELLED</option>
-                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
-                                    <option value="PACKING" <?= $currentStatus == 'PACKING' ? 'selected' : '' ?>>PACKING</option>
-                                    <option value="SHIPPED" <?= $currentStatus == 'SHIPPED' ? 'selected' : '' ?>>SHIPPED</option>
-                                    <option value="OFD" <?= $currentStatus == 'OFD' ? 'selected' : '' ?>>OFD</option>
-                                    <option value="DELIVERED" <?= $currentStatus == 'DELIVERED' ? 'selected' : '' ?>>DELIVERED</option>
+                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>
+                                        PENDING
+                                    </option>
+                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID
+                                    </option>
+                                    <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>
+                                        CANCELLED
+                                    </option>
+                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>
+                                        CREDIT
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -935,49 +1317,117 @@ $encodedMonthYear = urlencode($monthYear);
         </main>
     </div>
 
-    
     <?php
     include '../footer.php';
     ?>
 
     <script>
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
+        const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
+
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
+            menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) {
+                    // Don't close if it's a dropdown toggle
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                // Desktop: close sidebar if open and hide overlay
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ========== EXISTING FUNCTIONS ==========
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
         const deliveryNumber = '<?= htmlspecialchars($selectedDeliveryNumber) ?>';
-        // ====== ADDED: MonthYear for redirect ======
         const monthYear = '<?= htmlspecialchars($monthYear) ?>';
         const encodedMonthYear = '<?= $encodedMonthYear ?>';
+
+        const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
 
         let isEditMode = false;
         let originalData = new Map(); // Store original data for each row
         let isProcessing = false;
 
-        // Burger menu functionality
-        const burgerBtn = document.getElementById('burgerBtn');
-        const menuOverlay = document.getElementById('menuOverlay');
-        const sideMenu = document.querySelector('.side-menu');
-
-        if (burgerBtn && menuOverlay && sideMenu) {
-            burgerBtn.addEventListener('click', () => {
-                sideMenu.classList.add('open');
-                menuOverlay.classList.add('active');
-            });
-
-            menuOverlay.addEventListener('click', () => {
-                sideMenu.classList.remove('open');
-                menuOverlay.classList.remove('active');
-            });
-        }
-
         function generateReceipt(type) {
             if (type === 'delivery') {
-                window.location.href = '../receit.php?delivery_number=' + encodeURIComponent(deliveryNumber);
+                window.location.href = '../delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
             } else if (type === 'billing') {
                 window.location.href = '../billing_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
             }
         }
 
         // ========== EXCEL DOWNLOAD FUNCTION ==========
-        document.getElementById('download-excel-btn')?.addEventListener('click', function() {
+        document.getElementById('download-excel-btn')?.addEventListener('click', function () {
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             const excelData = [];
 
@@ -1015,27 +1465,12 @@ $encodedMonthYear = urlencode($monthYear);
             excelData.push(['', '', '', '', '', totalAmount]);
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
-            ws['!cols'] = [{
-                wch: 5
-            }, {
-                wch: 10
-            }, {
-                wch: 35
-            }, {
-                wch: 10
-            }, {
-                wch: 12
-            }, {
-                wch: 15
-            }];
+            ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
 
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let row = range.s.r; row <= range.e.r; row++) {
                 for (let col = range.s.c; col <= range.e.c; col++) {
-                    const cellAddress = XLSX.utils.encode_cell({
-                        r: row,
-                        c: col
-                    });
+                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
                     if (!ws[cellAddress]) continue;
                     ws[cellAddress].s = {
                         alignment: {
@@ -1047,46 +1482,23 @@ $encodedMonthYear = urlencode($monthYear);
             }
 
             for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({
-                    r: 0,
-                    c: col
-                });
+                const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
                 if (ws[cellAddress]) {
                     ws[cellAddress].s = {
-                        font: {
-                            bold: true,
-                            color: {
-                                rgb: "FFFFFF"
-                            }
-                        },
-                        fill: {
-                            fgColor: {
-                                rgb: "4CAF50"
-                            }
-                        },
-                        alignment: {
-                            horizontal: "center",
-                            vertical: "center"
-                        }
+                        font: { bold: true, color: { rgb: "FFFFFF" } },
+                        fill: { fgColor: { rgb: "4CAF50" } },
+                        alignment: { horizontal: "center", vertical: "center" }
                     };
                 }
             }
 
             const totalRowIndex = excelData.length - 1;
             for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({
-                    r: totalRowIndex,
-                    c: col
-                });
+                const cellAddress = XLSX.utils.encode_cell({ r: totalRowIndex, c: col });
                 if (ws[cellAddress]) {
                     ws[cellAddress].s = {
-                        font: {
-                            bold: true
-                        },
-                        alignment: {
-                            horizontal: "center",
-                            vertical: "center"
-                        }
+                        font: { bold: true },
+                        alignment: { horizontal: "center", vertical: "center" }
                     };
                 }
             }
@@ -1095,7 +1507,7 @@ $encodedMonthYear = urlencode($monthYear);
             XLSX.utils.book_append_sheet(wb, ws, `Order_${deliveryNumber}`);
             XLSX.writeFile(wb, `Order_${deliveryNumber}.xlsx`);
 
-            showMessageModal('EXPORT SUCCESS', `Order data has been exported to Excel successfully!`, 'success');
+            showMessageModal('EXPORT SUCCESS', 'Order data has been exported to Excel successfully!', 'success');
         });
 
         // ========== COMPUTER-STYLE SYSTEM MODAL ==========
@@ -1176,15 +1588,15 @@ $encodedMonthYear = urlencode($monthYear);
 
         function showConfirmModal(title, message, onConfirm, onCancel = null) {
             showSystemModal(title, message, 'warning', [{
-                    label: 'CANCEL',
-                    action: 'cancel',
-                    type: ''
-                },
-                {
-                    label: 'CONFIRM',
-                    action: 'confirm',
-                    type: 'primary'
-                }
+                label: 'CANCEL',
+                action: 'cancel',
+                type: ''
+            },
+            {
+                label: 'CONFIRM',
+                action: 'confirm',
+                type: 'primary'
+            }
             ]).then(result => {
                 if (result === 'confirm' && onConfirm) {
                     onConfirm();
@@ -1206,7 +1618,7 @@ $encodedMonthYear = urlencode($monthYear);
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
+            return str.replace(/[&<>]/g, function (m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -1217,9 +1629,9 @@ $encodedMonthYear = urlencode($monthYear);
         // ========== HELPER: Redirect to pending_folder_with with month ==========
         function redirectToPendingFolderWith() {
             if (monthYear) {
-                window.location.href = 'outside_folder_with.php?month=' + encodeURIComponent(monthYear);
+                window.location.href = 'pending_folder_with.php?month=' + encodeURIComponent(monthYear);
             } else {
-                window.location.href = 'outside_folder.php';
+                window.location.href = 'pending_folder.php';
             }
         }
 
@@ -1295,6 +1707,14 @@ $encodedMonthYear = urlencode($monthYear);
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
+            // Show date input and hide display
+            const dateDisplay = document.getElementById('deliveryDateDisplay');
+            const dateInput = document.getElementById('deliveryDateInput');
+            if (dateDisplay && dateInput) {
+                dateDisplay.style.display = 'none';
+                dateInput.style.display = 'inline-block';
+            }
+
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
 
             rows.forEach((row, index) => {
@@ -1316,14 +1736,8 @@ $encodedMonthYear = urlencode($monthYear);
                     `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
                 row.cells[1].innerHTML =
                     `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
-                row.cells[2].innerHTML = `
-                    <select class="editable-select" data-field="unit">
-                        <option value="PCS" ${originalUnit === 'PCS' ? 'selected' : ''}>PCS</option>
-                        <option value="BOX" ${originalUnit === 'BOX' ? 'selected' : ''}>BOX</option>
-                        <option value="REAMS" ${originalUnit === 'REAMS' ? 'selected' : ''}>REAMS</option>
-                        <option value="SET" ${originalUnit === 'SET' ? 'selected' : ''}>SET</option>
-                    </select>
-                `;
+                row.cells[2].innerHTML =
+                    `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
                 row.cells[3].innerHTML =
                     `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
                 row.cells[4].innerHTML =
@@ -1333,18 +1747,64 @@ $encodedMonthYear = urlencode($monthYear);
                 const sellingPriceInput = row.cells[3].querySelector('input');
                 const totalInput = row.cells[4].querySelector('input');
 
-                function calculateTotal() {
+                function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
                     const price = parseFloat(sellingPriceInput.value) || 0;
                     const newTotal = pieces * price;
                     totalInput.value = newTotal.toFixed(2);
+                    updateGrandTotal();
                 }
 
                 if (piecesInput && sellingPriceInput && totalInput) {
-                    piecesInput.addEventListener('input', calculateTotal);
-                    sellingPriceInput.addEventListener('input', calculateTotal);
+                    piecesInput.addEventListener('input', calculateRowTotal);
+                    sellingPriceInput.addEventListener('input', calculateRowTotal);
+
+                    piecesInput.addEventListener('blur', function () {
+                        if (this.value === '' || isNaN(this.value)) {
+                            this.value = 0;
+                        }
+                        calculateRowTotal();
+                    });
+
+                    sellingPriceInput.addEventListener('blur', function () {
+                        if (this.value === '' || isNaN(this.value)) {
+                            this.value = 0;
+                        }
+                        calculateRowTotal();
+                    });
                 }
             });
+
+            setTimeout(updateGrandTotal, 100);
+        }
+
+        // ========== UPDATE GRAND TOTAL ==========
+        function updateGrandTotal() {
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            let grandTotal = 0;
+            let totalItems = 0;
+
+            rows.forEach(row => {
+                const piecesInput = row.cells[1]?.querySelector('input');
+                const totalInput = row.cells[4]?.querySelector('input');
+
+                const pieces = parseFloat(piecesInput?.value) || 0;
+                const total = parseFloat(totalInput?.value) || 0;
+
+                totalItems += pieces;
+                grandTotal += total;
+            });
+
+            const totalDisplay = document.getElementById('total-amount-display');
+            if (totalDisplay) {
+                totalDisplay.innerHTML =
+                    `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            const totalItemsDisplay = document.getElementById('totalItemsDisplay');
+            if (totalItemsDisplay) {
+                totalItemsDisplay.textContent = totalItems;
+            }
         }
 
         async function disableEditMode() {
@@ -1352,21 +1812,27 @@ $encodedMonthYear = urlencode($monthYear);
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             let isValid = true;
 
+            const dateInput = document.getElementById('deliveryDateInput');
+            const updatedDeliveryDate = dateInput ? dateInput.value : '';
+            const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
+
+            updateGrandTotal();
+
             rows.forEach((row, index) => {
                 const productInput = row.cells[0].querySelector('input');
                 const piecesInput = row.cells[1].querySelector('input');
-                const unitSelect = row.cells[2].querySelector('select');
+                const unitInput = row.cells[2].querySelector('input');
                 const sellingPriceInput = row.cells[3].querySelector('input');
                 const totalInput = row.cells[4].querySelector('input');
 
-                if (!productInput || !piecesInput || !unitSelect || !sellingPriceInput || !totalInput) {
+                if (!productInput || !piecesInput || !unitInput || !sellingPriceInput || !totalInput) {
                     isValid = false;
                     return;
                 }
 
                 const newProduct = productInput.value.trim();
                 const newPieces = piecesInput.value;
-                const newUnit = unitSelect.value;
+                const newUnit = unitInput.value.trim();
                 const newSellingPrice = sellingPriceInput.value;
                 const newTotal = totalInput.value;
 
@@ -1394,6 +1860,8 @@ $encodedMonthYear = urlencode($monthYear);
 
             if (!isValid) return;
 
+            const dateChanged = updatedDeliveryDate && updatedDeliveryDate !== originalDeliveryDate;
+
             let hasChanges = false;
             for (const item of updatedItems) {
                 if (item.original.product !== item.updated.product ||
@@ -1406,21 +1874,26 @@ $encodedMonthYear = urlencode($monthYear);
                 }
             }
 
-            if (!hasChanges) {
+            if (!hasChanges && !dateChanged) {
                 exitEditMode();
                 return;
             }
 
+            let confirmMessage = 'Are you sure you want to update the order?';
+            if (dateChanged) {
+                confirmMessage += '\n\n📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
+            }
+
             showConfirmModal(
                 'UPDATE ORDER ITEMS',
-                'Are you sure you want to update the order items? This action will modify the records.',
+                confirmMessage,
                 async () => {
-                    await updateOrderItems(updatedItems);
+                    await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged);
                 }
             );
         }
 
-        async function updateOrderItems(updatedItems) {
+        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged) {
             try {
                 const formData = new FormData();
                 formData.append('action', 'update_order_items');
@@ -1434,6 +1907,10 @@ $encodedMonthYear = urlencode($monthYear);
                     selling_price: item.updated.selling_price,
                     total_amount: item.updated.total
                 }))));
+
+                if (dateChanged && updatedDeliveryDate) {
+                    formData.append('delivery_date', updatedDeliveryDate);
+                }
 
                 const response = await fetch('../API/update_delivery_status.php', {
                     method: 'POST',
@@ -1473,11 +1950,10 @@ $encodedMonthYear = urlencode($monthYear);
         if (statusSelect) {
             let previousStatus = statusSelect.value;
 
-            statusSelect.addEventListener('change', async function() {
+            statusSelect.addEventListener('change', async function () {
                 const newStatus = this.value;
 
                 if (newStatus === 'PAID') {
-                    // Show warning modal with OK button
                     showSystemModal(
                         '⚠️ PAYMENT CONFIRMATION',
                         `
@@ -1501,7 +1977,6 @@ $encodedMonthYear = urlencode($monthYear);
                     });
                     statusSelect.value = previousStatus;
                 } else if (newStatus === 'CANCELLED') {
-                    // Show confirmation modal for cancellation
                     showSystemModal(
                         '⚠️ CANCELLATION CONFIRMATION',
                         `<strong>Delivery #${deliveryNumber}</strong><br>
@@ -1529,7 +2004,6 @@ $encodedMonthYear = urlencode($monthYear);
                     });
                     statusSelect.value = previousStatus;
                 } else {
-                    // For other status changes (PENDING, CREDIT), update directly
                     await updateStatusDirect(newStatus);
                 }
             });
@@ -1572,7 +2046,7 @@ $encodedMonthYear = urlencode($monthYear);
 
         // ========== REMOVE ITEM FUNCTIONALITY ==========
         document.querySelectorAll('.remove-btn').forEach(button => {
-            button.addEventListener('click', async function() {
+            button.addEventListener('click', async function () {
                 if (isEditMode) {
                     showMessageModal('EDIT MODE ACTIVE',
                         'Please click UPDATE to save changes or refresh the page to cancel edit mode.',
@@ -1639,23 +2113,18 @@ $encodedMonthYear = urlencode($monthYear);
         }
 
         function copyDeliveryNumber() {
-            // Get the delivery number text
             const deliveryNumber = document.getElementById('deliveryNumber').textContent;
 
-            // Create a temporary input element
             const tempInput = document.createElement('input');
             tempInput.value = deliveryNumber;
             document.body.appendChild(tempInput);
 
-            // Select and copy the text
             tempInput.select();
-            tempInput.setSelectionRange(0, 99999); // For mobile devices
+            tempInput.setSelectionRange(0, 99999);
             document.execCommand('copy');
 
-            // Remove the temporary element
             document.body.removeChild(tempInput);
 
-            // Optional: Show a success message or change the icon temporarily
             const copyIcon = document.querySelector('.fa-copy');
             copyIcon.className = 'fas fa-check-circle';
             copyIcon.style.color = '#16a34a';
@@ -1664,6 +2133,9 @@ $encodedMonthYear = urlencode($monthYear);
                 copyIcon.style.color = '#3b82f6';
             }, 2000);
         }
+
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
     </script>
 </body>
 
