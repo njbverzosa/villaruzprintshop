@@ -1,4 +1,11 @@
 <style>
+    .logo img {
+        width: 245px;
+        height: auto;
+        object-fit: contain;
+        border-radius: 5px;
+    }
+
     /* ========== SIDEBAR NAVIGATION - COMPLETE HOVER & ACTIVE STATES ========== */
 
     /* ===== MAIN NAV ITEMS ===== */
@@ -363,15 +370,14 @@
 </button>
 
 <div class="menu-header">
-    <i class="fas fa-store"></i>
-    <div class="user-greeting">Logged in as</div>
+    <div class="logo">
+        <img src="images/logo.jpeg" alt="Villaruz Print Shop Logo">
+    </div>
+    
     <div class="user-name">
         <?php
         echo htmlspecialchars($user['user_name'] ?? 'User');
-        ?>
-    </div>
-    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-        <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
+        ?> - <?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>
     </div>
 </div>
 
@@ -511,7 +517,7 @@
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('settingsDropdown')">
                 <i class="fas fa-cog"></i>
-                <span>Tools</span>
+                <span>System Manager</span>
                 <i class="fas fa-chevron-down dropdown-arrow <?php echo $settingsActive ? 'rotated' : ''; ?>"
                     id="settingsArrow"></i>
             </div>
