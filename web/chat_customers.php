@@ -1,0 +1,1753 @@
+<?php
+// web/registered_customers.php
+session_start();
+
+// ==============================================
+// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// ==============================================
+require_once __DIR__ . '/../DB_Conn/config.php';
+
+// ==============================================
+// 2. CHECK LOGIN STATUS
+// ==============================================
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
+}
+
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    $_SESSION['login_error'] = 'Please login first to access the shop.';
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 3. GET USER DATA FROM SESSION
+// ==============================================
+$userRole = $_SESSION['user_role'];
+$userId = $_SESSION['user_id'];
+$accNumber = $_SESSION['acc_number'];
+
+// Fetch user details from database
+$userData = null;
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+if (!$userData) {
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 4. USE $userData INSTEAD OF $user
+// ==============================================
+$user = $userData;
+
+// Store authorize_access for conditional logic
+$authorizeAccess = isset($user['authorize_access']) ? (int) $user['authorize_access'] : 0;
+
+// Set timezone
+date_default_timezone_set('Asia/Manila');
+$currentDateTime = date('D, j M Y g:i A');
+
+// Daily login bonus / update last login date
+$storedDate = $user['last_login_date'] ?? '';
+if ($storedDate !== $currentDateTime) {
+    $updateStmt = $pdo->prepare("UPDATE admins SET last_login_date = ? WHERE acc_number = ?");
+    $updateStmt->execute([$currentDateTime, $_SESSION['acc_number']]);
+
+    // Refresh user data
+    $stmt = $pdo->prepare("SELECT * FROM admins WHERE acc_number = ?");
+    $stmt->execute([$_SESSION['acc_number']]);
+    $user = $stmt->fetch();
+}
+
+// Update status to online (1 = online, 0 = offline)
+$stmt = $pdo->prepare("UPDATE admins SET status = 1 WHERE acc_number = ?");
+$stmt->execute([$_SESSION['acc_number']]);
+
+// Fetch all customers from customers table
+$stmt = $pdo->prepare("SELECT * FROM customers ORDER BY id DESC");
+$stmt->execute();
+$customers = $stmt->fetchAll();
+
+// ==============================================
+// FUNCTION TO GET UNREAD MESSAGE COUNT
+// ==============================================
+function getUnreadCount($pdo, $customerAccNumber)
+{
+    try {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as unread_count 
+            FROM chat_conversation 
+            WHERE acc_number = ? 
+            AND status = 0
+        ");
+        $stmt->execute([$customerAccNumber]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return intval($result['unread_count'] ?? 0);
+    } catch (PDOException $e) {
+        error_log("Error getting unread count: " . $e->getMessage());
+        return 0;
+    }
+}
+
+// ==============================================
+// FUNCTION TO DETERMINE ONLINE STATUS
+// ==============================================
+function getOnlineStatus($onlineTime)
+{
+    if (empty($onlineTime)) {
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => ''];
+    }
+
+    $storedTimestamp = strtotime($onlineTime);
+    if ($storedTimestamp === false) {
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => ''];
+    }
+
+    $currentTimestamp = time();
+    $diffSeconds = $currentTimestamp - $storedTimestamp;
+    $diffMinutes = floor($diffSeconds / 60);
+    $diffHours = floor($diffSeconds / 3600);
+    $diffDays = floor($diffSeconds / 86400);
+    $diffWeeks = floor($diffSeconds / 604800);
+
+    if ($diffMinutes <= 1) {
+        return ['status' => 'online', 'class' => 'status-online', 'text' => '● Online', 'time_diff' => ''];
+    } elseif ($diffMinutes >= 1 && $diffMinutes <= 60) {
+        return ['status' => 'away', 'class' => 'status-away', 'text' => '● Away', 'time_diff' => $diffMinutes . 'm'];
+    } elseif ($diffHours >= 1 && $diffHours < 24) {
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffHours . 'h'];
+    } elseif ($diffDays >= 1 && $diffDays < 7) {
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffDays . 'd'];
+    } elseif ($diffWeeks >= 1 && $diffWeeks < 4) {
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => $diffWeeks . 'w'];
+    } else {
+        return ['status' => 'offline', 'class' => 'status-offline', 'text' => '● Offline', 'time_diff' => '4w+'];
+    }
+}
+
+// Get current page for sidebar
+$currentPage = basename($_SERVER['PHP_SELF']);
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
+    <meta http-equiv="refresh" content="10">
+    <title>Registered Customers | Villaruz Print Shop & General Merchandise</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========== SIDEBAR - LEFT SIDE ========== */
+        .sidebar-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .side-menu {
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile: sidebar hidden by default */
+        @media (max-width: 768px) {
+            .sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+
+            .sidebar-wrapper.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Desktop: sidebar always visible */
+        @media (min-width: 769px) {
+            .sidebar-wrapper {
+                transform: translateX(0) !important;
+            }
+
+            .main-content {
+                margin-left: 280px;
+                padding: 30px;
+            }
+
+            .burger-btn {
+                display: none !important;
+            }
+
+            .menu-overlay {
+                display: none !important;
+            }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Mobile overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .burger-btn:hover {
+            color: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .burger-btn i {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .burger-btn {
+                display: flex;
+            }
+        }
+
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                margin-left: 0 !important;
+                padding-top: 20px;
+            }
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: #ffffff;
+            padding: 20px 30px;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .welcome h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .menu-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
+        }
+
+        .menu-header .user-name {
+            font-weight: 700;
+            font-size: 18px;
+            color: #0f172a;
+            margin-top: 8px;
+        }
+
+        .menu-header .user-greeting {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .menu-header i {
+            font-size: 40px;
+            color: #3b82f6;
+        }
+
+        .menu-nav {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .merchandise-section {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+            margin-top: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-header h5 {
+            font-size: 22px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #0f172a;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .inventory-table th,
+        .inventory-table td {
+            padding: 15px 12px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .inventory-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .inventory-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .delete-btn {
+            background: #ef4444;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 16px;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        .lock-btn {
+            background: #f59e0b;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 16px;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin-right: 4px;
+        }
+
+        .lock-btn:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .unlock-btn {
+            background: #10b981;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 16px;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin-right: 4px;
+        }
+
+        .unlock-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Status Indicators */
+        .status-online {
+            color: #10b981;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            animation: pulse-green 2s infinite;
+        }
+
+        .status-away {
+            color: #f59e0b;
+            font-size: 24px;
+            animation: pulse-away 1.5s infinite;
+        }
+
+        .status-offline {
+            color: #94a3b8;
+            font-size: 20px;
+            opacity: 0.5;
+        }
+
+        .status-text {
+            font-size: 11px;
+            font-weight: 500;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .status-text.online {
+            color: #10b981;
+        }
+
+        .status-text.away {
+            color: #f59e0b;
+        }
+
+        .status-text.offline {
+            color: #94a3b8;
+        }
+
+        @keyframes pulse-green {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(1.2);
+            }
+        }
+
+        @keyframes pulse-away {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.1);
+            }
+        }
+
+        .status-header {
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-cell {
+            text-align: center;
+            min-width: 50px;
+        }
+
+        .status-dot-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Email Status Dot */
+        .email-status-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .dot-active {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+        }
+
+        .dot-inactive {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.3);
+                opacity: 0.7;
+            }
+        }
+
+        /* Password Styles */
+        .password-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafc;
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            justify-content: center;
+        }
+
+        .password-text {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #0f172a;
+        }
+
+        .password-placeholder {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #94a3b8;
+            letter-spacing: 2px;
+        }
+
+        /* Copy Buttons */
+        .copy-btn-phone {
+            color: #3b82f6;
+            font-size: 14px;
+            margin-left: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .copy-btn-phone:hover {
+            background: #eff6ff;
+            transform: scale(1.1);
+        }
+
+        .copy-btn-email {
+            color: #8b5cf6;
+            font-size: 14px;
+            margin-left: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .copy-btn-email:hover {
+            background: #f3e8ff;
+            transform: scale(1.1);
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .copy-btn:hover {
+            transform: scale(1.2);
+            background: #e2e8f0;
+        }
+
+        .copy-btn-eye {
+            color: #3b82f6;
+        }
+
+        .copy-btn-eye:hover {
+            color: #2563eb;
+        }
+
+        .copy-btn-copy {
+            color: #10b981;
+        }
+
+        .copy-btn-copy:hover {
+            color: #059669;
+        }
+
+        /* Chat Icon with Badge */
+        .chat-icon-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .chat-icon {
+            cursor: pointer;
+            text-align: center;
+            color: #3b82f6;
+            transition: all 0.3s;
+            display: inline-block;
+            padding: 8px;
+            border-radius: 50%;
+        }
+
+        .chat-icon:hover {
+            background: #eff6ff;
+            transform: scale(1.1);
+        }
+
+        .chat-icon i {
+            color: #3b82f6;
+            font-size: 18px;
+        }
+
+        .badge-unread {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+            animation: pulse-badge 2s ease-in-out infinite;
+            border: 2px solid #ffffff;
+        }
+
+        .badge-unread.hidden {
+            display: none;
+        }
+
+        @keyframes pulse-badge {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* Toast */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast-success {
+            background: #10b981;
+        }
+
+        .toast-error {
+            background: #ef4444;
+        }
+
+        .toast-warning {
+            background: #f59e0b;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Landmark Photo Styles */
+        .landmark-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.2s;
+        }
+
+        .landmark-thumb:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .no-photo {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Modal */
+        .landmark-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+            cursor: zoom-out;
+        }
+
+        .landmark-modal-content {
+            position: relative;
+            margin: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .landmark-modal-image {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            cursor: zoom-in;
+        }
+
+        .landmark-modal-image.zoomed {
+            transform: scale(2);
+            cursor: zoom-out;
+        }
+
+        .landmark-modal-close {
+            position: fixed;
+            top: 20px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            color: white;
+        }
+
+        .landmark-modal-close:hover {
+            color: #bbb;
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        .landmark-modal-caption {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .zoom-controls {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10000;
+        }
+
+        .zoom-controls button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .zoom-controls button:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+                padding-top: 20px;
+            }
+
+            .inventory-table th,
+            .inventory-table td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            .password-wrapper {
+                padding: 2px 4px;
+                gap: 4px;
+            }
+
+            .copy-btn {
+                padding: 2px 4px;
+                font-size: 12px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .lock-btn,
+            .unlock-btn,
+            .delete-btn {
+                font-size: 10px;
+                padding: 4px 10px;
+            }
+
+            .email-status-dot {
+                width: 10px;
+                height: 10px;
+                margin-left: 4px;
+            }
+
+            .chat-icon i {
+                font-size: 14px;
+            }
+
+            .badge-unread {
+                font-size: 8px;
+                min-width: 14px;
+                height: 14px;
+                top: -4px;
+                right: -4px;
+                padding: 1px 4px;
+            }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px;
+                padding-top: 15px;
+            }
+
+            .dashboard-header {
+                padding: 12px 15px;
+                border-radius: 10px;
+            }
+
+            .welcome h4 {
+                font-size: 14px;
+            }
+
+            .inventory-table {
+                font-size: 10px;
+            }
+
+            .inventory-table th,
+            .inventory-table td {
+                padding: 6px 4px;
+                font-size: 10px;
+            }
+
+            .landmark-thumb {
+                width: 40px;
+                height: 40px;
+            }
+
+            .password-wrapper {
+                padding: 2px 4px;
+                gap: 2px;
+            }
+
+            .password-text,
+            .password-placeholder {
+                font-size: 10px;
+            }
+
+            .copy-btn {
+                font-size: 10px;
+                padding: 2px 3px;
+            }
+
+            .lock-btn,
+            .unlock-btn,
+            .delete-btn {
+                font-size: 9px;
+                padding: 3px 6px;
+            }
+
+            .chat-icon {
+                padding: 4px;
+            }
+
+            .chat-icon i {
+                font-size: 12px;
+            }
+
+            .badge-unread {
+                font-size: 7px;
+                min-width: 12px;
+                height: 12px;
+                top: -3px;
+                right: -3px;
+                padding: 1px 3px;
+            }
+
+            .email-status-dot {
+                width: 8px;
+                height: 8px;
+                margin-left: 3px;
+            }
+
+            .status-online,
+            .status-away {
+                font-size: 16px;
+            }
+
+            .status-offline {
+                font-size: 14px;
+            }
+
+            .status-text {
+                font-size: 9px;
+            }
+
+            .landmark-modal-close {
+                width: 36px;
+                height: 36px;
+                font-size: 28px;
+                top: 10px;
+                right: 15px;
+            }
+
+            .landmark-modal-caption {
+                font-size: 14px;
+                bottom: 20px;
+                padding: 8px 15px;
+            }
+
+            .zoom-controls {
+                bottom: 70px;
+                gap: 8px;
+            }
+
+            .zoom-controls button {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <!-- Overlay (Mobile Only) -->
+        <div class="menu-overlay" id="menuOverlay"></div>
+
+        <!-- Sidebar Wrapper -->
+        <div class="sidebar-wrapper" id="sidebarWrapper">
+            <div class="side-menu" id="sideMenu">
+                <?php
+                include 'sidebar.php';
+                ?>
+            </div>
+        </div>
+
+        <main class="main-content">
+            <div class="dashboard-header">
+                <div class="header-left">
+                    <!-- Burger Button (Mobile Only) -->
+                    <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="welcome">
+                        <h4>Customers</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="merchandise-section">
+                <div style="overflow-x: auto;">
+                    <table class="inventory-table" id="customersTable">
+                        <thead>
+                            <tr>
+                                <th>Landmark</th>
+                                <th>Full Name</th>
+                                <th class="status-header">Status</th>
+                                <th>Chat</th>
+                                <th>Phone Number</th>
+                                <th>Email</th>
+                                <?php if ($authorizeAccess == 0): ?>
+                                    <th>Action</th>
+                                    <th>User / Pass</th>
+                                <?php endif; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($customers)): ?>
+                                <tr>
+                                    <td colspan="<?php echo $authorizeAccess == 0 ? '8' : '6'; ?>" style="text-align: center; padding: 40px;">No customers found</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($customers as $customer):
+                                    $onlineStatus = getOnlineStatus($customer['online_time'] ?? '');
+                                    $isAccountActive = isset($customer['account']) && $customer['account'] == 1;
+                                    $isEmailActive = isset($customer['active_email']) && $customer['active_email'] == 1;
+                                    $unreadCount = getUnreadCount($pdo, $customer['acc_number']);
+                                    ?>
+                                    <tr data-id="<?php echo $customer['id']; ?>">
+                                        <td>
+                                            <?php
+                                            $landmarkPhoto = $customer['landmark_photo'] ?? '';
+                                            $customerName = htmlspecialchars($customer['f_name'] ?? 'Customer');
+                                            if (!empty($landmarkPhoto) && file_exists(__DIR__ . '/../' . $landmarkPhoto)):
+                                                ?>
+                                                <img src="../<?php echo htmlspecialchars($landmarkPhoto); ?>"
+                                                    alt="Landmark photo of <?php echo $customerName; ?>" class="landmark-thumb"
+                                                    onclick="openLandmarkModal('../<?php echo htmlspecialchars($landmarkPhoto); ?>', '<?php echo $customerName; ?>')"
+                                                    title="Click to zoom">
+                                            <?php else: ?>
+                                                <span class="no-photo">No photo</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($customer['f_name'] ?? 'N/A'); ?></td>
+                                        <td class="status-cell">
+                                            <div class="status-dot-wrapper">
+                                                <?php if ($onlineStatus['status'] === 'online'): ?>
+                                                    <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
+                                                    <span class="status-text online">Active</span>
+                                                <?php elseif ($onlineStatus['status'] === 'away'): ?>
+                                                    <i class="fas fa-clock status-away"
+                                                        title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                    <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
+                                                <?php else: ?>
+                                                    <i class="fas fa-clock status-offline"
+                                                        title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                    <span
+                                                        class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="chat-icon-wrapper">
+                                                <span class="chat-icon"
+                                                    onclick="window.location.href='chat_view.php?acc=<?php echo urlencode($customer['acc_number']); ?>'"
+                                                    data-acc="<?php echo htmlspecialchars($customer['acc_number']); ?>">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </span>
+                                                <?php if ($unreadCount > 0): ?>
+                                                    <span class="badge-unread" id="badge_<?php echo $customer['id']; ?>">
+                                                        <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge-unread hidden"
+                                                        id="badge_<?php echo $customer['id']; ?>"></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <?php echo htmlspecialchars($customer['phone_number'] ?? 'N/A'); ?>
+                                            <?php if (!empty($customer['phone_number'])): ?>
+                                                <button class="copy-btn copy-btn-phone"
+                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($customer['phone_number']); ?>', 'Phone number')"
+                                                    title="Copy phone number">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php echo htmlspecialchars($customer['email'] ?? 'N/A'); ?>
+                                            <?php if (!empty($customer['email'])): ?>
+                                                <button class="copy-btn copy-btn-email"
+                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($customer['email']); ?>', 'Email')"
+                                                    title="Copy email address">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                            <span
+                                                class="email-status-dot <?php echo $isEmailActive ? 'dot-active' : 'dot-inactive'; ?>"
+                                                id="dot_<?php echo $customer['id']; ?>"
+                                                title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
+                                            </span>
+                                        </td>
+                                        <?php if ($authorizeAccess == 0): ?>
+                                            <td>
+                                                <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
+                                                    <?php if ($isAccountActive): ?>
+                                                        <button class="lock-btn"
+                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                            <i class="fas fa-lock"></i>
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <button class="unlock-btn"
+                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                            <i class="fas fa-unlock"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <button class="delete-btn"
+                                                        onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td style="white-space: nowrap;">
+                                                <div class="password-wrapper">
+                                                    <span style="color: #475569; font-weight: 500;">
+                                                        <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                                    </span>
+                                                    <span style="color: #94a3b8;">/</span>
+                                                    <span class="password-text" id="pass_<?php echo $customer['id']; ?>"
+                                                        style="display: none;">
+                                                        <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
+                                                    </span>
+                                                    <span class="password-placeholder"
+                                                        id="placeholder_<?php echo $customer['id']; ?>">
+                                                        ••••••••
+                                                    </span>
+                                                    <button class="copy-btn copy-btn-eye"
+                                                        onclick="togglePassword(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['text_pass'] ?? ''); ?>')"
+                                                        title="Show/Hide password">
+                                                        <i class="fas fa-eye" id="eye_<?php echo $customer['id']; ?>"></i>
+                                                    </button>
+                                                    <button class="copy-btn copy-btn-copy"
+                                                        onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>', <?php echo $customer['id']; ?>)"
+                                                        title="Copy password">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        <?php endif; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Landmark Modal -->
+    <div id="landmarkModal" class="landmark-modal">
+        <button class="landmark-modal-close" onclick="closeLandmarkModal()">&times;</button>
+        <div class="landmark-modal-content">
+            <img id="landmarkModalImage" class="landmark-modal-image" src="" alt="Landmark photo">
+        </div>
+        <div id="landmarkModalCaption" class="landmark-modal-caption"></div>
+        <div class="zoom-controls">
+            <button onclick="zoomIn()">🔍 Zoom In</button>
+            <button onclick="zoomOut()">🔍 Zoom Out</button>
+            <button onclick="resetZoom()">↺ Reset</button>
+        </div>
+    </div>
+
+    <?php include '../footer.php'; ?>
+
+    <script>
+        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarWrapper = document.getElementById('sidebarWrapper');
+        const menuOverlay = document.getElementById('menuOverlay');
+        let isSidebarOpen = false;
+
+        function openSidebar() {
+            sidebarWrapper.classList.add('open');
+            menuOverlay.classList.add('active');
+            isSidebarOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebarWrapper.classList.remove('open');
+            menuOverlay.classList.remove('active');
+            isSidebarOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        if (burgerBtn) {
+            burgerBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking a nav link (mobile only)
+        document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    // Don't close if it's a dropdown toggle
+                    if (!this.closest('.nav-dropdown-toggle')) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+
+        // ========== DROPDOWN TOGGLE ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
+
+        // ========== BURGER VISIBILITY ON RESIZE ==========
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                // Desktop: close sidebar if open and hide overlay
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
+                sidebarWrapper.classList.remove('open');
+                menuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ========== EXISTING FUNCTIONS ==========
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?php echo $_SESSION['csrf_token']; ?>';
+
+        // ========== TOAST ==========
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ========== COPY TO CLIPBOARD ==========
+        function copyToClipboard(text, label) {
+            if (!text || text === 'N/A' || text === '') {
+                showToast('Nothing to copy', 'warning');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} copied to clipboard!`, 'success');
+            }).catch(() => {
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showToast(`${label} copied to clipboard!`, 'success');
+                } catch (err) {
+                    showToast('Failed to copy', 'error');
+                }
+            });
+        }
+
+        // ========== TOGGLE PASSWORD VISIBILITY ==========
+        function togglePassword(customerId, password) {
+            const passwordText = document.getElementById('pass_' + customerId);
+            const placeholder = document.getElementById('placeholder_' + customerId);
+            const eyeIcon = document.getElementById('eye_' + customerId);
+
+            if (passwordText.style.display === 'none' || passwordText.style.display === '') {
+                passwordText.style.display = 'inline';
+                placeholder.style.display = 'none';
+                eyeIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordText.style.display = 'none';
+                placeholder.style.display = 'inline';
+                eyeIcon.className = 'fas fa-eye';
+            }
+        }
+
+        // ========== COPY PASSWORD ==========
+        function copyPassword(password, customerId) {
+            if (!password) {
+                showToast('No password to copy', 'warning');
+                return;
+            }
+
+            navigator.clipboard.writeText(password).then(() => {
+                showToast('Password copied to clipboard!', 'success');
+            }).catch(() => {
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = password;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showToast('Password copied to clipboard!', 'success');
+                } catch (err) {
+                    showToast('Failed to copy password', 'error');
+                }
+            });
+        }
+
+        // ========== TOGGLE ACCOUNT STATUS ==========
+        async function toggleAccountStatus(customerId, action, customerName) {
+            const confirmMessage = action === 'lock'
+                ? `⚠️ Are you sure you want to LOCK "${customerName}"'s account?`
+                : `⚠️ Are you sure you want to UNLOCK "${customerName}"'s account?`;
+
+            if (!confirm(confirmMessage)) return;
+
+            const row = document.querySelector(`tr[data-id="${customerId}"]`);
+            const actionBtn = row.querySelector(action === 'lock' ? '.lock-btn' : '.unlock-btn');
+            const originalText = actionBtn.innerHTML;
+            actionBtn.disabled = true;
+            actionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'toggle_account_status');
+                formData.append('customer_id', customerId);
+                formData.append('status_action', action);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('../API/customer_actions.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+
+                    const actionContainer = document.getElementById('action_' + customerId);
+
+                    if (action === 'lock') {
+                        actionContainer.innerHTML = `
+                            <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-unlock"></i>
+                            </button>
+                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        `;
+                    } else {
+                        actionContainer.innerHTML = `
+                            <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        `;
+                    }
+                } else {
+                    showToast(data.message || 'Failed to update account status', 'error');
+                    actionBtn.disabled = false;
+                    actionBtn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('Network error. Please try again.', 'error');
+                actionBtn.disabled = false;
+                actionBtn.innerHTML = originalText;
+            }
+        }
+
+        // ========== DELETE CUSTOMER ==========
+        async function deleteCustomer(customerId, customerName) {
+            const confirmed = confirm(`⚠️ Are you sure you want to delete "${customerName}"? This action cannot be undone!`);
+            if (!confirmed) return;
+
+            const row = document.querySelector(`tr[data-id="${customerId}"]`);
+            const deleteBtn = row.querySelector('.delete-btn');
+            const originalText = deleteBtn.innerHTML;
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'delete_customer');
+                formData.append('customer_id', customerId);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('../API/customer_actions.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    row.remove();
+                } else {
+                    showToast(data.message || 'Failed to delete customer', 'error');
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('Network error. Please try again.', 'error');
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalText;
+            }
+        }
+
+        // ========== LANDMARK MODAL ZOOM FUNCTIONALITY ==========
+        let currentZoom = 1;
+        const zoomStep = 0.25;
+        const maxZoom = 5;
+        const minZoom = 1;
+
+        function openLandmarkModal(imageSrc, customerName) {
+            const modal = document.getElementById('landmarkModal');
+            const modalImage = document.getElementById('landmarkModalImage');
+            const caption = document.getElementById('landmarkModalCaption');
+
+            modalImage.src = imageSrc;
+            caption.textContent = customerName + "'s Landmark Photo";
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            resetZoom();
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function closeLandmarkModal() {
+            const modal = document.getElementById('landmarkModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.removeEventListener('keydown', handleKeyPress);
+            resetZoom();
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Escape') {
+                closeLandmarkModal();
+            } else if (e.key === '+' || e.key === '=') {
+                zoomIn();
+            } else if (e.key === '-') {
+                zoomOut();
+            } else if (e.key === '0') {
+                resetZoom();
+            }
+        }
+
+        function zoomIn() {
+            const img = document.getElementById('landmarkModalImage');
+            if (currentZoom < maxZoom) {
+                currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+                img.style.transform = `scale(${currentZoom})`;
+            }
+        }
+
+        function zoomOut() {
+            const img = document.getElementById('landmarkModalImage');
+            if (currentZoom > minZoom) {
+                currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+                img.style.transform = `scale(${currentZoom})`;
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            const img = document.getElementById('landmarkModalImage');
+            img.style.transform = 'scale(1)';
+            const container = img.parentElement;
+            container.scrollTop = 0;
+            container.scrollLeft = 0;
+        }
+
+        document.getElementById('landmarkModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLandmarkModal();
+            }
+        });
+
+        document.getElementById('landmarkModalImage').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (currentZoom === 1) {
+                zoomIn();
+            } else {
+                resetZoom();
+            }
+        });
+
+        document.getElementById('landmarkModalImage').addEventListener('wheel', function(e) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        });
+
+        window.addEventListener('resize', function() {
+            if (document.getElementById('landmarkModal').style.display === 'block') {
+                resetZoom();
+            }
+        });
+
+        // ========== UPDATE UNREAD BADGES ==========
+        function updateUnreadBadges() {
+            const wrappers = document.querySelectorAll('.chat-icon-wrapper');
+
+            wrappers.forEach(wrapper => {
+                const icon = wrapper.querySelector('.chat-icon');
+                if (!icon) return;
+
+                const accNumber = icon.getAttribute('data-acc');
+                if (!accNumber) return;
+
+                const badge = wrapper.querySelector('.badge-unread');
+                if (!badge) return;
+
+                const row = icon.closest('tr');
+                if (!row) return;
+                const customerId = row.getAttribute('data-id');
+                if (!customerId) return;
+
+                const formData = new FormData();
+                formData.append('action', 'get_unread_count');
+                formData.append('customer_acc', accNumber);
+                formData.append('csrf_token', csrfToken);
+
+                fetch('../Customer_API/chat.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const count = data.unread_count || 0;
+                            if (count > 0) {
+                                badge.textContent = count > 9 ? '9+' : count;
+                                badge.classList.remove('hidden');
+                            } else {
+                                badge.classList.add('hidden');
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error updating badge:', error));
+            });
+        }
+
+        setInterval(updateUnreadBadges, 30000);
+
+        console.log('📱 Sidebar menu loaded - Left Side');
+        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
+        console.log('👥 Registered Customers page loaded');
+        console.log('🔐 Password hidden by default - click eye to show');
+        console.log('🔑 authorize_access: <?php echo $authorizeAccess; ?>');
+    </script>
+</body>
+
+</html>

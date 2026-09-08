@@ -4,7 +4,7 @@
 $host = 'localhost'; // This is always the hostname for Hostinger shared hosting
 $dbname = 'u408983097_Villaruz';
 $username = 'u408983097_joseph';
-$password = 'Villaruz_joseph@14';  
+$password = 'Villaruz_joseph@14';
  
 
 // $host = 'localhost'; // This is always the hostname for Hostinger shared hosting

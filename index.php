@@ -1,3 +1,6 @@
+<?php
+// index.php - Villaruz Print Shop Homepage with APK Download
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -21,13 +24,11 @@
         body {
             font-family: 'Inter', 'Poppins', sans-serif;
             background-color: #FCF9F5;
-            /* soft warm paper tone */
             color: #1E2A2F;
             line-height: 1.5;
             scroll-behavior: smooth;
         }
 
-        /* Modern print-shop color scheme: deep ink blue, rich ochre accents, clean whites, slate gray */
         :root {
             --ink-deep: #1C2E36;
             --press-cyan: #2C5F6E;
@@ -56,7 +57,6 @@
             border-radius: 12px;
         }
 
-        /* Navigation - modern glassmorphism effect */
         nav {
             display: flex;
             justify-content: space-between;
@@ -120,7 +120,6 @@
             box-shadow: 0 10px 18px -6px rgba(44, 95, 110, 0.3);
         }
 
-        /* Hero Section — modern minimal */
         .hero {
             display: flex;
             align-items: center;
@@ -205,6 +204,36 @@
             transform: translateY(-2px);
         }
 
+        /* ============================================== */
+        /* DOWNLOAD APP BUTTON - SPECIAL STYLE */
+        /* ============================================== */
+        .btn-download {
+            background: linear-gradient(135deg, #D9A13B, #B8860B);
+            border: none;
+            padding: 12px 32px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-download:hover {
+            background: linear-gradient(135deg, #B8860B, #8B7500);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px -12px rgba(184, 134, 11, 0.5);
+        }
+
+        .btn-download i {
+            font-size: 1.2rem;
+        }
+
         /* Features Section */
         .features {
             padding: 70px 5%;
@@ -272,7 +301,7 @@
             font-size: 0.9rem;
         }
 
-        /* Carousel - fresh modern */
+        /* Carousel */
         .carousel-section {
             padding: 70px 5%;
             background: #F8F6F2;
@@ -387,7 +416,7 @@
             border-radius: 10px;
         }
 
-        /* Services grid */
+        /* Services */
         .services {
             padding: 70px 5%;
             background: #FFFFFF;
@@ -442,39 +471,6 @@
             font-size: 0.85rem;
         }
 
-
-
-        .btn-pricing {
-            width: 100%;
-            background: #2C5F6E;
-            border: none;
-            padding: 14px;
-            border-radius: 60px;
-            font-weight: 700;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: center;
-            display: inline-block;
-            font-size: 0.9rem;
-        }
-
-        .btn-pricing:hover {
-            background: #1E454F;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1.5px solid #2C5F6E;
-            color: #1C2E36;
-        }
-
-        .btn-outline:hover {
-            background: #F0F5F8;
-            border-color: #D9A13B;
-            color: #D9A13B;
-        }
-
         /* Footer */
         footer {
             padding: 40px 5% 28px;
@@ -492,6 +488,48 @@
         .copyright p i {
             margin: 0 4px;
             color: #D9A13B;
+        }
+
+        /* ============================================== */
+        /* APP DOWNLOAD POPUP / MODAL */
+        /* ============================================== */
+        .app-banner {
+            background: linear-gradient(135deg, #1C2E36, #2C5F6E);
+            color: white;
+            padding: 16px 5%;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .app-banner span {
+            font-weight: 400;
+        }
+
+        .app-banner strong {
+            color: #D9A13B;
+        }
+
+        .app-banner .btn-sm {
+            background: #D9A13B;
+            color: #1C2E36;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-banner .btn-sm:hover {
+            background: #B8860B;
+            transform: scale(1.02);
         }
 
         /* Responsive */
@@ -536,18 +574,15 @@
                 grid-template-columns: 1fr;
             }
 
-            .pricing-grid {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .pricing-card.featured {
-                transform: scale(1);
-            }
-
             .carousel-btn {
                 width: 34px;
                 height: 34px;
+            }
+
+            .app-banner {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 5%;
             }
         }
 
@@ -557,7 +592,8 @@
             }
 
             .btn-primary,
-            .btn-secondary {
+            .btn-secondary,
+            .btn-download {
                 font-size: 0.85rem;
                 padding: 10px 20px;
             }
@@ -575,13 +611,23 @@
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-95VNH7KVRB"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-95VNH7KVRB');
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-95VNH7KVRB');
 </script>
+
 <body>
+    <!-- ============================================== -->
+    <!-- APP DOWNLOAD BANNER (Shows at top of page)    -->
+    <!-- ============================================== -->
+    <div class="app-banner" id="appBanner">
+        <span>📱 <strong>Villaruz App</strong> — Faster ordering & fingerprint login!</span>
+        <a href="/villaruz-app.apk" class="btn-sm" id="downloadAppBtn">
+            <i class="fas fa-download"></i> Download APK
+        </a>
+    </div>
+
     <nav>
         <div class="logo">
             <img src="logo/logo.jpeg" alt="Villaruz Print Shop Logo">
@@ -601,7 +647,9 @@
                 supplies. Fast, reliable, and creatively driven.</p>
             <div class="hero-buttons">
                 <a href="registration.php" class="btn-primary">Create an account</a>
-                <a href="#" class="btn-secondary">Scroll to Explore Service</a>
+                <a href="/villaruz-app.apk" class="btn-download" id="heroDownloadBtn">
+                    <i class="fas fa-download"></i> Download App
+                </a>
             </div>
         </div>
     </section>
@@ -708,21 +756,8 @@
                     <p>Tarpaulins, posters, retractable banners, outdoor-grade prints.</p>
                 </div>
             </div>
-            <!-- <a href="app.php" style="text-decoration: none; color: inherit;">
-                <div class="service-card">
-                    <div class="service-img">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <div class="service-info">
-                        <h3>Do Task & Earn</h3>
-                        <p>Complete simple tasks: Data Entry, Math Solving, Reverse Word, Count Item</p>
-                        <span class="badge">Earn up to ₱0.01 per task</span>
-                    </div>
-                </div>
-            </a> -->
         </div>
     </section>
-
 
     <footer>
         <div class="copyright">
@@ -738,6 +773,9 @@
     </footer>
 
     <script>
+        // ==============================================
+        // CAROUSEL
+        // ==============================================
         let currentSlide = 0;
         const slides = document.querySelectorAll('.carousel-slide');
         const slidesContainer = document.querySelector('.carousel-slides');
@@ -792,6 +830,54 @@
         if (slides.length) {
             createDots();
             startAutoPlay();
+        }
+
+        // ==============================================
+        // FINGERPRINT DETECTION (For App Users)
+        // ==============================================
+
+        // Check if running inside the Android app
+        if (typeof AndroidBiometric !== 'undefined') {
+            // User is in the app — change "Download App" to "Login with Fingerprint"
+            var downloadBtns = document.querySelectorAll('.btn-download, #downloadAppBtn, .btn-sm');
+            downloadBtns.forEach(function(btn) {
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> Login with Fingerprint';
+                btn.href = '#';
+                btn.onclick = function(e) {
+                    e.preventDefault();
+                    // Trigger fingerprint login
+                    if (typeof AndroidBiometric !== 'undefined') {
+                        var challenge = "app_launch_" + Date.now();
+                        AndroidBiometric.authenticate(challenge);
+                    }
+                };
+            });
+
+            // Also hide the app banner for app users (optional)
+            var appBanner = document.getElementById('appBanner');
+            if (appBanner) {
+                appBanner.style.display = 'none';
+            }
+        }
+
+        // ==============================================
+        // FINGERPRINT CALLBACK FUNCTIONS
+        // ==============================================
+
+        function biometricSuccess(challenge) {
+            window.location.href = 'faceLogin.php';
+        }
+
+        function biometricFailed() {
+            alert('❌ Fingerprint not recognized. Please try again.');
+        }
+
+        function cancelBiometric() {
+            console.log('Fingerprint login cancelled.');
+        }
+
+        function biometricError(errorMessage) {
+            alert('⚠️ Biometric error: ' + errorMessage);
         }
     </script>
 </body>
