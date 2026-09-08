@@ -647,9 +647,9 @@
                 supplies. Fast, reliable, and creatively driven.</p>
             <div class="hero-buttons">
                 <a href="registration.php" class="btn-primary">Create an account</a>
-                <a href="/villaruz-app.apk" class="btn-download" id="heroDownloadBtn">
+                <!-- <a href="/villaruz-app.apk" class="btn-download" id="heroDownloadBtn">
                     <i class="fas fa-download"></i> Download App
-                </a>
+                </a> -->
             </div>
         </div>
     </section>
