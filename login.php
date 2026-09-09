@@ -899,9 +899,10 @@ if (isset($_SESSION['exit_message'])) {
                 if (hasBiometric && isInApp && userId) {
                     window.AndroidBiometric.authenticate('auto');
                 } else if (hasBiometric && !isInApp) {
+                    // ✅ SHOW ONLY WHEN BIOMETRIC IS ENROLLED BUT NOT IN APP
                     showBiometricStatus('Use the app for biometric login', 'info');
                 } else {
-                    showBiometricStatus('Biometric not registered. Please login with password.', 'error');
+                    // ✅ SHOW PASSWORD FORM - NO ERROR MESSAGE
                     passwordSection.classList.remove('hidden');
                 }
             }, 1000);
@@ -917,6 +918,7 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             if (!hasBiometric || !userId) {
+                // ✅ ONLY SHOW THIS ERROR WHEN USER CLICKS THE BUTTON
                 showBiometricStatus('Biometric not registered. Please login with password.', 'error');
                 passwordSection.classList.remove('hidden');
                 return;
