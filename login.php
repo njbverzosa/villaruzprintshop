@@ -830,15 +830,14 @@ if (isset($_SESSION['exit_message'])) {
                     <div class="auth-footer">
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
-
-                    <div class="auth-footer">
-                        You can download the app here
-                        <a href="http://villaruz-print-shop-and-general-merchandise.shop/app.apk"
-                            style="color: #3b82f6; font-weight: 600; text-decoration: underline;">
-                            Download APP
-                        </a>
-                    </div>
                 </form>
+                <div class="auth-footer">
+                    You can download the app here
+                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/app.apk"
+                        style="color: #3b82f6; font-weight: 600; text-decoration: underline;">
+                        Download APP
+                    </a>
+                </div>
             </div>
         </div>
     </div>
