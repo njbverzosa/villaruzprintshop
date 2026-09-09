@@ -34,7 +34,6 @@ $hasBiometric = false;
 $biometricUserId = null;
 $biometricUserType = null;
 
-
 // Check from session first (user is already logged in)
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
@@ -118,7 +117,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
     }
-
 
     echo json_encode([
         'success' => true,
@@ -674,6 +672,29 @@ if (isset($_SESSION['exit_message'])) {
             display: none !important;
         }
 
+        .download-section {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .download-section span {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .download-section a {
+            color: #3b82f6;
+            font-weight: 600;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .download-section a:hover {
+            color: #1d4ed8;
+        }
+
         @media (max-width: 500px) {
             .auth-card {
                 padding: 30px 25px;
@@ -831,20 +852,50 @@ if (isset($_SESSION['exit_message'])) {
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
                 </form>
-                <div class="auth-footer">
-                    You can download the app here
-                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/app.apk"
-                        style="color: #3b82f6; font-weight: 600; text-decoration: underline;">
+            </div> <!-- End of passwordSection -->
+
+            <!-- ========================================== -->
+            <!-- ✅ DOWNLOAD SECTION (OUTSIDE FORM) -->
+            <!-- ========================================== -->
+            <div class="download-section">
+                <span>
+                    📱 Download our app:
+                    <a href="#" onclick="downloadApp(); return false;">
                         Download APP
                     </a>
-                </div>
+                </span>
             </div>
-        </div>
-    </div>
+
+        </div> <!-- End of auth-card -->
+    </div> <!-- End of auth-container -->
 
     <?php include 'footer.php'; ?>
 
     <script>
+        // ==========================================
+        // DOWNLOAD APP FUNCTION
+        // ==========================================
+        function downloadApp() {
+            var url = 'http://villaruz-print-shop-and-general-merchandise.shop/app.apk';
+            
+            // Try opening in browser
+            try {
+                window.open(url, '_blank');
+            } catch (e) {
+                // Fallback
+                window.location.href = url;
+            }
+            
+            // Additional fallback after 1 second
+            setTimeout(function() {
+                if (!document.hidden) {
+                    window.location.href = url;
+                }
+            }, 1000);
+            
+            return false;
+        }
+
         // ==========================================
         // PAGE LOAD: Auto-show biometric prompt
         // ==========================================
@@ -870,7 +921,6 @@ if (isset($_SESSION['exit_message'])) {
                 biometricContent.classList.remove('hidden');
 
                 if (hasBiometric && isInApp && userId) {
-                    // showBiometricStatus('🔐 Please authenticate...', 'info');
                     window.AndroidBiometric.authenticate('auto');
                 } else if (hasBiometric && !isInApp) {
                     showBiometricStatus('Use the app for biometric login', 'info');
@@ -896,7 +946,6 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
-            // showBiometricStatus('🔐 Please authenticate...', 'info');
             window.AndroidBiometric.authenticate('manual');
         });
 
@@ -917,8 +966,6 @@ if (isset($_SESSION['exit_message'])) {
 
         // Called from Android when biometric succeeds
         function biometricSuccess(data) {
-            // showBiometricStatus('✅ Authentication successful! Checking database...', 'info');
-
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
 
@@ -963,7 +1010,6 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         function biometricCancel() {
-            // showBiometricStatus('⏹️ Authentication canceled.', 'info');
             passwordSection.classList.remove('hidden');
             setTimeout(() => {
                 biometricStatus.className = 'status-message';
