@@ -778,7 +778,7 @@ if (isset($_SESSION['exit_message'])) {
                         // After 5 seconds, redirect
                         setTimeout(function() {
                             window.location.href = redirectUrl;
-                        }, 5000);
+                        }, 3000);
                     })();
                 </script>
             <?php endif; ?>
