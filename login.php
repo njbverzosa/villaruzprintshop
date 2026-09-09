@@ -81,9 +81,8 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $userId = $_POST['user_id'] ?? null;
     $userType = $_POST['user_type'] ?? null;
 
-    error_log('🔐 Biometric login API called - User ID: ' . $userId . ', Type: ' . $userType);
-
     if (!$userId || !$userType) {
+        echo json_encode(['success' => false, 'message' => 'Missing user data']);
         exit;
     }
 
@@ -93,10 +92,12 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $user = $stmt->fetch();
 
     if (!$user) {
+        echo json_encode(['success' => false, 'message' => 'User not found']);
         exit;
     }
 
     if ($user['biometric_enrolled'] != 1) {
+        echo json_encode(['success' => false, 'message' => 'Biometric not enrolled']);
         exit;
     }
 
@@ -198,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
         $userType = null;
 
         if ($userTypeSelected === 'Admin') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access 
+            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access, biometric_enrolled 
                               FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
             $stmt->execute([$selectedRole, $identifier]);
             $user = $stmt->fetch();
@@ -214,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             }
 
         } elseif ($userTypeSelected === 'Customer') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email 
+            $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email, biometric_enrolled 
                               FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
             $stmt->execute([$selectedCustomerId, $identifier]);
             $user = $stmt->fetch();
@@ -236,42 +237,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             date_default_timezone_set('Asia/Manila');
             $currentTime = date('M j, g:i A');
 
-            if ($userType === 'Admin') {
-                session_regenerate_id(true);
-                $_SESSION['user_role'] = 'Admin';
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['acc_number'] = $user['acc_number'];
+            // ✅ Set session and cookies
+            session_regenerate_id(true);
+            $_SESSION['user_role'] = $userType;
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['acc_number'] = $user['acc_number'];
 
-                // ✅ Set cookie for auto-login
-                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-                setcookie('user_type', 'Admin', time() + (86400 * 365), "/");
-                setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
+            setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
+            setcookie('user_type', $userType, time() + (86400 * 365), "/");
+            setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-                $loginSuccess = true;
-                $redirectUrl = 'web/all_products.php';
+            $loginSuccess = true;
 
-            } elseif ($userType === 'Customer') {
-                $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-                $updateStmt->execute([$currentTime, $user['id']]);
-                session_regenerate_id(true);
-
-                $_SESSION['user_role'] = 'Customer';
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['acc_number'] = $user['acc_number'];
-
-                // ✅ Set cookie for auto-login
-                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-                setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
-                setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
-
-                $loginSuccess = true;
-
-                $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-
-                if ($isGuest) {
-                    $redirectUrl = 'public/account-edit.php';
+            // ✅ Check if biometric is enrolled
+            if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
+                // Redirect to biometric.php for enrollment
+                $redirectUrl = 'biometric.php';
+            } else {
+                // Biometric already enrolled - go to dashboard
+                if ($userType === 'Admin') {
+                    $redirectUrl = 'web/all_products.php';
                 } else {
-                    $redirectUrl = 'public/shop.php';
+                    $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+                    $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
                 }
             }
         }
@@ -476,28 +464,6 @@ if (isset($_SESSION['exit_message'])) {
             opacity: 0.7;
             cursor: not-allowed;
             transform: none !important;
-        }
-
-        .btn-biometric {
-            width: 100%;
-            background: linear-gradient(145deg, #22c55e, #16a34a);
-            border: none;
-            padding: 16px;
-            border-radius: 5px;
-            font-weight: 700;
-            font-size: 16px;
-            color: white;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn-biometric:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-        }
-
-        .btn-biometric i {
-            margin-right: 10px;
         }
 
         .auth-footer {
@@ -734,8 +700,6 @@ if (isset($_SESSION['exit_message'])) {
                 <span class="version-badge">V15.98.41</span>
             </div>
 
-            <div id="biometricStatus" class="status-message"></div>
-            <br>
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
@@ -825,29 +789,6 @@ if (isset($_SESSION['exit_message'])) {
                         Login
                     </button>
 
-                    <div class="divider">
-                        <hr>
-                        <span>— OR —</span>
-                        <hr>
-                    </div>
-
-                    <!-- ========================================== -->
-                    <!-- ✅ BIOMETRIC SECTION -->
-                    <!-- ========================================== -->
-                    <div id="biometricSection">
-                        <div id="biometricLoading" class="biometric-loading">
-                            <div class="spinner"></div>
-                            <p style="color: #64748b;">Checking biometric...</p>
-                        </div>
-
-                        <div id="biometricContent" class="hidden">
-                            <!-- Biometric Button -->
-                            <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                                <i class="fas fa-fingerprint"></i> Login with Device
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="auth-footer">
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
@@ -860,7 +801,8 @@ if (isset($_SESSION['exit_message'])) {
             <div class="download-section">
                 <span>
                     Download our app:
-                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/APK/villaruz_app.apk">
+                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/APK/villaruz_app.apk"
+                       style="color: #3b82f6; font-weight: 600; text-decoration: underline;">
                         Download APP
                     </a>
                 </span>
@@ -878,10 +820,9 @@ if (isset($_SESSION['exit_message'])) {
         const biometricLoading = document.getElementById('biometricLoading');
         const biometricContent = document.getElementById('biometricContent');
         const passwordSection = document.getElementById('passwordSection');
-        const biometricLoginBtn = document.getElementById('biometricLoginBtn');
         const biometricStatus = document.getElementById('biometricStatus');
 
-        // Check if running inside the app  
+        // Check if running inside the app
         const isInApp = typeof window.AndroidBiometric !== 'undefined';
 
         // ✅ Check if biometric is enrolled (from server)
@@ -897,44 +838,17 @@ if (isset($_SESSION['exit_message'])) {
                 biometricContent.classList.remove('hidden');
 
                 if (hasBiometric && isInApp && userId) {
+                    // ✅ Auto-show biometric prompt
                     window.AndroidBiometric.authenticate('auto');
                 } else if (hasBiometric && !isInApp) {
-                    showBiometricStatus('Use the app for biometric login', 'info');
+                    // Use the app for biometric login
+                    passwordSection.classList.remove('hidden');
                 } else {
-                    showBiometricStatus('Biometric not registered. Please login with password.', 'error');
+                    // Show password login form
                     passwordSection.classList.remove('hidden');
                 }
             }, 1000);
         });
-
-        // ==========================================
-        // BIOMETRIC LOGIN BUTTON (Manual)
-        // ==========================================
-        biometricLoginBtn.addEventListener('click', function () {
-            if (!isInApp) {
-                showBiometricStatus('Biometric login is only available in the app', 'error');
-                return;
-            }
-
-            if (!hasBiometric || !userId) {
-                showBiometricStatus('Biometric not registered. Please login with password.', 'error');
-                passwordSection.classList.remove('hidden');
-                return;
-            }
-
-            window.AndroidBiometric.authenticate('manual');
-        });
-
-        function showBiometricStatus(message, type) {
-            biometricStatus.textContent = message;
-            biometricStatus.className = 'status-message show ' + type;
-        }
-
-        // Get FCM token and send to your server
-        if (window.AndroidBiometric) {
-            const token = window.AndroidBiometric.getFCMToken();
-            // Send to your backend to store with user account
-        }
 
         // ==========================================
         // BIOMETRIC CALLBACKS (from Android)
@@ -946,7 +860,6 @@ if (isset($_SESSION['exit_message'])) {
             const userType = <?php echo json_encode($biometricUserType); ?>;
 
             if (!userId) {
-                showBiometricStatus('Biometric not registered. Please login with password.', 'error');
                 passwordSection.classList.remove('hidden');
                 return;
             }
@@ -983,6 +896,7 @@ if (isset($_SESSION['exit_message'])) {
 
         function biometricFailed() {
             showBiometricStatus('Authentication failed. Please try again.', 'error');
+            passwordSection.classList.remove('hidden');
         }
 
         function biometricCancel() {
@@ -996,6 +910,11 @@ if (isset($_SESSION['exit_message'])) {
         function biometricError(error) {
             showBiometricStatus('Error: ' + error, 'error');
             passwordSection.classList.remove('hidden');
+        }
+
+        function showBiometricStatus(message, type) {
+            biometricStatus.textContent = message;
+            biometricStatus.className = 'status-message show ' + type;
         }
 
         // ==========================================
