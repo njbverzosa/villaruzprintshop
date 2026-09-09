@@ -22,15 +22,30 @@ if (!isset($_SESSION['temp_user_id']) || !isset($_SESSION['temp_user_type'])) {
     $isExistingUser = false;
 }
 
+// Determine redirect URL based on user type
+if ($userType === 'Admin') {
+    $redirectUrl = 'web/all_products.php';
+} else {
+    $redirectUrl = 'public/shop.php';
+}
+
 // Handle biometric registration
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $biometric_id = trim($_POST['biometric_id'] ?? '');
     $biometric_type = trim($_POST['biometric_type'] ?? 'FINGERPRINT');
     
     if (empty($biometric_id)) {
-        $error = 'No biometric data received. Please try again.';
+        // ✅ SKIP: User chose to skip biometric registration
+        // Clear temp session and log user in
+        unset($_SESSION['temp_user_id']);
+        unset($_SESSION['temp_user_type']);
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['user_role'] = $userType;
+        
+        header('Location: ' . $redirectUrl);
+        exit;
     } else {
-        // Save to database
+        // ✅ Save biometric to database
         $table = ($userType === 'Admin') ? 'admins' : 'customers';
         $stmt = $pdo->prepare("UPDATE $table SET biometric_id = ?, biometric_enrolled = 1 WHERE id = ?");
         $stmt->execute([$biometric_id, $userId]);
@@ -45,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_role'] = $userType;
         
-        header('Location: dashboard.php');
+        header('Location: ' . $redirectUrl);
         exit;
     }
 }
@@ -195,10 +210,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         // ==========================================
-        // SKIP BUTTON
+        // SKIP BUTTON - Redirect to dashboard
         // ==========================================
 
         skipBtn.addEventListener('click', function() {
+            // Submit form with empty biometric_id to trigger skip
             document.getElementById('biometricId').value = '';
             document.getElementById('biometricType').value = '';
             document.getElementById('biometricForm').submit();
