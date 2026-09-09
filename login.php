@@ -19,7 +19,7 @@ $userName = '';
 if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     $isLoggedIn = true;
     $userName = $_SESSION['acc_number'] ?? 'User';
-    
+
     if ($_SESSION['user_role'] === 'Admin') {
         $redirectUrl = 'web/all_products.php';
     } elseif ($_SESSION['user_role'] === 'Customer') {
@@ -39,78 +39,78 @@ $biometricUserType = null;
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
-    
+
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
-    
+
     if ($user && $user['biometric_enrolled'] == 1) {
         $hasBiometric = true;
         $biometricUserId = $userId;
         $biometricUserType = $userType;
-    } 
-} 
+    }
+}
 // Check from cookie (user has logged in before)
 elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
     $userId = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
-    
+
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
-    
+
     if ($user && $user['biometric_enrolled'] == 1) {
         $hasBiometric = true;
         $biometricUserId = $userId;
         $biometricUserType = $userType;
-        
+
         // ✅ Also set session to keep user logged in
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_role'] = $userType;
         $_SESSION['acc_number'] = $user['acc_number'] ?? 'User';
-    } 
-} 
+    }
+}
 
 // ==============================================
 // HANDLE BIOMETRIC LOGIN (API)
 // ==============================================
 if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     header('Content-Type: application/json');
-    
+
     $userId = $_POST['user_id'] ?? null;
     $userType = $_POST['user_type'] ?? null;
-    
+
     error_log('🔐 Biometric login API called - User ID: ' . $userId . ', Type: ' . $userType);
-    
+
     if (!$userId || !$userType) {
         exit;
     }
-    
+
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
-    
+
     if (!$user) {
         exit;
     }
-    
+
     if ($user['biometric_enrolled'] != 1) {
         exit;
     }
-    
+
     // ✅ Biometric is valid - log the user in
     session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_role'] = $userType;
     $_SESSION['acc_number'] = $user['acc_number'];
-    
+
     // Set cookie for auto-login
     setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
-    
+
     // Determine redirect URL
     if ($userType === 'Admin') {
         $redirectUrl = 'web/all_products.php';
@@ -118,10 +118,10 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
     }
-    
-    
+
+
     echo json_encode([
-        'success' => true, 
+        'success' => true,
         'redirect' => $redirectUrl,
         'message' => 'Accessing your account...'
     ]);
@@ -308,59 +308,390 @@ if (isset($_SESSION['exit_message'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ===== ALL YOUR EXISTING STYLES ===== */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background: #f1f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
-        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background: #ffffff; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .logo img { width: 100px; height: auto; object-fit: contain; }
-        .nav-link { color: #64748b; text-decoration: none; font-weight: 500; transition: 0.3s; }
-        .nav-link:hover { color: #3b82f6; }
-        .auth-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 50px 20px; }
-        .auth-card { background: #ffffff; border-radius: 5px; padding: 30px; width: 100%; max-width: 450px; border: 1px solid #e2e8f0; box-shadow: 0 20px 35px rgba(0,0,0,0.05); }
-        .auth-sub { text-align: center; color: #64748b; margin-bottom: 10px; font-size: 18px; }
-        .version-badge { display: inline-block; color: #475569; font-size: 15px; padding: 2px 12px; border-radius: 5px; font-weight: 600; margin-top: 5px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569; font-size: 14px; }
-        .form-group select, .form-group input { width: 100%; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; color: #1e293b; font-size: 15px; outline: none; transition: 0.3s; }
-        .form-group select:focus, .form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background: #ffffff; }
-        .password-wrapper { position: relative; display: flex; align-items: center; }
-        .password-wrapper input { flex: 1; padding-right: 45px; }
-        .password-wrapper i { position: absolute; right: 15px; cursor: pointer; color: #94a3b8; transition: color 0.3s; font-size: 18px; }
-        .forgot-password-link { text-align: right; margin-top: 6px; font-size: 13px; }
-        .forgot-password-link a { color: #3b82f6; text-decoration: none; font-weight: 500; transition: 0.3s; }
-        .forgot-password-link a:hover { color: #1d4ed8; text-decoration: underline; }
-        .btn-primary { width: 100%; background: linear-gradient(145deg, #3b82f6, #6366f1); border: none; padding: 14px; border-radius: 5px; font-weight: 700; font-size: 16px; color: white; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; transform: none !important; }
-        .btn-biometric { width: 100%; background: linear-gradient(145deg, #22c55e, #16a34a); border: none; padding: 16px; border-radius: 5px; font-weight: 700; font-size: 16px; color: white; cursor: pointer; transition: 0.3s; }
-        .btn-biometric:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
-        .btn-biometric i { margin-right: 10px; }
-        .auth-footer { text-align: center; margin-top: 25px; color: #64748b; font-size: 14px; }
-        .auth-footer a { color: #3b82f6; text-decoration: none; font-weight: 600; }
-        .alert { padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 10px; animation: slideDown 0.5s ease; }
-        .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-        .alert-success { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
-        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
-        .alert i { font-size: 18px; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .user-type-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
-        .user-type-toggle button { flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #64748b; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        .user-type-toggle button.active { border-color: #3b82f6; background: #eff6ff; color: #3b82f6; }
-        .user-type-toggle button:hover { background: #f1f5f9; }
-        .select-group { display: none; }
-        .select-group.visible { display: block; }
-        .divider { display: flex; align-items: center; margin: 20px 0; gap: 15px; }
-        .divider hr { flex: 1; border: none; border-top: 2px solid #e2e8f0; }
-        .divider span { color: #94a3b8; font-weight: 600; font-size: 14px; }
-        .status-message { margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 14px; display: none; }
-        .status-message.show { display: block; }
-        .status-message.success { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
-        .status-message.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-        .status-message.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
-        .biometric-loading { text-align: center; padding: 20px; }
-        .biometric-loading .spinner { width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #22c55e; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .hidden { display: none !important; }
-        @media (max-width: 500px) { .auth-card { padding: 30px 25px; } .logo img { width: 75px; } .user-type-toggle button { font-size: 13px; padding: 8px; } .forgot-password-link { font-size: 12px; } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 5%;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .nav-link {
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .nav-link:hover {
+            color: #3b82f6;
+        }
+
+        .auth-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 50px 20px;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border-radius: 5px;
+            padding: 30px;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
+        }
+
+        .auth-sub {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            color: #475569;
+            font-size: 15px;
+            padding: 2px 12px;
+            border-radius: 5px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            color: #1e293b;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: #ffffff;
+        }
+
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            flex: 1;
+            padding-right: 45px;
+        }
+
+        .password-wrapper i {
+            position: absolute;
+            right: 15px;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.3s;
+            font-size: 18px;
+        }
+
+        .forgot-password-link {
+            text-align: right;
+            margin-top: 6px;
+            font-size: 13px;
+        }
+
+        .forgot-password-link a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .forgot-password-link a:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            border: none;
+            padding: 14px;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-biometric {
+            width: 100%;
+            background: linear-gradient(145deg, #22c55e, #16a34a);
+            border: none;
+            padding: 16px;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-biometric:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-biometric i {
+            margin-right: 10px;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .auth-footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.5s ease;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #065f46;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .alert i {
+            font-size: 18px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-type-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .user-type-toggle button {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .user-type-toggle button.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .user-type-toggle button:hover {
+            background: #f1f5f9;
+        }
+
+        .select-group {
+            display: none;
+        }
+
+        .select-group.visible {
+            display: block;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            gap: 15px;
+        }
+
+        .divider hr {
+            flex: 1;
+            border: none;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .divider span {
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #f0fdf4;
+            color: #065f46;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-message.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .status-message.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .biometric-loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .biometric-loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #22c55e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 500px) {
+            .auth-card {
+                padding: 30px 25px;
+            }
+
+            .logo img {
+                width: 75px;
+            }
+
+            .user-type-toggle button {
+                font-size: 13px;
+                padding: 8px;
+            }
+
+            .forgot-password-link {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 
@@ -402,6 +733,7 @@ if (isset($_SESSION['exit_message'])) {
                 <div class="alert alert-success">
                     <i class="fas fa-check-circle"></i> Accessing your account...
                 </div>
+                <br>
                 <script>
                     setTimeout(function () {
                         window.location.href = '<?php echo $redirectUrl; ?>';
@@ -590,28 +922,28 @@ if (isset($_SESSION['exit_message'])) {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'biometric_login=true&user_id=' + userId + '&user_type=' + userType
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    showBiometricStatus('Accessing your account...', 'success');
-                    setTimeout(function () {
-                        window.location.href = data.redirect;
-                    }, 500);
-                } else {
-                    showBiometricStatus('' + data.message, 'error');
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showBiometricStatus('Accessing your account...', 'success');
+                        setTimeout(function () {
+                            window.location.href = data.redirect;
+                        }, 500);
+                    } else {
+                        showBiometricStatus('' + data.message, 'error');
+                        passwordSection.classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    showBiometricStatus('Error: ' + error.message, 'error');
                     passwordSection.classList.remove('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Fetch error:', error);
-                showBiometricStatus('Error: ' + error.message, 'error');
-                passwordSection.classList.remove('hidden');
-            });
+                });
         }
 
         function biometricFailed() {
