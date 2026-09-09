@@ -700,19 +700,6 @@ if (isset($_SESSION['exit_message'])) {
                 </script>
             <?php endif; ?>
 
-            <!-- ========================================== -->
-            <!-- ✅ BIOMETRIC LOGIN BUTTON (ALWAYS VISIBLE) -->
-            <!-- ========================================== -->
-            <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                <i class="fas fa-fingerprint"></i> Login with Fingerprint/PIN/Pattern
-            </button>
-            <div id="biometricStatus" class="status-message"></div>
-
-            <div class="divider">
-                <hr>
-                <span>— OR —</span>
-                <hr>
-            </div>
 
             <!-- ========================================== -->
             <!-- NORMAL LOGIN FORM -->
@@ -775,6 +762,29 @@ if (isset($_SESSION['exit_message'])) {
                 <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
+
+                <div class="divider">
+                    <hr>
+                    <span>— OR —</span>
+                    <hr>
+                </div>
+
+                <div id="biometricSection">
+                    <div id="biometricLoading" class="biometric-loading">
+                        <div class="spinner"></div>
+                        <p style="color: #64748b;">Checking biometric...</p>
+                    </div>
+
+                    <div id="biometricContent" class="hidden">
+                        <!-- Biometric Button -->
+                        <button type="button" class="btn-biometric" id="biometricLoginBtn">
+                            <i class="fas fa-fingerprint"></i> Login with Fingerprint/PIN/Pattern
+                        </button>
+                        <div id="biometricStatus" class="status-message"></div>
+
+
+                    </div>
+                </div>
 
                 <div class="auth-footer">
                     Don't have an account? <a href="registration.php">Sign Up</a>
