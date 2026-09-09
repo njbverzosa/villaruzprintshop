@@ -131,3 +131,9 @@ RewriteRule ^(.*)/$ $1/index.php [L]
     ExpiresByType application/javascript "access plus 1 month"
 </IfModule>
 
+
+# Allow access to APK files
+<FilesMatch "\.(apk)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
