@@ -78,8 +78,8 @@ session_destroy();
 // Start a new session to store the exit message
 session_start();
 
-// Set the exit message
-$_SESSION['exit_message'] = 'You are now offline.';
+// // Set the exit message
+// $_SESSION['exit_message'] = 'You are now offline.';
 
 // Debug - verify session is set
 // error_log('Exit message set in session: ' . $_SESSION['exit_message']);

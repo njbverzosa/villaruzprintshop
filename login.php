@@ -763,11 +763,11 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
                 </div>
             <?php endif; ?>
 
-            <?php if (!empty($offlineMessage)): ?>
+            <!-- <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
                 </div>
-            <?php endif; ?>
+            <?php endif; ?> -->
 
             <?php if ($loginSuccess && $successMessage): ?>
                 <div class="alert alert-success" id="successAlert">
