@@ -685,6 +685,9 @@ if (isset($_SESSION['exit_message'])) {
                 <span class="version-badge">V11.50.41</span>
             </div>
 
+
+            <div id="biometricStatus" class="status-message"></div>
+            
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
@@ -796,10 +799,9 @@ if (isset($_SESSION['exit_message'])) {
                             <button type="button" class="btn-biometric" id="biometricLoginBtn">
                                 <i class="fas fa-fingerprint"></i> Login with Fingerprint/PIN/Pattern
                             </button>
-                            <div id="biometricStatus" class="status-message"></div>
                         </div>
                     </div>
-                    
+
                     <div class="auth-footer">
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
