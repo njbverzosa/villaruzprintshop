@@ -840,10 +840,10 @@ if (isset($_SESSION['exit_message'])) {
                     window.AndroidBiometric.authenticate('auto');
                 } else if (hasBiometric && !isInApp) {
                     // ✅ Biometric enrolled but not in app (browser)
-                    showBiometricStatus('ℹ️ Use the app for biometric login', 'info');
+                    showBiometricStatus('Use the app for biometric login', 'info');
                 } else {
                     // ❌ Biometric not enrolled - show password form
-                    showBiometricStatus('❌ Biometric not registered. Please login with password.', 'error');
+                    showBiometricStatus('Biometric not registered. Please login with password.', 'error');
                     // Show password section immediately
                     passwordSection.classList.remove('hidden');
                 }
