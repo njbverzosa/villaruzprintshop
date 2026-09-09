@@ -610,6 +610,13 @@ if (isset($_SESSION['exit_message'])) {
             display: none;
         }
 
+        .spinner-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
         .status-message.show {
             display: block;
         }
@@ -741,6 +748,9 @@ if (isset($_SESSION['exit_message'])) {
 
             <?php if ($loginSuccess): ?>
                 <div class="alert alert-success">
+                    <div class="spinner-container">
+                        <div class="spinner-small"></div>
+                    </div>
                     Accessing your account...
                 </div>
                 <script>
