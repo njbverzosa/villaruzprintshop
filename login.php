@@ -13,19 +13,19 @@ require_once __DIR__ . '/DB_Conn/config.php';
 // ==============================================
 // CHECK IF USER IS ALREADY LOGGED IN
 // ==============================================
-$isLoggedIn = false;
-$userData = null;
-$redirectUrl = '';
+// $isLoggedIn = false;
+// $userData = null;
+// $redirectUrl = '';
 
-if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
-    $isLoggedIn = true;
+// if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
+//     $isLoggedIn = true;
     
-    if ($_SESSION['user_role'] === 'Admin') {
-        $redirectUrl = 'web/all_products.php';
-    } elseif ($_SESSION['user_role'] === 'Customer') {
-        $redirectUrl = 'public/shop.php';
-    }
-}
+//     if ($_SESSION['user_role'] === 'Admin') {
+//         $redirectUrl = 'web/all_products.php';
+//     } elseif ($_SESSION['user_role'] === 'Customer') {
+//         $redirectUrl = 'public/shop.php';
+//     }
+// }
 
 // ==============================================
 // CHECK IF USER HAS BIOMETRIC ENROLLED
