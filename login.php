@@ -263,17 +263,17 @@ $userData = $loginResult['userData'] ?? null;
 // ==============================================
 if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     header('Content-Type: application/json');
-    
+
     $userTypeSelected = trim($_POST['user_type'] ?? 'Admin');
     $selectedRole = trim($_POST['role'] ?? '');
     $selectedCustomerId = trim($_POST['customer'] ?? '');
-    
+
     // Check if user exists
     if ($userTypeSelected === 'Admin' && !empty($selectedRole)) {
         $stmt = $pdo->prepare("SELECT id, acc_number, f_name FROM admins WHERE id = ?");
         $stmt->execute([$selectedRole]);
         $user = $stmt->fetch();
-        
+
         if ($user) {
             echo json_encode(['success' => true, 'message' => 'User found']);
         } else {
@@ -284,7 +284,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $stmt = $pdo->prepare("SELECT id, acc_number, f_name FROM customers WHERE id = ?");
         $stmt->execute([$selectedCustomerId]);
         $user = $stmt->fetch();
-        
+
         if ($user) {
             echo json_encode(['success' => true, 'message' => 'User found']);
         } else {
@@ -919,7 +919,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         // BIOMETRIC LOGIN
         // ==============================================
 
-        document.getElementById('biometricBtn').addEventListener('click', function() {
+        document.getElementById('biometricBtn').addEventListener('click', function () {
             startBiometricLogin();
         });
 
@@ -951,7 +951,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
             // Check if running inside the app
             if (window.AndroidBiometric) {
                 showStatus('🔐 Authenticating...', 'info');
-                
+
                 // First verify user exists on server
                 const formData = new FormData();
                 formData.append('biometric_login', 'true');
@@ -964,18 +964,18 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // User exists, now do biometric authentication
-                        window.AndroidBiometric.authenticate(selectedId + '|' + selectedType);
-                    } else {
-                        showStatus('❌ ' + data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatus('❌ Error: ' + error.message, 'error');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // User exists, now do biometric authentication
+                            window.AndroidBiometric.authenticate(selectedId + '|' + selectedType);
+                        } else {
+                            showStatus('❌ ' + data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatus('❌ Error: ' + error.message, 'error');
+                    });
 
             } else {
                 showStatus('❌ Fingerprint login is only available in the app', 'error');
@@ -984,32 +984,39 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
         // Called from Android when biometric succeeds
         function biometricSuccess(data) {
-            // data is the userId|userType sent from Android
+            // data format: userId|userType
             showStatus('✅ Authentication successful! Logging in...', 'success');
 
-            // Submit form for login
+            // Get form and submit it
             const form = document.getElementById('loginForm');
             const formData = new FormData(form);
             formData.append('biometric_login', 'true');
 
+            // ✅ USE fetch WITH PROPER REDIRECT HANDLING
             fetch(window.location.href, {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.text())
-            .then(html => {
-                // If login successful, redirect will happen
-                // Otherwise, show error
-                if (html.includes('alert-error')) {
-                    showStatus('❌ Login failed. Please try again.', 'error');
-                } else {
-                    // Reload page to show success/redirect
-                    document.write(html);
-                }
-            })
-            .catch(error => {
-                showStatus('❌ Error: ' + error.message, 'error');
-            });
+                .then(response => {
+                    // Check if response is a redirect
+                    if (response.redirected) {
+                        // Follow the redirect
+                        window.location.href = response.url;
+                        return;
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    if (html && html.includes('alert-error')) {
+                        showStatus('❌ Login failed. Please try again.', 'error');
+                    } else if (html && html.includes('alert-success')) {
+                        // Success! Reload page to trigger redirect
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                });
         }
 
         // Called from Android when biometric fails
