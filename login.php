@@ -860,7 +860,7 @@ if (isset($_SESSION['exit_message'])) {
             <div class="download-section">
                 <span>
                     Download our app:
-                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/Apk/app.apk" target="_blank">
+                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/app.apk">
                         Download APP
                     </a>
                 </span>
