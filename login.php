@@ -832,9 +832,11 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
 
                     <div class="auth-footer">
-                        You can download the app here <a href="http://villaruz-print-shop-and-general-merchandise.shop/com.villaruzapp.app.apk" download>
-        <button style="padding: 10px 20px; font-size: 16px;">Download APK</button>
-    </a> 
+                        You can download the app here
+                        <a href="http://villaruz-print-shop-and-general-merchandise.shop/com.villaruzapp.app.apk"
+                            download style="color: #3b82f6; font-weight: 600; text-decoration: underline;">
+                            Download APP
+                        </a>
                     </div>
                 </form>
             </div>
