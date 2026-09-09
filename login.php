@@ -710,7 +710,7 @@ if (isset($_SESSION['exit_message'])) {
         <div class="auth-card">
             <p class="auth-sub">Log In your account</p>
             <div style="text-align: center; margin-bottom: 20px;">
-                <span class="version-badge">V11.50.41</span>
+                <span class="version-badge">V15.98.41</span>
             </div>
 
             <div id="biometricStatus" class="status-message"></div>
