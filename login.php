@@ -81,9 +81,8 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $userId = $_POST['user_id'] ?? null;
     $userType = $_POST['user_type'] ?? null;
 
-    error_log('🔐 Biometric login API called - User ID: ' . $userId . ', Type: ' . $userType);
-
     if (!$userId || !$userType) {
+        echo json_encode(['success' => false, 'message' => 'Missing user data']);
         exit;
     }
 
@@ -93,10 +92,12 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $user = $stmt->fetch();
 
     if (!$user) {
+        echo json_encode(['success' => false, 'message' => 'User not found']);
         exit;
     }
 
     if ($user['biometric_enrolled'] != 1) {
+        echo json_encode(['success' => false, 'message' => 'Biometric not enrolled']);
         exit;
     }
 
@@ -106,7 +107,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $_SESSION['user_role'] = $userType;
     $_SESSION['acc_number'] = $user['acc_number'];
 
-    // Set cookie for auto-login
     setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
 
@@ -198,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
         $userType = null;
 
         if ($userTypeSelected === 'Admin') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access 
+            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access, biometric_enrolled, biometric_id
                               FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
             $stmt->execute([$selectedRole, $identifier]);
             $user = $stmt->fetch();
@@ -214,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             }
 
         } elseif ($userTypeSelected === 'Customer') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email 
+            $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email, biometric_enrolled, biometric_id
                               FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
             $stmt->execute([$selectedCustomerId, $identifier]);
             $user = $stmt->fetch();
@@ -236,42 +236,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             date_default_timezone_set('Asia/Manila');
             $currentTime = date('M j, g:i A');
 
-            if ($userType === 'Admin') {
-                session_regenerate_id(true);
-                $_SESSION['user_role'] = 'Admin';
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['acc_number'] = $user['acc_number'];
+            // ✅ Set session and cookies
+            session_regenerate_id(true);
+            $_SESSION['user_role'] = $userType;
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['acc_number'] = $user['acc_number'];
 
-                // ✅ Set cookie for auto-login
-                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-                setcookie('user_type', 'Admin', time() + (86400 * 365), "/");
-                setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
+            setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
+            setcookie('user_type', $userType, time() + (86400 * 365), "/");
+            setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-                $loginSuccess = true;
-                $redirectUrl = 'web/all_products.php';
+            $loginSuccess = true;
 
-            } elseif ($userType === 'Customer') {
-                $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-                $updateStmt->execute([$currentTime, $user['id']]);
-                session_regenerate_id(true);
-
-                $_SESSION['user_role'] = 'Customer';
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['acc_number'] = $user['acc_number'];
-
-                // ✅ Set cookie for auto-login
-                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-                setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
-                setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
-
-                $loginSuccess = true;
-
-                $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-
-                if ($isGuest) {
-                    $redirectUrl = 'public/account-edit.php';
+            // ✅ CHECK BIOMETRIC STATUS
+            if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
+                // Biometric not enrolled → redirect to biometric.php
+                $_SESSION['temp_user_id'] = $user['id'];
+                $_SESSION['temp_user_type'] = $userType;
+                $redirectUrl = 'biometric.php';
+            } else {
+                // Biometric already enrolled → go to dashboard
+                if ($userType === 'Admin') {
+                    $redirectUrl = 'web/all_products.php';
                 } else {
-                    $redirectUrl = 'public/shop.php';
+                    $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+                    $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
                 }
             }
         }
@@ -899,10 +888,8 @@ if (isset($_SESSION['exit_message'])) {
                 if (hasBiometric && isInApp && userId) {
                     window.AndroidBiometric.authenticate('auto');
                 } else if (hasBiometric && !isInApp) {
-                    // ✅ SHOW ONLY WHEN BIOMETRIC IS ENROLLED BUT NOT IN APP
                     showBiometricStatus('Use the app for biometric login', 'info');
                 } else {
-                    // ✅ SHOW PASSWORD FORM - NO ERROR MESSAGE
                     passwordSection.classList.remove('hidden');
                 }
             }, 1000);
@@ -918,7 +905,6 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             if (!hasBiometric || !userId) {
-                // ✅ ONLY SHOW THIS ERROR WHEN USER CLICKS THE BUTTON
                 showBiometricStatus('Biometric not registered. Please login with password.', 'error');
                 passwordSection.classList.remove('hidden');
                 return;
@@ -935,14 +921,12 @@ if (isset($_SESSION['exit_message'])) {
         // Get FCM token and send to your server
         if (window.AndroidBiometric) {
             const token = window.AndroidBiometric.getFCMToken();
-            // Send to your backend to store with user account
         }
 
         // ==========================================
         // BIOMETRIC CALLBACKS (from Android)
         // ==========================================
 
-        // Called from Android when biometric succeeds
         function biometricSuccess(data) {
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
@@ -953,7 +937,6 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
-            // Send login request to server
             fetch(window.location.href, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
