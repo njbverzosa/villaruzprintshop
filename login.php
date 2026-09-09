@@ -587,7 +587,6 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .status-message {
-            text-align: center;
             margin-top: 10px;
             padding: 10px;
             border-radius: 8px;
