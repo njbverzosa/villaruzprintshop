@@ -132,8 +132,11 @@ RewriteRule ^(.*)/$ $1/index.php [L]
 </IfModule>
 
 
-# Allow access to APK files
+# Allow APK downloads
 <FilesMatch "\.(apk)$">
     Order Allow,Deny
     Allow from all
 </FilesMatch>
+
+# Set correct MIME type for APK
+AddType application/vnd.android.package-archive .apk
