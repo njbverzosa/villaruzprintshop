@@ -734,7 +734,6 @@ if (isset($_SESSION['exit_message'])) {
                     Accessing your account...
                 </div>
                 <br>
-                <br>
                 <script>
                     setTimeout(function () {
                         window.location.href = '<?php echo $redirectUrl; ?>';
