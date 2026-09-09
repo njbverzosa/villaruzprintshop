@@ -804,7 +804,7 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
 
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
-                        <i class="fas fa-sign-in-alt"></i> Login
+                        Login
                     </button>
 
                     <div class="divider">
@@ -825,7 +825,7 @@ if (isset($_SESSION['exit_message'])) {
                         <div id="biometricContent" class="hidden">
                             <!-- Biometric Button -->
                             <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                                <i class="fas fa-fingerprint"></i> Login with Fingerprint/PIN/Pattern
+                                <i class="fas fa-fingerprint"></i> Login with Security
                             </button>
                         </div>
                     </div>
