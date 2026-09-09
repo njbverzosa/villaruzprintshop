@@ -714,7 +714,7 @@ if (isset($_SESSION['exit_message'])) {
             </div>
 
             <div id="biometricStatus" class="status-message"></div>
-
+            <br>
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
