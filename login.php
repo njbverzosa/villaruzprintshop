@@ -137,12 +137,11 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
     }
     
-    error_log('✅ Biometric login successful for user: ' . $user['id'] . ' Redirecting to: ' . $redirectUrl);
     
     echo json_encode([
         'success' => true, 
         'redirect' => $redirectUrl,
-        'message' => 'Login successful'
+        'message' => 'Accessing your account...'
     ]);
     exit;
 }
