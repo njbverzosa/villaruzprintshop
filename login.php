@@ -731,8 +731,10 @@ if (isset($_SESSION['exit_message'])) {
 
             <?php if ($loginSuccess): ?>
                 <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> Accessing your account...
+                    Accessing your account...
+                    <br>
                 </div>
+                <br>
                 <br>
                 <script>
                     setTimeout(function () {
