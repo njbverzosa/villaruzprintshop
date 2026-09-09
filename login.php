@@ -732,7 +732,6 @@ if (isset($_SESSION['exit_message'])) {
             <?php if ($loginSuccess): ?>
                 <div class="alert alert-success">
                     Accessing your account...
-                    <br>
                 </div>
                 <br>
                 <br>
