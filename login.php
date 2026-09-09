@@ -707,12 +707,12 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                 </div>
 
 
-                <!-- <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>
+                <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>
                     style="width: 100%;">
                     <i class="fas fa-sign-in-alt"></i> Log In
-                </button> -->
+                </button>
 
-                <div style="margin-top: 20px;">
+                <!-- <div style="margin-top: 20px;">
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?> style="width: 100%;">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
@@ -727,7 +727,7 @@ $selectedCustomerId = $loginResult['selectedCustomerId'] ?? '';
                         style="text-decoration: none; display: block; text-align: center; background: linear-gradient(145deg, #8b5cf6, #6366f1);">
                         <i class="fas fa-camera"></i> Face Login
                     </a>
-                </div>
+                </div> -->
 
 
                 <div class="auth-footer">
