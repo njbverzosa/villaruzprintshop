@@ -610,13 +610,6 @@ if (isset($_SESSION['exit_message'])) {
             display: none;
         }
 
-        .spinner-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
         .status-message.show {
             display: block;
         }
@@ -639,29 +632,47 @@ if (isset($_SESSION['exit_message'])) {
             border: 1px solid #93c5fd;
         }
 
-        .biometric-loading {
-            text-align: center;
-            padding: 20px;
+        /* ✅ SPINNER STYLES */
+        .spinner-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            vertical-align: middle;
         }
 
-        .biometric-loading .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #e2e8f0;
-            border-top-color: #22c55e;
+        .spinner-small {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #bbf7d0;
+            border-top: 3px solid #16a34a;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .spinner-small-white {
+            border-color: #ffffff;
+            border-top-color: #3b82f6;
         }
 
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
             }
-
             100% {
                 transform: rotate(360deg);
             }
+        }
+
+        .alert-success .spinner-container {
+            display: inline-flex;
+        }
+
+        .alert-success .spinner-small {
+            border-color: #bbf7d0;
+            border-top-color: #16a34a;
         }
 
         .hidden {
@@ -747,16 +758,28 @@ if (isset($_SESSION['exit_message'])) {
             <?php endif; ?>
 
             <?php if ($loginSuccess): ?>
-                <div class="alert alert-success">
+                <!-- ✅ Spinner + Message displayed for 5 seconds before redirect -->
+                <div class="alert alert-success" id="successAlert">
                     <div class="spinner-container">
                         <div class="spinner-small"></div>
                     </div>
-                    Accessing your account...
+                    <span id="successMessage">Accessing your account...</span>
                 </div>
                 <script>
-                    setTimeout(function () {
-                        window.location.href = '<?php echo $redirectUrl; ?>';
-                    }, 1500);
+                    // ✅ Display spinner + message for 5 seconds, then redirect
+                    (function() {
+                        var redirectUrl = '<?php echo $redirectUrl; ?>';
+                        var alertDiv = document.getElementById('successAlert');
+                        var messageSpan = document.getElementById('successMessage');
+                        
+                        // Show the alert with spinner and message
+                        alertDiv.style.display = 'flex';
+                        
+                        // After 5 seconds, redirect
+                        setTimeout(function() {
+                            window.location.href = redirectUrl;
+                        }, 5000);
+                    })();
                 </script>
             <?php endif; ?>
 
@@ -940,9 +963,7 @@ if (isset($_SESSION['exit_message'])) {
                 .then(data => {
                     if (data.success) {
                         showBiometricStatus('Accessing your account...', 'success');
-                        setTimeout(function () {
-                            window.location.href = data.redirect;
-                        }, 500);
+                        // ✅ Redirect handled by PHP (5 seconds)
                     } else {
                         showBiometricStatus('' + data.message, 'error');
                     }
@@ -1005,15 +1026,7 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         <?php if ($loginSuccess): ?>
-            document.addEventListener('DOMContentLoaded', function () {
-                const loginBtn = document.getElementById('loginBtn');
-                if (loginBtn) {
-                    loginBtn.disabled = true;
-                }
-                setTimeout(function () {
-                    window.location.href = '<?php echo $redirectUrl; ?>';
-                }, 1500);
-            });
+            // The redirect is already handled by the PHP script above
         <?php endif; ?>
     </script>
 </body>
