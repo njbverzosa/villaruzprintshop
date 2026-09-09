@@ -876,7 +876,7 @@ if (isset($_SESSION['exit_message'])) {
         // DOWNLOAD APP FUNCTION
         // ==========================================
         function downloadApp() {
-            var url = 'http://villaruz-print-shop-and-general-merchandise.shop/app.apk';
+            var url = 'http://villaruz-print-shop-and-general-merchandise.shop/Download_App/app.apk';
 
             // ✅ Open in external browser via Android bridge
             if (window.AndroidBiometric) {
