@@ -859,8 +859,8 @@ if (isset($_SESSION['exit_message'])) {
             <!-- ========================================== -->
             <div class="download-section">
                 <span>
-                    📱 Download our app:
-                    <a href="#" onclick="downloadApp(); return false;">
+                    Download our app:
+                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/app.apk" target="_blank">
                         Download APP
                     </a>
                 </span>
@@ -872,23 +872,6 @@ if (isset($_SESSION['exit_message'])) {
     <?php include 'footer.php'; ?>
 
     <script>
-        // ==========================================
-        // DOWNLOAD APP FUNCTION
-        // ==========================================
-        function downloadApp() {
-            var url = 'http://villaruz-print-shop-and-general-merchandise.shop/app.apk';
-
-            // ✅ Open in external browser via Android bridge
-            if (window.AndroidBiometric) {
-                window.AndroidBiometric.openInBrowser(url);
-            } else {
-                // Fallback for regular browser
-                window.open(url, '_blank');
-            }
-
-            return false;
-        }
-
         // ==========================================
         // PAGE LOAD: Auto-show biometric prompt
         // ==========================================
