@@ -825,7 +825,7 @@ if (isset($_SESSION['exit_message'])) {
                         <div id="biometricContent" class="hidden">
                             <!-- Biometric Button -->
                             <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                                <i class="fas fa-fingerprint"></i> Login with Security
+                                <i class="fas fa-fingerprint"></i> Login with Device
                             </button>
                         </div>
                     </div>
