@@ -551,8 +551,8 @@
     <?php endif; ?>
 
     <!-- Logout - Visible to ALL -->
-    <!-- <a href="closed.php" class="nav-item <?php echo $currentPage == 'closed.php' ? 'active' : ''; ?>">
+    <a href="closed.php" class="nav-item <?php echo $currentPage == 'closed.php' ? 'active' : ''; ?>">
         <i class="fas fa-sign-out-alt"></i>
         <span>Logout</span>
-    </a> -->
+    </a>
 </div>
