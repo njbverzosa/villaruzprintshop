@@ -621,12 +621,12 @@
     <!-- ============================================== -->
     <!-- APP DOWNLOAD BANNER (Shows at top of page)    -->
     <!-- ============================================== -->
-    <div class="app-banner" id="appBanner">
+    <!-- <div class="app-banner" id="appBanner">
         <span>📱 <strong>Villaruz App</strong> — Faster ordering & fingerprint login!</span>
         <a href="/villaruz-app.apk" class="btn-sm" id="downloadAppBtn">
             <i class="fas fa-download"></i> Download APK
         </a>
-    </div>
+    </div> -->
 
     <nav>
         <div class="logo">
