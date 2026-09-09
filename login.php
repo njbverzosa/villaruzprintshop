@@ -1,9 +1,8 @@
 <?php
-// login.php – with fingerprint quick login
+// login.php – with choice between biometric and password
 
-// Set session lifetime BEFORE session_start()
-$sessionLifetime = 604800; // 7 days
-
+// Set session lifetime
+$sessionLifetime = 604800;
 ini_set('session.cookie_lifetime', $sessionLifetime);
 ini_set('session.gc_maxlifetime', $sessionLifetime);
 
@@ -14,11 +13,12 @@ require_once __DIR__ . '/DB_Conn/config.php';
 // CHECK IF USER IS ALREADY LOGGED IN
 // ==============================================
 $isLoggedIn = false;
-$userData = null;
 $redirectUrl = '';
+$userName = '';
 
 if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     $isLoggedIn = true;
+    $userName = $_SESSION['acc_number'] ?? 'User';
     
     if ($_SESSION['user_role'] === 'Admin') {
         $redirectUrl = 'web/all_products.php';
@@ -34,30 +34,26 @@ $hasBiometric = false;
 $biometricUserId = null;
 $biometricUserType = null;
 
-// Check if user is already logged in
+// Check from session or cookie
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
     $hasBiometric = true;
     $biometricUserId = $userId;
     $biometricUserType = $userType;
-} else {
-    // Check if there's a cookie for auto-login
-    if (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
-        $userId = $_COOKIE['user_id'];
-        $userType = $_COOKIE['user_type'];
-        
-        // Verify user exists and has biometric enabled
-        $table = ($userType === 'Admin') ? 'admins' : 'customers';
-        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch();
-        
-        if ($user && $user['biometric_enrolled'] == 1) {
-            $hasBiometric = true;
-            $biometricUserId = $userId;
-            $biometricUserType = $userType;
-        }
+} elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
+    $userId = $_COOKIE['user_id'];
+    $userType = $_COOKIE['user_type'];
+    
+    $table = ($userType === 'Admin') ? 'admins' : 'customers';
+    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+    
+    if ($user && $user['biometric_enrolled'] == 1) {
+        $hasBiometric = true;
+        $biometricUserId = $userId;
+        $biometricUserType = $userType;
     }
 }
 
@@ -77,7 +73,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $user = $stmt->fetch();
         
         if ($user && $user['biometric_enrolled'] == 1) {
-            // ✅ Biometric is valid - log them in
             $_SESSION['user_id'] = $userId;
             $_SESSION['user_role'] = $userType;
             
@@ -115,6 +110,7 @@ $loginSuccess = false;
 $userTypeSelected = 'Admin';
 $selectedRole = '';
 $selectedCustomerId = '';
+$showBiometricChoice = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) {
     // CSRF validation
@@ -211,6 +207,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                 $loginSuccess = true;
                 $redirectUrl = 'web/all_products.php';
 
+                // Set cookie for auto-login
+                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
+                setcookie('user_type', 'Admin', time() + (86400 * 365), "/");
+
             } elseif ($userType === 'Customer') {
                 $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
                 $updateStmt->execute([$currentTime, $user['id']]);
@@ -221,6 +221,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                 $_SESSION['acc_number'] = $user['acc_number'];
 
                 $loginSuccess = true;
+
+                // Set cookie for auto-login
+                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
+                setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
 
                 $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
 
@@ -251,6 +255,9 @@ if (isset($_SESSION['exit_message'])) {
     $offlineMessage = $_SESSION['exit_message'];
     unset($_SESSION['exit_message']);
 }
+
+// Determine if we should show biometric choice
+$showBiometricChoice = $hasBiometric && !$isLoggedIn;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -261,361 +268,65 @@ if (isset($_SESSION['exit_message'])) {
     <title>Login | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            background: #f1f5f9;
-            color: #1e293b;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 5%;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-
-        .logo img {
-            width: 100px;
-            height: auto;
-            object-fit: contain;
-        }
-
-        .nav-link {
-            color: #64748b;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
-        }
-
-        .nav-link:hover {
-            color: #3b82f6;
-        }
-
-        .auth-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 50px 20px;
-        }
-
-        .auth-card {
-            background: #ffffff;
-            border-radius: 5px;
-            padding: 30px;
-            width: 100%;
-            max-width: 450px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
-        }
-
-        .auth-sub {
-            text-align: center;
-            color: #64748b;
-            margin-bottom: 30px;
-            font-size: 18px;
-        }
-
-        .version-badge {
-            display: inline-block;
-            color: #475569;
-            font-size: 15px;
-            padding: 2px 12px;
-            border-radius: 5px;
-            font-weight: 600;
-            margin-top: 5px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #475569;
-            font-size: 14px;
-        }
-
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 14px 16px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            color: #1e293b;
-            font-size: 15px;
-            outline: none;
-            transition: 0.3s;
-        }
-
-        .form-group select:focus,
-        .form-group input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            background: #ffffff;
-        }
-
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .password-wrapper input {
-            flex: 1;
-            padding-right: 45px;
-        }
-
-        .password-wrapper i {
-            position: absolute;
-            right: 15px;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: color 0.3s;
-            font-size: 18px;
-        }
-
-        .forgot-password-link {
-            text-align: right;
-            margin-top: 6px;
-            font-size: 13px;
-        }
-
-        .forgot-password-link a {
-            color: #3b82f6;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
-        }
-
-        .forgot-password-link a:hover {
-            color: #1d4ed8;
-            text-decoration: underline;
-        }
-
-        .btn-primary {
-            width: 100%;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
-            border: none;
-            padding: 14px;
-            border-radius: 5px;
-            font-weight: 700;
-            font-size: 16px;
-            color: white;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .btn-quick-login {
-            width: 100%;
-            background: linear-gradient(145deg, #22c55e, #16a34a);
-            border: none;
-            padding: 18px;
-            border-radius: 5px;
-            font-weight: 700;
-            font-size: 18px;
-            color: white;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn-quick-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-        }
-
-        .btn-quick-login i {
-            margin-right: 10px;
-        }
-
-        .auth-footer {
-            text-align: center;
-            margin-top: 25px;
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .auth-footer a {
-            color: #3b82f6;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .alert {
-            padding: 14px 18px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideDown 0.5s ease;
-        }
-
-        .alert-error {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-
-        .alert-success {
-            background: #f0fdf4;
-            color: #065f46;
-            border: 1px solid #bbf7d0;
-        }
-
-        .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-        }
-
-        .alert i {
-            font-size: 18px;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .user-type-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .user-type-toggle button {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            background: #f8fafc;
-            color: #64748b;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .user-type-toggle button.active {
-            border-color: #3b82f6;
-            background: #eff6ff;
-            color: #3b82f6;
-        }
-
-        .user-type-toggle button:hover {
-            background: #f1f5f9;
-        }
-
-        .select-group {
-            display: none;
-        }
-
-        .select-group.visible {
-            display: block;
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
-            gap: 15px;
-        }
-
-        .divider hr {
-            flex: 1;
-            border: none;
-            border-top: 2px solid #e2e8f0;
-        }
-
-        .divider span {
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .status-message {
-            text-align: center;
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .status-message.show {
-            display: block;
-        }
-
-        .status-message.success {
-            background: #f0fdf4;
-            color: #065f46;
-            border: 1px solid #bbf7d0;
-        }
-
-        .status-message.error {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-
-        .status-message.info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-        }
-
-        @media (max-width: 500px) {
-            .auth-card {
-                padding: 30px 25px;
-            }
-
-            .logo img {
-                width: 75px;
-            }
-
-            .user-type-toggle button {
-                font-size: 13px;
-                padding: 8px;
-            }
-
-            .forgot-password-link {
-                font-size: 12px;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: #f1f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background: #ffffff; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .logo img { width: 100px; height: auto; object-fit: contain; }
+        .nav-link { color: #64748b; text-decoration: none; font-weight: 500; transition: 0.3s; }
+        .nav-link:hover { color: #3b82f6; }
+        .auth-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 50px 20px; }
+        .auth-card { background: #ffffff; border-radius: 5px; padding: 30px; width: 100%; max-width: 450px; border: 1px solid #e2e8f0; box-shadow: 0 20px 35px rgba(0,0,0,0.05); }
+        .auth-sub { text-align: center; color: #64748b; margin-bottom: 10px; font-size: 18px; }
+        .auth-title { text-align: center; font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 20px; }
+        .auth-title span { background: linear-gradient(145deg, #3b82f6, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .version-badge { display: inline-block; color: #475569; font-size: 15px; padding: 2px 12px; border-radius: 5px; font-weight: 600; margin-top: 5px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569; font-size: 14px; }
+        .form-group select, .form-group input { width: 100%; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; color: #1e293b; font-size: 15px; outline: none; transition: 0.3s; }
+        .form-group select:focus, .form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background: #ffffff; }
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-wrapper input { flex: 1; padding-right: 45px; }
+        .password-wrapper i { position: absolute; right: 15px; cursor: pointer; color: #94a3b8; transition: color 0.3s; font-size: 18px; }
+        .forgot-password-link { text-align: right; margin-top: 6px; font-size: 13px; }
+        .forgot-password-link a { color: #3b82f6; text-decoration: none; font-weight: 500; transition: 0.3s; }
+        .forgot-password-link a:hover { color: #1d4ed8; text-decoration: underline; }
+        .btn-primary { width: 100%; background: linear-gradient(145deg, #3b82f6, #6366f1); border: none; padding: 14px; border-radius: 5px; font-weight: 700; font-size: 16px; color: white; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; transform: none !important; }
+        .btn-biometric { width: 100%; background: linear-gradient(145deg, #22c55e, #16a34a); border: none; padding: 16px; border-radius: 5px; font-weight: 700; font-size: 16px; color: white; cursor: pointer; transition: 0.3s; }
+        .btn-biometric:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
+        .btn-biometric i { margin-right: 10px; }
+        .auth-footer { text-align: center; margin-top: 25px; color: #64748b; font-size: 14px; }
+        .auth-footer a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+        .alert { padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 10px; animation: slideDown 0.5s ease; }
+        .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .alert-success { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .alert i { font-size: 18px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .user-type-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+        .user-type-toggle button { flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #64748b; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .user-type-toggle button.active { border-color: #3b82f6; background: #eff6ff; color: #3b82f6; }
+        .user-type-toggle button:hover { background: #f1f5f9; }
+        .select-group { display: none; }
+        .select-group.visible { display: block; }
+        .divider { display: flex; align-items: center; margin: 20px 0; gap: 15px; }
+        .divider hr { flex: 1; border: none; border-top: 2px solid #e2e8f0; }
+        .divider span { color: #94a3b8; font-weight: 600; font-size: 14px; }
+        .status-message { text-align: center; margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 14px; display: none; }
+        .status-message.show { display: block; }
+        .status-message.success { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
+        .status-message.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .status-message.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .choice-container { text-align: center; margin: 10px 0; }
+        .choice-container p { color: #64748b; font-size: 14px; margin-bottom: 15px; }
+        .switch-link { color: #3b82f6; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .switch-link:hover { text-decoration: underline; }
+        .form-section { transition: all 0.3s ease; }
+        .form-section.hidden { display: none; }
+        .biometric-section { transition: all 0.3s ease; }
+        .biometric-section.hidden { display: none; }
+        @media (max-width: 500px) { .auth-card { padding: 30px 25px; } .logo img { width: 75px; } .user-type-toggle button { font-size: 13px; padding: 8px; } .forgot-password-link { font-size: 12px; } }
     </style>
 </head>
 
@@ -651,97 +362,245 @@ if (isset($_SESSION['exit_message'])) {
                 </div>
             <?php endif; ?>
 
-            <?php if ($isLoggedIn): ?>
+            <?php if ($loginSuccess): ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> Login successful! Redirecting...
+                </div>
+                <script>
+                    setTimeout(function() {
+                        window.location.href = '<?php echo $redirectUrl; ?>';
+                    }, 1500);
+                </script>
+            <?php endif; ?>
+
+            <?php if ($showBiometricChoice): ?>
                 <!-- ========================================== -->
-                <!-- USER IS ALREADY LOGGED IN - QUICK LOGIN -->
+                <!-- BIOMETRIC ENROLLED - SHOW CHOICE -->
                 <!-- ========================================== -->
-                <div class="alert alert-info">
-                    <i class="fas fa-user-check"></i>
-                    Welcome back!
+                <div class="choice-container">
+                    <p>Welcome back! Choose how you want to login:</p>
                 </div>
 
-                <button type="button" class="btn-quick-login" id="quickLoginBtn">
-                    <i class="fas fa-fingerprint"></i> Tap to Login with Fingerprint/PIN
-                </button>
-
-                <div id="status" class="status-message"></div>
-
-                <div class="divider">
-                    <hr>
-                    <span>— OR —</span>
-                    <hr>
+                <!-- Biometric Section -->
+                <div class="biometric-section" id="biometricSection">
+                    <button type="button" class="btn-biometric" id="biometricLoginBtn">
+                        <i class="fas fa-fingerprint"></i> Login with Fingerprint/PIN
+                    </button>
+                    <div id="biometricStatus" class="status-message"></div>
+                    
+                    <div class="divider">
+                        <hr>
+                        <span>— OR —</span>
+                        <hr>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="#" class="switch-link" onclick="showPasswordForm()">
+                            <i class="fas fa-key"></i> Login with Username & Password
+                        </a>
+                    </div>
                 </div>
 
-                <a href="<?php echo $redirectUrl; ?>" class="btn-primary" style="text-align: center; text-decoration: none; display: block;">
-                    <i class="fas fa-arrow-right"></i> Go to Dashboard
-                </a>
+                <!-- Password Section (hidden by default) -->
+                <div class="form-section hidden" id="passwordSection">
+                    <form method="POST" action="" id="loginForm">
+                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
-                <div style="margin-top: 15px; text-align: center;">
-                    <a href="logout.php" style="color: #ef4444; text-decoration: none; font-weight: 600;">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
+                        <div class="user-type-toggle">
+                            <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>"
+                                onclick="switchUserType('Admin')">
+                                <i class="fas fa-user-tie"></i> Admin
+                            </button>
+                            <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>"
+                                onclick="switchUserType('Customer')">
+                                <i class="fas fa-user"></i> Customer
+                            </button>
+                        </div>
+
+                        <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
+
+                        <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
+                            id="adminSelectGroup">
+                            <label><i class="fas fa-users"></i> Select Admin Account</label>
+                            <select name="role" id="adminSelect">
+                                <option value="">-- Select your account --</option>
+                                <?php foreach ($existingAdmins as $admin): ?>
+                                    <option value="<?php echo $admin['id']; ?>" <?php echo ($selectedRole == $admin['id'] && $userTypeSelected === 'Admin') ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($admin['acc_number']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
+                            id="customerSelectGroup">
+                            <label><i class="fas fa-users"></i> Select Customer Account</label>
+                            <select name="customer" id="customerSelect">
+                                <option value="">-- Select your account --</option>
+                                <?php foreach ($existingCustomers as $customer): ?>
+                                    <option value="<?php echo $customer['id']; ?>" <?php echo ($selectedCustomerId == $customer['id'] && $userTypeSelected === 'Customer') ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-lock"></i> Password</label>
+                            <div class="password-wrapper">
+                                <input type="password" name="password" id="password" placeholder="Enter your password" required>
+                                <i class="fas fa-eye-slash" id="togglePassword"></i>
+                            </div>
+                            <div class="forgot-password-link">
+                                <a href="forgot_password.php"><i class="fas fa-key"></i> Forgot password?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="loginBtn">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+
+                        <div style="text-align: center; margin-top: 15px;">
+                            <a href="#" class="switch-link" onclick="showBiometricForm()">
+                                <i class="fas fa-fingerprint"></i> Back to Fingerprint Login
+                            </a>
+                        </div>
+
+                        <div class="auth-footer">
+                            Don't have an account? <a href="registration.php">Sign Up</a>
+                        </div>
+                    </form>
                 </div>
 
                 <script>
                     // ==========================================
-                    // QUICK LOGIN WITH FINGERPRINT/PIN
+                    // TOGGLE BETWEEN BIOMETRIC AND PASSWORD
                     // ==========================================
+                    function showPasswordForm() {
+                        document.getElementById('biometricSection').classList.add('hidden');
+                        document.getElementById('passwordSection').classList.remove('hidden');
+                    }
 
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Automatically trigger biometric login after 1 second
-                        setTimeout(function() {
-                            if (window.AndroidBiometric) {
-                                showStatus('🔐 Please authenticate...', 'info');
-                                window.AndroidBiometric.authenticate('auto');
-                            } else {
-                                showStatus('❌ Biometric only available in app', 'error');
-                            }
-                        }, 1000);
-                    });
+                    function showBiometricForm() {
+                        document.getElementById('passwordSection').classList.add('hidden');
+                        document.getElementById('biometricSection').classList.remove('hidden');
+                    }
 
-                    document.getElementById('quickLoginBtn').addEventListener('click', function() {
+                    // ==========================================
+                    // BIOMETRIC LOGIN
+                    // ==========================================
+                    document.getElementById('biometricLoginBtn').addEventListener('click', function() {
+                        const statusDiv = document.getElementById('biometricStatus');
+                        
                         if (window.AndroidBiometric) {
-                            showStatus('🔐 Authenticating...', 'info');
-                            window.AndroidBiometric.authenticate('manual');
+                            showBiometricStatus('🔐 Authenticating...', 'info');
+                            window.AndroidBiometric.authenticate('biometric_choice');
                         } else {
-                            showStatus('❌ Biometric only available in app', 'error');
+                            showBiometricStatus('❌ Biometric only available in app', 'error');
                         }
                     });
 
+                    function showBiometricStatus(message, type) {
+                        const statusDiv = document.getElementById('biometricStatus');
+                        statusDiv.textContent = message;
+                        statusDiv.className = 'status-message show ' + type;
+                    }
+
                     // Called from Android when biometric succeeds
                     function biometricSuccess(data) {
-                        showStatus('✅ Authentication successful! Redirecting...', 'success');
-                        window.location.href = '<?php echo $redirectUrl; ?>';
+                        showBiometricStatus('✅ Authentication successful! Redirecting...', 'success');
+                        
+                        const userId = <?php echo json_encode($biometricUserId); ?>;
+                        const userType = <?php echo json_encode($biometricUserType); ?>;
+                        
+                        fetch(window.location.href, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'biometric_login=true&user_id=' + userId + '&user_type=' + userType
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.href = data.redirect;
+                            } else {
+                                showBiometricStatus('❌ ' + data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            showBiometricStatus('❌ Error: ' + error.message, 'error');
+                        });
                     }
 
                     function biometricFailed() {
-                        showStatus('❌ Authentication failed. Please try again.', 'error');
+                        showBiometricStatus('❌ Authentication failed. Please try again.', 'error');
                     }
 
                     function biometricCancel() {
-                        showStatus('⏹️ Authentication canceled.', 'info');
+                        showBiometricStatus('⏹️ Authentication canceled.', 'info');
                         setTimeout(() => {
-                            document.getElementById('status').className = 'status-message';
-                            document.getElementById('status').textContent = '';
+                            document.getElementById('biometricStatus').className = 'status-message';
+                            document.getElementById('biometricStatus').textContent = '';
                         }, 3000);
                     }
 
                     function biometricError(error) {
-                        showStatus('❌ Error: ' + error, 'error');
+                        showBiometricStatus('❌ Error: ' + error, 'error');
                     }
 
-                    function showStatus(message, type) {
-                        const statusDiv = document.getElementById('status');
-                        statusDiv.textContent = message;
-                        statusDiv.className = 'status-message show ' + type;
+                    // ==========================================
+                    // REGULAR LOGIN SCRIPTS
+                    // ==========================================
+                    const togglePassword = document.getElementById('togglePassword');
+                    const password = document.getElementById('password');
+                    if (togglePassword) {
+                        togglePassword.addEventListener('click', function() {
+                            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                            password.setAttribute('type', type);
+                            this.classList.toggle('fa-eye');
+                            this.classList.toggle('fa-eye-slash');
+                        });
                     }
+
+                    function switchUserType(type) {
+                        document.getElementById('userTypeInput').value = type;
+
+                        const buttons = document.querySelectorAll('.user-type-toggle button');
+                        buttons.forEach(btn => btn.classList.remove('active'));
+
+                        document.querySelectorAll('.select-group').forEach(group => {
+                            group.classList.remove('visible');
+                        });
+
+                        if (type === 'Admin') {
+                            buttons[0].classList.add('active');
+                            document.getElementById('adminSelectGroup').classList.add('visible');
+                            document.getElementById('adminSelect').disabled = false;
+                            document.getElementById('customerSelect').disabled = true;
+                        } else {
+                            buttons[1].classList.add('active');
+                            document.getElementById('customerSelectGroup').classList.add('visible');
+                            document.getElementById('customerSelect').disabled = false;
+                            document.getElementById('adminSelect').disabled = true;
+                        }
+                    }
+
+                    <?php if ($loginSuccess): ?>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const loginBtn = document.getElementById('loginBtn');
+                            if (loginBtn) {
+                                loginBtn.disabled = true;
+                            }
+                            setTimeout(function() {
+                                window.location.href = '<?php echo $redirectUrl; ?>';
+                            }, 1500);
+                        });
+                    <?php endif; ?>
                 </script>
 
             <?php else: ?>
                 <!-- ========================================== -->
-                <!-- USER IS NOT LOGGED IN - REGULAR LOGIN -->
+                <!-- NO BIOMETRIC - SHOW ONLY PASSWORD LOGIN -->
                 <!-- ========================================== -->
-
                 <form method="POST" action="" id="loginForm">
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
@@ -758,7 +617,6 @@ if (isset($_SESSION['exit_message'])) {
 
                     <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
 
-                    <!-- Admin Select Group -->
                     <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
                         id="adminSelectGroup">
                         <label><i class="fas fa-users"></i> Select Admin Account</label>
@@ -772,7 +630,6 @@ if (isset($_SESSION['exit_message'])) {
                         </select>
                     </div>
 
-                    <!-- Customer Select Group -->
                     <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
                         id="customerSelectGroup">
                         <label><i class="fas fa-users"></i> Select Customer Account</label>
@@ -805,67 +662,61 @@ if (isset($_SESSION['exit_message'])) {
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
                 </form>
+
+                <script>
+                    // Password visibility toggle
+                    const togglePassword = document.getElementById('togglePassword');
+                    const password = document.getElementById('password');
+                    if (togglePassword) {
+                        togglePassword.addEventListener('click', function() {
+                            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                            password.setAttribute('type', type);
+                            this.classList.toggle('fa-eye');
+                            this.classList.toggle('fa-eye-slash');
+                        });
+                    }
+
+                    // User type switch
+                    function switchUserType(type) {
+                        document.getElementById('userTypeInput').value = type;
+
+                        const buttons = document.querySelectorAll('.user-type-toggle button');
+                        buttons.forEach(btn => btn.classList.remove('active'));
+
+                        document.querySelectorAll('.select-group').forEach(group => {
+                            group.classList.remove('visible');
+                        });
+
+                        if (type === 'Admin') {
+                            buttons[0].classList.add('active');
+                            document.getElementById('adminSelectGroup').classList.add('visible');
+                            document.getElementById('adminSelect').disabled = false;
+                            document.getElementById('customerSelect').disabled = true;
+                        } else {
+                            buttons[1].classList.add('active');
+                            document.getElementById('customerSelectGroup').classList.add('visible');
+                            document.getElementById('customerSelect').disabled = false;
+                            document.getElementById('adminSelect').disabled = true;
+                        }
+                    }
+
+                    <?php if ($loginSuccess): ?>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const loginBtn = document.getElementById('loginBtn');
+                            if (loginBtn) {
+                                loginBtn.disabled = true;
+                            }
+                            setTimeout(function() {
+                                window.location.href = '<?php echo $redirectUrl; ?>';
+                            }, 1500);
+                        });
+                    <?php endif; ?>
+                </script>
             <?php endif; ?>
         </div>
     </div>
 
     <?php include 'footer.php'; ?>
-
-    <script>
-        <?php if (!$isLoggedIn): ?>
-            // ==========================================
-            // REGULAR LOGIN PAGE SCRIPTS
-            // ==========================================
-
-            // Password visibility toggle
-            const togglePassword = document.getElementById('togglePassword');
-            const password = document.getElementById('password');
-            if (togglePassword) {
-                togglePassword.addEventListener('click', function() {
-                    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                    password.setAttribute('type', type);
-                    this.classList.toggle('fa-eye');
-                    this.classList.toggle('fa-eye-slash');
-                });
-            }
-
-            // User type switch
-            function switchUserType(type) {
-                document.getElementById('userTypeInput').value = type;
-
-                const buttons = document.querySelectorAll('.user-type-toggle button');
-                buttons.forEach(btn => btn.classList.remove('active'));
-
-                document.querySelectorAll('.select-group').forEach(group => {
-                    group.classList.remove('visible');
-                });
-
-                if (type === 'Admin') {
-                    buttons[0].classList.add('active');
-                    document.getElementById('adminSelectGroup').classList.add('visible');
-                    document.getElementById('adminSelect').disabled = false;
-                    document.getElementById('customerSelect').disabled = true;
-                } else {
-                    buttons[1].classList.add('active');
-                    document.getElementById('customerSelectGroup').classList.add('visible');
-                    document.getElementById('customerSelect').disabled = false;
-                    document.getElementById('adminSelect').disabled = true;
-                }
-            }
-
-            <?php if ($loginSuccess): ?>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const loginBtn = document.getElementById('loginBtn');
-                    if (loginBtn) {
-                        loginBtn.disabled = true;
-                    }
-                    setTimeout(function() {
-                        window.location.href = '<?php echo $redirectUrl; ?>';
-                    }, 2000);
-                });
-            <?php endif; ?>
-        <?php endif; ?>
-    </script>
 </body>
 
 </html>
