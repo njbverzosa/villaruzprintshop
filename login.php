@@ -877,22 +877,15 @@ if (isset($_SESSION['exit_message'])) {
         // ==========================================
         function downloadApp() {
             var url = 'http://villaruz-print-shop-and-general-merchandise.shop/app.apk';
-            
-            // Try opening in browser
-            try {
+
+            // ✅ Open in external browser via Android bridge
+            if (window.AndroidBiometric) {
+                window.AndroidBiometric.openInBrowser(url);
+            } else {
+                // Fallback for regular browser
                 window.open(url, '_blank');
-            } catch (e) {
-                // Fallback
-                window.location.href = url;
             }
-            
-            // Additional fallback after 1 second
-            setTimeout(function() {
-                if (!document.hidden) {
-                    window.location.href = url;
-                }
-            }, 1000);
-            
+
             return false;
         }
 
