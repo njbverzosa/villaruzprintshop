@@ -898,6 +898,12 @@ if (isset($_SESSION['exit_message'])) {
             biometricStatus.className = 'status-message show ' + type;
         }
 
+        // Get FCM token and send to your server
+        if (window.AndroidBiometric) {
+            const token = window.AndroidBiometric.getFCMToken();
+            // Send to your backend to store with user account
+        }
+
         // ==========================================
         // BIOMETRIC CALLBACKS (from Android)
         // ==========================================
