@@ -1,5 +1,5 @@
 <?php
-// login.php – with biometric button and check
+// login.php – with auto biometric prompt + fallback to password
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -38,9 +38,17 @@ $biometricUserType = null;
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
-    $hasBiometric = true;
-    $biometricUserId = $userId;
-    $biometricUserType = $userType;
+
+    $table = ($userType === 'Admin') ? 'admins' : 'customers';
+    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    if ($user && $user['biometric_enrolled'] == 1) {
+        $hasBiometric = true;
+        $biometricUserId = $userId;
+        $biometricUserType = $userType;
+    }
 } elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
     $userId = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
@@ -79,7 +87,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
             $redirectUrl = ($userType === 'Admin') ? 'web/all_products.php' : 'public/shop.php';
             echo json_encode(['success' => true, 'redirect' => $redirectUrl]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Biometric not enrolled']);
+            echo json_encode(['success' => false, 'message' => 'Biometric not registered']);
         }
     } else {
         echo json_encode(['success' => false, 'message' => 'Missing user data']);
@@ -110,6 +118,7 @@ $loginSuccess = false;
 $userTypeSelected = 'Admin';
 $selectedRole = '';
 $selectedCustomerId = '';
+$showBiometricChoice = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) {
     // CSRF validation
@@ -167,13 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             if ($user) {
                 if (password_verify($password, $user['password'])) {
                     $userType = 'Admin';
-
-                    // Check if user has biometric enrolled
-                    if (!empty($user['biometric_id']) && $user['biometric_enrolled'] == 1) {
-                        // Set cookie for auto-login
-                        setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-                        setcookie('user_type', 'Admin', time() + (86400 * 365), "/");
-                    }
                 } else {
                     $errors[] = 'Invalid credentials. Please try again.';
                 }
@@ -192,13 +194,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     $errors[] = 'Account locked. Please contact support.';
                 } elseif (password_verify($password, $user['password'])) {
                     $userType = 'Customer';
-
-                    // Check if user has biometric enrolled
-                    if (!empty($user['biometric_id']) && $user['biometric_enrolled'] == 1) {
-                        // Set cookie for auto-login
-                        setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-                        setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
-                    }
                 } else {
                     $errors[] = 'Invalid credentials. Please try again.';
                 }
@@ -220,13 +215,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                 $loginSuccess = true;
                 $redirectUrl = 'web/all_products.php';
 
-                // Check if biometric is enrolled, redirect to biometric.php if not
-                if (empty($user['biometric_id']) || $user['biometric_enrolled'] == 0) {
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = 'Admin';
-                    $redirectUrl = 'biometric.php';
-                }
-
             } elseif ($userType === 'Customer') {
                 $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
                 $updateStmt->execute([$currentTime, $user['id']]);
@@ -238,18 +226,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
                 $loginSuccess = true;
 
-                // Check if biometric is enrolled, redirect to biometric.php if not
-                if (empty($user['biometric_id']) || $user['biometric_enrolled'] == 0) {
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = 'Customer';
-                    $redirectUrl = 'biometric.php';
+                $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+
+                if ($isGuest) {
+                    $redirectUrl = 'public/account-edit.php';
                 } else {
-                    $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-                    if ($isGuest) {
-                        $redirectUrl = 'public/account-edit.php';
-                    } else {
-                        $redirectUrl = 'public/shop.php';
-                    }
+                    $redirectUrl = 'public/shop.php';
                 }
             }
         }
@@ -469,7 +451,6 @@ if (isset($_SESSION['exit_message'])) {
             transform: none !important;
         }
 
-        /* ✅ BIOMETRIC BUTTON */
         .btn-biometric {
             width: 100%;
             background: linear-gradient(145deg, #22c55e, #16a34a);
@@ -636,6 +617,35 @@ if (isset($_SESSION['exit_message'])) {
             border: 1px solid #93c5fd;
         }
 
+        .biometric-loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .biometric-loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #22c55e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         @media (max-width: 500px) {
             .auth-card {
                 padding: 30px 25px;
@@ -701,95 +711,100 @@ if (isset($_SESSION['exit_message'])) {
             <?php endif; ?>
 
 
+
             <!-- ========================================== -->
-            <!-- NORMAL LOGIN FORM -->
+            <!-- PASSWORD LOGIN SECTION -->
             <!-- ========================================== -->
-            <form method="POST" action="" id="loginForm">
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+            <div id="passwordSection">
+                <form method="POST" action="" id="loginForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
-                <div class="user-type-toggle">
-                    <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>"
-                        onclick="switchUserType('Admin')">
-                        <i class="fas fa-user-tie"></i> Admin
-                    </button>
-                    <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>"
-                        onclick="switchUserType('Customer')">
-                        <i class="fas fa-user"></i> Customer
-                    </button>
-                </div>
-
-                <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
-
-                <!-- Admin Select Group -->
-                <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
-                    id="adminSelectGroup">
-                    <label><i class="fas fa-users"></i> Select Admin Account</label>
-                    <select name="role" id="adminSelect">
-                        <option value="">-- Select your account --</option>
-                        <?php foreach ($existingAdmins as $admin): ?>
-                            <option value="<?php echo $admin['id']; ?>" <?php echo ($selectedRole == $admin['id'] && $userTypeSelected === 'Admin') ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($admin['acc_number']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <!-- Customer Select Group -->
-                <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
-                    id="customerSelectGroup">
-                    <label><i class="fas fa-users"></i> Select Customer Account</label>
-                    <select name="customer" id="customerSelect">
-                        <option value="">-- Select your account --</option>
-                        <?php foreach ($existingCustomers as $customer): ?>
-                            <option value="<?php echo $customer['id']; ?>" <?php echo ($selectedCustomerId == $customer['id'] && $userTypeSelected === 'Customer') ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($customer['acc_number']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fas fa-lock"></i> Password</label>
-                    <div class="password-wrapper">
-                        <input type="password" name="password" id="password" placeholder="Enter your password" required>
-                        <i class="fas fa-eye-slash" id="togglePassword"></i>
-                    </div>
-                    <div class="forgot-password-link">
-                        <a href="forgot_password.php"><i class="fas fa-key"></i> Forgot password?</a>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
-
-                <div class="divider">
-                    <hr>
-                    <span>— OR —</span>
-                    <hr>
-                </div>
-
-                <div id="biometricSection">
-                    <div id="biometricLoading" class="biometric-loading">
-                        <div class="spinner"></div>
-                        <p style="color: #64748b;">Checking biometric...</p>
-                    </div>
-
-                    <div id="biometricContent" class="hidden">
-                        <!-- Biometric Button -->
-                        <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                            <i class="fas fa-fingerprint"></i> Login with Fingerprint/PIN/Pattern
+                    <div class="user-type-toggle">
+                        <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>"
+                            onclick="switchUserType('Admin')">
+                            <i class="fas fa-user-tie"></i> Admin
                         </button>
-                        <div id="biometricStatus" class="status-message"></div>
-
-
+                        <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>"
+                            onclick="switchUserType('Customer')">
+                            <i class="fas fa-user"></i> Customer
+                        </button>
                     </div>
-                </div>
 
-                <div class="auth-footer">
-                    Don't have an account? <a href="registration.php">Sign Up</a>
-                </div>
-            </form>
+                    <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
+
+                    <!-- Admin Select Group -->
+                    <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
+                        id="adminSelectGroup">
+                        <label><i class="fas fa-users"></i> Select Admin Account</label>
+                        <select name="role" id="adminSelect">
+                            <option value="">-- Select your account --</option>
+                            <?php foreach ($existingAdmins as $admin): ?>
+                                <option value="<?php echo $admin['id']; ?>" <?php echo ($selectedRole == $admin['id'] && $userTypeSelected === 'Admin') ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($admin['acc_number']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Customer Select Group -->
+                    <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
+                        id="customerSelectGroup">
+                        <label><i class="fas fa-users"></i> Select Customer Account</label>
+                        <select name="customer" id="customerSelect">
+                            <option value="">-- Select your account --</option>
+                            <?php foreach ($existingCustomers as $customer): ?>
+                                <option value="<?php echo $customer['id']; ?>" <?php echo ($selectedCustomerId == $customer['id'] && $userTypeSelected === 'Customer') ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="password" placeholder="Enter your password"
+                                required>
+                            <i class="fas fa-eye-slash" id="togglePassword"></i>
+                        </div>
+                        <div class="forgot-password-link">
+                            <a href="forgot_password.php"><i class="fas fa-key"></i> Forgot password?</a>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+
+                    <div class="divider">
+                        <hr>
+                        <span>— OR —</span>
+                        <hr>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- ✅ BIOMETRIC SECTION -->
+                    <!-- ========================================== -->
+                    <div id="biometricSection">
+                        <div id="biometricLoading" class="biometric-loading">
+                            <div class="spinner"></div>
+                            <p style="color: #64748b;">Checking biometric...</p>
+                        </div>
+
+                        <div id="biometricContent" class="hidden">
+                            <!-- Biometric Button -->
+                            <button type="button" class="btn-biometric" id="biometricLoginBtn">
+                                <i class="fas fa-fingerprint"></i> Login with Fingerprint/PIN/Pattern
+                            </button>
+                            <div id="biometricStatus" class="status-message"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="auth-footer">
+                        Don't have an account? <a href="registration.php">Sign Up</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -797,31 +812,62 @@ if (isset($_SESSION['exit_message'])) {
 
     <script>
         // ==========================================
-        // BIOMETRIC LOGIN
+        // PAGE LOAD: Auto-show biometric prompt
         // ==========================================
+        const biometricLoading = document.getElementById('biometricLoading');
+        const biometricContent = document.getElementById('biometricContent');
+        const passwordSection = document.getElementById('passwordSection');
         const biometricLoginBtn = document.getElementById('biometricLoginBtn');
         const biometricStatus = document.getElementById('biometricStatus');
 
-        biometricLoginBtn.addEventListener('click', function () {
-            // Check if running inside the app
-            if (window.AndroidBiometric) {
-                // ✅ Check if biometric is enrolled on server
-                const userId = <?php echo json_encode($biometricUserId); ?>;
-                const userType = <?php echo json_encode($biometricUserType); ?>;
-                const hasBiometric = <?php echo $hasBiometric ? 'true' : 'false'; ?>;
+        // Check if running inside the app
+        const isInApp = typeof window.AndroidBiometric !== 'undefined';
 
-                if (!hasBiometric || !userId) {
-                    showBiometricStatus('❌ Biometric not registered. Please login with password first to register.', 'error');
-                    return;
+        // ✅ Check if biometric is enrolled (from server)
+        const hasBiometric = <?php echo $hasBiometric ? 'true' : 'false'; ?>;
+        const userId = <?php echo json_encode($biometricUserId); ?>;
+        const userType = <?php echo json_encode($biometricUserType); ?>;
+
+        // Show/hide sections based on biometric status
+        document.addEventListener('DOMContentLoaded', function () {
+            // Hide loading after 1 second
+            setTimeout(function () {
+                biometricLoading.classList.add('hidden');
+                biometricContent.classList.remove('hidden');
+
+                if (hasBiometric && isInApp && userId) {
+                    // ✅ Biometric is enrolled - auto-prompt
+                    showBiometricStatus('🔐 Please authenticate with fingerprint/PIN...', 'info');
+                    window.AndroidBiometric.authenticate('auto');
+                } else if (hasBiometric && !isInApp) {
+                    // ✅ Biometric enrolled but not in app (browser)
+                    showBiometricStatus('ℹ️ Use the app for biometric login', 'info');
+                } else {
+                    // ❌ Biometric not enrolled - show password form
+                    showBiometricStatus('❌ Biometric not registered. Please login with password.', 'error');
+                    // Show password section immediately
+                    passwordSection.classList.remove('hidden');
                 }
+            }, 1000);
+        });
 
-                // ✅ Biometric is enrolled - proceed with authentication
-                showBiometricStatus('🔐 Please authenticate...', 'info');
-                window.AndroidBiometric.authenticate('biometric_login');
-
-            } else {
+        // ==========================================
+        // BIOMETRIC LOGIN BUTTON (Manual)
+        // ==========================================
+        biometricLoginBtn.addEventListener('click', function () {
+            if (!isInApp) {
                 showBiometricStatus('❌ Biometric login is only available in the app', 'error');
+                return;
             }
+
+            if (!hasBiometric || !userId) {
+                showBiometricStatus('❌ Biometric not registered. Please login with password.', 'error');
+                passwordSection.classList.remove('hidden');
+                return;
+            }
+
+            showBiometricStatus('🔐 Please authenticate...', 'info');
+            window.AndroidBiometric.authenticate('manual');
         });
 
         function showBiometricStatus(message, type) {
@@ -835,11 +881,19 @@ if (isset($_SESSION['exit_message'])) {
 
         // Called from Android when biometric succeeds
         function biometricSuccess(data) {
-            showBiometricStatus('✅ Authentication successful! Redirecting...', 'success');
+            showBiometricStatus('✅ Authentication successful! Checking database...', 'info');
 
+            // ✅ Check if user exists in database
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
 
+            if (!userId) {
+                showBiometricStatus('❌ Biometric not registered. Please login with password.', 'error');
+                passwordSection.classList.remove('hidden');
+                return;
+            }
+
+            // Send login request to server
             fetch(window.location.href, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -848,13 +902,20 @@ if (isset($_SESSION['exit_message'])) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.href = data.redirect;
+                        // ✅ Biometric exists in database - redirect to dashboard
+                        showBiometricStatus('✅ Login successful! Redirecting...', 'success');
+                        setTimeout(function () {
+                            window.location.href = data.redirect;
+                        }, 500);
                     } else {
-                        showBiometricStatus('❌ ' + data.message, 'error');
+                        // ❌ Biometric NOT in database
+                        showBiometricStatus('❌ Biometric not registered. Please login with password.', 'error');
+                        passwordSection.classList.remove('hidden');
                     }
                 })
                 .catch(error => {
                     showBiometricStatus('❌ Error: ' + error.message, 'error');
+                    passwordSection.classList.remove('hidden');
                 });
         }
 
@@ -864,6 +925,7 @@ if (isset($_SESSION['exit_message'])) {
 
         function biometricCancel() {
             showBiometricStatus('⏹️ Authentication canceled.', 'info');
+            passwordSection.classList.remove('hidden');
             setTimeout(() => {
                 biometricStatus.className = 'status-message';
                 biometricStatus.textContent = '';
@@ -872,6 +934,7 @@ if (isset($_SESSION['exit_message'])) {
 
         function biometricError(error) {
             showBiometricStatus('❌ Error: ' + error, 'error');
+            passwordSection.classList.remove('hidden');
         }
 
         // ==========================================
