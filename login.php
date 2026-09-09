@@ -824,7 +824,7 @@ if (isset($_SESSION['exit_message'])) {
                     <!-- ✅ BIOMETRIC BUTTON (Always Visible) -->
                     <!-- ========================================== -->
                     <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                        <i class="fas fa-fingerprint"></i> Login with Device
+                        Login with Device Security
                     </button>
 
                     <div class="auth-footer">
