@@ -112,7 +112,7 @@ function handleLogin($pdo)
     $userType = null;
 
     if ($userTypeSelected === 'Admin') {
-        $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access 
+        $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access, biometric_id, biometric_enrolled 
                           FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
         $stmt->execute([$selectedRole, $identifier]);
         $user = $stmt->fetch();
@@ -164,9 +164,20 @@ function handleLogin($pdo)
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['acc_number'] = $user['acc_number'];
 
-            $loginSuccess = true;
-            $redirectUrl = 'web/all_products.php';
-            $successMessage = 'Accessing your account..';
+            // Check if biometric is enrolled
+            if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
+                // No biometric enrolled → redirect to enrollment page
+                $_SESSION['temp_user_id'] = $user['id'];
+                $_SESSION['temp_user_type'] = $userType;
+                header('Location: biometric.php');
+                exit;
+            } else {
+                $loginSuccess = true;
+                $redirectUrl = 'web/all_products.php';
+                $successMessage = 'Accessing your account..';
+            }
+
+
 
         } elseif ($userType === 'Customer') {
             $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
