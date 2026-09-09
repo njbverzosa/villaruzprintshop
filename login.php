@@ -551,7 +551,7 @@ if (isset($_SESSION['exit_message'])) {
                 biometricContent.classList.remove('hidden');
 
                 if (hasBiometric && isInApp && userId) {
-                    showBiometricStatus('🔐 Please authenticate...', 'info');
+                    // showBiometricStatus('🔐 Please authenticate...', 'info');
                     window.AndroidBiometric.authenticate('auto');
                 } else if (hasBiometric && !isInApp) {
                     showBiometricStatus('Use the app for biometric login', 'info');
@@ -577,7 +577,7 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
-            showBiometricStatus('🔐 Please authenticate...', 'info');
+            // showBiometricStatus('🔐 Please authenticate...', 'info');
             window.AndroidBiometric.authenticate('manual');
         });
 
@@ -592,7 +592,7 @@ if (isset($_SESSION['exit_message'])) {
 
         // Called from Android when biometric succeeds
         function biometricSuccess(data) {
-            showBiometricStatus('✅ Authentication successful! Checking database...', 'info');
+            // showBiometricStatus('✅ Authentication successful! Checking database...', 'info');
 
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
@@ -617,28 +617,28 @@ if (isset($_SESSION['exit_message'])) {
             })
             .then(data => {
                 if (data.success) {
-                    showBiometricStatus('✅ Login successful! Redirecting...', 'success');
+                    showBiometricStatus('Accessing your account...', 'success');
                     setTimeout(function () {
                         window.location.href = data.redirect;
                     }, 500);
                 } else {
-                    showBiometricStatus('❌ ' + data.message, 'error');
+                    showBiometricStatus('' + data.message, 'error');
                     passwordSection.classList.remove('hidden');
                 }
             })
             .catch(error => {
-                console.error('❌ Fetch error:', error);
-                showBiometricStatus('❌ Error: ' + error.message, 'error');
+                console.error('Fetch error:', error);
+                showBiometricStatus('Error: ' + error.message, 'error');
                 passwordSection.classList.remove('hidden');
             });
         }
 
         function biometricFailed() {
-            showBiometricStatus('❌ Authentication failed. Please try again.', 'error');
+            showBiometricStatus('Authentication failed. Please try again.', 'error');
         }
 
         function biometricCancel() {
-            showBiometricStatus('⏹️ Authentication canceled.', 'info');
+            // showBiometricStatus('⏹️ Authentication canceled.', 'info');
             passwordSection.classList.remove('hidden');
             setTimeout(() => {
                 biometricStatus.className = 'status-message';
@@ -647,7 +647,7 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         function biometricError(error) {
-            showBiometricStatus('❌ Error: ' + error, 'error');
+            showBiometricStatus('Error: ' + error, 'error');
             passwordSection.classList.remove('hidden');
         }
 
