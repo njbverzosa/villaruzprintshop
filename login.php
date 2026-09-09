@@ -1,5 +1,5 @@
 <?php
-// login.php – with auto biometric prompt + fallback to password
+// login.php – with hidden biometric check + Login with Device button
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -821,21 +821,11 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
 
                     <!-- ========================================== -->
-                    <!-- ✅ BIOMETRIC SECTION -->
+                    <!-- ✅ BIOMETRIC BUTTON (Always Visible) -->
                     <!-- ========================================== -->
-                    <div id="biometricSection">
-                        <div id="biometricLoading" class="biometric-loading">
-                            <div class="spinner"></div>
-                            <p style="color: #64748b;">Checking biometric...</p>
-                        </div>
-
-                        <div id="biometricContent" class="hidden">
-                            <!-- Biometric Button -->
-                            <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                                <i class="fas fa-fingerprint"></i> Login with Device
-                            </button>
-                        </div>
-                    </div>
+                    <button type="button" class="btn-biometric" id="biometricLoginBtn">
+                        <i class="fas fa-fingerprint"></i> Login with Device
+                    </button>
 
                     <div class="auth-footer">
                         Don't have an account? <a href="registration.php">Sign Up</a>
@@ -862,15 +852,12 @@ if (isset($_SESSION['exit_message'])) {
 
     <script>
         // ==========================================
-        // PAGE LOAD: Auto-show biometric prompt
+        // BIOMETRIC LOGIN BUTTON
         // ==========================================
-        const biometricLoading = document.getElementById('biometricLoading');
-        const biometricContent = document.getElementById('biometricContent');
-        const passwordSection = document.getElementById('passwordSection');
         const biometricLoginBtn = document.getElementById('biometricLoginBtn');
         const biometricStatus = document.getElementById('biometricStatus');
 
-        // Check if running inside the app  
+        // Check if running inside the app
         const isInApp = typeof window.AndroidBiometric !== 'undefined';
 
         // ✅ Check if biometric is enrolled (from server)
@@ -878,25 +865,19 @@ if (isset($_SESSION['exit_message'])) {
         const userId = <?php echo json_encode($biometricUserId); ?>;
         const userType = <?php echo json_encode($biometricUserType); ?>;
 
-        // Show/hide sections based on biometric status
+        // ==========================================
+        // PAGE LOAD: Auto-show biometric prompt (SILENTLY)
+        // ==========================================
         document.addEventListener('DOMContentLoaded', function () {
-            // Hide loading after 1 second
-            setTimeout(function () {
-                biometricLoading.classList.add('hidden');
-                biometricContent.classList.remove('hidden');
-
-                if (hasBiometric && isInApp && userId) {
-                    window.AndroidBiometric.authenticate('auto');
-                } else if (hasBiometric && !isInApp) {
-                    showBiometricStatus('Use the app for biometric login', 'info');
-                } else {
-                    passwordSection.classList.remove('hidden');
-                }
-            }, 1000);
+            // ✅ If biometric is enrolled and we're in the app, trigger it silently
+            if (hasBiometric && isInApp && userId) {
+                // ✅ NO SPINNER, NO LOADING - Just trigger the biometric prompt
+                window.AndroidBiometric.authenticate('auto');
+            }
         });
 
         // ==========================================
-        // BIOMETRIC LOGIN BUTTON (Manual)
+        // BIOMETRIC LOGIN BUTTON (Manual click)
         // ==========================================
         biometricLoginBtn.addEventListener('click', function () {
             if (!isInApp) {
@@ -906,7 +887,6 @@ if (isset($_SESSION['exit_message'])) {
 
             if (!hasBiometric || !userId) {
                 showBiometricStatus('Biometric not registered. Please login with password.', 'error');
-                passwordSection.classList.remove('hidden');
                 return;
             }
 
@@ -933,7 +913,6 @@ if (isset($_SESSION['exit_message'])) {
 
             if (!userId) {
                 showBiometricStatus('Biometric not registered. Please login with password.', 'error');
-                passwordSection.classList.remove('hidden');
                 return;
             }
 
@@ -956,13 +935,11 @@ if (isset($_SESSION['exit_message'])) {
                         }, 500);
                     } else {
                         showBiometricStatus('' + data.message, 'error');
-                        passwordSection.classList.remove('hidden');
                     }
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
                     showBiometricStatus('Error: ' + error.message, 'error');
-                    passwordSection.classList.remove('hidden');
                 });
         }
 
@@ -971,16 +948,13 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         function biometricCancel() {
-            passwordSection.classList.remove('hidden');
-            setTimeout(() => {
-                biometricStatus.className = 'status-message';
-                biometricStatus.textContent = '';
-            }, 3000);
+            // Don't show any message, just silently close
+            biometricStatus.className = 'status-message';
+            biometricStatus.textContent = '';
         }
 
         function biometricError(error) {
             showBiometricStatus('Error: ' + error, 'error');
-            passwordSection.classList.remove('hidden');
         }
 
         // ==========================================
