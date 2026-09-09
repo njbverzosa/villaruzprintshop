@@ -34,14 +34,11 @@ $hasBiometric = false;
 $biometricUserId = null;
 $biometricUserType = null;
 
-// 🔍 DEBUG: Log the check
-error_log('🔍 Checking biometric enrollment...');
 
 // Check from session first (user is already logged in)
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
-    error_log('✅ Found user in session: ' . $userId . ' - ' . $userType);
     
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
@@ -52,16 +49,12 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
         $hasBiometric = true;
         $biometricUserId = $userId;
         $biometricUserType = $userType;
-        error_log('✅ Biometric found in session for user: ' . $userId);
-    } else {
-        error_log('❌ Biometric NOT found for user in session: ' . $userId);
-    }
+    } 
 } 
 // Check from cookie (user has logged in before)
 elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
     $userId = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
-    error_log('✅ Found user in cookie: ' . $userId . ' - ' . $userType);
     
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
@@ -72,18 +65,13 @@ elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
         $hasBiometric = true;
         $biometricUserId = $userId;
         $biometricUserType = $userType;
-        error_log('✅ Biometric found in cookie for user: ' . $userId);
         
         // ✅ Also set session to keep user logged in
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_role'] = $userType;
         $_SESSION['acc_number'] = $user['acc_number'] ?? 'User';
-    } else {
-        error_log('❌ Biometric NOT found for user in cookie: ' . $userId);
-    }
-} else {
-    error_log('❌ No user found in session or cookie');
-}
+    } 
+} 
 
 // ==============================================
 // HANDLE BIOMETRIC LOGIN (API)
@@ -97,8 +85,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     error_log('🔐 Biometric login API called - User ID: ' . $userId . ', Type: ' . $userType);
     
     if (!$userId || !$userType) {
-        error_log('❌ Missing user data');
-        echo json_encode(['success' => false, 'message' => 'Missing user data']);
         exit;
     }
     
@@ -108,14 +94,10 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $user = $stmt->fetch();
     
     if (!$user) {
-        error_log('❌ User not found: ' . $userId);
-        echo json_encode(['success' => false, 'message' => 'User not found']);
         exit;
     }
     
     if ($user['biometric_enrolled'] != 1) {
-        error_log('❌ Biometric not enrolled for user: ' . $userId);
-        echo json_encode(['success' => false, 'message' => 'Biometric not registered']);
         exit;
     }
     
@@ -418,7 +400,7 @@ if (isset($_SESSION['exit_message'])) {
 
             <?php if ($loginSuccess): ?>
                 <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> Login successful! Redirecting...
+                    <i class="fas fa-check-circle"></i> Accessing your account...
                 </div>
                 <script>
                     setTimeout(function () {
