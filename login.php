@@ -832,16 +832,20 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
 
                     <!-- ========================================== -->
-                    <!-- ✅ DOWNLOAD SECTION (OUTSIDE FORM) -->
+                    <!-- ✅ BIOMETRIC SECTION -->
                     <!-- ========================================== -->
-                    <div class="download-section">
-                        <span>
-                            Download our app:
-                            <a href="#" onclick="downloadApp(); return false;"
-                                style="color: #3b82f6; font-weight: 600; text-decoration: underline; cursor: pointer;">
-                                Download APP
-                            </a>
-                        </span>
+                    <div id="biometricSection">
+                        <div id="biometricLoading" class="biometric-loading">
+                            <div class="spinner"></div>
+                            <p style="color: #64748b;">Checking biometric...</p>
+                        </div>
+
+                        <div id="biometricContent" class="hidden">
+                            <!-- Biometric Button -->
+                            <button type="button" class="btn-biometric" id="biometricLoginBtn">
+                                <i class="fas fa-fingerprint"></i> Login with Device
+                            </button>
+                        </div>
                     </div>
 
                     <div class="auth-footer">
@@ -856,7 +860,7 @@ if (isset($_SESSION['exit_message'])) {
             <div class="download-section">
                 <span>
                     Download our app:
-                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/app.apk" target="_blank">
+                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/Apk/app.apk" target="_blank">
                         Download APP
                     </a>
                 </span>
@@ -884,25 +888,6 @@ if (isset($_SESSION['exit_message'])) {
         const hasBiometric = <?php echo $hasBiometric ? 'true' : 'false'; ?>;
         const userId = <?php echo json_encode($biometricUserId); ?>;
         const userType = <?php echo json_encode($biometricUserType); ?>;
-
-
-        // ==========================================
-        // DOWNLOAD APP FUNCTION
-        // ==========================================
-        function downloadApp() {
-            var url = 'http://villaruz-print-shop-and-general-merchandise.shop/apk/app.apk';
-
-            // ✅ Check if running inside the app
-            if (window.AndroidBiometric) {
-                // Use the Android bridge to open in browser
-                window.AndroidBiometric.openInBrowser(url);
-            } else {
-                // Fallback for regular browser
-                window.open(url, '_blank');
-            }
-
-            return false;
-        }
 
         // Show/hide sections based on biometric status
         document.addEventListener('DOMContentLoaded', function () {
