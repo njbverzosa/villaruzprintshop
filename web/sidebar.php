@@ -1,9 +1,44 @@
 <style>
+    /* ===== LOGO STYLES ===== */
+    .logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding: 5px 0;
+    }
+
     .logo img {
-        width: 245px;
-        height: 150px;
+        width: 100%;
+        max-width: 220px;
+        height: auto;
+        max-height: 110px;
         object-fit: contain;
         border-radius: 5px;
+        transition: transform 0.2s ease;
+    }
+
+
+    /* ✅ Responsive Logo Sizes */
+    @media (max-width: 480px) {
+        .logo img {
+            max-width: 160px;
+            max-height: 80px;
+        }
+    }
+
+    @media (min-width: 481px) and (max-width: 768px) {
+        .logo img {
+            max-width: 190px;
+            max-height: 95px;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .logo img {
+            max-width: 220px;
+            max-height: 110px;
+        }
     }
 
     /* ========== SIDEBAR NAVIGATION - COMPLETE HOVER & ACTIVE STATES ========== */
@@ -373,7 +408,7 @@
     <div class="logo">
         <img src="images/logo.jpeg" alt="Villaruz Print Shop Logo">
     </div>
-    
+
     <div class="user-name">
         <?php
         echo htmlspecialchars($user['user_name'] ?? 'User');
@@ -500,7 +535,7 @@
                 <i class="fas fa-user"></i>
                 <span>Registered Customers</span>
             </a>
-              <a href="registered_customers.php"
+            <a href="registered_customers.php"
                 class="nav-dropdown-item <?php echo in_array($currentPage, ['registered_customers.php', 'chat_view.php']) ? 'active_chat_customers' : ''; ?>">
                 <i class="fas fa-user"></i>
                 <span>Chat Customers</span>
