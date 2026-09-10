@@ -946,18 +946,15 @@ if (isset($_SESSION['exit_message'])) {
                         Login
                     </button>
 
-                    <div class="divider">
+                    <!-- <div class="divider">
                         <hr>
                         <span>— OR —</span>
                         <hr>
                     </div>
 
-                    <!-- ========================================== -->
-                    <!-- ✅ BIOMETRIC BUTTON (Always Visible) -->
-                    <!-- ========================================== -->
                     <button type="button" class="btn-biometric" id="biometricLoginBtn">
                         Login with Device Security
-                    </button>
+                    </button> -->
 
                     <div class="auth-footer">
                         Don't have an account? <a href="registration.php">Sign Up</a>
@@ -1110,10 +1107,9 @@ if (isset($_SESSION['exit_message'])) {
                 .then(data => {
                     console.log('📥 Server response:', data);
                     if (data.success) {
-                        // ✅ Redirect after 1 second (biometric)
                         setTimeout(function () {
                             window.location.href = data.redirect;
-                        }, 800);
+                        }, 500);
                     }
                 })
                 .catch(error => {
