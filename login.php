@@ -1,5 +1,5 @@
 <?php
-// login.php – with hidden biometric check + Login with Device button
+// login.php – with hidden biometric check (button removed)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -10,11 +10,10 @@ session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
 require_once __DIR__ . '/update_version.php'; // Include the update version check
 
-
 // ✅ Use version_compare() for proper version comparison
 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
-// ✅ Check if user clicked "Later" or "OK" for THIS version (cookie lasts 1 day)
+// ✅ Check if user clicked "Later" or "OK" for THIS version
 $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
 $reminded = ($remindedVersion === $latestVersion);
 $showUpdatePopup = ($needsUpdate && !$reminded);
@@ -477,28 +476,6 @@ if (isset($_SESSION['exit_message'])) {
             transform: none !important;
         }
 
-        .btn-biometric {
-            width: 100%;
-            background: linear-gradient(145deg, #22c55e, #16a34a);
-            border: none;
-            padding: 16px;
-            border-radius: 5px;
-            font-weight: 700;
-            font-size: 16px;
-            color: white;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn-biometric:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-        }
-
-        .btn-biometric i {
-            margin-right: 10px;
-        }
-
         .auth-footer {
             text-align: center;
             margin-top: 25px;
@@ -877,7 +854,7 @@ if (isset($_SESSION['exit_message'])) {
 
                         setTimeout(function () {
                             window.location.href = redirectUrl;
-                        }, 1000);
+                        }, 3000);
                     })();
                 </script>
             <?php endif; ?>
@@ -946,16 +923,6 @@ if (isset($_SESSION['exit_message'])) {
                         Login
                     </button>
 
-                    <!-- <div class="divider">
-                        <hr>
-                        <span>— OR —</span>
-                        <hr>
-                    </div>
-
-                    <button type="button" class="btn-biometric" id="biometricLoginBtn">
-                        Login with Device Security
-                    </button> -->
-
                     <div class="auth-footer">
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
@@ -969,7 +936,7 @@ if (isset($_SESSION['exit_message'])) {
                 <span>
                     Download our app:
                     <a href="http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">
-                        Download APP
+                        Download SofiaApp
                     </a>
                 </span>
             </div>
@@ -1009,9 +976,8 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         // ==========================================
-        // BIOMETRIC LOGIN BUTTON
+        // BIOMETRIC AUTO-PROMPT (Silent on page load)
         // ==========================================
-        const biometricLoginBtn = document.getElementById('biometricLoginBtn');
         const biometricStatus = document.getElementById('biometricStatus');
 
         // Check if running inside the app
@@ -1048,47 +1014,36 @@ if (isset($_SESSION['exit_message'])) {
         });
 
         // ==========================================
-        // BIOMETRIC LOGIN BUTTON (Manual click)
+        // BIOMETRIC STATUS HELPERS
         // ==========================================
-        biometricLoginBtn.addEventListener('click', function () {
-            if (!isInApp) {
-                showBiometricStatus('Login with Device Security is only available in the app', 'info');
-                return;
-            }
-
-            if (!hasBiometric || !userId) {
-                showBiometricStatus('Fresh install detected. Please log in with password.', 'info');
-                return;
-            }
-
-            window.AndroidBiometric.authenticate('manual');
-        });
-
         function showBiometricStatus(message, type) {
             biometricStatus.textContent = message;
             biometricStatus.className = 'status-message show ' + type;
         }
 
+        function showBiometricStatusWithSpinner(message) {
+            biometricStatus.innerHTML = '<div class="spinner-container"><div class="spinner-small"></div></div><span>' + message + '</span>';
+            biometricStatus.className = 'status-message show success';
+            biometricStatus.style.display = 'flex';
+            biometricStatus.style.alignItems = 'center';
+            biometricStatus.style.justifyContent = 'flex-start';
+        }
 
         // ==========================================
         // BIOMETRIC CALLBACKS (from Android)
         // ==========================================
-
         function biometricSuccess(data) {
             console.log('✅ Biometric success called');
 
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
 
-            console.log('📦 userId:', userId);
-            console.log('📦 userType:', userType);
-
             if (!userId) {
                 showBiometricStatus('Biometric not registered. Please login with password.', 'error');
                 return;
             }
 
-            // ✅ Show spinner + "Accessing your account..." in the biometricStatus area
+            // ✅ Show spinner + "Accessing your account..."
             showBiometricStatusWithSpinner('Accessing your account...');
 
             // ✅ Send request to server
@@ -1098,33 +1053,25 @@ if (isset($_SESSION['exit_message'])) {
                 body: 'biometric_login=true&user_id=' + userId + '&user_type=' + userType
             })
                 .then(response => {
-                    console.log('📥 Response status:', response.status);
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('📥 Server response:', data);
                     if (data.success) {
+                        // ✅ Redirect after 1 second (biometric is fast)
                         setTimeout(function () {
                             window.location.href = data.redirect;
-                        }, 500);
+                        }, 1000);
+                    } else {
+                        showBiometricStatus('' + data.message, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('❌ Fetch error:', error);
                     showBiometricStatus('Error: ' + error.message, 'error');
                 });
-        }
-
-        // ✅ Show spinner + message in biometricStatus area
-        function showBiometricStatusWithSpinner(message) {
-            biometricStatus.innerHTML = '<div class="spinner-container"><div class="spinner-small"></div></div><span>' + message + '</span>';
-            biometricStatus.className = 'status-message show success';
-            biometricStatus.style.display = 'flex';
-            biometricStatus.style.alignItems = 'center';
-            biometricStatus.style.justifyContent = 'flex-start';  // ✅ LEFT-ALIGNED
         }
 
         function biometricFailed() {

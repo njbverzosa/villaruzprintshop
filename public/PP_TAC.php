@@ -577,10 +577,10 @@ $isVip = isset($userData['vip']) && $userData['vip'] == 1;
                 
                 <p><strong>Information We Collect</strong></p>
                 <ul>
-                    <li><strong>Personal Information:</strong> Full name, email address, phone number, delivery address, and date of birth</li>
+                    <li><strong>Personal Information:</strong> Full name, email address, phone number, delivery address, and picture of landmark</li>
                     <li><strong>Account Information:</strong> Username, password, account number, and account activity</li>
                     <li><strong>Transaction Data:</strong> Purchase history, order details, payment records, and delivery information</li>
-                    <li><strong>Payment Information:</strong> Payment method details, transaction IDs, and billing information</li>
+                    <li><strong>Payment Information:</strong> Payment method details, transaction numbers, and billing information</li>
                     <li><strong>Device Information:</strong> IP address, browser type, device type, and access times</li>
                     <li><strong>Communication Records:</strong> Customer service interactions, chat logs, and email correspondence</li>
                 </ul>

@@ -568,14 +568,6 @@ $isVip = isset($userData['vip']) && $userData['vip'] == 1;
                     <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
-                <!-- PayLater -->
-                <a href="dtr.php" class="service-card">
-                    <div class="service-icon"><i class="fas fa-calendar"></i></div>
-                    <div class="service-name">Date/Time Record</div>
-                    <div class="service-desc">DTR</div>
-                    <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
-                </a>
-
 
 
                 <!-- Option 2: Clipboard with check -->
@@ -602,13 +594,6 @@ $isVip = isset($userData['vip']) && $userData['vip'] == 1;
                     <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
-                <!-- Sell Product -->
-                <a href="#" class="service-card" onclick="showComingSoon('Sell Product')">
-                    <div class="service-icon"><i class="fas fa-store-alt"></i></div>
-                    <div class="service-name">Sell Product</div>
-                    <div class="service-desc">List your products</div>
-                    <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
-                </a>
                 
                 <!-- Legitimate -->
                 <a href="#" class="service-card" onclick="showLegalities()">
