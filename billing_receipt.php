@@ -572,7 +572,7 @@ if (!empty($qrData)) {
                             <td style="font-size: 15px;"><?php echo intval($item['pieces']); ?></td>
                             <td style="font-size: 15px;"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
                             <td class="amount-cell" style="font-size: 15px;">₱ <?php echo number_format($item['selling_price'], 2);?></td>
-                            <td class="amount-cell" style="font-size: 15px;">₱ <?php echo number_format($item['total_amount']); ?></td>
+                            <td class="amount-cell" style="font-size: 15px;">₱ <?php echo number_format($item['total_amount'], 2); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
