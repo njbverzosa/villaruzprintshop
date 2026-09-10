@@ -728,10 +728,6 @@ if (isset($_SESSION['exit_message'])) {
             display: flex !important;
         }
 
-        .update-popup-overlay.active {
-            display: flex !important;
-        }
-
         .update-popup {
             background: white;
             padding: 25px 30px 20px;
@@ -1000,7 +996,7 @@ if (isset($_SESSION['exit_message'])) {
 
         function downloadUpdate() {
             // ✅ Open download link
-            window.location.href = 'http://villaruz-print-shop-and-general-merchandise.shop/APK/villaruz_app.apk';
+            window.location.href = 'http://villaruz-print-shop-and-general-marketplace.shop/APK/villaruz_app.apk';
             // Close the popup
             document.getElementById('updatePopup').classList.remove('active');
         }
@@ -1085,8 +1081,8 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
-            // ✅ Show spinner
-            showBiometricStatus('Accessing your account...', 'success');
+            // ✅ Show spinner + "Accessing your account..." in the biometricStatus area
+            showBiometricStatusWithSpinner('Accessing your account...');
 
             // ✅ Send request to server
             fetch(window.location.href, {
@@ -1116,6 +1112,15 @@ if (isset($_SESSION['exit_message'])) {
                     console.error('❌ Fetch error:', error);
                     showBiometricStatus('Error: ' + error.message, 'error');
                 });
+        }
+
+        // ✅ Show spinner + message in biometricStatus area
+        function showBiometricStatusWithSpinner(message) {
+            biometricStatus.innerHTML = '<div class="spinner-container"><div class="spinner-small"></div></div><span>' + message + '</span>';
+            biometricStatus.className = 'status-message show success';
+            biometricStatus.style.display = 'flex';
+            biometricStatus.style.alignItems = 'center';
+            biometricStatus.style.justifyContent = 'center';
         }
 
         function biometricFailed() {
