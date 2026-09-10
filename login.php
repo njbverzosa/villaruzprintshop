@@ -1118,7 +1118,6 @@ if (isset($_SESSION['exit_message'])) {
             biometricStatus.innerHTML = '<div class="spinner-container"><div class="spinner-small"></div></div><span>' + message + '</span>';
             biometricStatus.className = 'status-message show success';
             biometricStatus.style.display = 'flex';
-            biometricStatus.style.alignItems = 'center';
             biometricStatus.style.justifyContent = 'center';
         }
 
