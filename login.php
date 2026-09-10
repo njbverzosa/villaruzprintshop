@@ -521,7 +521,6 @@ if (isset($_SESSION['exit_message'])) {
             margin-bottom: 20px;
             font-size: 14px;
             display: flex;
-            align-items: center;
             gap: 10px;
             animation: slideDown 0.5s ease;
         }
