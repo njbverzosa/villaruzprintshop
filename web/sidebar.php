@@ -500,11 +500,6 @@
                 <i class="fas fa-user"></i>
                 <span>Registered Customers</span>
             </a>
-              <a href="registered_customers.php"
-                class="nav-dropdown-item <?php echo in_array($currentPage, ['registered_customers.php', 'chat_view.php']) ? 'active_chat_customers' : ''; ?>">
-                <i class="fas fa-user"></i>
-                <span>Chat Customers</span>
-            </a>
         </div>
     </div>
 
