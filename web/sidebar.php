@@ -527,10 +527,6 @@
                     <i class="fas fa-database"></i>
                     <span>DB Manager</span>
                 </a>
-                <a href="dtr.php" class="nav-dropdown-item <?php echo $currentPage == 'dtr.php' ? 'active_dtr' : ''; ?>">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>DTR</span>
-                </a>
                 <a href="prompt_ai.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'prompt_ai.php' ? 'active_prompt' : ''; ?>">
                     <i class="fas fa-robot"></i>
