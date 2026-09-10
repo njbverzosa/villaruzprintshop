@@ -18,8 +18,9 @@ $latestVersion = "20.05.32"; // (New Version) Update this when you release a new
 // ✅ Use version_compare() for proper version comparison
 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
-// Check if user clicked "Later" (cookie lasts 1 day)
-$reminded = isset($_COOKIE['update_reminded']) && $_COOKIE['update_reminded'] == 1;
+// ✅ Check if user clicked "Later" or "OK" for THIS version (cookie lasts 1 day)
+$remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
+$reminded = ($remindedVersion === $latestVersion);
 $showUpdatePopup = ($needsUpdate && !$reminded);
 
 // ==============================================
@@ -988,15 +989,19 @@ if (isset($_SESSION['exit_message'])) {
         // UPDATE POPUP
         // ==========================================
         function closeUpdatePopup() {
-            // ✅ Set cookie to remember "Later" for 1 day
-            document.cookie = "update_reminded=1; path=/; max-age=86400";
+            // ✅ Set cookie to remember "Later" for THIS version (1 day)
+            document.cookie = "update_reminded_version=<?php echo $latestVersion; ?>; path=/; max-age=86400";
             document.getElementById('updatePopup').classList.remove('active');
         }
 
         function downloadUpdate() {
+            // ✅ Set cookie to remember "OK" for THIS version (1 day)
+            document.cookie = "update_reminded_version=<?php echo $latestVersion; ?>; path=/; max-age=86400";
+            
             // ✅ Open download link
             window.location.href = 'http://villaruz-print-shop-and-general-merchandise.shop/APK/villaruz_app.apk';
-            // Close the popup
+            
+            // ✅ Close the popup
             document.getElementById('updatePopup').classList.remove('active');
         }
 
