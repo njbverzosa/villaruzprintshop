@@ -1049,7 +1049,7 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             if (!hasBiometric || !userId) {
-                showBiometricStatus('Fresh install detected. Please log in with password.', 'error');
+                showBiometricStatus('Fresh install detected. Please log in with password.', 'info');
                 return;
             }
 
