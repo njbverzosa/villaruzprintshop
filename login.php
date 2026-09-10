@@ -1044,7 +1044,7 @@ if (isset($_SESSION['exit_message'])) {
         // ==========================================
         biometricLoginBtn.addEventListener('click', function () {
             if (!isInApp) {
-                showBiometricStatus('Biometric login is only available in the app', 'error');
+                showBiometricStatus('Biometric login is only available in the app', 'info');
                 return;
             }
 
