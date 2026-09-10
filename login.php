@@ -1110,12 +1110,10 @@ if (isset($_SESSION['exit_message'])) {
                 .then(data => {
                     console.log('📥 Server response:', data);
                     if (data.success) {
-                        // ✅ Redirect after 3 seconds
+                        // ✅ Redirect after 1 second (biometric)
                         setTimeout(function () {
                             window.location.href = data.redirect;
-                        }, 3000);
-                    } else {
-                        showBiometricStatus('' + data.message, 'error');
+                        }, 1000);
                     }
                 })
                 .catch(error => {
