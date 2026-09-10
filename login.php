@@ -10,6 +10,19 @@ session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
 
 // ==============================================
+// CHECK FOR APP UPDATE
+// ==============================================
+$currentVersion = "1.0.0"; // Current app version (update this when you build new APK)
+$latestVersion = "1.0.1";  // Latest version available
+
+// ✅ Use version_compare() for proper version comparison
+$needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+
+// Check if user clicked "Later" (cookie lasts 1 day)
+$reminded = isset($_COOKIE['update_reminded']) && $_COOKIE['update_reminded'] == 1;
+$showUpdatePopup = ($needsUpdate && !$reminded);
+
+// ==============================================
 // CHECK IF USER IS ALREADY LOGGED IN
 // ==============================================
 $isLoggedIn = false;
@@ -652,15 +665,11 @@ if (isset($_SESSION['exit_message'])) {
             vertical-align: middle;
         }
 
-        .spinner-small-white {
-            border-color: #ffffff;
-            border-top-color: #3b82f6;
-        }
-
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
             }
+
             100% {
                 transform: rotate(360deg);
             }
@@ -702,6 +711,84 @@ if (isset($_SESSION['exit_message'])) {
             color: #1d4ed8;
         }
 
+        /* ✅ SIMPLE RECTANGLE UPDATE POPUP (TOP OF SCREEN) */
+        .update-popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 9999;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 20px;
+        }
+
+        .update-popup-overlay.active {
+            display: flex !important;
+        }
+
+        .update-popup-overlay.active {
+            display: flex !important;
+        }
+
+        .update-popup {
+            background: white;
+            padding: 25px 30px 20px;
+            border-radius: 6px;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid #e2e8f0;
+        }
+
+        .update-popup .popup-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            text-align: left;
+        }
+
+        .update-popup .popup-message {
+            font-size: 14px;
+            color: #475569;
+            margin-top: 8px;
+            text-align: left;
+        }
+
+        .update-popup .popup-options {
+            display: flex;
+            gap: 20px;
+            margin-top: 18px;
+            justify-content: flex-end;
+        }
+
+        .update-popup .popup-later {
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s;
+            text-decoration: none;
+        }
+
+        .update-popup .popup-later:hover {
+            color: #64748b;
+        }
+
+        .update-popup .popup-ok {
+            color: #3b82f6;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
+            text-decoration: none;
+        }
+
+        .update-popup .popup-ok:hover {
+            color: #1d4ed8;
+        }
+
         @media (max-width: 500px) {
             .auth-card {
                 padding: 30px 25px;
@@ -718,6 +805,15 @@ if (isset($_SESSION['exit_message'])) {
 
             .forgot-password-link {
                 font-size: 12px;
+            }
+
+            .update-popup {
+                padding: 20px;
+                max-width: 280px;
+            }
+
+            .update-popup .popup-options {
+                gap: 15px;
             }
         }
     </style>
@@ -758,7 +854,6 @@ if (isset($_SESSION['exit_message'])) {
             <?php endif; ?>
 
             <?php if ($loginSuccess): ?>
-                <!-- ✅ Spinner + Message displayed for 5 seconds before redirect -->
                 <div class="alert alert-success" id="successAlert">
                     <div class="spinner-container">
                         <div class="spinner-small"></div>
@@ -766,17 +861,13 @@ if (isset($_SESSION['exit_message'])) {
                     <span id="successMessage">Accessing your account...</span>
                 </div>
                 <script>
-                    // ✅ Display spinner + message for 5 seconds, then redirect
-                    (function() {
+                    (function () {
                         var redirectUrl = '<?php echo $redirectUrl; ?>';
                         var alertDiv = document.getElementById('successAlert');
-                        var messageSpan = document.getElementById('successMessage');
-                        
-                        // Show the alert with spinner and message
+
                         alertDiv.style.display = 'flex';
-                        
-                        // After 5 seconds, redirect
-                        setTimeout(function() {
+
+                        setTimeout(function () {
                             window.location.href = redirectUrl;
                         }, 3000);
                     })();
@@ -881,9 +972,39 @@ if (isset($_SESSION['exit_message'])) {
         </div> <!-- End of auth-card -->
     </div> <!-- End of auth-container -->
 
+    <!-- ========================================== -->
+    <!-- ✅ SIMPLE UPDATE POPUP -->
+    <!-- ========================================== -->
+    <div class="update-popup-overlay <?php echo $showUpdatePopup ? 'active' : ''; ?>" id="updatePopup">
+        <div class="update-popup">
+            <div class="popup-title">Update App</div>
+            <div class="popup-message">Please Update to better version</div>
+            <div class="popup-options">
+                <span class="popup-later" onclick="closeUpdatePopup()">Later</span>
+                <span class="popup-ok" onclick="downloadUpdate()">OK</span>
+            </div>
+        </div>
+    </div>
+
     <?php include 'footer.php'; ?>
 
     <script>
+        // ==========================================
+        // UPDATE POPUP
+        // ==========================================
+        function closeUpdatePopup() {
+            // ✅ Set cookie to remember "Later" for 1 day
+            document.cookie = "update_reminded=1; path=/; max-age=86400";
+            document.getElementById('updatePopup').classList.remove('active');
+        }
+
+        function downloadUpdate() {
+            // ✅ Open download link
+            window.location.href = 'http://villaruz-print-shop-and-general-merchandise.shop/APK/villaruz_app.apk';
+            // Close the popup
+            document.getElementById('updatePopup').classList.remove('active');
+        }
+
         // ==========================================
         // BIOMETRIC LOGIN BUTTON
         // ==========================================
@@ -931,45 +1052,54 @@ if (isset($_SESSION['exit_message'])) {
             biometricStatus.className = 'status-message show ' + type;
         }
 
-        // Get FCM token and send to your server
-        if (window.AndroidBiometric) {
-            const token = window.AndroidBiometric.getFCMToken();
-        }
 
         // ==========================================
         // BIOMETRIC CALLBACKS (from Android)
         // ==========================================
 
         function biometricSuccess(data) {
+            console.log('✅ Biometric success called');
+
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
+
+            console.log('📦 userId:', userId);
+            console.log('📦 userType:', userType);
 
             if (!userId) {
                 showBiometricStatus('Biometric not registered. Please login with password.', 'error');
                 return;
             }
 
+            // ✅ Show spinner
+            showBiometricStatus('Accessing your account...', 'success');
+
+            // ✅ Send request to server
             fetch(window.location.href, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'biometric_login=true&user_id=' + userId + '&user_type=' + userType
             })
                 .then(response => {
+                    console.log('📥 Response status:', response.status);
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
                     return response.json();
                 })
                 .then(data => {
+                    console.log('📥 Server response:', data);
                     if (data.success) {
-                        showBiometricStatus('Accessing your account...', 'success');
-                        // ✅ Redirect handled by PHP (5 seconds)
+                        // ✅ Redirect after 3 seconds
+                        setTimeout(function () {
+                            window.location.href = data.redirect;
+                        }, 3000);
                     } else {
                         showBiometricStatus('' + data.message, 'error');
                     }
                 })
                 .catch(error => {
-                    console.error('Fetch error:', error);
+                    console.error('❌ Fetch error:', error);
                     showBiometricStatus('Error: ' + error.message, 'error');
                 });
         }
