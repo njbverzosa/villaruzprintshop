@@ -818,7 +818,7 @@ if (isset($_SESSION['exit_message'])) {
 
     <nav>
         <div class="logo">
-            <img src="logo/logo.jpeg" alt="Villaruz Print Shop Logo">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Print Shop Logo">
         </div>
         <div>
             <a href="index.php" class="nav-link">Home</a>

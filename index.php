@@ -630,7 +630,7 @@
 
     <nav>
         <div class="logo">
-            <img src="logo/logo.jpeg" alt="Villaruz Print Shop Logo">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Print Shop Logo">
         </div>
         <div class="nav-links">
             <a href="#">Home</a>
