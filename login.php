@@ -864,7 +864,7 @@ if (isset($_SESSION['exit_message'])) {
 
                         setTimeout(function () {
                             window.location.href = redirectUrl;
-                        }, 3000);
+                        }, 1000);
                     })();
                 </script>
             <?php endif; ?>
