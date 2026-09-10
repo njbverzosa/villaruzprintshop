@@ -76,6 +76,7 @@
 // 1. CONFIGURATION & REQUIREMENTS
 // ============================================================
 require_once __DIR__ . '/DB_Conn/config.php';
+require_once __DIR__ . '/update_version.php'; // Include the update version check
 
 // ============================================================
 // 2. HELPER FUNCTIONS
@@ -212,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // Generate account number from phone number
         $accNumber = generateAccNumberFromPhone($pdo, $phone_number);
-        
+
         date_default_timezone_set('Asia/Manila');
         $registrationDate = date('D, j M Y g:i A');
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
@@ -235,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Store phone number in session for verification
                 $_SESSION['verification_phone'] = $phone_number;
                 $_SESSION['verification_acc_number'] = $accNumber;
-                
+
                 // Set registration success flag
                 $registrationSuccess = true;
                 $success = 'Creating your account for customer...';
@@ -503,6 +504,7 @@ if (isset($_SESSION['success'])) {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -510,8 +512,13 @@ if (isset($_SESSION['success'])) {
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes fadeOut {
@@ -519,6 +526,7 @@ if (isset($_SESSION['success'])) {
                 opacity: 1;
                 transform: translateY(0);
             }
+
             to {
                 opacity: 0;
                 transform: translateY(-10px);
@@ -581,7 +589,22 @@ if (isset($_SESSION['success'])) {
         <div class="auth-card">
             <p class="auth-sub">Create Account</p>
             <div style="text-align: center; margin-bottom: 20px;">
-                <span class="version-badge">V20.05.31</span>
+                <span class="version-badge" id="versionBadge">V<?php echo $latestVersion; ?></span>
+                <script>
+                    // ✅ Show the ACTUAL installed version when in the app
+                    document.addEventListener('DOMContentLoaded', function () {
+                        if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
+                            try {
+                                var installedVersion = window.AndroidBiometric.getAppVersion();
+                                if (installedVersion && installedVersion !== 'unknown') {
+                                    document.getElementById('versionBadge').textContent = 'V' + installedVersion;
+                                }
+                            } catch (e) {
+                                console.log('Could not get app version:', e);
+                            }
+                        }
+                    });
+                </script>
             </div>
 
             <?php if (!empty($errors)): ?>
@@ -649,7 +672,7 @@ if (isset($_SESSION['success'])) {
         // Password visibility toggle
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
-        togglePassword.addEventListener('click', function() {
+        togglePassword.addEventListener('click', function () {
             const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
             password.setAttribute('type', type);
             this.classList.toggle('fa-eye');
@@ -658,7 +681,7 @@ if (isset($_SESSION['success'])) {
 
         const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
         const confirmPassword = document.getElementById('confirm_password');
-        toggleConfirmPassword.addEventListener('click', function() {
+        toggleConfirmPassword.addEventListener('click', function () {
             const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
             confirmPassword.setAttribute('type', type);
             this.classList.toggle('fa-eye');
@@ -666,7 +689,7 @@ if (isset($_SESSION['success'])) {
         });
 
         // Phone number formatting - allow only numbers and limit to 11
-        document.querySelector('input[name="phone_number"]').addEventListener('input', function() {
+        document.querySelector('input[name="phone_number"]').addEventListener('input', function () {
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
         });
 
@@ -674,28 +697,28 @@ if (isset($_SESSION['success'])) {
         // SUCCESS ALERT - SEQUENTIAL MESSAGES
         // ============================================================
         <?php if ($registrationSuccess): ?>
-        document.addEventListener('DOMContentLoaded', function() {
-            const registerBtn = document.getElementById('registerBtn');
-            const alertMessage = document.getElementById('alertMessage');
-            const alertElement = document.getElementById('successAlert');
-            
-            // Disable register button
-            if (registerBtn) {
-                registerBtn.disabled = true;
-            }
-            
-            // Show first message for 10 seconds
-            alertMessage.textContent = 'Creating your account. Please wait...';
-                        
-            // Redirect after 10 seconds total
-            setTimeout(function() {
-                // Fade out animation
-                alertElement.style.animation = 'fadeOut 0.2s ease forwards';
-                setTimeout(function() {
-                    window.location.href = 'login.php';
-                }, 500);
-            }, 6000);
-        });
+            document.addEventListener('DOMContentLoaded', function () {
+                const registerBtn = document.getElementById('registerBtn');
+                const alertMessage = document.getElementById('alertMessage');
+                const alertElement = document.getElementById('successAlert');
+
+                // Disable register button
+                if (registerBtn) {
+                    registerBtn.disabled = true;
+                }
+
+                // Show first message for 10 seconds
+                alertMessage.textContent = 'Creating your account. Please wait...';
+
+                // Redirect after 10 seconds total
+                setTimeout(function () {
+                    // Fade out animation
+                    alertElement.style.animation = 'fadeOut 0.2s ease forwards';
+                    setTimeout(function () {
+                        window.location.href = 'login.php';
+                    }, 500);
+                }, 6000);
+            });
         <?php endif; ?>
     </script>
 </body>

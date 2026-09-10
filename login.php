@@ -8,12 +8,8 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
+require_once __DIR__ . '/update_version.php'; // Include the update version check
 
-// ==============================================
-// CHECK FOR APP UPDATE
-// ==============================================
-$currentVersion = "15.05.31"; // (Old Version) Update this when you release a new version
-$latestVersion = "20.05.32"; // (New Version) Update this when you release a new version
 
 // ✅ Use version_compare() for proper version comparison
 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
@@ -819,7 +815,8 @@ if (isset($_SESSION['exit_message'])) {
 
     <nav>
         <div class="logo">
-            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Print Shop Logo">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
+                alt="Villaruz Print Shop Logo">
         </div>
         <div>
             <a href="index.php" class="nav-link">Home</a>
@@ -830,7 +827,22 @@ if (isset($_SESSION['exit_message'])) {
         <div class="auth-card">
             <p class="auth-sub">Log In your account</p>
             <div style="text-align: center; margin-bottom: 20px;">
-                <span class="version-badge">V20.05.31</span>
+                <span class="version-badge" id="versionBadge">V<?php echo $latestVersion; ?></span>
+                <script>
+                    // ✅ Show the ACTUAL installed version when in the app
+                    document.addEventListener('DOMContentLoaded', function () {
+                        if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
+                            try {
+                                var installedVersion = window.AndroidBiometric.getAppVersion();
+                                if (installedVersion && installedVersion !== 'unknown') {
+                                    document.getElementById('versionBadge').textContent = 'V' + installedVersion;
+                                }
+                            } catch (e) {
+                                console.log('Could not get app version:', e);
+                            }
+                        }
+                    });
+                </script>
             </div>
 
             <div id="biometricStatus" class="status-message"></div>
@@ -995,13 +1007,7 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         function downloadUpdate() {
-            // ✅ Set cookie to remember "OK" for THIS version (1 day)
-            document.cookie = "update_reminded_version=<?php echo $latestVersion; ?>; path=/; max-age=86400";
-            
-            // ✅ Open download link
-            window.location.href = 'http://villaruz-print-shop-and-general-merchandise.shop/APK/villaruz_app.apk';
-            
-            // ✅ Close the popup
+            document.cookie = "update_reminded_version=<?php echo $latestVersion; ?>; path=/; max-age=31536000";
             document.getElementById('updatePopup').classList.remove('active');
         }
 
