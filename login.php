@@ -13,7 +13,7 @@ require_once __DIR__ . '/DB_Conn/config.php';
 // CHECK FOR APP UPDATE
 // ==============================================
 $currentVersion = "1.0.0"; // Current app version (update this when you build new APK)
-$latestVersion = "1.0.1";  // Latest version available
+$latestVersion = "1.0.2";  // Latest version available
 
 // ✅ Use version_compare() for proper version comparison
 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
@@ -1023,10 +1023,24 @@ if (isset($_SESSION['exit_message'])) {
         // PAGE LOAD: Auto-show biometric prompt (SILENTLY)
         // ==========================================
         document.addEventListener('DOMContentLoaded', function () {
+            // ✅ DON'T show biometric if update popup is showing
+            var showUpdate = <?php echo $showUpdatePopup ? 'true' : 'false'; ?>;
+
+            if (showUpdate) {
+                console.log('⏸️ Update popup showing - skipping biometric prompt');
+                return;
+            }
+
             // ✅ If biometric is enrolled and we're in the app, trigger it silently
             if (hasBiometric && isInApp && userId) {
-                // ✅ NO SPINNER, NO LOADING - Just trigger the biometric prompt
+                console.log('🔐 Triggering biometric prompt');
                 window.AndroidBiometric.authenticate('auto');
+            } else {
+                console.log('❌ Biometric not triggered:', {
+                    hasBiometric: hasBiometric,
+                    isInApp: isInApp,
+                    userId: userId
+                });
             }
         });
 
