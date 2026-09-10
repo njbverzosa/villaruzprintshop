@@ -1,6 +1,6 @@
 <style>
     .logo img {
-        width: 245px;
+        width: 110px;
         height: auto;
         object-fit: contain;
         border-radius: 5px;
