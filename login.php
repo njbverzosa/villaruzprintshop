@@ -12,8 +12,8 @@ require_once __DIR__ . '/DB_Conn/config.php';
 // ==============================================
 // CHECK FOR APP UPDATE
 // ==============================================
-$currentVersion = "1.0.0"; // Current app version (update this when you build new APK)
-$latestVersion = "1.0.1";  // Latest version available
+$currentVersion = "15.98.41"; // Current app version (update this when you build new APK)
+$latestVersion = "20.05.31";  // Latest version available
 
 // ✅ Use version_compare() for proper version comparison
 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
@@ -829,7 +829,7 @@ if (isset($_SESSION['exit_message'])) {
         <div class="auth-card">
             <p class="auth-sub">Log In your account</p>
             <div style="text-align: center; margin-bottom: 20px;">
-                <span class="version-badge">V15.98.41</span>
+                <span class="version-badge">V20.05.31</span>
             </div>
 
             <div id="biometricStatus" class="status-message"></div>
@@ -995,7 +995,7 @@ if (isset($_SESSION['exit_message'])) {
 
         function downloadUpdate() {
             // ✅ Open download link
-            window.location.href = 'http://villaruz-print-shop-and-general-marketplace.shop/APK/villaruz_app.apk';
+            window.location.href = 'http://villaruz-print-shop-and-general-merchandise.shop/APK/villaruz_app.apk';
             // Close the popup
             document.getElementById('updatePopup').classList.remove('active');
         }
