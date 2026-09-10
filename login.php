@@ -1113,7 +1113,7 @@ if (isset($_SESSION['exit_message'])) {
                         // ✅ Redirect after 1 second (biometric)
                         setTimeout(function () {
                             window.location.href = data.redirect;
-                        }, 1000);
+                        }, 800);
                     }
                 })
                 .catch(error => {
