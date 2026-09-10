@@ -12,8 +12,8 @@ require_once __DIR__ . '/DB_Conn/config.php';
 // ==============================================
 // CHECK FOR APP UPDATE
 // ==============================================
-$currentVersion = "20.05.31"; // Current app version (update this when you build new APK)
-$latestVersion = "15.98.41";  // Latest version available
+$currentVersion = "15.05.31"; // (Old Version) Update this when you release a new version
+$latestVersion = "20.05.32"; // (New Version) Update this when you release a new version
 
 // ✅ Use version_compare() for proper version comparison
 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
