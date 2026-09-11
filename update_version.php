@@ -1,5 +1,5 @@
 <?php
-$latestVersion = '20.10.32';   // ✅ MUST MATCH build.gradle versionName
+$latestVersion = '20.10.40';   // ✅ MUST MATCH build.gradle versionName
 $currentVersion = '15.05.31';       // or whatever old version you had
 
 // $currentVersion = "15.05.31";  // Was $latestVersion
