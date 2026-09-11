@@ -1,5 +1,6 @@
 <?php
 // login.php – with update redirect to download_app.php (no popup)
+// ✅ login_type is recorded for CUSTOMERS ONLY
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -14,16 +15,7 @@ require_once __DIR__ . '/update_version.php';
 // ✅ DETECT LOGIN PLATFORM (APP OR WEB)
 // ==============================================
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-
-// Check if user is using the app (WebView with our signature)
 $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
-
-// Fallback: check for WebView marker
-if (!$isInApp) {
-    $isInApp = (strpos($userAgent, 'wv') !== false);
-}
-
-// Set login type for database
 $loginType = $isInApp ? 'app' : 'web';
 
 // ✅ Use version_compare() for proper version comparison
@@ -58,7 +50,6 @@ $hasBiometric = false;
 $biometricUserId = null;
 $biometricUserType = null;
 
-// Check from session first (user is already logged in)
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
@@ -74,7 +65,6 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
         $biometricUserType = $userType;
     }
 }
-// Check from cookie (user has logged in before)
 elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
     $userId = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
@@ -124,7 +114,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         exit;
     }
 
-    // ✅ Biometric is valid - log the user in
+    // ✅ Log the user in
     session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_role'] = $userType;
@@ -135,22 +125,21 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
     // ==============================================
-    // ✅ SAVE LOGIN TYPE TO DATABASE (app or web)
+    // ✅ SAVE LOGIN TYPE — CUSTOMERS ONLY
     // ==============================================
-    $platformTable = ($userType === 'Admin') ? 'admins' : 'customers';
-    $updateTypeStmt = $pdo->prepare("UPDATE $platformTable SET login_type = ? WHERE id = ?");
-    $updateTypeStmt->execute([$loginType, $user['id']]);
+    if ($userType === 'Customer') {
+        $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
+        $updateTypeStmt->execute([$loginType, $user['id']]);
+    }
 
-    // ✅ Determine redirect URL (with update redirect logic)
+    // ✅ Determine redirect URL
     $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
     $reminded = ($remindedVersion === $latestVersion);
     $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
     if ($needsUpdate && !$reminded) {
-        // Cookie not set → redirect to download_app.php
         $redirectUrl = 'public/download_app.php';
     } else {
-        // Cookie set → go to dashboard
         if ($userType === 'Admin') {
             $redirectUrl = 'web/all_products.php';
         } else {
@@ -168,7 +157,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 }
 
 // ==============================================
-// GET ALL DATA (for display in select options)
+// GET ALL DATA
 // ==============================================
 function getAllAdmins($pdo)
 {
@@ -192,7 +181,6 @@ $selectedRole = '';
 $selectedCustomerId = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) {
-    // CSRF validation
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         die('Invalid CSRF token');
     }
@@ -202,7 +190,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
     $selectedCustomerId = trim($_POST['customer'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // Validation
     if (empty($password)) {
         $errors[] = 'Password cannot be empty.';
     }
@@ -216,7 +203,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
     }
 
     if (empty($errors)) {
-        // Get identifier (last 4 digits of phone)
         $identifier = '';
         if ($userTypeSelected === 'Admin') {
             $stmt = $pdo->prepare("SELECT phone_number FROM admins WHERE id = ?");
@@ -234,7 +220,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             }
         }
 
-        // Authenticate user
         $user = null;
         $userType = null;
 
@@ -275,9 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
         if (empty($errors) && $user && $userType) {
             date_default_timezone_set('Asia/Manila');
-            $currentTime = date('M j, g:i A');
 
-            // ✅ Log the user in
             session_regenerate_id(true);
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_role'] = $userType;
@@ -288,31 +271,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
             // ==============================================
-            // ✅ SAVE LOGIN TYPE TO DATABASE (app or web)
+            // ✅ SAVE LOGIN TYPE — CUSTOMERS ONLY
             // ==============================================
-            $platformTable = ($userType === 'Admin') ? 'admins' : 'customers';
-            $updateTypeStmt = $pdo->prepare("UPDATE $platformTable SET login_type = ? WHERE id = ?");
-            $updateTypeStmt->execute([$loginType, $user['id']]);
+            if ($userType === 'Customer') {
+                $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
+                $updateTypeStmt->execute([$loginType, $user['id']]);
+            }
 
             $loginSuccess = true;
 
-            // ✅ CHECK BIOMETRIC STATUS FIRST
             if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
-                // Biometric not enrolled → redirect to biometric.php
                 $_SESSION['temp_user_id'] = $user['id'];
                 $_SESSION['temp_user_type'] = $userType;
                 $redirectUrl = 'biometric.php';
             } else {
-                // ✅ Biometric enrolled → check update cookie
                 $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
                 $reminded = ($remindedVersion === $latestVersion);
                 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
                 if ($needsUpdate && !$reminded) {
-                    // Cookie not set → redirect to download_app.php
                     $redirectUrl = 'public/download_app.php';
                 } else {
-                    // Cookie set → go to dashboard
                     if ($userType === 'Admin') {
                         $redirectUrl = 'web/all_products.php';
                     } else {
@@ -331,12 +310,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 $existingAdmins = getAllAdmins($pdo);
 $existingCustomers = getAllCustomers($pdo);
 
-// Generate CSRF token
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Handle success/error messages from session
 $offlineMessage = '';
 if (isset($_SESSION['exit_message'])) {
     $offlineMessage = $_SESSION['exit_message'];
@@ -352,7 +329,6 @@ if (isset($_SESSION['exit_message'])) {
     <title>Login | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ===== ALL YOUR EXISTING STYLES ===== */
         * {
             margin: 0;
             padding: 0;
@@ -416,18 +392,8 @@ if (isset($_SESSION['exit_message'])) {
         .auth-sub {
             text-align: center;
             color: #64748b;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             font-size: 18px;
-        }
-
-        .version-badge {
-            display: inline-block;
-            color: #475569;
-            font-size: 15px;
-            padding: 2px 12px;
-            border-radius: 5px;
-            font-weight: 600;
-            margin-top: 5px;
         }
 
         .form-group {
@@ -648,7 +614,6 @@ if (isset($_SESSION['exit_message'])) {
             border: 1px solid #93c5fd;
         }
 
-        /* ✅ SPINNER STYLES */
         .spinner-container {
             display: inline-flex;
             align-items: center;
@@ -691,29 +656,6 @@ if (isset($_SESSION['exit_message'])) {
             display: none !important;
         }
 
-        .download-section {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .download-section span {
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .download-section a {
-            color: #3b82f6;
-            font-weight: 600;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-
-        .download-section a:hover {
-            color: #1d4ed8;
-        }
-
         @media (max-width: 500px) {
             .auth-card {
                 padding: 30px 25px;
@@ -750,27 +692,9 @@ if (isset($_SESSION['exit_message'])) {
     <div class="auth-container">
         <div class="auth-card">
             <p class="auth-sub">Log In your account</p>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <span class="version-badge" id="versionBadge">V<?php echo $latestVersion; ?></span>
-                <script>
-                    // ✅ Show the ACTUAL installed version when in the app
-                    document.addEventListener('DOMContentLoaded', function () {
-                        if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
-                            try {
-                                var installedVersion = window.AndroidBiometric.getAppVersion();
-                                if (installedVersion && installedVersion !== 'unknown') {
-                                    document.getElementById('versionBadge').textContent = 'V' + installedVersion;
-                                }
-                            } catch (e) {
-                                console.log('Could not get app version:', e);
-                            }
-                        }
-                    });
-                </script>
-            </div>
 
             <div id="biometricStatus" class="status-message"></div>
-            <br>
+
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
@@ -796,9 +720,7 @@ if (isset($_SESSION['exit_message'])) {
                     (function () {
                         var redirectUrl = '<?php echo $redirectUrl; ?>';
                         var alertDiv = document.getElementById('successAlert');
-
                         alertDiv.style.display = 'flex';
-
                         setTimeout(function () {
                             window.location.href = redirectUrl;
                         }, 3000);
@@ -806,9 +728,6 @@ if (isset($_SESSION['exit_message'])) {
                 </script>
             <?php endif; ?>
 
-            <!-- ========================================== -->
-            <!-- PASSWORD LOGIN SECTION -->
-            <!-- ========================================== -->
             <div id="passwordSection">
                 <form method="POST" action="" id="loginForm">
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
@@ -826,7 +745,6 @@ if (isset($_SESSION['exit_message'])) {
 
                     <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
 
-                    <!-- Admin Select Group -->
                     <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
                         id="adminSelectGroup">
                         <label><i class="fas fa-users"></i> Select Admin Account</label>
@@ -840,7 +758,6 @@ if (isset($_SESSION['exit_message'])) {
                         </select>
                     </div>
 
-                    <!-- Customer Select Group -->
                     <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
                         id="customerSelectGroup">
                         <label><i class="fas fa-users"></i> Select Customer Account</label>
@@ -874,44 +791,21 @@ if (isset($_SESSION['exit_message'])) {
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
                 </form>
-            </div> <!-- End of passwordSection -->
-
-            <!-- ========================================== -->
-            <!-- ✅ DOWNLOAD SECTION (OUTSIDE FORM) -->
-            <!-- ========================================== -->
-            <div class="download-section">
-                <span>
-                    Download our app:
-                    <a href="http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">
-                        Download SofiaApp
-                    </a>
-                </span>
             </div>
 
-        </div> <!-- End of auth-card -->
-    </div> <!-- End of auth-container -->
+        </div>
+    </div>
 
     <?php include 'footer.php'; ?>
 
     <script>
-        // ==========================================
-        // BIOMETRIC AUTO-PROMPT (Silent on page load)
-        // ==========================================
         const biometricStatus = document.getElementById('biometricStatus');
-
-        // Check if running inside the app
         const isInApp = typeof window.AndroidBiometric !== 'undefined';
-
-        // ✅ Check if biometric is enrolled (from server)
         const hasBiometric = <?php echo $hasBiometric ? 'true' : 'false'; ?>;
         const userId = <?php echo json_encode($biometricUserId); ?>;
         const userType = <?php echo json_encode($biometricUserType); ?>;
 
-        // ==========================================
-        // PAGE LOAD: Auto-show biometric prompt (SILENTLY)
-        // ==========================================
         document.addEventListener('DOMContentLoaded', function () {
-            // ✅ If biometric is enrolled and we're in the app, trigger it silently
             if (hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
                 window.AndroidBiometric.authenticate('auto');
@@ -924,9 +818,6 @@ if (isset($_SESSION['exit_message'])) {
             }
         });
 
-        // ==========================================
-        // BIOMETRIC STATUS HELPERS
-        // ==========================================
         function showBiometricStatus(message, type) {
             biometricStatus.textContent = message;
             biometricStatus.className = 'status-message show ' + type;
@@ -940,9 +831,6 @@ if (isset($_SESSION['exit_message'])) {
             biometricStatus.style.justifyContent = 'flex-start';
         }
 
-        // ==========================================
-        // BIOMETRIC CALLBACKS (from Android)
-        // ==========================================
         function biometricSuccess(data) {
             console.log('✅ Biometric success called');
 
@@ -954,24 +842,19 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
-            // ✅ Show spinner + "Accessing your account..."
             showBiometricStatusWithSpinner('Accessing your account...');
 
-            // ✅ Send request to server
             fetch(window.location.href, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'biometric_login=true&user_id=' + userId + '&user_type=' + userType
             })
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
+                    if (!response.ok) throw new Error('Network response was not ok');
                     return response.json();
                 })
                 .then(data => {
                     if (data.success) {
-                        // ✅ Redirect after 1 second (biometric is fast)
                         setTimeout(function () {
                             window.location.href = data.redirect;
                         }, 1000);
@@ -990,7 +873,6 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         function biometricCancel() {
-            // Don't show any message, just silently close
             biometricStatus.className = 'status-message';
             biometricStatus.textContent = '';
         }
@@ -999,9 +881,6 @@ if (isset($_SESSION['exit_message'])) {
             showBiometricStatus('Error: ' + error, 'error');
         }
 
-        // ==========================================
-        // REGULAR LOGIN SCRIPTS
-        // ==========================================
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
         if (togglePassword) {
