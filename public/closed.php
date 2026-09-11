@@ -87,7 +87,6 @@ session_destroy();
 session_start();
 
 // Set the exit message
-$_SESSION['exit_message'] = 'Session ended';
 
 // Redirect to login page (go up one level from public folder)
 header('Location: ../login.php');
