@@ -1167,7 +1167,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="<?php echo $authorizeAccess == 0 ? '8' : '6'; ?>" style="text-align: center; padding: 40px;">No customers found</td>
+                                    <td colspan="<?php echo $authorizeAccess == 0 ? '8' : '6'; ?>"
+                                        style="text-align: center; padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
@@ -1209,7 +1210,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td><?php echo htmlspecialchars($customer['login_type'] ?? 'web'); ?></td>
+                                        <td>
+                                            <?php
+                                            $loginType = $customer['login_type'] ?? 'web';
+                                            if ($loginType === 'app'): ?>
+                                                <i class="fab fa-android" style="color: #3DDC84; font-size: 18px;" title="App"></i>
+                                            <?php else: ?>
+                                                <i class="fas fa-globe" style="color: #3b82f6; font-size: 18px;" title="Web"></i>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <div class="chat-icon-wrapper">
                                                 <span class="chat-icon"
@@ -1356,14 +1365,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         if (burgerBtn) {
-            burgerBtn.addEventListener('click', function(e) {
+            burgerBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
         }
 
         if (sidebarCloseBtn) {
-            sidebarCloseBtn.addEventListener('click', function(e) {
+            sidebarCloseBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 closeSidebar();
             });
@@ -1375,7 +1384,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
         // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
-            link.addEventListener('click', function() {
+            link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
                     // Don't close if it's a dropdown toggle
                     if (!this.closest('.nav-dropdown-toggle')) {
@@ -1398,7 +1407,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         // ========== BURGER VISIBILITY ON RESIZE ==========
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
                 // Desktop: close sidebar if open and hide overlay
                 if (isSidebarOpen) {
@@ -1659,13 +1668,13 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             container.scrollLeft = 0;
         }
 
-        document.getElementById('landmarkModal').addEventListener('click', function(e) {
+        document.getElementById('landmarkModal').addEventListener('click', function (e) {
             if (e.target === this) {
                 closeLandmarkModal();
             }
         });
 
-        document.getElementById('landmarkModalImage').addEventListener('click', function(e) {
+        document.getElementById('landmarkModalImage').addEventListener('click', function (e) {
             e.stopPropagation();
             if (currentZoom === 1) {
                 zoomIn();
@@ -1674,7 +1683,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         });
 
-        document.getElementById('landmarkModalImage').addEventListener('wheel', function(e) {
+        document.getElementById('landmarkModalImage').addEventListener('wheel', function (e) {
             e.preventDefault();
             if (e.deltaY < 0) {
                 zoomIn();
@@ -1683,7 +1692,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         });
 
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             if (document.getElementById('landmarkModal').style.display === 'block') {
                 resetZoom();
             }
