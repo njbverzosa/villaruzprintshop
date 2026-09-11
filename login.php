@@ -22,8 +22,22 @@ $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
 // ==============================================
 // ✅ DETECT INSTALLED APP VERSION (from JS bridge)
 // ==============================================
-$installedVersion = $_POST['installed_version'] ?? $_GET['installed_version'] ?? '';
-$appVersionMatch = !empty($installedVersion) && ($installedVersion === $latestVersion);
+$installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version'] ?? '');
+$latestVersion    = trim($latestVersion);
+
+// ✅ Determine version match
+if ($isInApp) {
+    if (!empty($installedVersion)) {
+        // Version sent → must match exactly
+        $appVersionMatch = ($installedVersion === $latestVersion);
+    } else {
+        // In app but version unknown → assume OK (they're already in the app)
+        $appVersionMatch = true;
+    }
+} else {
+    // Web login → version doesn't apply
+    $appVersionMatch = false;
+}
 
 $loginType = $isInApp ? 'app' : 'web';
 
@@ -156,10 +170,8 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         if ($isInApp) {
             // ✅ In app: check version match
             if ($appVersionMatch) {
-                // Version matches → go straight to dashboard
                 $redirectUrl = $dashboardUrl;
             } else {
-                // Version mismatch or unknown → show download page
                 $redirectUrl = 'public/download_app.php';
             }
         } else {
@@ -794,6 +806,7 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
 
                     <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
+                    <input type="hidden" name="installed_version" id="installedVersionInput" value="">
 
                     <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
                         id="adminSelectGroup">
@@ -861,6 +874,21 @@ if (isset($_SESSION['exit_message'])) {
         const userType = <?php echo json_encode($biometricUserType); ?>;
 
         document.addEventListener('DOMContentLoaded', function () {
+            // ✅ Fill hidden input with app version (for password login too)
+            var versionInput = document.getElementById('installedVersionInput');
+            if (versionInput && isInApp && window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
+                try {
+                    var installedVersion = window.AndroidBiometric.getAppVersion();
+                    if (installedVersion && installedVersion !== 'unknown') {
+                        versionInput.value = installedVersion;
+                        console.log('📱 Installed version set to:', installedVersion);
+                    }
+                } catch (e) {
+                    console.warn('Could not read app version:', e);
+                }
+            }
+
+            // ✅ Trigger biometric auto-prompt
             if (hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
                 window.AndroidBiometric.authenticate('auto');
