@@ -8,6 +8,13 @@ session_start();
 require_once __DIR__ . '/../DB_Conn/config.php';
 
 // ==============================================
+// STORE USER NAME IN SESSION FOR API USE
+// ==============================================
+if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
+    $_SESSION['user_name'] = $userData['f_name'];
+}
+
+// ==============================================
 // 2. CHECK LOGIN STATUS
 // ==============================================
 function isLoggedIn()
@@ -40,6 +47,7 @@ if ($userRole === 'Admin') {
 }
 
 if (!$userData) {
+    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
@@ -50,28 +58,11 @@ if (!$userData) {
 // ==============================================
 $user = $userData;
 
-// Store authorize_access for conditional logic
-$authorizeAccess = isset($user['authorize_access']) ? (int) $user['authorize_access'] : 0;
-
-// Set timezone
+// ==============================================
+// 5. SET TIMEZONE
+// ==============================================
 date_default_timezone_set('Asia/Manila');
-$currentDateTime = date('D, j M Y g:i A');
-
-// Daily login bonus / update last login date
-$storedDate = $user['last_login_date'] ?? '';
-if ($storedDate !== $currentDateTime) {
-    $updateStmt = $pdo->prepare("UPDATE admins SET last_login_date = ? WHERE acc_number = ?");
-    $updateStmt->execute([$currentDateTime, $_SESSION['acc_number']]);
-
-    // Refresh user data
-    $stmt = $pdo->prepare("SELECT * FROM admins WHERE acc_number = ?");
-    $stmt->execute([$_SESSION['acc_number']]);
-    $user = $stmt->fetch();
-}
-
-// Update status to online (1 = online, 0 = offline)
-$stmt = $pdo->prepare("UPDATE admins SET status = 1 WHERE acc_number = ?");
-$stmt->execute([$_SESSION['acc_number']]);
+$timezone = new DateTimeZone('Asia/Manila');
 
 // Fetch all customers from customers table
 $stmt = $pdo->prepare("SELECT * FROM customers ORDER BY id DESC");
@@ -1163,6 +1154,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <th>Landmark</th>
                                 <th>Full Name</th>
                                 <th class="status-header">Status</th>
+                                <th class="status-header">Used</th>
                                 <th>Chat</th>
                                 <th>Phone Number</th>
                                 <th>Email</th>
@@ -1217,6 +1209,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                 <?php endif; ?>
                                             </div>
                                         </td>
+                                        <td><?php echo htmlspecialchars($customer['login_type'] ?? 'web'); ?></td>
                                         <td>
                                             <div class="chat-icon-wrapper">
                                                 <span class="chat-icon"
