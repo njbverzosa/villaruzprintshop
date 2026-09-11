@@ -3,6 +3,7 @@
 // ✅ login_type recorded for CUSTOMERS ONLY
 // ✅ Biometric cookies + enrollment flow for BOTH Admin + Customer
 // ✅ Version-aware redirect for in-app users
+// ✅ Web + biometric_enrolled=0 → download_app.php first
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -333,32 +334,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                 }
             } else {
                 // ✅ Customer
-                if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = $userType;
-                    $redirectUrl = 'biometric.php';
-                } else {
-                    $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-                    $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+                $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+                $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+                $hasBiometricEnrolled = ($user['biometric_enrolled'] == 1 && !empty($user['biometric_id']));
 
-                    if ($isInApp) {
-                        // ✅ In app: check version
+                if ($isInApp) {
+                    // ✅ In the app
+                    if (!$hasBiometricEnrolled) {
+                        // Not enrolled → go to biometric.php
+                        $_SESSION['temp_user_id'] = $user['id'];
+                        $_SESSION['temp_user_type'] = $userType;
+                        $redirectUrl = 'biometric.php';
+                    } else {
+                        // Enrolled → check version
                         if ($appVersionMatch) {
                             $redirectUrl = $dashboardUrl;
                         } else {
                             $redirectUrl = 'public/download_app.php';
                         }
-                    } else {
-                        // Web login
-                        $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
-                        $reminded = ($remindedVersion === $latestVersion);
-                        $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+                    }
+                } else {
+                    // ✅ Web login — check the SKIP cookie for ALL cases
+                    $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
+                    $reminded = ($remindedVersion === $latestVersion);
+                    $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
-                        if ($needsUpdate && !$reminded) {
-                            $redirectUrl = 'public/download_app.php';
-                        } else {
-                            $redirectUrl = $dashboardUrl;
-                        }
+                    if ($needsUpdate && !$reminded) {
+                        // No skip cookie for this version → show download page
+                        $redirectUrl = 'public/download_app.php';
+                    } else {
+                        // Skipped already → go to dashboard
+                        $redirectUrl = $dashboardUrl;
                     }
                 }
             }
