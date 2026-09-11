@@ -1,7 +1,6 @@
 <?php
 // login.php – with update redirect to download_app.php (no popup)
-// ✅ login_type + app cookies recorded for CUSTOMERS ONLY
-// ✅ Admins skip biometric.php and download_app.php entirely
+// ✅ login_type is recorded for CUSTOMERS ONLY
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -45,7 +44,7 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
 }
 
 // ==============================================
-// CHECK IF USER HAS BIOMETRIC ENROLLED (CUSTOMERS ONLY for cookies)
+// CHECK IF USER HAS BIOMETRIC ENROLLED
 // ==============================================
 $hasBiometric = false;
 $biometricUserId = null;
@@ -120,28 +119,28 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $_SESSION['user_role'] = $userType;
     $_SESSION['acc_number'] = $user['acc_number'];
 
+    setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
+    setcookie('user_type', $userType, time() + (86400 * 365), "/");
+    setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
+
     // ==============================================
-    // ✅ COOKIES + LOGIN TYPE — CUSTOMERS ONLY
+    // ✅ SAVE LOGIN TYPE — CUSTOMERS ONLY
     // ==============================================
     if ($userType === 'Customer') {
-        setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-        setcookie('user_type', $userType, time() + (86400 * 365), "/");
-        setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
-
         $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
         $updateTypeStmt->execute([$loginType, $user['id']]);
     }
 
-    // ==============================================
-    // ✅ REDIRECT LOGIC
-    // ==============================================
-    if ($userType === 'Admin') {
-        // ✅ Admins never go to download_app.php
-        $redirectUrl = 'web/all_products.php';
+    // ✅ Determine redirect URL
+    $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
+    $reminded = ($remindedVersion === $latestVersion);
+    $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+
+    if ($needsUpdate && !$reminded) {
+        $redirectUrl = 'public/download_app.php';
     } else {
-        // ✅ Customers only
-        if ($needsUpdate && !$reminded) {
-            $redirectUrl = 'public/download_app.php';
+        if ($userType === 'Admin') {
+            $redirectUrl = 'web/all_products.php';
         } else {
             $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
             $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
@@ -266,39 +265,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $_SESSION['user_role'] = $userType;
             $_SESSION['acc_number'] = $user['acc_number'];
 
+            setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
+            setcookie('user_type', $userType, time() + (86400 * 365), "/");
+            setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
+
             // ==============================================
-            // ✅ COOKIES + LOGIN TYPE — CUSTOMERS ONLY
+            // ✅ SAVE LOGIN TYPE — CUSTOMERS ONLY
             // ==============================================
             if ($userType === 'Customer') {
-                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-                setcookie('user_type', $userType, time() + (86400 * 365), "/");
-                setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
-
                 $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
                 $updateTypeStmt->execute([$loginType, $user['id']]);
             }
 
             $loginSuccess = true;
 
-            // ==============================================
-            // ✅ REDIRECT LOGIC
-            // ==============================================
-            if ($userType === 'Admin') {
-                // ✅ Admins skip biometric + download_app — go straight to dashboard
-                $redirectUrl = 'web/all_products.php';
+            if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
+                $_SESSION['temp_user_id'] = $user['id'];
+                $_SESSION['temp_user_type'] = $userType;
+                $redirectUrl = 'biometric.php';
             } else {
-                // ✅ Customers only
-                if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = $userType;
-                    $redirectUrl = 'biometric.php';
-                } else {
-                    $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
-                    $reminded = ($remindedVersion === $latestVersion);
-                    $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+                $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
+                $reminded = ($remindedVersion === $latestVersion);
+                $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
-                    if ($needsUpdate && !$reminded) {
-                        $redirectUrl = 'public/download_app.php';
+                if ($needsUpdate && !$reminded) {
+                    $redirectUrl = 'public/download_app.php';
+                } else {
+                    if ($userType === 'Admin') {
+                        $redirectUrl = 'web/all_products.php';
                     } else {
                         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
                         $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
