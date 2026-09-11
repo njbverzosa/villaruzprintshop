@@ -1,5 +1,5 @@
 <?php
-// login.php – with hidden biometric check (button removed)
+// login.php – with update redirect to download_app.php (no popup)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -8,15 +8,30 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
-require_once __DIR__ . '/update_version.php'; // Include the update version check
+require_once __DIR__ . '/update_version.php';
+
+// ==============================================
+// ✅ DETECT LOGIN PLATFORM (APP OR WEB)
+// ==============================================
+$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+// Check if user is using the app (WebView with our signature)
+$isInApp = (strpos($userAgent, 'SofiaApp') !== false);
+
+// Fallback: check for WebView marker
+if (!$isInApp) {
+    $isInApp = (strpos($userAgent, 'wv') !== false);
+}
+
+// Set login type for database
+$loginType = $isInApp ? 'app' : 'web';
 
 // ✅ Use version_compare() for proper version comparison
 $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
-// ✅ Check if user clicked "Later" or "OK" for THIS version
+// ✅ Check if user already reminded about THIS version
 $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
 $reminded = ($remindedVersion === $latestVersion);
-$showUpdatePopup = ($needsUpdate && !$reminded);
 
 // ==============================================
 // CHECK IF USER IS ALREADY LOGGED IN
@@ -74,7 +89,6 @@ elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
         $biometricUserId = $userId;
         $biometricUserType = $userType;
 
-        // ✅ Also set session to keep user logged in
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_role'] = $userType;
         $_SESSION['acc_number'] = $user['acc_number'] ?? 'User';
@@ -118,13 +132,31 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
+    setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-    // Determine redirect URL
-    if ($userType === 'Admin') {
-        $redirectUrl = 'web/all_products.php';
+    // ==============================================
+    // ✅ SAVE LOGIN TYPE TO DATABASE (app or web)
+    // ==============================================
+    $platformTable = ($userType === 'Admin') ? 'admins' : 'customers';
+    $updateTypeStmt = $pdo->prepare("UPDATE $platformTable SET login_type = ? WHERE id = ?");
+    $updateTypeStmt->execute([$loginType, $user['id']]);
+
+    // ✅ Determine redirect URL (with update redirect logic)
+    $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
+    $reminded = ($remindedVersion === $latestVersion);
+    $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+
+    if ($needsUpdate && !$reminded) {
+        // Cookie not set → redirect to download_app.php
+        $redirectUrl = 'public/download_app.php';
     } else {
-        $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-        $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+        // Cookie set → go to dashboard
+        if ($userType === 'Admin') {
+            $redirectUrl = 'web/all_products.php';
+        } else {
+            $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+            $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+        }
     }
 
     echo json_encode([
@@ -245,31 +277,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             date_default_timezone_set('Asia/Manila');
             $currentTime = date('M j, g:i A');
 
-            // ✅ Set session and cookies
+            // ✅ Log the user in
             session_regenerate_id(true);
-            $_SESSION['user_role'] = $userType;
             $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_role'] = $userType;
             $_SESSION['acc_number'] = $user['acc_number'];
 
             setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
             setcookie('user_type', $userType, time() + (86400 * 365), "/");
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
+            // ==============================================
+            // ✅ SAVE LOGIN TYPE TO DATABASE (app or web)
+            // ==============================================
+            $platformTable = ($userType === 'Admin') ? 'admins' : 'customers';
+            $updateTypeStmt = $pdo->prepare("UPDATE $platformTable SET login_type = ? WHERE id = ?");
+            $updateTypeStmt->execute([$loginType, $user['id']]);
+
             $loginSuccess = true;
 
-            // ✅ CHECK BIOMETRIC STATUS
+            // ✅ CHECK BIOMETRIC STATUS FIRST
             if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
                 // Biometric not enrolled → redirect to biometric.php
                 $_SESSION['temp_user_id'] = $user['id'];
                 $_SESSION['temp_user_type'] = $userType;
                 $redirectUrl = 'biometric.php';
             } else {
-                // Biometric already enrolled → go to dashboard
-                if ($userType === 'Admin') {
-                    $redirectUrl = 'web/all_products.php';
+                // ✅ Biometric enrolled → check update cookie
+                $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
+                $reminded = ($remindedVersion === $latestVersion);
+                $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+
+                if ($needsUpdate && !$reminded) {
+                    // Cookie not set → redirect to download_app.php
+                    $redirectUrl = 'public/download_app.php';
                 } else {
-                    $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-                    $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+                    // Cookie set → go to dashboard
+                    if ($userType === 'Admin') {
+                        $redirectUrl = 'web/all_products.php';
+                    } else {
+                        $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+                        $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+                    }
                 }
             }
         }
@@ -569,25 +618,6 @@ if (isset($_SESSION['exit_message'])) {
             display: block;
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
-            gap: 15px;
-        }
-
-        .divider hr {
-            flex: 1;
-            border: none;
-            border-top: 2px solid #e2e8f0;
-        }
-
-        .divider span {
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
         .status-message {
             margin-top: 10px;
             padding: 10px;
@@ -684,80 +714,6 @@ if (isset($_SESSION['exit_message'])) {
             color: #1d4ed8;
         }
 
-        /* ✅ SIMPLE RECTANGLE UPDATE POPUP (TOP OF SCREEN) */
-        .update-popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 9999;
-            justify-content: center;
-            align-items: flex-start;
-            padding-top: 20px;
-        }
-
-        .update-popup-overlay.active {
-            display: flex !important;
-        }
-
-        .update-popup {
-            background: white;
-            padding: 25px 30px 20px;
-            border-radius: 6px;
-            max-width: 300px;
-            width: 90%;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            border: 1px solid #e2e8f0;
-        }
-
-        .update-popup .popup-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #0f172a;
-            text-align: left;
-        }
-
-        .update-popup .popup-message {
-            font-size: 14px;
-            color: #475569;
-            margin-top: 8px;
-            text-align: left;
-        }
-
-        .update-popup .popup-options {
-            display: flex;
-            gap: 20px;
-            margin-top: 18px;
-            justify-content: flex-end;
-        }
-
-        .update-popup .popup-later {
-            color: #94a3b8;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.2s;
-            text-decoration: none;
-        }
-
-        .update-popup .popup-later:hover {
-            color: #64748b;
-        }
-
-        .update-popup .popup-ok {
-            color: #3b82f6;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: color 0.2s;
-            text-decoration: none;
-        }
-
-        .update-popup .popup-ok:hover {
-            color: #1d4ed8;
-        }
-
         @media (max-width: 500px) {
             .auth-card {
                 padding: 30px 25px;
@@ -774,15 +730,6 @@ if (isset($_SESSION['exit_message'])) {
 
             .forgot-password-link {
                 font-size: 12px;
-            }
-
-            .update-popup {
-                padding: 20px;
-                max-width: 280px;
-            }
-
-            .update-popup .popup-options {
-                gap: 15px;
             }
         }
     </style>
@@ -944,37 +891,9 @@ if (isset($_SESSION['exit_message'])) {
         </div> <!-- End of auth-card -->
     </div> <!-- End of auth-container -->
 
-    <!-- ========================================== -->
-    <!-- ✅ SIMPLE UPDATE POPUP -->
-    <!-- ========================================== -->
-    <div class="update-popup-overlay <?php echo $showUpdatePopup ? 'active' : ''; ?>" id="updatePopup">
-        <div class="update-popup">
-            <div class="popup-title">Update App</div>
-            <div class="popup-message">Please Update to better version</div>
-            <div class="popup-options">
-                <span class="popup-later" onclick="closeUpdatePopup()">Later</span>
-                <span class="popup-ok" onclick="downloadUpdate()">OK</span>
-            </div>
-        </div>
-    </div>
-
     <?php include 'footer.php'; ?>
 
     <script>
-        // ==========================================
-        // UPDATE POPUP
-        // ==========================================
-        function closeUpdatePopup() {
-            // ✅ Set cookie to remember "Later" for THIS version (1 day)
-            document.cookie = "update_reminded_version=<?php echo $latestVersion; ?>; path=/; max-age=86400";
-            document.getElementById('updatePopup').classList.remove('active');
-        }
-
-        function downloadUpdate() {
-            document.cookie = "update_reminded_version=<?php echo $latestVersion; ?>; path=/; max-age=31536000";
-            document.getElementById('updatePopup').classList.remove('active');
-        }
-
         // ==========================================
         // BIOMETRIC AUTO-PROMPT (Silent on page load)
         // ==========================================
@@ -992,14 +911,6 @@ if (isset($_SESSION['exit_message'])) {
         // PAGE LOAD: Auto-show biometric prompt (SILENTLY)
         // ==========================================
         document.addEventListener('DOMContentLoaded', function () {
-            // ✅ DON'T show biometric if update popup is showing
-            var showUpdate = <?php echo $showUpdatePopup ? 'true' : 'false'; ?>;
-
-            if (showUpdate) {
-                console.log('⏸️ Update popup showing - skipping biometric prompt');
-                return;
-            }
-
             // ✅ If biometric is enrolled and we're in the app, trigger it silently
             if (hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
@@ -1124,10 +1035,6 @@ if (isset($_SESSION['exit_message'])) {
                 document.getElementById('adminSelect').disabled = true;
             }
         }
-
-        <?php if ($loginSuccess): ?>
-            // The redirect is already handled by the PHP script above
-        <?php endif; ?>
     </script>
 </body>
 
