@@ -63,7 +63,7 @@ if ($userRole === 'Customer') {
 $user = $userData;
 
 // ==============================================
-// 5. DETERMINE REDIRECT TARGET (for SKIP & "I have the app")
+// 5. DETERMINE REDIRECT TARGET
 // ==============================================
 function getRedirectTarget($userRole, $user)
 {
@@ -92,7 +92,21 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
 // 7. HANDLE "I ALREADY HAVE THE APP" CLICK
 // ==============================================
 if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
-    // ✅ Set cookie for 1 year — user confirmed they have the app
+    setcookie(
+        'update_reminded_version',
+        $latestVersion,
+        time() + (86400 * 365),  // 1 year
+        '/'
+    );
+    header('Location: ' . getRedirectTarget($userRole, $user));
+    exit;
+}
+
+// ==============================================
+// 8. HANDLE AUTO-CONFIRM FROM JS (version matched)
+// ==============================================
+if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
+    // ✅ JS confirmed the app version matches → set 1-year cookie
     setcookie(
         'update_reminded_version',
         $latestVersion,
@@ -203,10 +217,36 @@ if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
             letter-spacing: -0.015em;
         }
 
+        /* ✅ NEW: Installed version badge below title */
+        .app-installed-version {
+            display: inline-block;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            border: 1px solid #e2e8f0;
+            letter-spacing: 0.02em;
+        }
+
+        .app-installed-version.match {
+            background: #f0fdf4;
+            color: #065f46;
+            border-color: #bbf7d0;
+        }
+
+        .app-installed-version.mismatch {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
         .app-subtitle {
             font-size: 0.875rem;
             color: #5f6f80;
-            margin-top: 0.25rem;
+            margin-top: 0.5rem;
         }
 
         .app-body {
@@ -318,7 +358,6 @@ if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
             background: #f8fafd;
         }
 
-        /* ✅ NEW: "I already have the app" button */
         .btn-success {
             background: #16a34a;
             color: #ffffff;
@@ -381,6 +420,12 @@ if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
 
             <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
             <div class='app-title'>SofiaApp</div>
+
+            <!-- ✅ Installed version display -->
+            <div class="app-installed-version" id="installedVersionBadge">
+                Detecting installed version...
+            </div>
+
             <div class='app-subtitle'>Villaruz Print Shop &amp; General Merchandise</div>
         </div>
 
@@ -412,11 +457,11 @@ if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
 
             <ul class='details-list'>
                 <li>
-                    <span class='label'>Old Version</span>
-                    <span class='value'><?php echo $currentVersion; ?></span>
+                    <span class='label'>Installed Version</span>
+                    <span class='value' id="installedVersionValue">—</span>
                 </li>
                 <li>
-                    <span class='label'>New Version</span>
+                    <span class='label'>Latest Version</span>
                     <span class='value'><?php echo $latestVersion; ?></span>
                 </li>
                 <li>
@@ -435,7 +480,7 @@ if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
                 <a href='http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
                     class='btn btn-outline'>Re-Install App</a>
 
-                <!-- ✅ NEW: Already have the app button -->
+                <!-- Manual fallback -->
                 <a href='?have_app=1' class='btn btn-success'>
                     I Already Have the App
                 </a>
@@ -449,6 +494,74 @@ if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
         </div>
 
     </div>
+
+    <!-- ✅ JS: Read installed version + auto-confirm if matched -->
+    <script>
+        (function () {
+            var latestVersion = <?php echo json_encode($latestVersion); ?>;
+            var badge = document.getElementById('installedVersionBadge');
+            var versionValue = document.getElementById('installedVersionValue');
+            var isInApp = typeof window.AndroidBiometric !== 'undefined';
+
+            function updateBadge(installed, matched) {
+                if (badge) {
+                    badge.textContent = 'Installed: v' + installed;
+                    badge.classList.remove('match', 'mismatch');
+                    badge.classList.add(matched ? 'match' : 'mismatch');
+                }
+                if (versionValue) {
+                    versionValue.textContent = 'v' + installed;
+                }
+            }
+
+            // If not in app → show message
+            if (!isInApp) {
+                if (badge) {
+                    badge.textContent = 'Not running in the app';
+                    badge.classList.add('mismatch');
+                }
+                if (versionValue) {
+                    versionValue.textContent = 'N/A (web browser)';
+                }
+                console.log('🌐 Not in app — no auto-confirm');
+                return;
+            }
+
+            // In app → read version
+            var installed = '';
+            try {
+                if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
+                    installed = window.AndroidBiometric.getAppVersion();
+                }
+            } catch (e) {
+                console.warn('Could not read app version:', e);
+            }
+
+            if (!installed || installed === 'unknown') {
+                if (badge) {
+                    badge.textContent = 'Version unknown';
+                    badge.classList.add('mismatch');
+                }
+                if (versionValue) {
+                    versionValue.textContent = 'Unknown';
+                }
+                console.log('⚠️ Could not read app version');
+                return;
+            }
+
+            var matched = (installed === latestVersion);
+            updateBadge(installed, matched);
+            console.log('📱 Installed:', installed, '| Latest:', latestVersion, '| Match:', matched);
+
+            // ✅ Auto-confirm if version matches → set cookie + redirect
+            if (matched) {
+                console.log('✅ Version matches — auto-confirming in 1s...');
+                setTimeout(function () {
+                    window.location.href = '?version_ok=1';
+                }, 1000);
+            }
+        })();
+    </script>
 
 </body>
 
