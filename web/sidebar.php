@@ -498,7 +498,7 @@
             <a href="registered_customers.php"
                 class="nav-dropdown-item <?php echo in_array($currentPage, ['registered_customers.php', 'chat_view.php']) ? 'active_customers' : ''; ?>">
                 <i class="fas fa-user"></i>
-                <span>Registered Customers</span>
+                <span>List</span>
             </a>
         </div>
     </div>
