@@ -504,7 +504,7 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
 
             function updateBadge(installed, matched) {
                 if (badge) {
-                    badge.textContent = 'Installed: v' + installed;
+                    badge.textContent = 'Installed: ' + installed;
                     badge.classList.remove('match', 'mismatch');
                     badge.classList.add(matched ? 'match' : 'mismatch');
                 }
