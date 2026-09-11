@@ -1132,11 +1132,26 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+        <!-- ✅ Logout link without inline onclick -->
+        <a href="closed.php" class="nav-item" id="logoutNavItem">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>
     </nav>
+
+    <!-- ✅ JavaScript handler for logout confirmation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var logoutLink = document.getElementById('logoutNavItem');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function (e) {
+                    if (!confirm('Are you sure you want to logout?')) {
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
+    </script>
 
     <!-- Description Modal -->
     <div id="descriptionModal" class="desc-modal">
