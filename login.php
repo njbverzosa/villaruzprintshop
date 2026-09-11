@@ -64,8 +64,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
         $biometricUserId = $userId;
         $biometricUserType = $userType;
     }
-}
-elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
+} elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
     $userId = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
 
@@ -791,6 +790,9 @@ if (isset($_SESSION['exit_message'])) {
                         Don't have an account? <a href="registration.php">Sign Up</a>
                     </div>
                 </form>
+                <div class="auth-footer">
+                    Download the <a href="http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">SofiaApp</a> App
+                </div>
             </div>
 
         </div>
