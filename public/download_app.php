@@ -248,6 +248,11 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
             margin-top: 0.5rem;
         }
 
+        .app-recommended {
+            font-size: 5px;
+            color: #067bf8;
+            margin-top: 0.5rem;
+        }
         .app-body {
             flex: 1;
             padding: 2rem 1.5rem;
@@ -424,7 +429,7 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
             <div class="app-installed-version" id="installedVersionBadge">
                 Detecting installed version...
             </div>
-
+            <div class='app-recommended'>Recommended to use</div>
             <div class='app-subtitle'>Villaruz Print Shop &amp; General Merchandise</div>
         </div>
 
