@@ -1119,7 +1119,7 @@ $isGuest = ($userFullName === 'Guest' || empty($userFullName));
             <i class="fas fa-th-large"></i>
             <span>Services</span>
         </a>
-        <a href="closed.php" class="nav-item" onclick="return confirm('Are you sure you want to logout?');">
+        <a href="closed.php" class="nav-item">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>
