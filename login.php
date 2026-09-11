@@ -5,6 +5,7 @@
 // ✅ Version-aware redirect for in-app users
 // ✅ Web + biometric_enrolled=0 → download_app.php first
 // ✅ Admin web login → straight to dashboard (skip biometric)
+// ✅ Spinner shown inside Login button (no separate alert)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -30,14 +31,11 @@ $latestVersion    = trim($latestVersion);
 // ✅ Determine version match
 if ($isInApp) {
     if (!empty($installedVersion)) {
-        // Version sent → must match exactly
         $appVersionMatch = ($installedVersion === $latestVersion);
     } else {
-        // In app but version unknown → assume OK (they're already in the app)
         $appVersionMatch = true;
     }
 } else {
-    // Web login → version doesn't apply
     $appVersionMatch = false;
 }
 
@@ -144,40 +142,31 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     $_SESSION['user_role'] = $userType;
     $_SESSION['acc_number'] = $user['acc_number'];
 
-    // ==============================================
     // ✅ COOKIES — BOTH ADMIN + CUSTOMER
-    // ==============================================
     setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-    // ==============================================
     // ✅ SAVE LOGIN TYPE — CUSTOMERS ONLY
-    // ==============================================
     if ($userType === 'Customer') {
         $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
         $updateTypeStmt->execute([$loginType, $user['id']]);
     }
 
-    // ==============================================
     // ✅ REDIRECT LOGIC (biometric login)
-    // ==============================================
     if ($userType === 'Admin') {
         $redirectUrl = 'web/all_products.php';
     } else {
-        // ✅ Customer
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
 
         if ($isInApp) {
-            // ✅ In app: check version match
             if ($appVersionMatch) {
                 $redirectUrl = $dashboardUrl;
             } else {
                 $redirectUrl = 'public/download_app.php';
             }
         } else {
-            // Web login → check cookie
             if ($needsUpdate && !$reminded) {
                 $redirectUrl = 'public/download_app.php';
             } else {
@@ -304,16 +293,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $_SESSION['user_role'] = $userType;
             $_SESSION['acc_number'] = $user['acc_number'];
 
-            // ==============================================
             // ✅ COOKIES — BOTH ADMIN + CUSTOMER
-            // ==============================================
             setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
             setcookie('user_type', $userType, time() + (86400 * 365), "/");
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-            // ==============================================
             // ✅ SAVE LOGIN TYPE — CUSTOMERS ONLY
-            // ==============================================
             if ($userType === 'Customer') {
                 $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
                 $updateTypeStmt->execute([$loginType, $user['id']]);
@@ -321,12 +306,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             $loginSuccess = true;
 
-            // ==============================================
             // ✅ REDIRECT LOGIC (regular login)
-            // ==============================================
             if ($userType === 'Admin') {
                 if ($isInApp) {
-                    // ✅ In app → biometric first
                     if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
                         $_SESSION['temp_user_id'] = $user['id'];
                         $_SESSION['temp_user_type'] = $userType;
@@ -335,24 +317,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                         $redirectUrl = 'web/all_products.php';
                     }
                 } else {
-                    // ✅ Web → skip biometric, go straight to dashboard
                     $redirectUrl = 'web/all_products.php';
                 }
             } else {
-                // ✅ Customer
                 $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
                 $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
                 $hasBiometricEnrolled = ($user['biometric_enrolled'] == 1 && !empty($user['biometric_id']));
 
                 if ($isInApp) {
-                    // ✅ In the app
                     if (!$hasBiometricEnrolled) {
-                        // Not enrolled → go to biometric.php
                         $_SESSION['temp_user_id'] = $user['id'];
                         $_SESSION['temp_user_type'] = $userType;
                         $redirectUrl = 'biometric.php';
                     } else {
-                        // Enrolled → check version
                         if ($appVersionMatch) {
                             $redirectUrl = $dashboardUrl;
                         } else {
@@ -360,16 +337,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                         }
                     }
                 } else {
-                    // ✅ Web login — check the SKIP cookie for ALL cases
                     $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
                     $reminded = ($remindedVersion === $latestVersion);
                     $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
 
                     if ($needsUpdate && !$reminded) {
-                        // No skip cookie for this version → show download page
                         $redirectUrl = 'public/download_app.php';
                     } else {
-                        // Skipped already → go to dashboard
                         $redirectUrl = $dashboardUrl;
                     }
                 }
@@ -552,17 +526,44 @@ if (isset($_SESSION['exit_message'])) {
             cursor: pointer;
             transition: 0.3s;
             margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
         .btn-primary:disabled {
-            opacity: 0.7;
+            opacity: 1;
             cursor: not-allowed;
+            background: linear-gradient(145deg, #3b82f6, #6366f1);
             transform: none !important;
+        }
+
+        /* ✅ Spinner inside the button */
+        .btn-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: btn-spin 0.8s linear infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes btn-spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .auth-footer {
@@ -592,12 +593,6 @@ if (isset($_SESSION['exit_message'])) {
             background: #fef2f2;
             color: #dc2626;
             border: 1px solid #fecaca;
-        }
-
-        .alert-success {
-            background: #f0fdf4;
-            color: #065f46;
-            border: 1px solid #bbf7d0;
         }
 
         .alert-info {
@@ -688,44 +683,6 @@ if (isset($_SESSION['exit_message'])) {
             border: 1px solid #93c5fd;
         }
 
-        .spinner-container {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-
-        .spinner-small {
-            width: 20px;
-            height: 20px;
-            border: 3px solid #bbf7d0;
-            border-top: 3px solid #16a34a;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .alert-success .spinner-container {
-            display: inline-flex;
-        }
-
-        .alert-success .spinner-small {
-            border-color: #bbf7d0;
-            border-top-color: #16a34a;
-        }
-
         .hidden {
             display: none !important;
         }
@@ -784,17 +741,9 @@ if (isset($_SESSION['exit_message'])) {
             <?php endif; ?>
 
             <?php if ($loginSuccess): ?>
-                <div class="alert alert-success" id="successAlert">
-                    <div class="spinner-container">
-                        <div class="spinner-small"></div>
-                    </div>
-                    <span id="successMessage">Accessing your account...</span>
-                </div>
                 <script>
                     (function () {
                         var redirectUrl = '<?php echo $redirectUrl; ?>';
-                        var alertDiv = document.getElementById('successAlert');
-                        alertDiv.style.display = 'flex';
                         setTimeout(function () {
                             window.location.href = redirectUrl;
                         }, 3000);
@@ -859,7 +808,12 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
 
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
-                        Login
+                        <?php if ($loginSuccess): ?>
+                            <span class="btn-spinner"></span>
+                            <span>Logging in...</span>
+                        <?php else: ?>
+                            Login
+                        <?php endif; ?>
                     </button>
 
                     <div class="auth-footer">
@@ -913,13 +867,26 @@ if (isset($_SESSION['exit_message'])) {
             }
         });
 
+        // ✅ Show spinner on button click immediately (before server responds)
+        (function () {
+            var form = document.getElementById('loginForm');
+            var btn = document.getElementById('loginBtn');
+            if (form && btn) {
+                form.addEventListener('submit', function () {
+                    if (btn.disabled) return;
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="btn-spinner"></span><span>Logging in...</span>';
+                });
+            }
+        })();
+
         function showBiometricStatus(message, type) {
             biometricStatus.textContent = message;
             biometricStatus.className = 'status-message show ' + type;
         }
 
         function showBiometricStatusWithSpinner(message) {
-            biometricStatus.innerHTML = '<div class="spinner-container"><div class="spinner-small"></div></div><span>' + message + '</span>';
+            biometricStatus.innerHTML = '<div class="btn-spinner" style="border-color: #bbf7d0; border-top-color: #16a34a; margin-right: 8px;"></div><span>' + message + '</span>';
             biometricStatus.className = 'status-message show success';
             biometricStatus.style.display = 'flex';
             biometricStatus.style.alignItems = 'center';
@@ -937,7 +904,6 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
-            // ✅ Get installed app version from Android bridge
             var installedVersion = '';
             try {
                 if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
