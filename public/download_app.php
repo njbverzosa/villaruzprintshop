@@ -509,7 +509,7 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
                     badge.classList.add(matched ? 'match' : 'mismatch');
                 }
                 if (versionValue) {
-                    versionValue.textContent = 'v' + installed;
+                    versionValue.textContent = '' + installed;
                 }
             }
 
