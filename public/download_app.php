@@ -249,7 +249,7 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
         }
 
         .app-recommended {
-            font-size: 25px;
+            font-size: 17px;
             color: #067bf8;
             margin-top: 0.5rem;
         }
