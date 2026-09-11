@@ -2,6 +2,7 @@
 // login.php – with update redirect to download_app.php (no popup)
 // ✅ login_type recorded for CUSTOMERS ONLY
 // ✅ Biometric cookies + enrollment flow for BOTH Admin + Customer
+// ✅ Version-aware redirect for in-app users
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -17,6 +18,13 @@ require_once __DIR__ . '/update_version.php';
 // ==============================================
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
+
+// ==============================================
+// ✅ DETECT INSTALLED APP VERSION (from JS bridge)
+// ==============================================
+$installedVersion = $_POST['installed_version'] ?? $_GET['installed_version'] ?? '';
+$appVersionMatch = !empty($installedVersion) && ($installedVersion === $latestVersion);
+
 $loginType = $isInApp ? 'app' : 'web';
 
 // ✅ Use version_compare() for proper version comparison
@@ -136,18 +144,31 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     }
 
     // ==============================================
-    // ✅ REDIRECT LOGIC
+    // ✅ REDIRECT LOGIC (biometric login)
     // ==============================================
     if ($userType === 'Admin') {
-        // ✅ Admins never go to download_app.php
         $redirectUrl = 'web/all_products.php';
     } else {
-        // ✅ Customers only
-        if ($needsUpdate && !$reminded) {
-            $redirectUrl = 'public/download_app.php';
+        // ✅ Customer
+        $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+        $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+
+        if ($isInApp) {
+            // ✅ In app: check version match
+            if ($appVersionMatch) {
+                // Version matches → go straight to dashboard
+                $redirectUrl = $dashboardUrl;
+            } else {
+                // Version mismatch or unknown → show download page
+                $redirectUrl = 'public/download_app.php';
+            }
         } else {
-            $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-            $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+            // Web login → check cookie
+            if ($needsUpdate && !$reminded) {
+                $redirectUrl = 'public/download_app.php';
+            } else {
+                $redirectUrl = $dashboardUrl;
+            }
         }
     }
 
@@ -287,10 +308,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $loginSuccess = true;
 
             // ==============================================
-            // ✅ REDIRECT LOGIC
+            // ✅ REDIRECT LOGIC (regular login)
             // ==============================================
             if ($userType === 'Admin') {
-                // ✅ Admin: check biometric first, then dashboard
+                // ✅ Admin: biometric first, then dashboard
                 if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
                     $_SESSION['temp_user_id'] = $user['id'];
                     $_SESSION['temp_user_type'] = $userType;
@@ -305,15 +326,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     $_SESSION['temp_user_type'] = $userType;
                     $redirectUrl = 'biometric.php';
                 } else {
-                    $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
-                    $reminded = ($remindedVersion === $latestVersion);
-                    $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+                    $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
+                    $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
 
-                    if ($needsUpdate && !$reminded) {
-                        $redirectUrl = 'public/download_app.php';
+                    if ($isInApp) {
+                        // ✅ In app: check version
+                        if ($appVersionMatch) {
+                            $redirectUrl = $dashboardUrl;
+                        } else {
+                            $redirectUrl = 'public/download_app.php';
+                        }
                     } else {
-                        $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-                        $redirectUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+                        // Web login
+                        $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
+                        $reminded = ($remindedVersion === $latestVersion);
+                        $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
+
+                        if ($needsUpdate && !$reminded) {
+                            $redirectUrl = 'public/download_app.php';
+                        } else {
+                            $redirectUrl = $dashboardUrl;
+                        }
                     }
                 }
             }
@@ -809,7 +842,9 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
                 </form>
                 <div class="auth-footer">
-                    Download the <a href="http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">SofiaApp</a> App
+                    Download the <a
+                        href="http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">SofiaApp</a>
+                    App
                 </div>
             </div>
 
@@ -862,12 +897,26 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
+            // ✅ Get installed app version from Android bridge
+            var installedVersion = '';
+            try {
+                if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
+                    installedVersion = window.AndroidBiometric.getAppVersion();
+                    console.log('📱 Installed app version:', installedVersion);
+                }
+            } catch (e) {
+                console.warn('Could not read app version:', e);
+            }
+
             showBiometricStatusWithSpinner('Accessing your account...');
 
             fetch(window.location.href, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'biometric_login=true&user_id=' + userId + '&user_type=' + userType
+                body: 'biometric_login=true'
+                    + '&user_id=' + encodeURIComponent(userId)
+                    + '&user_type=' + encodeURIComponent(userType)
+                    + '&installed_version=' + encodeURIComponent(installedVersion)
             })
                 .then(response => {
                     if (!response.ok) throw new Error('Network response was not ok');

@@ -4,7 +4,7 @@
 session_start();
 
 // ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// 1. FIX PATHS
 // ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 include __DIR__ . '/../update_version.php';
@@ -19,7 +19,6 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
@@ -27,13 +26,12 @@ if (!isLoggedIn()) {
 }
 
 // ==============================================
-// 3. GET USER DATA FROM SESSION (handles Admin + Customer)
+// 3. GET USER DATA
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
 $userData = null;
 if ($userRole === 'Customer') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
@@ -65,25 +63,43 @@ if ($userRole === 'Customer') {
 $user = $userData;
 
 // ==============================================
-// 5. HANDLE "SKIP" CLICK (mirrors login.php cookie behavior)
+// 5. DETERMINE REDIRECT TARGET (for SKIP & "I have the app")
+// ==============================================
+function getRedirectTarget($userRole, $user)
+{
+    if ($userRole === 'Admin') {
+        return '../web/all_products.php';
+    }
+    $isGuest = (isset($user['f_name']) && ($user['f_name'] === 'Guest' || empty($user['f_name'])));
+    return $isGuest ? '../public/account-edit.php' : '../public/shop.php';
+}
+
+// ==============================================
+// 6. HANDLE "SKIP" CLICK
 // ==============================================
 if (isset($_GET['skip']) && $_GET['skip'] === '1') {
-    // Set the same cookie that login.php uses to remember "Later" for THIS version
     setcookie(
         'update_reminded_version',
         $latestVersion,
-        time() + 86400,  // 1 day (24 hours)
+        time() + 86400,  // 1 day
         '/'
     );
+    header('Location: ' . getRedirectTarget($userRole, $user));
+    exit;
+}
 
-    if ($userRole === 'Customer') {
-        // Guest customers go to account-edit.php, otherwise shop.php
-        $isGuest = (isset($user['f_name']) && ($user['f_name'] === 'Guest' || empty($user['f_name'])));
-        $redirect = $isGuest ? '../public/account-edit.php' : '../public/shop.php';
-        header('Location: ' . $redirect);
-    } else {
-        header('Location: ../index.php');
-    }
+// ==============================================
+// 7. HANDLE "I ALREADY HAVE THE APP" CLICK
+// ==============================================
+if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
+    // ✅ Set cookie for 1 year — user confirmed they have the app
+    setcookie(
+        'update_reminded_version',
+        $latestVersion,
+        time() + (86400 * 365),  // 1 year
+        '/'
+    );
+    header('Location: ' . getRedirectTarget($userRole, $user));
     exit;
 }
 
@@ -122,7 +138,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             min-height: 100vh;
         }
 
-        /* CARD – fills entire screen */
         .app-card {
             width: 100%;
             min-height: 100vh;
@@ -132,7 +147,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             position: relative;
         }
 
-        /* HEADER */
         .app-header {
             padding: 2rem 1.5rem 1.5rem 1.5rem;
             border-bottom: 1px solid #edf2f7;
@@ -141,7 +155,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             background: #ffffff;
         }
 
-        /* ✅ SKIP LINK (top right of header) */
         .skip-link {
             position: absolute;
             top: 1rem;
@@ -196,7 +209,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             margin-top: 0.25rem;
         }
 
-        /* BODY */
         .app-body {
             flex: 1;
             padding: 2rem 1.5rem;
@@ -232,7 +244,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             margin-bottom: 0.25rem;
         }
 
-        /* DETAILS LIST */
         .details-list {
             list-style: none;
             margin: 0 0 2rem 0;
@@ -263,7 +274,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             font-weight: 500;
         }
 
-        /* BUTTONS */
         .action-buttons {
             display: flex;
             flex-direction: column;
@@ -308,12 +318,23 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             background: #f8fafd;
         }
 
+        /* ✅ NEW: "I already have the app" button */
+        .btn-success {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #16a34a;
+            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
         .btn:focus-visible {
             outline: 2px solid #2563eb;
             outline-offset: 2px;
         }
 
-        /* FOOTER */
         .app-footer {
             padding: 1.25rem 1.5rem;
             border-top: 1px solid #edf2f7;
@@ -323,7 +344,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
             background: #ffffff;
         }
 
-        /* MOBILE */
         @media (max-width: 480px) {
             .app-header {
                 padding: 1.75rem 1.25rem 1.25rem 1.25rem;
@@ -357,7 +377,6 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
 
         <!-- HEADER -->
         <div class='app-header'>
-            <!-- ✅ SKIP LINK (top right of header) -->
             <a href="?skip=1" class="skip-link">SKIP</a>
 
             <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
@@ -415,6 +434,11 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
                     class='btn btn-primary'>Download Sofia App</a>
                 <a href='http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
                     class='btn btn-outline'>Re-Install App</a>
+
+                <!-- ✅ NEW: Already have the app button -->
+                <a href='?have_app=1' class='btn btn-success'>
+                    I Already Have the App
+                </a>
             </div>
 
         </div>
