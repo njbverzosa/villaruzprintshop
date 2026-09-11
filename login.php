@@ -4,6 +4,7 @@
 // ✅ Biometric cookies + enrollment flow for BOTH Admin + Customer
 // ✅ Version-aware redirect for in-app users
 // ✅ Web + biometric_enrolled=0 → download_app.php first
+// ✅ Admin web login → straight to dashboard (skip biometric)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -324,12 +325,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             // ✅ REDIRECT LOGIC (regular login)
             // ==============================================
             if ($userType === 'Admin') {
-                // ✅ Admin: biometric first, then dashboard
-                if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = $userType;
-                    $redirectUrl = 'biometric.php';
+                if ($isInApp) {
+                    // ✅ In app → biometric first
+                    if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
+                        $_SESSION['temp_user_id'] = $user['id'];
+                        $_SESSION['temp_user_type'] = $userType;
+                        $redirectUrl = 'biometric.php';
+                    } else {
+                        $redirectUrl = 'web/all_products.php';
+                    }
                 } else {
+                    // ✅ Web → skip biometric, go straight to dashboard
                     $redirectUrl = 'web/all_products.php';
                 }
             } else {
