@@ -76,7 +76,6 @@
 // 1. CONFIGURATION & REQUIREMENTS
 // ============================================================
 require_once __DIR__ . '/DB_Conn/config.php';
-require_once __DIR__ . '/update_version.php'; // Include the update version check
 
 // ============================================================
 // 2. HELPER FUNCTIONS
@@ -589,7 +588,6 @@ if (isset($_SESSION['success'])) {
         <div class="auth-card">
             <p class="auth-sub">Create Account</p>
             <div style="text-align: center; margin-bottom: 20px;">
-                <span class="version-badge" id="versionBadge">V<?php echo $latestVersion; ?></span>
                 <script>
                     // ✅ Show the ACTUAL installed version when in the app
                     document.addEventListener('DOMContentLoaded', function () {
