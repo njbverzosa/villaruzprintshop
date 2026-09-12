@@ -1175,10 +1175,6 @@ if (isset($_SESSION['exit_message'])) {
                             <span class="value"><?php echo htmlspecialchars($latestVersion); ?></span>
                         </li>
                         <li>
-                            <span class="label">Current Version</span>
-                            <span class="value"><?php echo htmlspecialchars($latestVersion); ?></span>
-                        </li>
-                        <li>
                             <span class="label">Old Version</span>
                             <span class="value" id="installedVersionValue">—</span>
                         </li>
