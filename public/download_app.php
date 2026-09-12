@@ -6,6 +6,7 @@ session_start();
 // 1. FIX PATHS - config.php is in DB_Conn folder at root level
 // ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
+include __DIR__ . '/../app_version.php';
 
 // ==============================================
 // 2. CHECK LOGIN STATUS
