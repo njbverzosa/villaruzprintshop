@@ -4,6 +4,7 @@
 // ✅ Mobile browser → should already be blocked at index.php
 // ✅ In-app version mismatch → installer modal (overlay)
 // ✅ In-app SKIP → use_old_app cookie for 1 day → login form unlocks
+// ✅ FIX: modal visibility decided by JS after reading installed version
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -51,7 +52,7 @@ $installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version
 
 if ($isInApp) {
     $installedNorm = preg_replace('/[^0-9.]/', '', $installedVersion);
-    $latestNorm = preg_replace('/[^0-9.]/', '', $latestVersion);
+    $latestNorm    = preg_replace('/[^0-9.]/', '', $latestVersion);
 
     if (!empty($installedNorm) && $installedNorm !== 'unknown') {
         $appVersionMatch = version_compare($installedNorm, $latestNorm, '==');
@@ -81,8 +82,8 @@ if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
         'use_old_app',
         '1',
         [
-            'expires' => time() + 86400,
-            'path' => '/',
+            'expires'  => time() + 86400,
+            'path'     => '/',
             'httponly' => true,
             'samesite' => 'Lax',
         ]
@@ -92,11 +93,14 @@ if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
 }
 
 // ==============================================
-// ✅ SHOW MODAL ONLY IF: in-app + mismatch + not skipped
+// ✅ MODAL RENDERING GATE
 // ==============================================
+// We render the modal HTML only for in-app users who haven't skipped.
+// Final visibility (show/hide) is decided by JS after reading the real
+// installed version from the Android bridge.
 $skipUpdate = isset($_COOKIE['use_old_app']) && $_COOKIE['use_old_app'] === '1';
 
-$showUpdateModal = ($isInApp && !$appVersionMatch && !$skipUpdate);
+$renderUpdateModal = ($isInApp && !$skipUpdate);
 
 // ==============================================
 // ALREADY LOGGED IN
@@ -413,316 +417,51 @@ if (isset($_SESSION['exit_message'])) {
     <title>Login | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: #f1f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background: #ffffff; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+        .logo img { width: 100px; height: auto; object-fit: contain; }
+        .nav-link { color: #64748b; text-decoration: none; font-weight: 500; transition: 0.3s; }
+        .nav-link:hover { color: #3b82f6; }
+        .auth-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 50px 20px; }
+        .auth-card { background: #ffffff; border-radius: 5px; padding: 30px; width: 100%; max-width: 450px; border: 1px solid #e2e8f0; box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05); }
+        .auth-sub { text-align: center; color: #64748b; margin-bottom: 20px; font-size: 18px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569; font-size: 14px; }
+        .form-group select, .form-group input { width: 100%; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; color: #1e293b; font-size: 15px; outline: none; transition: 0.3s; }
+        .form-group select:focus, .form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background: #ffffff; }
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-wrapper input { flex: 1; padding-right: 45px; }
+        .password-wrapper i { position: absolute; right: 15px; cursor: pointer; color: #94a3b8; transition: color 0.3s; font-size: 18px; }
+        .forgot-password-link { text-align: right; margin-top: 6px; font-size: 13px; }
+        .forgot-password-link a { color: #3b82f6; text-decoration: none; font-weight: 500; transition: 0.3s; }
+        .forgot-password-link a:hover { color: #1d4ed8; text-decoration: underline; }
+        .btn-primary { width: 100%; background: linear-gradient(145deg, #3b82f6, #6366f1); border: none; padding: 14px; border-radius: 5px; font-weight: 700; font-size: 16px; color: white; cursor: pointer; transition: 0.3s; margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        .btn-primary:disabled { opacity: 1; cursor: not-allowed; background: linear-gradient(145deg, #3b82f6, #6366f1); transform: none !important; }
+        .btn-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255, 255, 255, 0.4); border-top-color: #ffffff; border-radius: 50%; animation: btn-spin 0.8s linear infinite; vertical-align: middle; }
+        @keyframes btn-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .auth-footer { text-align: center; margin-top: 25px; color: #64748b; font-size: 14px; }
+        .auth-footer a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+        .alert { padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; display: flex; gap: 10px; animation: slideDown 0.5s ease; }
+        .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .alert i { font-size: 18px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .user-type-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+        .user-type-toggle button { flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #64748b; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .user-type-toggle button.active { border-color: #3b82f6; background: #eff6ff; color: #3b82f6; }
+        .user-type-toggle button:hover { background: #f1f5f9; }
+        .select-group { display: none; }
+        .select-group.visible { display: block; }
+        .status-message { margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 14px; display: none; }
+        .status-message.show { display: block; }
+        .status-message.success { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
+        .status-message.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .status-message.info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .hidden { display: none !important; }
 
-        body {
-            background: #f1f5f9;
-            color: #1e293b;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 5%;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-
-        .logo img {
-            width: 100px;
-            height: auto;
-            object-fit: contain;
-        }
-
-        .nav-link {
-            color: #64748b;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
-        }
-
-        .nav-link:hover {
-            color: #3b82f6;
-        }
-
-        .auth-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 50px 20px;
-        }
-
-        .auth-card {
-            background: #ffffff;
-            border-radius: 5px;
-            padding: 30px;
-            width: 100%;
-            max-width: 450px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
-        }
-
-        .auth-sub {
-            text-align: center;
-            color: #64748b;
-            margin-bottom: 20px;
-            font-size: 18px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #475569;
-            font-size: 14px;
-        }
-
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 14px 16px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            color: #1e293b;
-            font-size: 15px;
-            outline: none;
-            transition: 0.3s;
-        }
-
-        .form-group select:focus,
-        .form-group input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            background: #ffffff;
-        }
-
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .password-wrapper input {
-            flex: 1;
-            padding-right: 45px;
-        }
-
-        .password-wrapper i {
-            position: absolute;
-            right: 15px;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: color 0.3s;
-            font-size: 18px;
-        }
-
-        .forgot-password-link {
-            text-align: right;
-            margin-top: 6px;
-            font-size: 13px;
-        }
-
-        .forgot-password-link a {
-            color: #3b82f6;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
-        }
-
-        .forgot-password-link a:hover {
-            color: #1d4ed8;
-            text-decoration: underline;
-        }
-
-        .btn-primary {
-            width: 100%;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
-            border: none;
-            padding: 14px;
-            border-radius: 5px;
-            font-weight: 700;
-            font-size: 16px;
-            color: white;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-primary:disabled {
-            opacity: 1;
-            cursor: not-allowed;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
-            transform: none !important;
-        }
-
-        .btn-spinner {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 3px solid rgba(255, 255, 255, 0.4);
-            border-top-color: #ffffff;
-            border-radius: 50%;
-            animation: btn-spin 0.8s linear infinite;
-            vertical-align: middle;
-        }
-
-        @keyframes btn-spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .auth-footer {
-            text-align: center;
-            margin-top: 25px;
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .auth-footer a {
-            color: #3b82f6;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .alert {
-            padding: 14px 18px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: flex;
-            gap: 10px;
-            animation: slideDown 0.5s ease;
-        }
-
-        .alert-error {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-
-        .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-        }
-
-        .alert i {
-            font-size: 18px;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .user-type-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .user-type-toggle button {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            background: #f8fafc;
-            color: #64748b;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .user-type-toggle button.active {
-            border-color: #3b82f6;
-            background: #eff6ff;
-            color: #3b82f6;
-        }
-
-        .user-type-toggle button:hover {
-            background: #f1f5f9;
-        }
-
-        .select-group {
-            display: none;
-        }
-
-        .select-group.visible {
-            display: block;
-        }
-
-        .status-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .status-message.show {
-            display: block;
-        }
-
-        .status-message.success {
-            background: #f0fdf4;
-            color: #065f46;
-            border: 1px solid #bbf7d0;
-        }
-
-        .status-message.error {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-
-        .status-message.info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Update modal */
+        /* Update modal — hidden by default, shown by JS only on mismatch */
         .update-overlay {
             position: fixed;
             inset: 0;
@@ -730,250 +469,50 @@ if (isset($_SESSION['exit_message'])) {
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             z-index: 9999;
-            display: flex;
+            display: none;   /* ⬅️ hidden by default; JS shows it */
             align-items: flex-start;
             justify-content: center;
             overflow-y: auto;
             padding: 24px 16px;
             animation: fadeIn 0.2s ease-out;
         }
+        .update-overlay.visible { display: flex; }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        .update-card {
-            background: #ffffff;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
-            overflow: hidden;
-            animation: popIn 0.25s ease-out;
-            margin: auto;
-        }
-
-        @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .update-header {
-            padding: 24px 22px 18px 22px;
-            border-bottom: 1px solid #edf2f7;
-            text-align: center;
-            position: relative;
-            background: #ffffff;
-        }
-
-        .skip-link {
-            position: absolute;
-            top: 12px;
-            right: 14px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #1d4ed8;
-            text-decoration: none;
-            letter-spacing: 0.02em;
-            padding: 6px 12px;
-            border-radius: 100px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            transition: color 0.15s, background 0.15s;
-            z-index: 10;
-        }
-
-        .skip-link:hover {
-            color: #ffffff;
-            background: #1d4ed8;
-        }
-
-        .update-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px auto;
-        }
-
-        .update-icon img {
-            max-width: 64px;
-            height: auto;
-        }
-
-        .update-title {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: #0b1e2e;
-            letter-spacing: -0.015em;
-        }
-
-        .update-installed-version {
-            display: inline-block;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #475569;
-            background: #f1f5f9;
-            padding: 4px 12px;
-            border-radius: 5px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .update-installed-version.match {
-            background: #f0fdf4;
-            color: #065f46;
-            border-color: #bbf7d0;
-        }
-
-        .update-installed-version.mismatch {
-            background: #fef2f2;
-            color: #dc2626;
-            border-color: #fecaca;
-        }
-
-        .update-recommended {
-            font-size: 14px;
-            color: #067bf8;
-            margin-top: 12px;
-            font-weight: 600;
-        }
-
-        .update-body {
-            padding: 18px 22px 22px 22px;
-            background: #ffffff;
-        }
-
-        .update-info-block {
-            background: #f8fafd;
-            border-left: 4px solid #2563eb;
-            padding: 12px 14px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            font-size: 0.875rem;
-            color: #1e2b3c;
-            line-height: 1.5;
-        }
-
-        .update-info-block strong {
-            color: #1e40af;
-        }
-
-        .update-info-label {
-            font-size: 0.68rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #5f6f80;
-            margin-bottom: 3px;
-        }
-
-        .update-details {
-            list-style: none;
-            margin: 0 0 18px 0;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .update-details li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 14px;
-            font-size: 0.83rem;
-            border-bottom: 1px solid #edf2f7;
-        }
-
-        .update-details li:last-child {
-            border-bottom: none;
-        }
-
-        .update-details .label {
-            color: #5f6f80;
-        }
-
-        .update-details .value {
-            color: #0b1e2e;
-            font-weight: 500;
-        }
-
-        .update-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .update-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 13px 20px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 15px;
-            border: 1px solid transparent;
-            cursor: pointer;
-            text-decoration: none;
-            line-height: 1.2;
-            transition: background 0.15s, box-shadow 0.15s;
-            width: 100%;
-        }
-
-        .update-btn-primary {
-            background: #1d4ed8;
-            color: #ffffff;
-            border-color: #1d4ed8;
-            box-shadow: 0 2px 6px rgba(29, 78, 216, 0.2);
-        }
-
-        .update-btn-primary:hover {
-            background: #1e40af;
-        }
-
-        .update-btn-outline {
-            background: #ffffff;
-            color: #1e2b3c;
-            border-color: #cbd5e1;
-        }
-
-        .update-btn-outline:hover {
-            background: #f8fafd;
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .update-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35); overflow: hidden; animation: popIn 0.25s ease-out; margin: auto; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .update-header { padding: 24px 22px 18px 22px; border-bottom: 1px solid #edf2f7; text-align: center; position: relative; background: #ffffff; }
+        .skip-link { position: absolute; top: 12px; right: 14px; font-size: 13px; font-weight: 700; color: #1d4ed8; text-decoration: none; letter-spacing: 0.02em; padding: 6px 12px; border-radius: 100px; background: #eff6ff; border: 1px solid #bfdbfe; transition: color 0.15s, background 0.15s; z-index: 10; }
+        .skip-link:hover { color: #ffffff; background: #1d4ed8; }
+        .update-icon { display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto; }
+        .update-icon img { max-width: 64px; height: auto; }
+        .update-title { font-size: 1.35rem; font-weight: 700; color: #0b1e2e; letter-spacing: -0.015em; }
+        .update-installed-version { display: inline-block; margin-top: 8px; font-size: 0.8rem; font-weight: 600; color: #475569; background: #f1f5f9; padding: 4px 12px; border-radius: 5px; border: 1px solid #e2e8f0; }
+        .update-installed-version.match { background: #f0fdf4; color: #065f46; border-color: #bbf7d0; }
+        .update-installed-version.mismatch { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+        .update-recommended { font-size: 14px; color: #067bf8; margin-top: 12px; font-weight: 600; }
+        .update-body { padding: 18px 22px 22px 22px; background: #ffffff; }
+        .update-info-block { background: #f8fafd; border-left: 4px solid #2563eb; padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; font-size: 0.875rem; color: #1e2b3c; line-height: 1.5; }
+        .update-info-block strong { color: #1e40af; }
+        .update-info-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5f6f80; margin-bottom: 3px; }
+        .update-details { list-style: none; margin: 0 0 18px 0; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+        .update-details li { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; font-size: 0.83rem; border-bottom: 1px solid #edf2f7; }
+        .update-details li:last-child { border-bottom: none; }
+        .update-details .label { color: #5f6f80; }
+        .update-details .value { color: #0b1e2e; font-weight: 500; }
+        .update-actions { display: flex; flex-direction: column; gap: 10px; }
+        .update-btn { display: inline-flex; align-items: center; justify-content: center; padding: 13px 20px; border-radius: 40px; font-weight: 600; font-size: 15px; border: 1px solid transparent; cursor: pointer; text-decoration: none; line-height: 1.2; transition: background 0.15s, box-shadow 0.15s; width: 100%; }
+        .update-btn-primary { background: #1d4ed8; color: #ffffff; border-color: #1d4ed8; box-shadow: 0 2px 6px rgba(29, 78, 216, 0.2); }
+        .update-btn-primary:hover { background: #1e40af; }
+        .update-btn-outline { background: #ffffff; color: #1e2b3c; border-color: #cbd5e1; }
+        .update-btn-outline:hover { background: #f8fafd; }
 
         @media (max-width: 500px) {
-            .auth-card {
-                padding: 30px 25px;
-            }
-
-            .logo img {
-                width: 75px;
-            }
-
-            .user-type-toggle button {
-                font-size: 13px;
-                padding: 8px;
-            }
-
-            .forgot-password-link {
-                font-size: 12px;
-            }
-
-            .update-card {
-                max-width: 100%;
-            }
+            .auth-card { padding: 30px 25px; }
+            .logo img { width: 75px; }
+            .user-type-toggle button { font-size: 13px; padding: 8px; }
+            .forgot-password-link { font-size: 12px; }
+            .update-card { max-width: 100%; }
         }
     </style>
 </head>
@@ -1102,8 +641,12 @@ if (isset($_SESSION['exit_message'])) {
 
     <?php include 'footer.php'; ?>
 
-    <!-- UPDATE MODAL — only when in-app + version mismatch + not skipped -->
-    <?php if ($showUpdateModal): ?>
+    <!-- ==============================================
+         UPDATE MODAL — rendered only for in-app users,
+         hidden by default. JS decides visibility based
+         on the real installed version from AndroidBiometric.
+         ============================================== -->
+    <?php if ($renderUpdateModal): ?>
         <div class="update-overlay" id="updateOverlay">
             <div class="update-card">
                 <div class="update-header">
@@ -1172,17 +715,53 @@ if (isset($_SESSION['exit_message'])) {
         const userType = <?php echo json_encode($biometricUserType); ?>;
         const latestVersion = <?php echo json_encode($latestVersion); ?>;
 
+        /**
+         * Reads the installed version, preferring:
+         *   1) window.__SOFIA_APP_VERSION__ — injected by MainActivity.onPageStarted()
+         *   2) AndroidBiometric.getAppVersion() bridge
+         *   3) 'unknown'
+         */
+        function readInstalledVersion() {
+            if (window.__SOFIA_APP_VERSION__) return window.__SOFIA_APP_VERSION__;
+            try {
+                if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
+                    return window.AndroidBiometric.getAppVersion() || 'unknown';
+                }
+            } catch (e) {
+                console.warn('Could not read app version:', e);
+            }
+            return 'unknown';
+        }
+
+        function versionsEqual(a, b) {
+            const norm = s => (s || '').toString().replace(/[^0-9.]/g, '');
+            return norm(a) === norm(b);
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
-            // ✅ Version input for password login
+            const installedVersion = readInstalledVersion();
+            console.log('📱 Installed version:', installedVersion, '| Latest:', latestVersion);
+
+            // ✅ Fill hidden input with version for password-login POST
             var versionInput = document.getElementById('installedVersionInput');
-            if (versionInput && isInApp && window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
-                try {
-                    var v = window.AndroidBiometric.getAppVersion() || 'unknown';
-                    versionInput.value = v;
-                    console.log('📱 Installed version set to:', v);
-                } catch (e) {
-                    console.warn('Could not read app version:', e);
-                    versionInput.value = 'unknown';
+            if (versionInput && isInApp) {
+                versionInput.value = installedVersion;
+            }
+
+            // ✅ Decide modal visibility based on ACTUAL installed version
+            const overlay = document.getElementById('updateOverlay');
+            if (overlay) {
+                if (!isInApp) {
+                    // Not in app — no modal ever
+                    overlay.classList.remove('visible');
+                } else if (versionsEqual(installedVersion, latestVersion)) {
+                    // ✅ Version matches → keep modal hidden
+                    overlay.classList.remove('visible');
+                    console.log('✅ Version matches — modal stays hidden');
+                } else {
+                    // ⚠️ Version mismatch (or unknown) → show modal
+                    overlay.classList.add('visible');
+                    console.log('⚠️ Version mismatch — modal shown');
                 }
             }
 
@@ -1194,29 +773,22 @@ if (isset($_SESSION['exit_message'])) {
                     badge.textContent = 'Not running in the app';
                     badge.classList.add('mismatch');
                     versionValue.textContent = 'N/A';
+                } else if (!installedVersion || installedVersion === 'unknown') {
+                    badge.textContent = 'Version unknown';
+                    badge.classList.add('mismatch');
+                    versionValue.textContent = 'Unknown';
                 } else {
-                    var v = 'unknown';
-                    try {
-                        if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
-                            v = window.AndroidBiometric.getAppVersion() || 'unknown';
-                        }
-                    } catch (e) { }
-                    if (!v || v === 'unknown') {
-                        badge.textContent = 'Version unknown';
-                        badge.classList.add('mismatch');
-                        versionValue.textContent = 'Unknown';
-                    } else {
-                        var matched = (v === latestVersion);
-                        badge.textContent = 'Installed: ' + v;
-                        badge.classList.add(matched ? 'match' : 'mismatch');
-                        versionValue.textContent = v;
-                    }
+                    var matched = versionsEqual(installedVersion, latestVersion);
+                    badge.textContent = 'Installed: ' + installedVersion;
+                    badge.classList.remove('match', 'mismatch');
+                    badge.classList.add(matched ? 'match' : 'mismatch');
+                    versionValue.textContent = installedVersion;
                 }
             }
 
-            // ✅ Biometric auto-prompt — only when NOT showing the update modal
-            const showUpdateModal = <?php echo $showUpdateModal ? 'true' : 'false'; ?>;
-            if (!showUpdateModal && hasBiometric && isInApp && userId) {
+            // ✅ Biometric auto-prompt — only when modal is NOT showing
+            const modalVisible = overlay && overlay.classList.contains('visible');
+            if (!modalVisible && hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
                 window.AndroidBiometric.authenticate('auto');
             }
@@ -1259,15 +831,7 @@ if (isset($_SESSION['exit_message'])) {
                 return;
             }
 
-            var installedVersion = 'unknown';
-            try {
-                if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
-                    installedVersion = window.AndroidBiometric.getAppVersion() || 'unknown';
-                    console.log('📱 Installed app version:', installedVersion);
-                }
-            } catch (e) {
-                console.warn('Could not read app version:', e);
-            }
+            var installedVersion = readInstalledVersion();
 
             showBiometricStatusWithSpinner('Accessing your account...');
 
@@ -1290,7 +854,8 @@ if (isset($_SESSION['exit_message'])) {
                         }, 1000);
                     } else if (data.show_update_modal) {
                         // Show the update modal
-                        location.reload();
+                        const overlay = document.getElementById('updateOverlay');
+                        if (overlay) overlay.classList.add('visible');
                     } else {
                         showBiometricStatus('' + data.message, 'error');
                     }
