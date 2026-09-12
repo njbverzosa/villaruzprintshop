@@ -4,9 +4,7 @@
 // ✅ Mobile browser → download_app.php
 // ✅ In-app version mismatch → installer modal (overlay)
 // ✅ In-app SKIP → use_old_app cookie for 1 day → login form unlocks
-// ✅ Both password + biometric show spinner inside the Login button
-// ✅ Password: 2s delay before redirect
-// ✅ Biometric: 0.5s delay before redirect
+// ✅ Biometric success now shows inside the Login button (spinner + text)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -1002,7 +1000,7 @@ if (isset($_SESSION['exit_message'])) {
         <div class="auth-card">
             <p class="auth-sub">Log In your account</p>
 
-            <div id="biometricStatus" class="status-message"></div>
+            <span class="btn-spinner"></span><div id="biometricStatus" class="status-message"></div>
 
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
@@ -1020,13 +1018,11 @@ if (isset($_SESSION['exit_message'])) {
 
             <?php if ($loginSuccess): ?>
                 <script>
-                    // ✅ Password-login success: keep the spinner for 2 seconds, then redirect.
                     (function () {
                         var redirectUrl = '<?php echo $redirectUrl; ?>';
-                        setLoginButtonBusy('Accessing your account...');
                         setTimeout(function () {
                             window.location.href = redirectUrl;
-                        }, 2000);
+                        }, 3000);
                     })();
                 </script>
             <?php endif; ?>
@@ -1089,7 +1085,8 @@ if (isset($_SESSION['exit_message'])) {
 
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
                         <?php if ($loginSuccess): ?>
-                            <span class="btn-spinner"></span><span>Accessing your account...</span>
+                            <span class="btn-spinner"></span>
+                            <span>Logging in...</span>
                         <?php else: ?>
                             Login
                         <?php endif; ?>
@@ -1273,6 +1270,7 @@ if (isset($_SESSION['exit_message'])) {
             const modalVisible = overlay && overlay.classList.contains('visible');
             if (!modalVisible && hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
+                setLoginButtonBusy('Waiting for biometric...');
                 window.AndroidBiometric.authenticate('auto');
             }
         });
@@ -1308,7 +1306,7 @@ if (isset($_SESSION['exit_message'])) {
 
             var installedVersion = readInstalledVersion();
 
-            // ✅ Show progress inside the Login button
+            // ✅ Show progress inside the Login button (same style as password login)
             setLoginButtonBusy('Accessing your account...');
 
             fetch(window.location.href, {
@@ -1325,10 +1323,9 @@ if (isset($_SESSION['exit_message'])) {
                 })
                 .then(data => {
                     if (data.success) {
-                        // ✅ Biometric: 0.5s delay before redirect
                         setTimeout(function () {
                             window.location.href = data.redirect;
-                        }, 500);
+                        }, 800);
                     } else if (data.show_update_modal) {
                         const overlay = document.getElementById('updateOverlay');
                         if (overlay) overlay.classList.add('visible');
