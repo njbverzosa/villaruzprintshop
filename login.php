@@ -4,7 +4,8 @@
 // ✅ Mobile browser → download_app.php
 // ✅ In-app version mismatch → installer modal (overlay)
 // ✅ In-app SKIP → use_old_app cookie for 1 day → login form unlocks
-// ✅ Biometric success now shows inside the Login button (spinner + text)
+// ✅ Biometric success shows inside the Login button
+// ✅ Biometric auto-prompt skipped on POST (password login)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -97,6 +98,15 @@ if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
 // ==============================================
 $skipUpdate = isset($_COOKIE['use_old_app']) && $_COOKIE['use_old_app'] === '1';
 $renderUpdateModal = ($isInApp && !$skipUpdate);
+
+// ==============================================
+// ✅ BIOMETRIC AUTO-PROMPT GATE
+// Skip biometric auto-prompt on any POST request.
+// Prevents the prompt from popping up right after a
+// password login attempt (success OR failure).
+// Still fires on: fresh app open, after logout, page reload.
+// ==============================================
+$skipBiometricAutoPrompt = ($_SERVER['REQUEST_METHOD'] === 'POST');
 
 // ==============================================
 // ALREADY LOGGED IN
@@ -733,7 +743,7 @@ if (isset($_SESSION['exit_message'])) {
             display: none !important;
         }
 
-        /* Update modal — hidden by default, shown by JS only on mismatch */
+        /* Update modal */
         .update-overlay {
             position: fixed;
             inset: 0;
@@ -1106,11 +1116,6 @@ if (isset($_SESSION['exit_message'])) {
 
     <?php include 'footer.php'; ?>
 
-    <!-- ==============================================
-         UPDATE MODAL — rendered only for in-app users,
-         hidden by default. JS decides visibility based
-         on the real installed version from AndroidBiometric.
-         ============================================== -->
     <?php if ($renderUpdateModal): ?>
         <div class="update-overlay" id="updateOverlay">
             <div class="update-card">
@@ -1179,6 +1184,7 @@ if (isset($_SESSION['exit_message'])) {
         const userId = <?php echo json_encode($biometricUserId); ?>;
         const userType = <?php echo json_encode($biometricUserType); ?>;
         const latestVersion = <?php echo json_encode($latestVersion); ?>;
+        const skipBiometricAutoPrompt = <?php echo $skipBiometricAutoPrompt ? 'true' : 'false'; ?>;
 
         /**
          * Reads the installed version, preferring:
@@ -1203,7 +1209,7 @@ if (isset($_SESSION['exit_message'])) {
             return norm(a) === norm(b);
         }
 
-        /** Sets the Login button into a "busy" state (spinner + label). */
+        /** Sets the Login button into a "busy" state (spinner only). */
         function setLoginButtonBusy(label) {
             var btn = document.getElementById('loginBtn');
             if (!btn) return;
@@ -1264,11 +1270,19 @@ if (isset($_SESSION['exit_message'])) {
                 }
             }
 
-            // ✅ Biometric auto-prompt — only when modal is NOT showing
+            // ✅ Biometric auto-prompt — skip on POST (password login attempt)
             const modalVisible = overlay && overlay.classList.contains('visible');
-            if (!modalVisible && hasBiometric && isInApp && userId) {
+            if (!skipBiometricAutoPrompt && !modalVisible && hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
                 window.AndroidBiometric.authenticate('auto');
+            } else {
+                console.log('⏭️ Biometric auto-prompt skipped', {
+                    skipBiometricAutoPrompt: skipBiometricAutoPrompt,
+                    modalVisible: modalVisible,
+                    hasBiometric: hasBiometric,
+                    isInApp: isInApp,
+                    userId: userId
+                });
             }
         });
 
