@@ -6,7 +6,8 @@
 // ✅ Web + biometric_enrolled=0 → download_app.php first
 // ✅ Admin web login → straight to dashboard (skip biometric)
 // ✅ Spinner shown inside Login button (no separate alert)
-// ✅ Mobile browser → download_app.php (NEW)
+// ✅ Mobile browser → download_app.php
+// ✅ FIX: $isMobileBrowser is false when in-app (WebView UA contains "Android")
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -24,7 +25,7 @@ $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
 
 // ==============================================
-// ✅ DETECT MOBILE BROWSER (NEW)
+// ✅ DETECT MOBILE BROWSER (NOT the app)
 // ==============================================
 function isMobileBrowser($userAgent)
 {
@@ -49,7 +50,8 @@ function isMobileBrowser($userAgent)
     return false;
 }
 
-$isMobileBrowser = isMobileBrowser($userAgent);
+// ✅ Guard: if we're inside the SofiaApp WebView, it is NOT a mobile browser
+$isMobileBrowser = isMobileBrowser($userAgent) && !$isInApp;
 
 // ==============================================
 // ✅ DETECT INSTALLED APP VERSION (from JS bridge)
@@ -184,7 +186,10 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     // ✅ REDIRECT LOGIC (biometric login)
     if ($userType === 'Admin') {
-        if ($isMobileBrowser) {
+        if ($isInApp) {
+            // ✅ FIX: Admin in-app always goes to dashboard
+            $redirectUrl = 'web/all_products.php';
+        } elseif ($isMobileBrowser) {
             $redirectUrl = 'public/download_app.php';
         } else {
             $redirectUrl = 'web/all_products.php';
@@ -199,8 +204,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
             } else {
                 $redirectUrl = 'public/download_app.php';
             }
-        } else if ($isMobileBrowser) {
-            // ✅ NEW: Mobile browser → download_app.php
+        } elseif ($isMobileBrowser) {
             $redirectUrl = 'public/download_app.php';
         } else {
             // Desktop browser
@@ -353,11 +357,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     } else {
                         $redirectUrl = 'web/all_products.php';
                     }
-                } else if ($isMobileBrowser) {
-                    // ✅ Mobile browser admin → download_app.php
+                } elseif ($isMobileBrowser) {
                     $redirectUrl = 'public/download_app.php';
                 } else {
-                    // Desktop browser admin → dashboard
                     $redirectUrl = 'web/all_products.php';
                 }
             } else {
@@ -377,8 +379,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                             $redirectUrl = 'public/download_app.php';
                         }
                     }
-                } else if ($isMobileBrowser) {
-                    // ✅ NEW: Mobile browser → download_app.php
+                } elseif ($isMobileBrowser) {
                     $redirectUrl = 'public/download_app.php';
                 } else {
                     // Desktop browser
@@ -867,7 +868,7 @@ if (isset($_SESSION['exit_message'])) {
                 </form>
                 <div class="auth-footer">
                     Download the <a
-                        href="http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">SofiaApp</a>
+                        href="https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">SofiaApp</a>
                     App
                 </div>
             </div>
