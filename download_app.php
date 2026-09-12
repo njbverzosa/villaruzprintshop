@@ -79,8 +79,6 @@ $latestVersion = '21.38.11';
             padding: 6px 12px;
         }
 
-        
-
         .update-icon {
             display: flex;
             justify-content: center;
@@ -209,7 +207,7 @@ $latestVersion = '21.38.11';
                 <img src="logo/ic_launcher.png" alt="Sofia App Logo">
             </div>
             <div class="update-title">SofiaApp</div>
-            <div class="update-recommended">Update available — please install the latest version.</div>
+            <div class="update-recommended">Mobile browser access is no longer available. Please download the SofiaApp.</div>
         </div>
         <div class="update-body">
             <div class="update-info-block">
