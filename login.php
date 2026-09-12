@@ -359,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                         $redirectUrl = 'web/all_products.php';
                     }
                 } elseif ($isMobileBrowser) {
-                    $redirectUrl = 'download_app.php';
+                    $redirectUrl = 'web/all_products.php';
                 } else {
                     $redirectUrl = 'web/all_products.php';
                 }
@@ -375,7 +375,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                         $redirectUrl = 'biometric.php';
                     } else {
                         if (!$appVersionMatch && !$skipUpdate) {
-                            $redirectUrl = 'login.php';
+                            $redirectUrl = 'public/download_app.php';
                         } else {
                             $redirectUrl = $dashboardUrl;
                         }

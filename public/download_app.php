@@ -364,7 +364,7 @@ include 'app_version.php';
 
         <!-- HEADER -->
         <div class='app-header'>
-            <a href="?skip_update=1" class="skip-link">SKIP</a>
+            <a href="closed" class="skip-link">SKIP</a>
             <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
             <div class='app-title'>SofiaApp</div>
 
