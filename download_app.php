@@ -13,8 +13,8 @@ if (isset($_GET['skip']) && $_GET['skip'] === '1') {
         'use_old_app',
         '1',
         [
-            'expires'  => time() + 86400,
-            'path'     => '/',
+            'expires' => time() + 86400,
+            'path' => '/',
             'httponly' => true,
             'samesite' => 'Lax',
         ]
@@ -28,13 +28,19 @@ $latestVersion = '21.38.11';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sofia App · Update & Download</title>
     <style>
         /* ... same styles as the modal in login.php ... */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background: #f1f5f9;
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -44,6 +50,7 @@ $latestVersion = '21.38.11';
             justify-content: center;
             padding: 24px 16px;
         }
+
         .update-card {
             background: #ffffff;
             border-radius: 16px;
@@ -53,25 +60,56 @@ $latestVersion = '21.38.11';
             overflow: hidden;
             margin: auto;
         }
+
         .update-header {
             padding: 24px 22px 18px 22px;
             border-bottom: 1px solid #edf2f7;
             text-align: center;
             position: relative;
         }
+
         .skip-link {
-            position: absolute; top: 12px; right: 14px;
-            font-size: 13px; font-weight: 700;
-            color: #1d4ed8; text-decoration: none;
-            padding: 6px 12px; border-radius: 100px;
-            background: #eff6ff; border: 1px solid #bfdbfe;
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1d4ed8;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: 1px solid #bfdbfe;
         }
-        .skip-link:hover { color: #ffffff; background: #1d4ed8; }
-        .update-icon { display: flex; justify-content: center; margin-bottom: 10px; }
-        .update-icon img { max-width: 64px; }
-        .update-title { font-size: 1.35rem; font-weight: 700; color: #0b1e2e; }
-        .update-recommended { font-size: 14px; color: #067bf8; margin-top: 12px; font-weight: 600; }
-        .update-body { padding: 18px 22px 22px 22px; }
+
+        
+
+        .update-icon {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .update-icon img {
+            max-width: 64px;
+        }
+
+        .update-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #0b1e2e;
+        }
+
+        .update-recommended {
+            font-size: 14px;
+            color: #067bf8;
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        .update-body {
+            padding: 18px 22px 22px 22px;
+        }
+
         .update-info-block {
             background: #f8fafd;
             border-left: 4px solid #2563eb;
@@ -81,45 +119,90 @@ $latestVersion = '21.38.11';
             font-size: 0.875rem;
             line-height: 1.5;
         }
-        .update-info-block strong { color: #1e40af; }
+
+        .update-info-block strong {
+            color: #1e40af;
+        }
+
         .update-info-label {
-            font-size: 0.68rem; font-weight: 700;
+            font-size: 0.68rem;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: #5f6f80; margin-bottom: 3px;
+            color: #5f6f80;
+            margin-bottom: 3px;
         }
+
         .update-details {
-            list-style: none; margin: 0 0 18px 0;
+            list-style: none;
+            margin: 0 0 18px 0;
             border: 1px solid #e2e8f0;
-            border-radius: 12px; overflow: hidden;
+            border-radius: 12px;
+            overflow: hidden;
         }
+
         .update-details li {
-            display: flex; justify-content: space-between;
-            padding: 10px 14px; font-size: 0.83rem;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 14px;
+            font-size: 0.83rem;
             border-bottom: 1px solid #edf2f7;
         }
-        .update-details li:last-child { border-bottom: none; }
-        .update-details .label { color: #5f6f80; }
-        .update-details .value { color: #0b1e2e; font-weight: 500; }
-        .update-actions { display: flex; flex-direction: column; gap: 10px; }
+
+        .update-details li:last-child {
+            border-bottom: none;
+        }
+
+        .update-details .label {
+            color: #5f6f80;
+        }
+
+        .update-details .value {
+            color: #0b1e2e;
+            font-weight: 500;
+        }
+
+        .update-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .update-btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            padding: 13px 20px; border-radius: 40px;
-            font-weight: 600; font-size: 15px;
-            text-decoration: none; line-height: 1.2;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 13px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            line-height: 1.2;
             width: 100%;
         }
+
         .update-btn-primary {
-            background: #1d4ed8; color: #ffffff;
+            background: #1d4ed8;
+            color: #ffffff;
             box-shadow: 0 2px 6px rgba(29, 78, 216, 0.2);
         }
-        .update-btn-primary:hover { background: #1e40af; }
-        .update-btn-outline {
-            background: #ffffff; color: #1e2b3c; border: 1px solid #cbd5e1;
+
+        .update-btn-primary:hover {
+            background: #1e40af;
         }
-        .update-btn-outline:hover { background: #f8fafd; }
+
+        .update-btn-outline {
+            background: #ffffff;
+            color: #1e2b3c;
+            border: 1px solid #cbd5e1;
+        }
+
+        .update-btn-outline:hover {
+            background: #f8fafd;
+        }
     </style>
 </head>
+
 <body>
     <div class="update-card">
         <div class="update-header">
@@ -154,4 +237,5 @@ $latestVersion = '21.38.11';
         </div>
     </div>
 </body>
+
 </html>
