@@ -77,8 +77,6 @@ $latestVersion = '21.38.11';
             color: #1d4ed8;
             text-decoration: none;
             padding: 6px 12px;
-            border-radius: 15px;
-            border: 1px solid #bfdbfe;
         }
 
         
