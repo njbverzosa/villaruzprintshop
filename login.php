@@ -1143,7 +1143,9 @@ if (isset($_SESSION['exit_message'])) {
                         <img src="logo/ic_launcher.png" alt="Sofia App Logo">
                     </div>
                     <div class="update-title">SofiaApp</div>
-                    
+                    <div class="update-installed-version" id="installedVersionBadge">
+                        Detecting installed version...
+                    </div>
                     <div class="update-recommended">
                         Mobile browser access is no longer available. Please download the SofiaApp.
                     </div>
@@ -1170,6 +1172,10 @@ if (isset($_SESSION['exit_message'])) {
                     <ul class="update-details">
                         <li>
                             <span class="label">New Release</span>
+                            <span class="value"><?php echo htmlspecialchars($latestVersion); ?></span>
+                        </li>
+                        <li>
+                            <span class="label">Current Version</span>
                             <span class="value"><?php echo htmlspecialchars($latestVersion); ?></span>
                         </li>
                         <li>
