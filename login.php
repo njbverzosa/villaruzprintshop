@@ -1,5 +1,9 @@
 <?php
-// login.php – with update modal (in-page overlay) for in-app users
+// login.php – desktop flow unchanged
+// ✅ Desktop browser → normal login → dashboard
+// ✅ Mobile browser → should already be blocked at index.php
+// ✅ In-app version mismatch → installer modal (overlay)
+// ✅ In-app SKIP → use_old_app cookie for 1 day → login form unlocks
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -8,19 +12,14 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
-
-$latestVersion = '22.40.11';   // ✅ MUST MATCH build.gradle versionName
-$currentVersion = '22.38.11';   // previous version (used for web update nag)
+include __DIR__ . '/app_version.php';   // defines $latestVersion + $currentVersion
 
 // ==============================================
-// ✅ DETECT LOGIN PLATFORM (APP OR WEB)
+// ✅ DETECT PLATFORM
 // ==============================================
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
 
-// ==============================================
-// ✅ DETECT MOBILE BROWSER (NOT the app)
-// ==============================================
 function isMobileBrowser($userAgent)
 {
     $mobileKeywords = [
@@ -35,7 +34,6 @@ function isMobileBrowser($userAgent)
         'IEMobile',
         'Mobile'
     ];
-
     foreach ($mobileKeywords as $keyword) {
         if (stripos($userAgent, $keyword) !== false) {
             return true;
@@ -47,12 +45,10 @@ function isMobileBrowser($userAgent)
 $isMobileBrowser = isMobileBrowser($userAgent) && !$isInApp;
 
 // ==============================================
-// ✅ DETECT INSTALLED APP VERSION (from JS bridge)
+// ✅ VERSION MATCH (in-app only)
 // ==============================================
 $installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version'] ?? '');
-$latestVersion = trim($latestVersion);
 
-// ✅ Determine version match (normalized + fail-safe)
 if ($isInApp) {
     $installedNorm = preg_replace('/[^0-9.]/', '', $installedVersion);
     $latestNorm = preg_replace('/[^0-9.]/', '', $latestVersion);
@@ -78,41 +74,32 @@ $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
 $reminded = ($remindedVersion === $latestVersion);
 
 // ==============================================
-// ✅ DETERMINE IF UPDATE MODAL SHOULD SHOW
-// ==============================================
-// Cookie suppresses the modal for 1 day after SKIP
-$skipUpdate = isset($_COOKIE['use_old_app']) && $_COOKIE['use_old_app'] === '1';
-
-// In-app: show modal if version mismatch AND not skipped
-// Mobile web: always show modal (mobile web not supported)
-$showUpdateModal = false;
-if ($isInApp && !$appVersionMatch && !$skipUpdate) {
-    $showUpdateModal = true;
-} elseif ($isMobileBrowser && !$skipUpdate) {
-    $showUpdateModal = true;
-}
-
-// ==============================================
-// HANDLE SKIP (via POST/GET on login.php itself)
+// ✅ SKIP — set cookie for 1 day, refresh
 // ==============================================
 if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
     setcookie(
         'use_old_app',
         '1',
         [
-            'expires' => time() + 86400,   // 1 day
+            'expires' => time() + 86400,
             'path' => '/',
             'httponly' => true,
             'samesite' => 'Lax',
         ]
     );
-    // Refresh — cookie will now suppress the modal
     header('Location: login.php');
     exit;
 }
 
 // ==============================================
-// CHECK IF USER IS ALREADY LOGGED IN
+// ✅ SHOW MODAL ONLY IF: in-app + mismatch + not skipped
+// ==============================================
+$skipUpdate = isset($_COOKIE['use_old_app']) && $_COOKIE['use_old_app'] === '1';
+
+$showUpdateModal = ($isInApp && !$appVersionMatch && !$skipUpdate);
+
+// ==============================================
+// ALREADY LOGGED IN
 // ==============================================
 $isLoggedIn = false;
 $redirectUrl = '';
@@ -130,7 +117,7 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
 }
 
 // ==============================================
-// CHECK IF USER HAS BIOMETRIC ENROLLED
+// BIOMETRIC ENROLLED CHECK
 // ==============================================
 $hasBiometric = false;
 $biometricUserId = null;
@@ -171,7 +158,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
 }
 
 // ==============================================
-// HANDLE BIOMETRIC LOGIN (API)
+// BIOMETRIC LOGIN (API)
 // ==============================================
 if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     header('Content-Type: application/json');
@@ -213,33 +200,24 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $updateTypeStmt->execute([$loginType, $user['id']]);
     }
 
+    // ✅ Redirect logic — desktop always goes to dashboard
     if ($userType === 'Admin') {
-        if ($isInApp) {
-            $redirectUrl = 'web/all_products.php';
-        } elseif ($isMobileBrowser) {
-            $redirectUrl = 'public/download_app.php';
-        } else {
-            $redirectUrl = 'web/all_products.php';
-        }
+        $redirectUrl = 'web/all_products.php';
     } else {
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
 
-        if ($isInApp) {
-            if ($appVersionMatch) {
-                $redirectUrl = $dashboardUrl;
-            } else {
-                $redirectUrl = 'public/download_app.php';
-            }
-        } elseif ($isMobileBrowser) {
-            $redirectUrl = 'public/download_app.php';
-        } else {
-            if ($needsUpdate && !$reminded) {
-                $redirectUrl = 'public/download_app.php';
-            } else {
-                $redirectUrl = $dashboardUrl;
-            }
+        if ($isInApp && !$appVersionMatch && !$skipUpdate) {
+            // App + outdated + not skipped → modal stays, don't redirect
+            echo json_encode([
+                'success' => false,
+                'message' => 'Please update the app or click SKIP to continue.',
+                'show_update_modal' => true
+            ]);
+            exit;
         }
+
+        $redirectUrl = $dashboardUrl;
     }
 
     echo json_encode([
@@ -266,7 +244,7 @@ function getAllCustomers($pdo)
 }
 
 // ==============================================
-// HANDLE REGULAR LOGIN
+// REGULAR LOGIN
 // ==============================================
 $errors = [];
 $loginSuccess = false;
@@ -370,6 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             $loginSuccess = true;
 
+            // ✅ Redirect logic — desktop flow unchanged
             if ($userType === 'Admin') {
                 if ($isInApp) {
                     if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
@@ -379,8 +358,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     } else {
                         $redirectUrl = 'web/all_products.php';
                     }
-                } elseif ($isMobileBrowser) {
-                    $redirectUrl = 'public/download_app.php';
                 } else {
                     $redirectUrl = 'web/all_products.php';
                 }
@@ -395,28 +372,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                         $_SESSION['temp_user_type'] = $userType;
                         $redirectUrl = 'biometric.php';
                     } else {
-                        if ($appVersionMatch) {
-                            $redirectUrl = $dashboardUrl;
+                        // In-app: mismatch + not skipped → don't redirect, modal is up
+                        if (!$appVersionMatch && !$skipUpdate) {
+                            $redirectUrl = 'login.php';   // stay
                         } else {
-                            $redirectUrl = 'public/download_app.php';
+                            $redirectUrl = $dashboardUrl;
                         }
                     }
-                } elseif ($isMobileBrowser) {
-                    $redirectUrl = 'public/download_app.php';
                 } else {
-                    $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
-                    $reminded = ($remindedVersion === $latestVersion);
-                    $needsUpdate = version_compare(
-                        preg_replace('/[^0-9.]/', '', $latestVersion),
-                        preg_replace('/[^0-9.]/', '', $currentVersion),
-                        '>'
-                    );
-
-                    if ($needsUpdate && !$reminded) {
-                        $redirectUrl = 'public/download_app.php';
-                    } else {
-                        $redirectUrl = $dashboardUrl;
-                    }
+                    // ✅ Desktop browser — normal flow
+                    $redirectUrl = $dashboardUrl;
                 }
             }
         }
@@ -757,9 +722,7 @@ if (isset($_SESSION['exit_message'])) {
             display: none !important;
         }
 
-        /* ==============================================
-           UPDATE MODAL (was download_app.php)
-           ============================================== */
+        /* Update modal */
         .update-overlay {
             position: fixed;
             inset: 0;
@@ -822,11 +785,20 @@ if (isset($_SESSION['exit_message'])) {
             right: 14px;
             font-size: 13px;
             font-weight: 700;
-            color: #000207;
+            color: #1d4ed8;
             text-decoration: none;
             letter-spacing: 0.02em;
             padding: 6px 12px;
+            border-radius: 100px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            transition: color 0.15s, background 0.15s;
             z-index: 10;
+        }
+
+        .skip-link:hover {
+            color: #ffffff;
+            background: #1d4ed8;
         }
 
         .update-icon {
@@ -1130,10 +1102,7 @@ if (isset($_SESSION['exit_message'])) {
 
     <?php include 'footer.php'; ?>
 
-    <!-- ==============================================
-         UPDATE MODAL — shown when in-app version mismatch
-         (mirrors download_app.php content)
-         ============================================== -->
+    <!-- UPDATE MODAL — only when in-app + version mismatch + not skipped -->
     <?php if ($showUpdateModal): ?>
         <div class="update-overlay" id="updateOverlay">
             <div class="update-card">
@@ -1147,7 +1116,7 @@ if (isset($_SESSION['exit_message'])) {
                         Detecting installed version...
                     </div>
                     <div class="update-recommended">
-                        Mobile browser access is no longer available. Please download the SofiaApp.
+                        A new version is available. Update now or tap SKIP to continue with the current version.
                     </div>
                 </div>
 
@@ -1224,7 +1193,7 @@ if (isset($_SESSION['exit_message'])) {
                 if (!isInApp) {
                     badge.textContent = 'Not running in the app';
                     badge.classList.add('mismatch');
-                    versionValue.textContent = 'Mobile Web not supported';
+                    versionValue.textContent = 'N/A';
                 } else {
                     var v = 'unknown';
                     try {
@@ -1253,7 +1222,7 @@ if (isset($_SESSION['exit_message'])) {
             }
         });
 
-        // ✅ Show spinner on button click immediately
+        // ✅ Show spinner on button click
         (function () {
             var form = document.getElementById('loginForm');
             var btn = document.getElementById('loginBtn');
@@ -1319,6 +1288,9 @@ if (isset($_SESSION['exit_message'])) {
                         setTimeout(function () {
                             window.location.href = data.redirect;
                         }, 1000);
+                    } else if (data.show_update_modal) {
+                        // Show the update modal
+                        location.reload();
                     } else {
                         showBiometricStatus('' + data.message, 'error');
                     }
