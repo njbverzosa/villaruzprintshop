@@ -1000,7 +1000,7 @@ if (isset($_SESSION['exit_message'])) {
         <div class="auth-card">
             <p class="auth-sub">Log In your account</p>
 
-            <span class="btn-spinner"></span><div id="biometricStatus" class="status-message"></div>
+            <div id="biometricStatus" class="status-message"></div>
 
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
