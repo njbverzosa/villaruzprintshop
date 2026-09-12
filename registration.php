@@ -1,79 +1,4 @@
 <?php
-
-/**
- * ============================================================
- * REGISTRATION MODULE - Version 2.5.0
- * ============================================================
- * 
- * Project: Villaruz Print Shop & General Merchandise
- * 
- * VERSION HISTORY:
- * ------------------------------------------------------------
- * v1.0.0 (April 1-10, 2026) - Initial Development
- *   - Basic registration form with email and phone validation
- *   - Password hashing with bcrypt
- *   - CSRF protection implementation
- *   - OTP generation for email verification
- *   - PHPMailer integration for email sending
- * 
- * v1.1.0 (April 15, 2026) - Security Enhancements
- *   - Added password complexity requirements (uppercase, number, special char)
- *   - Improved phone number validation for Philippine mobile numbers
- *   - Added session-based OTP storage with expiration
- * 
- * v1.2.0 (April 25, 2026) - UI/UX Improvements
- *   - Redesigned email template with better branding
- *   - Added phone number notice in verification email
- *   - Improved error messages and validation feedback
- * 
- * v2.0.0 (May 1, 2026) - Major Feature Release
- *   - Added automatic account number generation from phone number
- *   - Implemented duplicate phone/email checking
- *   - Added active_email flag for account activation
- *   - Stored plain password in text_pass field (for legacy support)
- * 
- * v2.1.0 (May 15, 2026) - Security Audit
- *   - Fixed CSRF token regeneration on session start
- *   - Added PDO prepared statements to prevent SQL injection
- *   - Implemented error logging for debugging
- *   - Added transaction support for registration
- * 
- * v2.2.0 (June 1, 2026) - Code Optimization
- *   - Refactored duplicate checking logic
- *   - Optimized database queries
- *   - Added caching for frequently accessed data
- *   - Improved error handling with specific exception types
- * 
- * v2.3.0 (June 20, 2026) - Feature Enhancement
- *   - Added registration date with Philippines timezone
- *   - Improved OTP expiration handling
- *   - Added fallback for duplicate account numbers
- * 
- * v2.4.0 (July 5, 2026) - Performance & Maintenance
- *   - Cleaned up redundant code
- *   - Standardized naming conventions
- *   - Added comments and documentation
- *   - Fixed minor bugs in email sending
- * 
- * v2.4.1 (July 20, 2026) - Hotfix
- *   - Fixed email sending failure handling
- *   - Improved error messages for user feedback
- *   - Added logging for failed email attempts
- * 
- * v2.5.0 (August 10, 2026) - Current Version
- *   - Final code cleanup and optimization
- *   - Improved validation functions
- *   - Enhanced UI responsiveness
- *   - Added comprehensive error logging
- *   - Security hardening and input sanitization
- * 
- * CURRENT VERSION: 2.5.0
- * LAST UPDATED: August 10, 2026
- * ============================================================
- */
-
-// ============================================================
-// 1. CONFIGURATION & REQUIREMENTS
 // ============================================================
 require_once __DIR__ . '/DB_Conn/config.php';
 
@@ -587,23 +512,7 @@ if (isset($_SESSION['success'])) {
     <div class="auth-container">
         <div class="auth-card">
             <p class="auth-sub">Create Account</p>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <script>
-                    document.addEventListener('DOMContentLoaded', function () {
-                        if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
-                            try {
-                                var installedVersion = window.AndroidBiometric.getAppVersion();
-                                if (installedVersion && installedVersion !== 'unknown') {
-                                    document.getElementById('versionBadge').textContent = 'V' + installedVersion;
-                                }
-                            } catch (e) {
-                                console.log('Could not get app version:', e);
-                            }
-                        }
-                    });
-                </script>
-            </div>
-
+           
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-error">
                     <?php foreach ($errors as $error): ?>
