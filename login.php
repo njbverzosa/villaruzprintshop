@@ -4,7 +4,9 @@
 // ✅ Mobile browser → download_app.php
 // ✅ In-app version mismatch → installer modal (overlay)
 // ✅ In-app SKIP → use_old_app cookie for 1 day → login form unlocks
-// ✅ Biometric success now shows inside the Login button (spinner + text)
+// ✅ Both password + biometric show spinner inside the Login button
+// ✅ Password: 2s delay before redirect
+// ✅ Biometric: 0.5s delay before redirect
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -1018,11 +1020,13 @@ if (isset($_SESSION['exit_message'])) {
 
             <?php if ($loginSuccess): ?>
                 <script>
+                    // ✅ Password-login success: keep the spinner for 2 seconds, then redirect.
                     (function () {
                         var redirectUrl = '<?php echo $redirectUrl; ?>';
+                        setLoginButtonBusy('Accessing your account...');
                         setTimeout(function () {
                             window.location.href = redirectUrl;
-                        }, 3000);
+                        }, 2000);
                     })();
                 </script>
             <?php endif; ?>
@@ -1085,8 +1089,7 @@ if (isset($_SESSION['exit_message'])) {
 
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
                         <?php if ($loginSuccess): ?>
-                            <span class="btn-spinner"></span>
-                            <span>Logging in...</span>
+                            <span class="btn-spinner"></span><span>Accessing your account...</span>
                         <?php else: ?>
                             Login
                         <?php endif; ?>
@@ -1306,7 +1309,7 @@ if (isset($_SESSION['exit_message'])) {
 
             var installedVersion = readInstalledVersion();
 
-            // ✅ Show progress inside the Login button (same style as password login)
+            // ✅ Show progress inside the Login button
             setLoginButtonBusy('Accessing your account...');
 
             fetch(window.location.href, {
@@ -1323,9 +1326,10 @@ if (isset($_SESSION['exit_message'])) {
                 })
                 .then(data => {
                     if (data.success) {
+                        // ✅ Biometric: 0.5s delay before redirect
                         setTimeout(function () {
                             window.location.href = data.redirect;
-                        }, 800);
+                        }, 500);
                     } else if (data.show_update_modal) {
                         const overlay = document.getElementById('updateOverlay');
                         if (overlay) overlay.classList.add('visible');
