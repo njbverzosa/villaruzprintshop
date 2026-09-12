@@ -1208,7 +1208,7 @@ if (isset($_SESSION['exit_message'])) {
             var btn = document.getElementById('loginBtn');
             if (!btn) return;
             btn.disabled = true;
-            btn.innerHTML = '<span class="btn-spinner"></span><span>' + (label || '') + '</span>';
+            btn.innerHTML = '<span class="btn-spinner"></span>';
         }
 
         /** Restores the Login button to its idle state. */
