@@ -792,21 +792,13 @@ if (isset($_SESSION['exit_message'])) {
             right: 14px;
             font-size: 13px;
             font-weight: 700;
-            color: #1d4ed8;
+            color: #000513;
             text-decoration: none;
             letter-spacing: 0.02em;
             padding: 6px 12px;
-            border-radius: 100px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            transition: color 0.15s, background 0.15s;
-            z-index: 10;
+            border-radius: 5px;
         }
 
-        .skip-link:hover {
-            color: #ffffff;
-            background: #1d4ed8;
-        }
 
         .update-icon {
             display: flex;
