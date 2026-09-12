@@ -40,7 +40,7 @@ if ($userRole === 'Customer') {
     $stmt = $pdo->prepare("SELECT id, acc_number, online_time, f_name, email, phone_number, vip FROM customers WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-}
+}else
 
 if (!$userData) {
     session_destroy();

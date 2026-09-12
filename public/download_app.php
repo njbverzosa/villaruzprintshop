@@ -10,7 +10,23 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 include __DIR__ . '/../update_version.php';
 
 // ==============================================
-// 2. CHECK LOGIN STATUS
+// 2. DETECT PLATFORM
+// ==============================================
+$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$isInApp = (strpos($userAgent, 'SofiaApp') !== false);
+
+function isMobileBrowser()
+{
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    return (bool) preg_match(
+        '/(android|iphone|ipad|ipod|blackberry|opera mini|iemobile|mobile|windows phone)/i',
+        $ua
+    );
+}
+$isMobileWeb = !$isInApp && isMobileBrowser();
+
+// ==============================================
+// 3. CHECK LOGIN STATUS
 // ==============================================
 function isLoggedIn()
 {
@@ -26,7 +42,7 @@ if (!isLoggedIn()) {
 }
 
 // ==============================================
-// 3. GET USER DATA
+// 4. GET USER DATA
 // ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
@@ -50,7 +66,7 @@ if (!$userData) {
 }
 
 // ==============================================
-// 4. UPDATE ONLINE TIME (Customers only)
+// 5. UPDATE ONLINE TIME (Customers only)
 // ==============================================
 date_default_timezone_set('Asia/Manila');
 $currentTime = date('M j, g:i A');
@@ -63,7 +79,7 @@ if ($userRole === 'Customer') {
 $user = $userData;
 
 // ==============================================
-// 5. DETERMINE REDIRECT TARGET
+// 6. DETERMINE DASHBOARD TARGET
 // ==============================================
 function getRedirectTarget($userRole, $user)
 {
@@ -75,44 +91,21 @@ function getRedirectTarget($userRole, $user)
 }
 
 // ==============================================
-// 6. HANDLE "SKIP" CLICK
+// 7. HANDLE SKIP / "I ALREADY HAVE THE APP"
 // ==============================================
+// In-app → remember for this session, continue using old app
+// Mobile web → back to login
 if (isset($_GET['skip']) && $_GET['skip'] === '1') {
-    setcookie(
-        'update_reminded_version',
-        $latestVersion,
-        time() + 86400,  // 1 day
-        '/'
-    );
-    header('Location: ' . getRedirectTarget($userRole, $user));
-    exit;
-}
 
-// ==============================================
-// 7. HANDLE "I ALREADY HAVE THE APP" CLICK
-// ==============================================
-if (isset($_GET['have_app']) && $_GET['have_app'] === '1') {
-    setcookie(
-        'update_reminded_version',
-        $latestVersion,
-        time() + (86400 * 365),  // 1 year
-        '/'
-    );
-    header('Location: ' . getRedirectTarget($userRole, $user));
-    exit;
-}
+    if ($isInApp) {
+        // ✅ Session flag: user chose to keep using the old app this session
+        $_SESSION['use_old_app'] = true;
+        header('Location: ' . getRedirectTarget($userRole, $user));
+        exit;
+    }
 
-// ==============================================
-// 8. HANDLE AUTO-CONFIRM FROM JS (version matched)
-// ==============================================
-if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
-    setcookie(
-        'update_reminded_version',
-        $latestVersion,
-        time() + (86400 * 365),  // 1 year
-        '/'
-    );
-    header('Location: ' . getRedirectTarget($userRole, $user));
+    // ✅ Mobile web → back to login
+    header('Location: ../login.php');
     exit;
 }
 
@@ -125,7 +118,6 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Sofia App · Update & Download</title>
     <style>
-        /* RESET & BASE */
         * {
             margin: 0;
             padding: 0;
@@ -216,7 +208,6 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
             letter-spacing: -0.015em;
         }
 
-        /* ✅ Installed version badge below title */
         .app-installed-version {
             display: inline-block;
             margin-top: 0.5rem;
@@ -225,7 +216,7 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
             color: #475569;
             background: #f1f5f9;
             padding: 0.3rem 0.85rem;
-            border-radius: 100px;
+            border-radius: 5px;
             border: 1px solid #e2e8f0;
             letter-spacing: 0.02em;
         }
@@ -251,8 +242,9 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
         .app-recommended {
             font-size: 17px;
             color: #067bf8;
-            margin-top: 0.5rem;
+            margin-top: 25px;
         }
+
         .app-body {
             flex: 1;
             padding: 2rem 1.5rem;
@@ -420,17 +412,17 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
 
         <!-- HEADER -->
         <div class='app-header'>
+            <!-- ✅ SKIP: in-app → session flag + dashboard | mobile web → login -->
             <a href="?skip=1" class="skip-link">SKIP</a>
 
             <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
             <div class='app-title'>SofiaApp</div>
 
-            <!-- ✅ Installed version of the user's app -->
             <div class="app-installed-version" id="installedVersionBadge">
                 Detecting installed version...
             </div>
-            <div class='app-recommended'>Recommended for best experience</div>
-            <div class='app-subtitle'>Villaruz Print Shop &amp; General Merchandise</div>
+            <div class='app-recommended'>Mobile browser access is no longer available. Please download the SofiaApp.
+            </div>
         </div>
 
         <!-- BODY -->
@@ -439,30 +431,30 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
             <div class='info-block'>
                 <div class='info-label'>Update Notice</div>
                 A new version of the <strong>Sofia App</strong> is now available. Update or download the latest release
-                for
-                improved performance, a hassle-free application process, and password-free login using your device
-                security.
-                Access your account and orders anytime, anywhere — in just one touch. Get the latest features now.
+                for improved performance, a hassle-free application process, and password-free login using your device
+                security. Access your account and orders anytime, anywhere — in just one touch.
             </div>
 
             <div class='info-block'>
-                <div class='info-label'>Options</div>
-                You can also download the latest version of the Sofia App directly from the Login page. If you prefer to
-                update later, click the <strong>SKIP</strong> link at the top-right corner — you'll be reminded to
-                update
-                again next time.
+                <div class='info-label'>Your Options</div>
+                Keep using your current version, or tap <strong>SKIP</strong> to update later.
             </div>
 
             <div class='info-block'>
-                <div class='info-label'>How to use it</div>
-                After installing the Sofia App, log in once using your account credentials and password to activate
-                biometric login. Once enabled, you can sign in with just your fingerprint or PIN.
+                <div class='info-label'>How It Works</div>
+                Log in once with your password to activate biometric login.
+            </div>
+
+            <div class='info-block'>
+                <div class='info-label'>Having Trouble?</div>
+                Uninstall the old app, then download the latest version from the link below. If you still encounter
+                issues, contact our support team.
             </div>
 
             <ul class='details-list'>
                 <li>
                     <span class='label'>New Release</span>
-                    <span class='value'><?php echo $latestVersion; ?></span>
+                    <span class='value'><?php echo htmlspecialchars($latestVersion); ?></span>
                 </li>
                 <li>
                     <span class='label'>Old Version</span>
@@ -479,15 +471,10 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
             </ul>
 
             <div class='action-buttons'>
-                <a href='http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
+                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
                     class='btn btn-primary'>Download Sofia App</a>
-                <a href='http://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
+                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
                     class='btn btn-outline'>Re-Install App</a>
-
-                <!-- Manual fallback -->
-                <a href='?have_app=1' class='btn btn-success'>
-                    I Already Have the App
-                </a>
             </div>
 
         </div>
@@ -499,7 +486,7 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
 
     </div>
 
-    <!-- ✅ JS: Read installed version + display + auto-confirm -->
+    <!-- ✅ JS: Read installed version + display -->
     <script>
         (function () {
             var latestVersion = <?php echo json_encode($latestVersion); ?>;
@@ -518,20 +505,18 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
                 }
             }
 
-            // If not in app → show message
             if (!isInApp) {
                 if (badge) {
                     badge.textContent = 'Not running in the app';
                     badge.classList.add('mismatch');
                 }
                 if (versionValue) {
-                    versionValue.textContent = 'N/A (web browser)';
+                    versionValue.textContent = 'Mobile Web not supported';
                 }
-                console.log('🌐 Not in app — no auto-confirm');
+                console.log('🌐 Not in app — no auto-redirect');
                 return;
             }
 
-            // In app → read version
             var installed = '';
             try {
                 if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
@@ -557,13 +542,8 @@ if (isset($_GET['version_ok']) && $_GET['version_ok'] === '1') {
             updateBadge(installed, matched);
             console.log('📱 Installed:', installed, '| Latest:', latestVersion, '| Match:', matched);
 
-            // ✅ Auto-confirm if version matches → set cookie + redirect
-            if (matched) {
-                console.log('✅ Version matches — auto-confirming in 1s...');
-                setTimeout(function () {
-                    window.location.href = '?version_ok=1';
-                }, 1000);
-            }
+            // No auto-redirect here anymore — this page only shows when versions
+            // don't match, so there's nothing to auto-confirm.
         })();
     </script>
 

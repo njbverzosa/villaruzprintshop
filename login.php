@@ -6,6 +6,7 @@
 // ✅ Web + biometric_enrolled=0 → download_app.php first
 // ✅ Admin web login → straight to dashboard (skip biometric)
 // ✅ Spinner shown inside Login button (no separate alert)
+// ✅ Mobile browser → download_app.php (NEW)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -23,10 +24,38 @@ $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
 
 // ==============================================
+// ✅ DETECT MOBILE BROWSER (NEW)
+// ==============================================
+function isMobileBrowser($userAgent)
+{
+    $mobileKeywords = [
+        'Android',
+        'webOS',
+        'iPhone',
+        'iPad',
+        'iPod',
+        'BlackBerry',
+        'Windows Phone',
+        'Opera Mini',
+        'IEMobile',
+        'Mobile'
+    ];
+
+    foreach ($mobileKeywords as $keyword) {
+        if (stripos($userAgent, $keyword) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+$isMobileBrowser = isMobileBrowser($userAgent);
+
+// ==============================================
 // ✅ DETECT INSTALLED APP VERSION (from JS bridge)
 // ==============================================
 $installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version'] ?? '');
-$latestVersion    = trim($latestVersion);
+$latestVersion = trim($latestVersion);
 
 // ✅ Determine version match
 if ($isInApp) {
@@ -155,7 +184,11 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     // ✅ REDIRECT LOGIC (biometric login)
     if ($userType === 'Admin') {
-        $redirectUrl = 'web/all_products.php';
+        if ($isMobileBrowser) {
+            $redirectUrl = 'public/download_app.php';
+        } else {
+            $redirectUrl = 'web/all_products.php';
+        }
     } else {
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
@@ -166,7 +199,11 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
             } else {
                 $redirectUrl = 'public/download_app.php';
             }
+        } else if ($isMobileBrowser) {
+            // ✅ NEW: Mobile browser → download_app.php
+            $redirectUrl = 'public/download_app.php';
         } else {
+            // Desktop browser
             if ($needsUpdate && !$reminded) {
                 $redirectUrl = 'public/download_app.php';
             } else {
@@ -316,7 +353,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     } else {
                         $redirectUrl = 'web/all_products.php';
                     }
+                } else if ($isMobileBrowser) {
+                    // ✅ Mobile browser admin → download_app.php
+                    $redirectUrl = 'public/download_app.php';
                 } else {
+                    // Desktop browser admin → dashboard
                     $redirectUrl = 'web/all_products.php';
                 }
             } else {
@@ -336,7 +377,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                             $redirectUrl = 'public/download_app.php';
                         }
                     }
+                } else if ($isMobileBrowser) {
+                    // ✅ NEW: Mobile browser → download_app.php
+                    $redirectUrl = 'public/download_app.php';
                 } else {
+                    // Desktop browser
                     $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
                     $reminded = ($remindedVersion === $latestVersion);
                     $needsUpdate = version_compare($latestVersion, $currentVersion, '>');
