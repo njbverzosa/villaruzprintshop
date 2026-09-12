@@ -1000,8 +1000,6 @@ if (isset($_SESSION['exit_message'])) {
         <div class="auth-card">
             <p class="auth-sub">Log In your account</p>
 
-            <div id="biometricStatus" class="status-message"></div>
-
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
                     <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
@@ -1086,7 +1084,7 @@ if (isset($_SESSION['exit_message'])) {
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
                         <?php if ($loginSuccess): ?>
                             <span class="btn-spinner"></span>
-                            <span>Logging in...</span>
+                            <span>Accessing your account...</span>
                         <?php else: ?>
                             Login
                         <?php endif; ?>
