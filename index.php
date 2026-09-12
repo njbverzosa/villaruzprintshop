@@ -1,16 +1,19 @@
 <?php
-//index.php
-
-include 'app_version.php';
-
+// index.php - Villaruz Print Shop Homepage with APK Download
 ?>
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 
 <head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Sofia App · Update & Download</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Villaruz Print Shop & General Merchandise | Modern Print & Retail</title>
+    <!-- Font Awesome 6 (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts: Poppins + Inter for modern look -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -18,356 +21,856 @@ include 'app_version.php';
             box-sizing: border-box;
         }
 
-        html,
         body {
-            width: 100%;
-            height: 100%;
-            overflow-x: hidden;
-        }
-
-        body {
-            background: #ffffff;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            justify-content: flex-start;
+            font-family: 'Inter', 'Poppins', sans-serif;
+            background-color: #FCF9F5;
+            color: #1E2A2F;
             line-height: 1.5;
-            color: #1e2b3c;
-            min-height: 100vh;
+            scroll-behavior: smooth;
         }
 
-        .app-card {
-            width: 100%;
-            min-height: 100vh;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+        :root {
+            --ink-deep: #1C2E36;
+            --press-cyan: #2C5F6E;
+            --gold-accent: #D9A13B;
+            --warm-paper: #FCF9F5;
+            --slate-mist: #EFF3F0;
+            --card-bg: #FFFFFF;
+            --border-light: #E2E8F0;
+            --text-dark: #1E2A2F;
+            --text-muted: #4A5B66;
+            --success-green: #2D6A4F;
+            --shadow-sm: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            --shadow-md: 0 20px 25px -12px rgba(0, 0, 0, 0.08);
         }
 
-        .app-header {
-            padding: 2rem 1.5rem 1.5rem 1.5rem;
-            border-bottom: 1px solid #edf2f7;
-            text-align: center;
-            position: relative;
-            background: #ffffff;
+        ::-webkit-scrollbar {
+            width: 8px;
         }
 
-        .skip-link {
-            position: absolute;
-            top: 1rem;
-            right: 1.25rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #5f6f80;
-            text-decoration: none;
-            letter-spacing: 0.02em;
-            padding: 0.4rem 0.75rem;
-            border-radius: 8px;
-            transition: color 0.15s, background 0.15s;
-            z-index: 10;
+        ::-webkit-scrollbar-track {
+            background: #E2E8F0;
         }
 
-        .skip-link:hover {
-            color: #1e2b3c;
-            background: #e2e8f0;
-        }
-
-        .skip-link:focus-visible {
-            outline: 2px solid #2563eb;
-            outline-offset: 2px;
-        }
-
-        .app-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-weight: 700;
-            font-size: 1.75rem;
-            letter-spacing: -0.02em;
-            margin: 0 auto 1rem auto;
-        }
-
-        .app-icon img {
-            max-width: 72px;
-            height: auto;
-        }
-
-        .app-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #0b1e2e;
-            letter-spacing: -0.015em;
-        }
-
-        .app-installed-version {
-            display: inline-block;
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #475569;
-            background: #f1f5f9;
-            padding: 0.3rem 0.85rem;
-            border-radius: 5px;
-            border: 1px solid #e2e8f0;
-            letter-spacing: 0.02em;
-        }
-
-        .app-installed-version.match {
-            background: #f0fdf4;
-            color: #065f46;
-            border-color: #bbf7d0;
-        }
-
-        .app-installed-version.mismatch {
-            background: #fef2f2;
-            color: #dc2626;
-            border-color: #fecaca;
-        }
-
-        .app-subtitle {
-            font-size: 0.875rem;
-            color: #5f6f80;
-            margin-top: 0.5rem;
-        }
-
-        .app-recommended {
-            font-size: 17px;
-            color: #067bf8;
-            margin-top: 25px;
-        }
-
-        .app-body {
-            flex: 1;
-            padding: 2rem 1.5rem;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            max-width: 720px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .info-block {
-            background: #f8fafd;
-            border-left: 4px solid #2563eb;
-            padding: 1rem 1.25rem;
-            border-radius: 10px;
-            margin-bottom: 1.5rem;
-            font-size: 0.9375rem;
-            color: #1e2b3c;
-        }
-
-        .info-block strong {
-            color: #1e40af;
-        }
-
-        .info-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #5f6f80;
-            margin-bottom: 0.25rem;
-        }
-
-        .details-list {
-            list-style: none;
-            margin: 0 0 2rem 0;
-            border: 1px solid #e2e8f0;
+        ::-webkit-scrollbar-thumb {
+            background: #2C5F6E;
             border-radius: 12px;
-            overflow: hidden;
         }
 
-        .details-list li {
+        nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.85rem 1rem;
-            font-size: 0.875rem;
-            border-bottom: 1px solid #edf2f7;
+            padding: 14px 5%;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(44, 95, 110, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
         }
 
-        .details-list li:last-child {
+        .logo img {
+            width: 110px;
+            height: auto;
+            max-width: 100%;
+            object-fit: contain;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: #1C2E36;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            letter-spacing: -0.2px;
+        }
+
+        .nav-links a:hover {
+            color: #D9A13B;
+        }
+
+        .btn-order {
+            background: #2C5F6E;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 40px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            transition: 0.25s;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            letter-spacing: -0.2px;
+        }
+
+        .btn-order:hover {
+            background: #1C3E48;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 18px -6px rgba(44, 95, 110, 0.3);
+        }
+
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 60px 5%;
+            gap: 40px;
+            background: linear-gradient(135deg, #FCF9F5 0%, #F6F3EF 100%);
+        }
+
+        .hero-content {
+            flex: 1;
+        }
+
+        .hero-title {
+            font-size: clamp(32px, 5vw, 56px);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            color: #1C2E36;
+        }
+
+        .hero-title span {
+            background: linear-gradient(120deg, #2C5F6E, #D9A13B);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
             border-bottom: none;
         }
 
-        .details-list .label {
-            color: #5f6f80;
+        .hero-desc {
+            font-size: 1.05rem;
+            color: #3A4F5A;
+            margin-bottom: 32px;
+            max-width: 550px;
         }
 
-        .details-list .value {
-            color: #0b1e2e;
-            font-weight: 500;
-        }
-
-        .action-buttons {
+        .hero-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.875rem 1.25rem;
-            border-radius: 40px;
-            font-weight: 500;
-            font-size: 1rem;
-            border: 1px solid transparent;
-            cursor: pointer;
-            text-decoration: none;
-            line-height: 1.2;
-            transition: background 0.15s, box-shadow 0.15s;
-            width: 100%;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         .btn-primary {
-            background: #1d4ed8;
-            color: #ffffff;
-            border-color: #1d4ed8;
-            box-shadow: 0 2px 6px rgba(29, 78, 216, 0.2);
+            background: #2C5F6E;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-primary:hover {
-            background: #1e40af;
+            background: #1E454F;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px -12px rgba(44, 95, 110, 0.4);
         }
 
-        .btn-outline {
-            background: #ffffff;
-            color: #1e2b3c;
-            border-color: #cbd5e1;
+        .btn-secondary {
+            background: transparent;
+            border: 1.5px solid #2C5F6E;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1C2E36;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
 
-        .btn-outline:hover {
-            background: #f8fafd;
+        .btn-secondary:hover {
+            background: rgba(44, 95, 110, 0.06);
+            border-color: #D9A13B;
+            color: #D9A13B;
+            transform: translateY(-2px);
         }
 
-        .btn-success {
-            background: #16a34a;
-            color: #ffffff;
-            border-color: #16a34a;
-            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+        /* ============================================== */
+        /* DOWNLOAD APP BUTTON - SPECIAL STYLE */
+        /* ============================================== */
+        .btn-download {
+            background: linear-gradient(135deg, #D9A13B, #B8860B);
+            border: none;
+            padding: 12px 32px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .btn-success:hover {
-            background: #15803d;
+        .btn-download:hover {
+            background: linear-gradient(135deg, #B8860B, #8B7500);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px -12px rgba(184, 134, 11, 0.5);
         }
 
-        .btn:focus-visible {
-            outline: 2px solid #2563eb;
-            outline-offset: 2px;
+        .btn-download i {
+            font-size: 1.2rem;
         }
 
-        .app-footer {
-            padding: 1.25rem 1.5rem;
-            border-top: 1px solid #edf2f7;
+        /* Features Section */
+        .features {
+            padding: 70px 5%;
+            background: #FFFFFF;
+        }
+
+        .section-title {
             text-align: center;
+            font-size: clamp(28px, 5vw, 40px);
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: #1C2E36;
+        }
+
+        .section-title span {
+            color: #D9A13B;
+        }
+
+        .section-sub {
+            text-align: center;
+            color: #5A6E7A;
+            margin-bottom: 48px;
+            font-size: 1rem;
+            max-width: 680px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            padding: 32px 24px;
+            border-radius: 28px;
+            text-align: center;
+            border: 1px solid #EDF2F7;
+            transition: all 0.25s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .feature-card:hover {
+            border-color: #D9A13B;
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .feature-icon {
+            font-size: 46px;
+            color: #2C5F6E;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            color: #1C2E36;
+        }
+
+        .feature-card p {
+            color: #4F6F7C;
+            font-size: 0.9rem;
+        }
+
+        /* Carousel */
+        .carousel-section {
+            padding: 70px 5%;
+            background: #F8F6F2;
+        }
+
+        .carousel-container {
+            max-width: 950px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            border-radius: 32px;
+        }
+
+        .carousel-slides {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            padding: 44px 32px;
+            background: white;
+            border-radius: 32px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid #EEF2F6;
+        }
+
+        .carousel-slide i {
+            font-size: 52px;
+            color: #D9A13B;
+            margin-bottom: 20px;
+        }
+
+        .carousel-slide p {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1C2E36;
+        }
+
+        .carousel-slide .badge {
+            display: inline-block;
+            background: #2C5F6E10;
+            padding: 5px 18px;
+            border-radius: 60px;
             font-size: 0.75rem;
-            color: #5f6f80;
-            background: #ffffff;
+            font-weight: 600;
+            color: #2C5F6E;
+            margin-top: 12px;
+        }
+
+        .carousel-slide small {
+            display: block;
+            color: #7A8E9B;
+            font-size: 0.8rem;
+            margin-top: 16px;
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border: 1px solid #E2E8F0;
+            width: 40px;
+            height: 40px;
+            border-radius: 60px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            color: #1C2E36;
+        }
+
+        .carousel-btn:hover {
+            background: #2C5F6E;
+            color: white;
+            border-color: #2C5F6E;
+        }
+
+        .carousel-btn.prev {
+            left: 16px;
+        }
+
+        .carousel-btn.next {
+            right: 16px;
+        }
+
+        .carousel-dots {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #Cbd5E0;
+            margin: 0 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .dot.active {
+            background: #D9A13B;
+            width: 26px;
+            border-radius: 10px;
+        }
+
+        /* Services */
+        .services {
+            padding: 70px 5%;
+            background: #FFFFFF;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 28px;
+            margin-top: 20px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 28px;
+            overflow: hidden;
+            border: 1px solid #EDF2F7;
+            transition: 0.25s;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .service-card:hover {
+            border-color: #D9A13B;
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .service-img {
+            height: 130px;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 54px;
+            color: #2C5F6E;
+        }
+
+        .service-info {
+            padding: 22px 18px 24px;
+        }
+
+        .service-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #1C2E36;
+        }
+
+        .service-info p {
+            color: #5A6F7C;
+            font-size: 0.85rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 5% 28px;
+            background: #1C2E36;
+            color: #CFDFE8;
+            border-top: 1px solid #2C4853;
+        }
+
+        .copyright {
+            text-align: center;
+            font-size: 0.8rem;
+            opacity: 0.85;
+        }
+
+        .copyright p i {
+            margin: 0 4px;
+            color: #D9A13B;
+        }
+
+        /* ============================================== */
+        /* APP DOWNLOAD POPUP / MODAL */
+        /* ============================================== */
+        .app-banner {
+            background: linear-gradient(135deg, #1C2E36, #2C5F6E);
+            color: white;
+            padding: 16px 5%;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .app-banner span {
+            font-weight: 400;
+        }
+
+        .app-banner strong {
+            color: #D9A13B;
+        }
+
+        .app-banner .btn-sm {
+            background: #D9A13B;
+            color: #1C2E36;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-banner .btn-sm:hover {
+            background: #B8860B;
+            transform: scale(1.02);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 12px 5%;
+            }
+
+            .logo img {
+                width: 85px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .btn-order {
+                padding: 8px 20px;
+                font-size: 0.8rem;
+            }
+
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                padding: 48px 5%;
+            }
+
+            .hero-desc {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .carousel-btn {
+                width: 34px;
+                height: 34px;
+            }
+
+            .app-banner {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 5%;
+            }
         }
 
         @media (max-width: 480px) {
-            .app-header {
-                padding: 1.75rem 1.25rem 1.25rem 1.25rem;
+            .hero-title {
+                font-size: 2rem;
             }
 
-            .app-body {
-                padding: 1.5rem 1.25rem;
+            .btn-primary,
+            .btn-secondary,
+            .btn-download {
+                font-size: 0.85rem;
+                padding: 10px 20px;
             }
 
-            .app-title {
-                font-size: 1.25rem;
+            .feature-card {
+                padding: 24px 16px;
             }
 
-            .app-icon img {
-                max-width: 64px;
-            }
-
-            .skip-link {
-                top: 0.75rem;
-                right: 0.75rem;
-                font-size: 0.8125rem;
-                padding: 0.3rem 0.6rem;
+            .carousel-slide {
+                padding: 32px 20px;
             }
         }
     </style>
 </head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-95VNH7KVRB"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-95VNH7KVRB');
+</script>
 
 <body>
 
-    <div class='app-card'>
+    <nav>
+        <div class="logo">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Print Shop Logo">
+        </div>
+        <div class="nav-links">
+            <a href="#">Home</a>
+            <a href="#services">Services</a>
+            <a href="#pricing">Packages</a>
+        </div>
+        <a href="login.php" class="btn-order">Login</a>
+    </nav>
 
-        <!-- HEADER -->
-        <div class='app-header'>
-            <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
-            <div class='app-title'>SofiaApp</div>
-
-            <div class='app-recommended'>Mobile browser access is no longer available. Please download the SofiaApp app.
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title"><span>Villaruz Print Shop</span> & General Merchandise</h1>
+            <p class="hero-desc">Premium printing + everyday essentials — banners, flyers, custom merch, school & office
+                supplies. Fast, reliable, and creatively driven.</p>
+            <div class="hero-buttons">
+                <a href="registration.php" class="btn-primary">Create an account</a>
+                <!-- <a href="/villaruz-app.apk" class="btn-download" id="heroDownloadBtn">
+                    <i class="fas fa-download"></i> Download App
+                </a> -->
             </div>
         </div>
+    </section>
 
-        <!-- BODY -->
-        <div class='app-body'>
-
-            <div class='info-block'>
-                <div class='info-label'>Update Notice</div>
-                A new version of the <strong>Sofia App</strong> is now available. Update or download the latest release
-                for improved performance, a hassle-free application process, and password-free login using your device
-                security. Access your account and orders anytime, anywhere — in just one touch.
+    <!-- Features -->
+    <section class="features">
+        <h2 class="section-title">Why Choose <span>Villaruz</span></h2>
+        <p class="section-sub">Where quality meets convenience — trusted by local businesses and families</p>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-palette"></i></div>
+                <h3>Custom Design Studio</h3>
+                <p>In-house experts bring your vision to life. Free mockups & revisions on bulk orders.</p>
             </div>
-
-            <div class='info-block'>
-                <div class='info-label'>How It Works</div>
-                Log in once with your password to activate biometric login.
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-cubes"></i></div>
+                <h3>General Merchandise Hub</h3>
+                <p>From notebooks and ballpens to home tools — one-stop daily essentials.</p>
             </div>
-
-            <div class='info-block'>
-                <div class='info-label'>Having Trouble?</div>
-                Uninstall the old app, then download the latest version from the link below. If you still encounter
-                issues, contact our support team.
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-leaf"></i></div>
+                <h3>Eco-Conscious Materials</h3>
+                <p>Sustainable paper, soy-based inks, and reusable banners for green printing.</p>
             </div>
-
-            <ul class='details-list'>
-                <li>
-                    <span class='label'>New Release</span>
-                    <span class='value'><?php echo htmlspecialchars($latestVersion); ?></span>
-                </li>
-                <li>
-                    <span class='label'>Old Version</span>
-                    <span class='value'><?php echo htmlspecialchars($currentVersion); ?></span>
-                </li>
-                <li>
-                    <span class='label'>Release Date</span>
-                    <span class='value'>March 2026</span>
-                </li>
-                <li>
-                    <span class='label'>Requirements</span>
-                    <span class='value'>Android 6.0 and above.</span>
-                </li>
-            </ul>
-
-            <div class='action-buttons'>
-                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
-                    class='btn btn-primary'>Download Sofia App</a>
-                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
-                    class='btn btn-outline'>Re-Install App</a>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-truck-fast"></i></div>
+                <h3>Express Turnaround</h3>
+                <p>Same-day rush prints and scheduled delivery across the metro.</p>
             </div>
-
         </div>
+    </section>
 
-        <!-- FOOTER -->
-        <div class='app-footer'>
-            &copy; 2026 Villaruz Print Shop &amp; General Merchandise. All rights reserved.
+    <!-- Carousel -->
+    <section class="carousel-section">
+        <h2 class="section-title">Commitment to <span>Excellence</span></h2>
+        <p class="section-sub">What makes Villaruz your go-to print & retail partner</p>
+        <div class="carousel-container">
+            <div class="carousel-slides">
+                <div class="carousel-slide">
+                    <i class="fas fa-print"></i>
+                    <p>🎨 Premium Digital & Offset Printing</p>
+                    <p>Vibrant color accuracy, high-resolution output for all marketing materials.</p>
+                    <div class="badge">Pro-Grade Equipment</div>
+                    <small>Consistent quality, batch after batch</small>
+                </div>
+                <div class="carousel-slide">
+                    <i class="fas fa-box-open"></i>
+                    <p>📦 General Merchandise Corner</p>
+                    <p>School supplies, office needs, cleaning tools — real value items.</p>
+                    <div class="badge">Everyday Low Prices</div>
+                    <small>Retail + Wholesale availability</small>
+                </div>
+                <div class="carousel-slide">
+                    <i class="fas fa-stopwatch"></i>
+                    <p>⏱️ Rush Orders Ready in Hours</p>
+                    <p>Need 500 flyers for tomorrow's event? We deliver express printing.</p>
+                    <div class="badge">Same-Day Service</div>
+                    <small>24-hour hotline for urgent requests</small>
+                </div>
+                <div class="carousel-slide">
+                    <i class="fas fa-hand-holding-heart"></i>
+                    <p>🤝 Community & B2B Partnerships</p>
+                    <p>Loyalty programs, bulk discounts, and flexible terms for regulars.</p>
+                    <div class="badge">Corporate Friendly</div>
+                    <small>Trusted by 200+ local businesses</small>
+                </div>
+            </div>
+            <button class="carousel-btn prev" onclick="prevSlide()">❮</button>
+            <button class="carousel-btn next" onclick="nextSlide()">❯</button>
+            <div class="carousel-dots" id="dots"></div>
         </div>
+    </section>
 
-    </div>
+    <!-- Services -->
+    <section class="services" id="services">
+        <h2 class="section-title">Our <span>Offerings</span></h2>
+        <p class="section-sub">Printing + merchandise — everything under one roof</p>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-img"><i class="fas fa-tshirt"></i></div>
+                <div class="service-info">
+                    <h3>Custom Apparel & Totes</h3>
+                    <p>Screenprint, DTG, embroidery. Perfect for teams & giveaways.</p>
+                </div>
+            </div>
+            <div class="service-card">
+                <div class="service-img"><i class="fas fa-book"></i></div>
+                <div class="service-info">
+                    <h3>School & Office Supplies</h3>
+                    <p>Notebooks, folders, record books, calculators, and more.</p>
+                </div>
+            </div>
+            <div class="service-card">
+                <div class="service-img"><i class="fas fa-store"></i></div>
+                <div class="service-info">
+                    <h3>Household Essentials</h3>
+                    <p>Cleaning, storage, kitchen basics — quality general merchandise.</p>
+                </div>
+            </div>
+            <div class="service-card">
+                <div class="service-img"><i class="fas fa-flag-checkered"></i></div>
+                <div class="service-info">
+                    <h3>Large Format & Banners</h3>
+                    <p>Tarpaulins, posters, retractable banners, outdoor-grade prints.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="copyright">
+            <p>© 2026 Villaruz Print Shop & GEN. MDSE.</p>
+            <p style="margin-top: 12px;">
+                <i class="fas fa-print"></i> Custom Printing |
+                <i class="fas fa-store"></i> Retail Merchandise |
+                <i class="fas fa-headset"></i> Support 24/7 |
+                <i class="fas fa-code"></i> Developer: Norlie Jay Verzosa |
+                <i class="fas fa-envelope"></i> Message Us: villaruzprintshop@gmail.com
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // ==============================================
+        // CAROUSEL
+        // ==============================================
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.carousel-slide');
+        const slidesContainer = document.querySelector('.carousel-slides');
+        const dotsContainer = document.getElementById('dots');
+        let autoPlayInterval;
+
+        function updateCarousel() {
+            if (slidesContainer) {
+                slidesContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+            }
+            document.querySelectorAll('.dot').forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === currentSlide);
+            });
+        }
+
+        function createDots() {
+            if (!dotsContainer) return;
+            slides.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.classList.add('dot');
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => {
+                    currentSlide = i;
+                    updateCarousel();
+                    resetAutoPlay();
+                });
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateCarousel();
+            resetAutoPlay();
+        }
+
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            updateCarousel();
+            resetAutoPlay();
+        }
+
+        function startAutoPlay() {
+            autoPlayInterval = setInterval(() => nextSlide(), 5200);
+        }
+
+        function resetAutoPlay() {
+            clearInterval(autoPlayInterval);
+            startAutoPlay();
+        }
+
+        if (slides.length) {
+            createDots();
+            startAutoPlay();
+        }
+
+        // ==============================================
+        // FINGERPRINT DETECTION (For App Users)
+        // ==============================================
+
+        // Check if running inside the Android app
+        if (typeof AndroidBiometric !== 'undefined') {
+            // User is in the app — change "Download App" to "Login with Fingerprint"
+            var downloadBtns = document.querySelectorAll('.btn-download, #downloadAppBtn, .btn-sm');
+            downloadBtns.forEach(function(btn) {
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> Login with Fingerprint';
+                btn.href = '#';
+                btn.onclick = function(e) {
+                    e.preventDefault();
+                    // Trigger fingerprint login
+                    if (typeof AndroidBiometric !== 'undefined') {
+                        var challenge = "app_launch_" + Date.now();
+                        AndroidBiometric.authenticate(challenge);
+                    }
+                };
+            });
+
+            // Also hide the app banner for app users (optional)
+            var appBanner = document.getElementById('appBanner');
+            if (appBanner) {
+                appBanner.style.display = 'none';
+            }
+        }
+
+        // ==============================================
+        // FINGERPRINT CALLBACK FUNCTIONS
+        // ==============================================
+
+        function biometricSuccess(challenge) {
+            window.location.href = 'faceLogin.php';
+        }
+
+        function biometricFailed() {
+            alert('❌ Fingerprint not recognized. Please try again.');
+        }
+
+        function cancelBiometric() {
+            console.log('Fingerprint login cancelled.');
+        }
+
+        function biometricError(errorMessage) {
+            alert('⚠️ Biometric error: ' + errorMessage);
+        }
+    </script>
 </body>
 
 </html>
