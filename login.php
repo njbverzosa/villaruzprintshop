@@ -9,8 +9,8 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
 
-$latestVersion = '22.38.11';   // ✅ MUST MATCH build.gradle versionName
-$currentVersion = '21.18.48';   // previous version (used for web update nag)
+$latestVersion = '22.40.11';   // ✅ MUST MATCH build.gradle versionName
+$currentVersion = '22.38.11';   // previous version (used for web update nag)
 
 // ==============================================
 // ✅ DETECT LOGIN PLATFORM (APP OR WEB)
