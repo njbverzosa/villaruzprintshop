@@ -1270,7 +1270,6 @@ if (isset($_SESSION['exit_message'])) {
             const modalVisible = overlay && overlay.classList.contains('visible');
             if (!modalVisible && hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
-                setLoginButtonBusy('Waiting for biometric...');
                 window.AndroidBiometric.authenticate('auto');
             }
         });
