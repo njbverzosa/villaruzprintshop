@@ -4,6 +4,7 @@
 // ✅ Mobile browser → download_app.php
 // ✅ In-app version mismatch → installer modal (overlay)
 // ✅ In-app SKIP → use_old_app cookie for 1 day → login form unlocks
+// ✅ Biometric success now shows inside the Login button (spinner + text)
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -23,8 +24,16 @@ $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
 function isMobileBrowser($userAgent)
 {
     $mobileKeywords = [
-        'Android', 'webOS', 'iPhone', 'iPad', 'iPod',
-        'BlackBerry', 'Windows Phone', 'Opera Mini', 'IEMobile', 'Mobile'
+        'Android',
+        'webOS',
+        'iPhone',
+        'iPad',
+        'iPod',
+        'BlackBerry',
+        'Windows Phone',
+        'Opera Mini',
+        'IEMobile',
+        'Mobile'
     ];
     foreach ($mobileKeywords as $keyword) {
         if (stripos($userAgent, $keyword) !== false) {
@@ -43,7 +52,7 @@ $installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version
 
 if ($isInApp) {
     $installedNorm = preg_replace('/[^0-9.]/', '', $installedVersion);
-    $latestNorm    = preg_replace('/[^0-9.]/', '', $latestVersion);
+    $latestNorm = preg_replace('/[^0-9.]/', '', $latestVersion);
 
     if (!empty($installedNorm) && $installedNorm !== 'unknown') {
         $appVersionMatch = version_compare($installedNorm, $latestNorm, '==');
@@ -73,8 +82,8 @@ if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
         'use_old_app',
         '1',
         [
-            'expires'  => time() + 86400,
-            'path'     => '/',
+            'expires' => time() + 86400,
+            'path' => '/',
             'httponly' => true,
             'samesite' => 'Lax',
         ]
@@ -733,7 +742,6 @@ if (isset($_SESSION['exit_message'])) {
             -webkit-backdrop-filter: blur(4px);
             z-index: 9999;
             display: none;
-            /* ⬅️ hidden by default; JS shows it */
             align-items: flex-start;
             justify-content: center;
             overflow-y: auto;
@@ -798,7 +806,6 @@ if (isset($_SESSION['exit_message'])) {
             padding: 6px 12px;
             border-radius: 5px;
         }
-
 
         .update-icon {
             display: flex;
@@ -1198,6 +1205,22 @@ if (isset($_SESSION['exit_message'])) {
             return norm(a) === norm(b);
         }
 
+        /** Sets the Login button into a "busy" state (spinner + label). */
+        function setLoginButtonBusy(label) {
+            var btn = document.getElementById('loginBtn');
+            if (!btn) return;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="btn-spinner"></span><span>' + (label || 'Logging in...') + '</span>';
+        }
+
+        /** Restores the Login button to its idle state. */
+        function resetLoginButton() {
+            var btn = document.getElementById('loginBtn');
+            if (!btn) return;
+            btn.disabled = false;
+            btn.innerHTML = 'Login';
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const installedVersion = readInstalledVersion();
             console.log('📱 Installed version:', installedVersion, '| Latest:', latestVersion);
@@ -1212,14 +1235,11 @@ if (isset($_SESSION['exit_message'])) {
             const overlay = document.getElementById('updateOverlay');
             if (overlay) {
                 if (!isInApp) {
-                    // Not in app — no modal ever
                     overlay.classList.remove('visible');
                 } else if (versionsEqual(installedVersion, latestVersion)) {
-                    // ✅ Version matches → keep modal hidden
                     overlay.classList.remove('visible');
                     console.log('✅ Version matches — modal stays hidden');
                 } else {
-                    // ⚠️ Version mismatch (or unknown) → show modal
                     overlay.classList.add('visible');
                     console.log('⚠️ Version mismatch — modal shown');
                 }
@@ -1250,19 +1270,19 @@ if (isset($_SESSION['exit_message'])) {
             const modalVisible = overlay && overlay.classList.contains('visible');
             if (!modalVisible && hasBiometric && isInApp && userId) {
                 console.log('🔐 Triggering biometric prompt');
+                setLoginButtonBusy('Waiting for biometric...');
                 window.AndroidBiometric.authenticate('auto');
             }
         });
 
-        // ✅ Show spinner on button click
+        // ✅ Show spinner on button click (password login)
         (function () {
             var form = document.getElementById('loginForm');
             var btn = document.getElementById('loginBtn');
             if (form && btn) {
                 form.addEventListener('submit', function () {
                     if (btn.disabled) return;
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="btn-spinner"></span><span>Logging in...</span>';
+                    setLoginButtonBusy('Logging in...');
                 });
             }
         })();
@@ -1270,14 +1290,6 @@ if (isset($_SESSION['exit_message'])) {
         function showBiometricStatus(message, type) {
             biometricStatus.textContent = message;
             biometricStatus.className = 'status-message show ' + type;
-        }
-
-        function showBiometricStatusWithSpinner(message) {
-            biometricStatus.innerHTML = '<div class="btn-spinner" style="border-color: #bbf7d0; border-top-color: #16a34a; margin-right: 8px;"></div><span>' + message + '</span>';
-            biometricStatus.className = 'status-message show success';
-            biometricStatus.style.display = 'flex';
-            biometricStatus.style.alignItems = 'center';
-            biometricStatus.style.justifyContent = 'flex-start';
         }
 
         function biometricSuccess(data) {
@@ -1288,12 +1300,14 @@ if (isset($_SESSION['exit_message'])) {
 
             if (!userId) {
                 showBiometricStatus('Biometric not registered. Please login with password.', 'error');
+                resetLoginButton();
                 return;
             }
 
             var installedVersion = readInstalledVersion();
 
-            showBiometricStatusWithSpinner('Accessing your account...');
+            // ✅ Show progress inside the Login button (same style as password login)
+            setLoginButtonBusy('Accessing your account...');
 
             fetch(window.location.href, {
                 method: 'POST',
@@ -1311,31 +1325,36 @@ if (isset($_SESSION['exit_message'])) {
                     if (data.success) {
                         setTimeout(function () {
                             window.location.href = data.redirect;
-                        }, 1000);
+                        }, 800);
                     } else if (data.show_update_modal) {
-                        // Show the update modal
                         const overlay = document.getElementById('updateOverlay');
                         if (overlay) overlay.classList.add('visible');
+                        resetLoginButton();
                     } else {
+                        resetLoginButton();
                         showBiometricStatus('' + data.message, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('❌ Fetch error:', error);
+                    resetLoginButton();
                     showBiometricStatus('Error: ' + error.message, 'error');
                 });
         }
 
         function biometricFailed() {
+            resetLoginButton();
             showBiometricStatus('Authentication failed. Please try again.', 'error');
         }
 
         function biometricCancel() {
+            resetLoginButton();
             biometricStatus.className = 'status-message';
             biometricStatus.textContent = '';
         }
 
         function biometricError(error) {
+            resetLoginButton();
             showBiometricStatus('Error: ' + error, 'error');
         }
 
