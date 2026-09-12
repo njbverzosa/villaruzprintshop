@@ -115,29 +115,26 @@ include 'app_version.php';
             background: #ffffff;
         }
 
-        .skip-link {
+         .skip-link {
             position: absolute;
-            top: 1rem;
-            right: 1.25rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #5f6f80;
+            top: 12px;
+            right: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1d4ed8;
             text-decoration: none;
             letter-spacing: 0.02em;
-            padding: 0.4rem 0.75rem;
-            border-radius: 8px;
+            padding: 6px 12px;
+            border-radius: 100px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
             transition: color 0.15s, background 0.15s;
             z-index: 10;
         }
 
         .skip-link:hover {
-            color: #1e2b3c;
-            background: #e2e8f0;
-        }
-
-        .skip-link:focus-visible {
-            outline: 2px solid #2563eb;
-            outline-offset: 2px;
+            color: #ffffff;
+            background: #1d4ed8;
         }
 
         .app-icon {
@@ -367,6 +364,7 @@ include 'app_version.php';
 
         <!-- HEADER -->
         <div class='app-header'>
+            <a href="?skip_update=1" class="skip-link">SKIP</a>
             <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
             <div class='app-title'>SofiaApp</div>
 
