@@ -589,7 +589,6 @@ if (isset($_SESSION['success'])) {
             <p class="auth-sub">Create Account</p>
             <div style="text-align: center; margin-bottom: 20px;">
                 <script>
-                    // ✅ Show the ACTUAL installed version when in the app
                     document.addEventListener('DOMContentLoaded', function () {
                         if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
                             try {
