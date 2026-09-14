@@ -1094,7 +1094,6 @@ if (isset($_SESSION['exit_message'])) {
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
                         <?php if ($loginSuccess): ?>
                             <span class="btn-spinner"></span>
-                            <span>Accessing your account...</span>
                         <?php else: ?>
                             Login
                         <?php endif; ?>
