@@ -578,13 +578,13 @@ $isVip = isset($userData['vip']) && $userData['vip'] == 1;
                     <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
-                <!-- Earning Task -->
-                <!-- <a href="#" class="service-card" onclick="showComingSoon('Earning Task')">
-                    <div class="service-icon"><i class="fas fa-coins"></i></div>
-                    <div class="service-name">Earning Task</div>
-                    <div class="service-desc">Complete tasks, earn</div>
+                <!-- Investors -->
+                <a href="partnership.php" class="service-card">
+                    <div class="service-icon"><i class="fas fa-handshake"></i></div>
+                    <div class="service-name">Invest/Sell Products</div>
+                    <div class="service-desc">Invest and Join</div>
                     <div class="service-arrow"><i class="fas fa-chevron-right"></i></div>
-                </a> -->
+                </a>
 
                 <!-- Cancelled Order -->
                 <a href="cancelled_orders.php" class="service-card">

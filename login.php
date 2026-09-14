@@ -242,7 +242,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     echo json_encode([
         'success' => true,
         'redirect' => $redirectUrl,
-        'message' => 'Accessing your account...'
+        'message' => ''
     ]);
     exit;
 }
@@ -1318,7 +1318,7 @@ if (isset($_SESSION['exit_message'])) {
             var installedVersion = readInstalledVersion();
 
             // ✅ Show progress inside the Login button (same style as password login)
-            setLoginButtonBusy('Accessing your account...');
+            setLoginButtonBusy('');
 
             fetch(window.location.href, {
                 method: 'POST',
