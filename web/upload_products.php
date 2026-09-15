@@ -11,7 +11,7 @@ require_once __DIR__ . '/../DB_Conn/config.php';
 // STORE USER NAME IN SESSION FOR API USE
 // ==============================================
 if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
-    $_SESSION['user_name'] = $userData['f_name'];
+  $_SESSION['user_name'] = $userData['f_name'];
 }
 
 // ==============================================
@@ -19,16 +19,16 @@ if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
 // ==============================================
 function isLoggedIn()
 {
-    return isset($_SESSION['user_role']) &&
-        isset($_SESSION['user_id']) &&
-        isset($_SESSION['acc_number']);
+  return isset($_SESSION['user_role']) &&
+    isset($_SESSION['user_id']) &&
+    isset($_SESSION['acc_number']);
 }
 
 // Redirect to login if not logged in
 if (!isLoggedIn()) {
-    $_SESSION['login_error'] = 'Please login first to access the shop.';
-    header('Location: ../login.php');
-    exit;
+  $_SESSION['login_error'] = 'Please login first to access the shop.';
+  header('Location: ../login.php');
+  exit;
 }
 
 // ==============================================
@@ -41,16 +41,16 @@ $accNumber = $_SESSION['acc_number'];
 // Fetch user details from database
 $userData = null;
 if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+  $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+  $stmt->execute([$userId]);
+  $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
-    // User not found in database, logout
-    session_destroy();
-    header('Location: ../login.php');
-    exit;
+  // User not found in database, logout
+  session_destroy();
+  header('Location: ../login.php');
+  exit;
 }
 
 // ==============================================
@@ -87,39 +87,44 @@ $olderRestocked = [];
 $neverRestocked = [];
 
 foreach ($allProducts as $product) {
-    if (empty($product['last_restocked'])) {
-        $neverRestocked[] = $product;
-    } else {
-        try {
-            // Parse the date string
-            $restockDate = DateTime::createFromFormat('j M Y g:i A', $product['last_restocked']);
-            if ($restockDate === false) {
-                // If parsing fails, try alternative format
-                $restockDate = new DateTime($product['last_restocked']);
-            }
-            $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
+  if (empty($product['last_restocked'])) {
+    $neverRestocked[] = $product;
+  } else {
+    try {
+      // Parse the date string
+      $restockDate = DateTime::createFromFormat('j M Y g:i A', $product['last_restocked']);
+      if ($restockDate === false) {
+        // If parsing fails, try alternative format
+        $restockDate = new DateTime($product['last_restocked']);
+      }
+      $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
 
-            if ($daysDiff <= 7) {
-                $recentlyRestocked[] = $product;
-            } else {
-                $olderRestocked[] = $product;
-            }
-        } catch (Exception $e) {
-            // If date parsing fails, treat as never restocked
-            $neverRestocked[] = $product;
-        }
+      if ($daysDiff <= 7) {
+        $recentlyRestocked[] = $product;
+      } else {
+        $olderRestocked[] = $product;
+      }
+    } catch (Exception $e) {
+      // If date parsing fails, treat as never restocked
+      $neverRestocked[] = $product;
     }
+  }
 }
 
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Product</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: Arial, sans-serif;
@@ -133,10 +138,13 @@ foreach ($allProducts as $product) {
       background: white;
       padding: 25px;
       border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
-    h2 { margin-bottom: 20px; color: #333; }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
 
     label {
       display: block;
@@ -157,7 +165,10 @@ foreach ($allProducts as $product) {
       font-size: 14px;
     }
 
-    textarea { resize: vertical; min-height: 70px; }
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
 
     /* Square camera box */
     .camera-box {
@@ -212,7 +223,9 @@ foreach ($allProducts as $product) {
       margin-top: 10px;
     }
 
-    button:hover { opacity: 0.9; }
+    button:hover {
+      opacity: 0.9;
+    }
 
     .divider {
       border-top: 1px solid #eee;
@@ -220,6 +233,7 @@ foreach ($allProducts as $product) {
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h2>Add Product</h2>
@@ -227,7 +241,8 @@ foreach ($allProducts as $product) {
     <form id="productForm" enctype="multipart/form-data">
       <!-- Required hidden fields for the backend -->
       <input type="hidden" name="action" value="add_product">
-      <input type="hidden" name="csrf_token" id="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
+      <input type="hidden" name="csrf_token" id="csrf_token"
+        value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
       <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
 
       <!-- Camera section -->
@@ -240,8 +255,9 @@ foreach ($allProducts as $product) {
       <div class="divider"></div>
 
       <label for="product_name">Product Name</label>
-      <input type="text" id="product_name" name="product_name" required>
-
+      <input type="text" id="product_name" name="product_name" pattern="[A-Za-z0-9\s\(\),\.'&\-]+"
+        title="Product name can only contain letters, numbers, spaces, and ( ) , . ' & -" required>
+        
       <label for="unit">Unit</label>
       <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..." required>
 
@@ -376,4 +392,5 @@ foreach ($allProducts as $product) {
     window.addEventListener('load', startCamera);
   </script>
 </body>
+
 </html>
