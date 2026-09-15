@@ -18,16 +18,51 @@ require_once __DIR__ . '/DB_Conn/config.php';
 include __DIR__ . '/app_version.php';   // defines $latestVersion + $currentVersion
 
 // ==============================================
+// ✅ HELPER — normalize authorize_access to int
+//    Handles: NULL, '', '3 ', '3', 3, 'three', ' 3'
+// ==============================================
+function normalizeAuthorizeAccess($value)
+{
+    if ($value === null || $value === '') {
+        return 0;
+    }
+    return (int) trim((string) $value);
+}
+
+// ==============================================
 // ✅ HELPER — resolve redirect URL for admins-table user
-// Investor = authorize_access == 3
+//    Investor = authorize_access == 3
 // ==============================================
 function resolveAdminRedirect($pdo, $userId)
 {
     $stmt = $pdo->prepare("SELECT authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
-    $row = $stmt->fetch();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($row && (int)$row['authorize_access'] === 3) {
+    $access = normalizeAuthorizeAccess($row['authorize_access'] ?? 0);
+
+    error_log('resolveAdminRedirect: userId=' . $userId
+        . ' raw=' . var_export($row['authorize_access'] ?? null, true)
+        . ' normalized=' . $access);
+
+    if ($access === 3) {
+        return 'investors/all_products.php';
+    }
+    return 'web/all_products.php';
+}
+
+// ==============================================
+// ✅ HELPER — resolve redirect from a full admin row (avoids extra query)
+// ==============================================
+function resolveAdminRedirectFromRow($adminRow)
+{
+    $access = normalizeAuthorizeAccess($adminRow['authorize_access'] ?? 0);
+
+    error_log('resolveAdminRedirectFromRow: raw='
+        . var_export($adminRow['authorize_access'] ?? null, true)
+        . ' normalized=' . $access);
+
+    if ($access === 3) {
         return 'investors/all_products.php';
     }
     return 'web/all_products.php';
@@ -165,7 +200,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userType = $_COOKIE['user_type'];
 
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
-    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id, acc_number FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
 
@@ -195,9 +230,15 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     }
 
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
-    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM $table WHERE id = ?");
+
+    // ✅ Include authorize_access for admins so we can resolve the redirect
+    if ($userType === 'Admin') {
+        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name, authorize_access FROM admins WHERE id = ?");
+    } else {
+        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM customers WHERE id = ?");
+    }
     $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
         echo json_encode(['success' => false, 'message' => 'User not found']);
@@ -225,7 +266,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     // ✅ Biometric redirect — Admin / Investor / Customer
     if ($userType === 'Admin') {
-        $adminRedirect = resolveAdminRedirect($pdo, $user['id']);
+        $adminRedirect = resolveAdminRedirectFromRow($user);
 
         if ($isInApp) {
             $redirectUrl = $adminRedirect;
@@ -384,10 +425,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             // ✅ Regular-login redirect — Admin / Investor / Customer
             if ($userType === 'Admin') {
-                // Investor = authorize_access == 3
-                $adminRedirect = (isset($user['authorize_access']) && (int)$user['authorize_access'] === 3)
-                    ? 'investors/all_products.php'
-                    : 'web/all_products.php';
+                // ✅ Investor = authorize_access == 3 (normalized)
+                $adminRedirect = resolveAdminRedirectFromRow($user);
+
+                // 🔍 TEMP DEBUG — remove after fixing
+                error_log('=== LOGIN REDIRECT DEBUG ===');
+                error_log('user id: ' . $user['id']);
+                error_log('acc_number: ' . $user['acc_number']);
+                error_log('authorize_access raw: ' . var_export($user['authorize_access'] ?? null, true));
+                error_log('authorize_access normalized: ' . normalizeAuthorizeAccess($user['authorize_access'] ?? 0));
+                error_log('adminRedirect: ' . $adminRedirect);
+                error_log('isInApp: ' . var_export($isInApp, true));
+                error_log('isMobileBrowser: ' . var_export($isMobileBrowser, true));
+                error_log('============================');
 
                 if ($isInApp) {
                     if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
@@ -427,6 +477,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             }
 
             // ✅ Immediate redirect after login
+            error_log('Final redirect URL: ' . $redirectUrl);
             header('Location: ' . $redirectUrl);
             exit;
         }
