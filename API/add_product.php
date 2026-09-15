@@ -148,7 +148,7 @@ if ($action === 'add_product') {
     $imagePath = null;
 
     $allowedExtensions = ['png'];
-    $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
+    $allowedMime       = ['image/png'];
 
     // ---- Case A: standard file upload ----
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
@@ -162,7 +162,7 @@ if ($action === 'add_product') {
         // Validate extension
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExtensions, true)) {
-            echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
+            echo json_encode(['success' => false, 'message' => 'Only PNG images allowed.']);
             exit;
         }
 

@@ -172,7 +172,7 @@ if ($action === 'update_product') {
     $newFileWritten   = null;
 
     $allowedExtensions = ['png'];
-    $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
+    $allowedMime       = ['image/png'];
 
     // ---- Case A: base64 camera image ----
     if (!empty($_POST['product_image_base64'])) {
@@ -185,7 +185,7 @@ if ($action === 'update_product') {
 
         $type = strtolower($m[1]);   // jpeg, jpg, png
         if (!in_array($type, $allowedExtensions, true)) {
-            echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
+            echo json_encode(['success' => false, 'message' => 'Only PNG camera images allowed.']);
             exit;
         }
 
