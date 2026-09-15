@@ -158,7 +158,7 @@ if ($action === 'update_product') {
 
     // ==============================================
     // 5e. HANDLE NEW IMAGE
-    //    Allowed extensions: jpeg, jpg, png
+    //    Filename = <product_name>.<ext>  (spaces preserved)
     // ==============================================
     $imagePath        = null;
     $oldImageToDelete = null;
@@ -168,30 +168,26 @@ if ($action === 'update_product') {
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
-    // Helper: build a safe filename from the product name
+    // Helper: build the filename from the product name (keeps spaces and dots)
     $buildFileName = function (string $name, string $ext) {
-        // 1. Remove extension if present
+        // 1. Remove any extension that might be in the name
         $name = pathinfo($name, PATHINFO_FILENAME);
 
-        // 2. Replace spaces, underscores, hyphens with hyphens
-        $name = preg_replace('/[\s_\-]+/', '-', $name);
+        // 2. Collapse multiple spaces into one
+        $name = preg_replace('/\s+/', ' ', $name);
 
-        // 3. Keep letters, numbers, dashes, and dots (for "2.0", "1.5L", etc.)
-        $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
+        // 3. Remove characters that are unsafe for a filesystem
+        $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
 
-        // 4. Collapse multiple dashes and dots
-        $name = preg_replace('/-+/', '-', $name);
-        $name = preg_replace('/\.+/', '.', $name);
+        // 4. Trim whitespace and stray dots from both ends
+        $name = trim($name, " \t\n\r\0\x0B.");
 
-        // 5. Trim leading/trailing dashes and dots
-        $name = trim($name, '-.');
-
-        // 6. Fallback if empty
+        // 5. Fallback if empty
         if ($name === '') {
             $name = 'product-' . time();
         }
 
-        // 7. Limit length
+        // 6. Limit length
         $name = substr($name, 0, 100);
 
         return $name . '.' . strtolower($ext);
@@ -241,7 +237,7 @@ if ($action === 'update_product') {
         // Check if the target name still conflicts (with other products)
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -263,14 +259,14 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Check extension
+        // Check extension
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
-        // ✅ Check MIME type
+        // Check MIME type
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
@@ -294,7 +290,7 @@ if ($action === 'update_product') {
 
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -417,7 +413,7 @@ echo json_encode(['success' => false, 'message' => 'Invalid action']);
 // HELPER: Sanitize product name
 // Allows: letters, numbers, spaces, and , . ( ) -
 // Strips: image extensions (.jpeg, .jpg, .png)
-// Preserves user's casing (does NOT lowercase/ucwords)
+// Preserves user's casing and spaces
 // ==============================================
 function sanitizeProductName($name)
 {
@@ -442,7 +438,7 @@ function sanitizeProductName($name)
     // 6. Collapse multiple spaces
     $name = preg_replace('/\s+/', ' ', $name);
 
-    // 7. ✅ PRESERVE user's casing — no ucwords, no strtolower
+    // 7. Preserve user's casing
 
     return $name;
 }
