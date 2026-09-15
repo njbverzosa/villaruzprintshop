@@ -301,7 +301,7 @@ foreach ($allProducts as $product) {
       if (isCaptured) {
         base64Input.value = '';
         capturedPhoto.src = '';
-        captureBtn.textContent = '📸 Capture Product';
+        captureBtn.textContent = 'Capture Product';
         captureBtn.classList.remove('retake');
         startCamera();
         return;
@@ -330,7 +330,7 @@ foreach ($allProducts as $product) {
       stopCamera();
 
       // Change button to "Retake"
-      captureBtn.textContent = '🔄 Retake Photo';
+      captureBtn.textContent = 'Retake Photo';
       captureBtn.classList.add('retake');
       isCaptured = true;
     });
@@ -361,7 +361,7 @@ foreach ($allProducts as $product) {
           capturedPhoto.src = '';
           capturedPhoto.style.display = 'none';
           isCaptured = false;
-          captureBtn.textContent = '📸 Capture Product';
+          captureBtn.textContent = 'Capture Product';
           captureBtn.classList.remove('retake');
           startCamera(); // restart for the next product
         } else {
