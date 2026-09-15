@@ -116,18 +116,76 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5c. HANDLE NEW IMAGE (if provided)
-    //      Saves into /{$uploadFolder}/ and stores filename
+    // 5c. RESOLVE THE UPLOAD DIRECTORY
+    //
+    //  Folder layout (shared parent):
+    //    /public/
+    //       ├── API/
+    //       │     └── update_product.php   ← we are here
+    //       ├── DB_Conn/
+    //       │     └── config.php
+    //       ├── Products/
+    //       └── Inv_Products/
+    //
+    //  From API/, go up one level → /public/ → into Products/
     // ==============================================
-    $imagePath = null;      // new filename (if a new image is uploaded)
-    $oldImageToDelete = null;
+    $projectRoot = dirname(__DIR__);                 // → /public/
+    $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
 
-    $uploadDir = __DIR__ . '/../' . $uploadFolder . '/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        if (!mkdir($uploadDir, 0755, true)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Upload folder could not be created: ' . $uploadDir
+            ]);
+            exit;
+        }
     }
 
-    // Case A: base64 camera image
+    // Make sure it's writable
+    if (!is_writable($uploadDir)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Upload folder is not writable: ' . $uploadDir
+        ]);
+        exit;
+    }
+
+    // ==============================================
+    // 5d. HANDLE NEW IMAGE (if provided)
+    // ==============================================
+    $imagePath = null;                // final filename to save in DB
+    $oldImageToDelete = null;         // old filename to delete after success
+
+    // Helper: build a safe filename from the product name
+    $buildFileName = function (string $name, string $ext) {
+        // 1. Remove extension if present
+        $name = pathinfo($name, PATHINFO_FILENAME);
+
+        // 2. Replace spaces, underscores, hyphens with hyphens
+        $name = preg_replace('/[\s_\-]+/', '-', $name);
+
+        // 3. Remove anything that isn't alphanumeric, dash, or dot
+        $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
+
+        // 4. Collapse multiple dashes
+        $name = preg_replace('/-+/', '-', $name);
+
+        // 5. Trim dashes and dots from start/end
+        $name = trim($name, '-.');
+
+        // 6. Fallback if empty
+        if ($name === '') {
+            $name = 'product-' . time();
+        }
+
+        // 7. Limit length
+        $name = substr($name, 0, 100);
+
+        return $name . '.' . strtolower($ext);
+    };
+
+    // ---- Case A: base64 camera image ----
     if (!empty($_POST['product_image_base64'])) {
         $dataUri = $_POST['product_image_base64'];
 
@@ -155,9 +213,17 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $ext = ($type === 'jpeg') ? 'jpg' : $type;
-        $fileName = 'prd_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $ext      = ($type === 'jpeg') ? 'jpg' : $type;
+        $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
+
+        // Avoid overwriting — if the name already exists, append a counter
+        $counter = 1;
+        while (file_exists($destPath)) {
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $destPath = $uploadDir . $fileName;
+            $counter++;
+        }
 
         if (file_put_contents($destPath, $data) === false) {
             echo json_encode(['success' => false, 'message' => 'Failed to save camera image.']);
@@ -166,12 +232,11 @@ if ($action === 'update_product') {
 
         $imagePath = $fileName;
 
-        // Mark old image for deletion after successful DB update
         if (!empty($oldProduct['product_image'])) {
             $oldImageToDelete = $oldProduct['product_image'];
         }
     }
-    // Case B: standard file upload
+    // ---- Case B: standard file upload ----
     elseif (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['product_image'];
 
@@ -190,9 +255,16 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $fileName = 'prd_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
+
+        $counter = 1;
+        while (file_exists($destPath)) {
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $destPath = $uploadDir . $fileName;
+            $counter++;
+        }
 
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
             echo json_encode(['success' => false, 'message' => 'Failed to save uploaded image.']);
@@ -205,13 +277,13 @@ if ($action === 'update_product') {
             $oldImageToDelete = $oldProduct['product_image'];
         }
     }
-    // Case C: no new image → keep the existing one
+    // ---- Case C: no new image → keep existing ----
     else {
         $imagePath = $oldProduct['product_image'];
     }
 
     // ==============================================
-    // 5d. PERFORM THE UPDATE
+    // 5e. PERFORM THE UPDATE
     // ==============================================
     try {
         date_default_timezone_set('Asia/Manila');
@@ -221,12 +293,12 @@ if ($action === 'update_product') {
 
         $stmt = $pdo->prepare("
             UPDATE {$targetTable}
-            SET product_name  = :product_name,
-                unit          = :unit,
-                qty_on_hand   = :qty_on_hand,
-                selling_price = :selling_price,
-                description   = :description,
-                product_image = :product_image,
+            SET product_name   = :product_name,
+                unit           = :unit,
+                qty_on_hand    = :qty_on_hand,
+                selling_price  = :selling_price,
+                description    = :description,
+                product_image  = :product_image,
                 last_restocked = :last_restocked
             WHERE id = :id
         ");
@@ -243,7 +315,7 @@ if ($action === 'update_product') {
         ]);
 
         if ($result) {
-            // Prepare change log
+            // Log changes
             $changes = [];
             if ($oldProduct['product_name'] != $productName)   $changes[] = "Name: '{$oldProduct['product_name']}' → '{$productName}'";
             if ($oldProduct['unit'] != $unit)                  $changes[] = "Unit: '{$oldProduct['unit']}' → '{$unit}'";
@@ -271,18 +343,18 @@ if ($action === 'update_product') {
             }
 
             echo json_encode([
-                'success'        => true,
-                'message'        => 'Product updated successfully',
-                'product_id'     => $productId,
-                'product_image'  => $imagePath,
-                'table'          => $targetTable,
-                'folder'         => $uploadFolder,
-                'last_updated'   => $formattedDate
+                'success'       => true,
+                'message'       => 'Product updated successfully',
+                'product_id'    => $productId,
+                'product_image' => $imagePath,
+                'table'         => $targetTable,
+                'folder'        => $uploadFolder,
+                'upload_dir'    => $uploadDir,
+                'last_updated'  => $formattedDate
             ]);
         } else {
             $pdo->rollBack();
 
-            // Cleanup new orphan image
             if ($imagePath && $imagePath !== $oldProduct['product_image'] && file_exists($uploadDir . $imagePath)) {
                 @unlink($uploadDir . $imagePath);
             }
@@ -293,7 +365,6 @@ if ($action === 'update_product') {
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
 
-        // Cleanup new orphan image
         if ($imagePath && $imagePath !== $oldProduct['product_image'] && file_exists($uploadDir . $imagePath)) {
             @unlink($uploadDir . $imagePath);
         }
