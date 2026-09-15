@@ -46,7 +46,7 @@ date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
 $stmt = $pdo->prepare("
-    SELECT * FROM investors_product 
+    SELECT * FROM investors_inventory 
     ORDER BY 
         CASE 
             WHEN last_restocked IS NULL OR last_restocked = '' THEN 1 
