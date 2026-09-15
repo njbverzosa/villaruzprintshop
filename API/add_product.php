@@ -88,7 +88,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 5. READ + SANITIZE PRODUCT NAME (from FORM)
+    // 5. SANITIZE PRODUCT NAME (spaces preserved for DB)
     // ==============================================
     $rawName     = $_POST['product_name'] ?? '';
     $productName = sanitizeProductName($rawName);
@@ -98,7 +98,6 @@ if ($action === 'add_product') {
         exit;
     }
 
-    // Enforce allowed characters: letters, numbers, spaces, and , . ( ) -
     if (!preg_match('/^[A-Za-z0-9\s,\.\(\)\-]+$/', $productName)) {
         echo json_encode([
             'success' => false,
@@ -133,36 +132,38 @@ if ($action === 'add_product') {
 
     // ==============================================
     // 7. HANDLE PRODUCT IMAGE
-    //    Filename = <product_name>.<ext>  (spaces preserved)
+    //    Filename = <slugified-product-name>.<ext>
     //    Allowed extensions: jpeg, jpg, png
     // ==============================================
     $imagePath = null;
 
-    // Allowed extensions + MIME types
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
-    // Helper: build the filename from the product name (keeps spaces and dots)
+    // ✅ Filesystem-safe filename builder (spaces → hyphens)
     $buildFileName = function (string $name, string $ext) {
-        // 1. Remove any extension that might be in the name
+        // 1. Remove extension if present
         $name = pathinfo($name, PATHINFO_FILENAME);
 
-        // 2. Collapse multiple spaces into one
-        $name = preg_replace('/\s+/', ' ', $name);
+        // 2. Replace spaces, underscores, and hyphens with a single hyphen
+        $name = preg_replace('/[\s_\-]+/', '-', $name);
 
-        // 3. Remove characters that are unsafe for a filesystem
-        //    (keep letters, numbers, spaces, and , . ( ) -)
-        $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
+        // 3. Keep only letters, numbers, dashes, and dots
+        $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
 
-        // 4. Trim whitespace and stray dots from both ends
-        $name = trim($name, " \t\n\r\0\x0B.");
+        // 4. Collapse multiple dashes and dots
+        $name = preg_replace('/-+/', '-', $name);
+        $name = preg_replace('/\.+/', '.', $name);
 
-        // 5. Fallback if empty
+        // 5. Trim dashes and dots from both ends
+        $name = trim($name, '-.');
+
+        // 6. Fallback if empty
         if ($name === '') {
             $name = 'product-' . time();
         }
 
-        // 6. Limit length (leave room for the extension)
+        // 7. Limit length
         $name = substr($name, 0, 100);
 
         return $name . '.' . strtolower($ext);
@@ -177,14 +178,12 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Check extension
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
-        // Check MIME type via finfo
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
@@ -194,14 +193,13 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // ✅ Filename built from PRODUCT NAME (spaces preserved)
+        // ✅ Filename comes from the product name (slugified)
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
 
-        // Avoid overwriting — append a counter if the name already exists
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -222,7 +220,7 @@ if ($action === 'add_product') {
             exit;
         }
 
-        $type = strtolower($m[1]);   // jpeg, jpg, png
+        $type = strtolower($m[1]);
         if (!in_array($type, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
@@ -247,7 +245,7 @@ if ($action === 'add_product') {
 
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -360,35 +358,22 @@ if ($action === 'add_product') {
 echo json_encode(['success' => false, 'message' => 'Invalid action']);
 
 // ==============================================
-// HELPER: Sanitize product name
+// HELPER: Sanitize product name (spaces preserved)
 // Allows: letters, numbers, spaces, and , . ( ) -
-// Strips: image extensions (.jpeg, .jpg, .png)
-// Preserves user's casing and spaces
 // ==============================================
 function sanitizeProductName($name)
 {
-    // 1. Strip the file extension
     $name = pathinfo($name, PATHINFO_FILENAME);
 
-    // 2. Strip any lingering image extensions (defense in depth)
     $imageExtensions = ['jpeg', 'jpg', 'png'];
     foreach ($imageExtensions as $ext) {
         $name = preg_replace('/\.' . preg_quote($ext, '/') . '$/i', '', $name);
     }
 
-    // 3. Collapse underscores and whitespace into single spaces
     $name = preg_replace('/[_\s]+/', ' ', $name);
-
-    // 4. Keep ONLY: letters, numbers, spaces, and , . ( ) -
     $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
-
-    // 5. Trim whitespace and stray dots from both ends
     $name = trim($name, " \t\n\r\0\x0B.");
-
-    // 6. Collapse multiple spaces
     $name = preg_replace('/\s+/', ' ', $name);
-
-    // 7. Preserve user's casing
 
     return $name;
 }

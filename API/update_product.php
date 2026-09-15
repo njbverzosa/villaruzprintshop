@@ -87,7 +87,6 @@ if ($action === 'update_product') {
     $sellingPrice  = floatval($_POST['selling_price'] ?? 0);
     $description   = isset($_POST['description']) ? trim($_POST['description']) : '';
 
-    // Flag from frontend when the user clicks Retake
     $replaceImage  = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
 
     // ==============================================
@@ -158,36 +157,40 @@ if ($action === 'update_product') {
 
     // ==============================================
     // 5e. HANDLE NEW IMAGE
-    //    Filename = <product_name>.<ext>  (spaces preserved)
+    //    Filename = <slugified-product-name>.<ext>
+    //    Allowed extensions: jpeg, jpg, png
     // ==============================================
     $imagePath        = null;
     $oldImageToDelete = null;
     $newFileWritten   = null;
 
-    // Allowed extensions + MIME types
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
-    // Helper: build the filename from the product name (keeps spaces and dots)
+    // ✅ Filesystem-safe filename builder (spaces → hyphens)
     $buildFileName = function (string $name, string $ext) {
-        // 1. Remove any extension that might be in the name
+        // 1. Remove extension if present
         $name = pathinfo($name, PATHINFO_FILENAME);
 
-        // 2. Collapse multiple spaces into one
-        $name = preg_replace('/\s+/', ' ', $name);
+        // 2. Replace spaces, underscores, and hyphens with a single hyphen
+        $name = preg_replace('/[\s_\-]+/', '-', $name);
 
-        // 3. Remove characters that are unsafe for a filesystem
-        $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
+        // 3. Keep only letters, numbers, dashes, and dots
+        $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
 
-        // 4. Trim whitespace and stray dots from both ends
-        $name = trim($name, " \t\n\r\0\x0B.");
+        // 4. Collapse multiple dashes and dots
+        $name = preg_replace('/-+/', '-', $name);
+        $name = preg_replace('/\.+/', '.', $name);
 
-        // 5. Fallback if empty
+        // 5. Trim dashes and dots from both ends
+        $name = trim($name, '-.');
+
+        // 6. Fallback if empty
         if ($name === '') {
             $name = 'product-' . time();
         }
 
-        // 6. Limit length
+        // 7. Limit length
         $name = substr($name, 0, 100);
 
         return $name . '.' . strtolower($ext);
@@ -202,7 +205,7 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $type = strtolower($m[1]);   // jpeg, jpg, png
+        $type = strtolower($m[1]);
         if (!in_array($type, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
@@ -225,7 +228,7 @@ if ($action === 'update_product') {
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
 
-        // DELETE the OLD image file FIRST if the target name matches it
+        // DELETE the OLD image file FIRST
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -234,10 +237,10 @@ if ($action === 'update_product') {
             $oldImageToDelete = $oldProduct['product_image'];
         }
 
-        // Check if the target name still conflicts (with other products)
+        // Check if the target name still conflicts
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -259,14 +262,12 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // Check extension
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
-        // Check MIME type
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
@@ -290,7 +291,7 @@ if ($action === 'update_product') {
 
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -307,7 +308,6 @@ if ($action === 'update_product') {
     elseif ($replaceImage) {
         $imagePath = null;
 
-        // Delete the old image from disk right now
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -354,7 +354,6 @@ if ($action === 'update_product') {
         ]);
 
         if ($result) {
-            // Log changes
             $changes = [];
             if ($oldProduct['product_name'] != $productName)   $changes[] = "Name: '{$oldProduct['product_name']}' → '{$productName}'";
             if ($oldProduct['unit'] != $unit)                  $changes[] = "Unit: '{$oldProduct['unit']}' → '{$unit}'";
@@ -410,35 +409,22 @@ if ($action === 'update_product') {
 echo json_encode(['success' => false, 'message' => 'Invalid action']);
 
 // ==============================================
-// HELPER: Sanitize product name
+// HELPER: Sanitize product name (spaces preserved)
 // Allows: letters, numbers, spaces, and , . ( ) -
-// Strips: image extensions (.jpeg, .jpg, .png)
-// Preserves user's casing and spaces
 // ==============================================
 function sanitizeProductName($name)
 {
-    // 1. Strip the file extension
     $name = pathinfo($name, PATHINFO_FILENAME);
 
-    // 2. Strip any lingering image extensions (defense in depth)
     $imageExtensions = ['jpeg', 'jpg', 'png'];
     foreach ($imageExtensions as $ext) {
         $name = preg_replace('/\.' . preg_quote($ext, '/') . '$/i', '', $name);
     }
 
-    // 3. Collapse underscores and whitespace into single spaces
     $name = preg_replace('/[_\s]+/', ' ', $name);
-
-    // 4. Keep ONLY: letters, numbers, spaces, and , . ( ) -
     $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
-
-    // 5. Trim whitespace and stray dots from both ends
     $name = trim($name, " \t\n\r\0\x0B.");
-
-    // 6. Collapse multiple spaces
     $name = preg_replace('/\s+/', ' ', $name);
-
-    // 7. Preserve user's casing
 
     return $name;
 }
