@@ -1,3 +1,117 @@
+<?php
+
+session_start();
+
+// ==============================================
+// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// ==============================================
+require_once __DIR__ . '/../DB_Conn/config.php';
+
+// ==============================================
+// STORE USER NAME IN SESSION FOR API USE
+// ==============================================
+if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
+    $_SESSION['user_name'] = $userData['f_name'];
+}
+
+// ==============================================
+// 2. CHECK LOGIN STATUS
+// ==============================================
+function isLoggedIn()
+{
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
+}
+
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    $_SESSION['login_error'] = 'Please login first to access the shop.';
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 3. GET USER DATA FROM SESSION
+// ==============================================
+$userRole = $_SESSION['user_role'];
+$userId = $_SESSION['user_id'];
+$accNumber = $_SESSION['acc_number'];
+
+// Fetch user details from database
+$userData = null;
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+if (!$userData) {
+    // User not found in database, logout
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// 4. USE $userData INSTEAD OF $user
+// ==============================================
+$user = $userData;
+
+// ==============================================
+// 5. SET TIMEZONE
+// ==============================================
+date_default_timezone_set('Asia/Manila');
+$timezone = new DateTimeZone('Asia/Manila');
+
+
+// ===== FIXED QUERY - PROPER DATE SORTING =====
+// Since last_restocked is stored as string (e.g., "10 August 2026 1:39 PM"),
+// we need to convert it to a proper date for sorting
+$stmt = $pdo->prepare("
+    SELECT * FROM merchandise_inventory 
+    ORDER BY 
+        CASE 
+            WHEN last_restocked IS NULL OR last_restocked = '' THEN 1 
+            ELSE 0 
+        END,
+        STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC,
+        id DESC
+");
+$stmt->execute();
+$allProducts = $stmt->fetchAll();
+
+// Group products by restock status for display
+$recentlyRestocked = [];
+$olderRestocked = [];
+$neverRestocked = [];
+
+foreach ($allProducts as $product) {
+    if (empty($product['last_restocked'])) {
+        $neverRestocked[] = $product;
+    } else {
+        try {
+            // Parse the date string
+            $restockDate = DateTime::createFromFormat('j M Y g:i A', $product['last_restocked']);
+            if ($restockDate === false) {
+                // If parsing fails, try alternative format
+                $restockDate = new DateTime($product['last_restocked']);
+            }
+            $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
+
+            if ($daysDiff <= 7) {
+                $recentlyRestocked[] = $product;
+            } else {
+                $olderRestocked[] = $product;
+            }
+        } catch (Exception $e) {
+            // If date parsing fails, treat as never restocked
+            $neverRestocked[] = $product;
+        }
+    }
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
