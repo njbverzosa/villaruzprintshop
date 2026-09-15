@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             // STEP 1 — insert plain-text password into both password and text_pass
-            $sql = "INSERT INTO admins
+            $sql = "INSERT INTO investors
                     (registered_at, acc_number, f_name, user_name, phone_number,
                      password, text_pass, authorize_access, profile,
                      business_name, business_permit)
