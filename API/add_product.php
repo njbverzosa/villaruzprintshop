@@ -372,10 +372,7 @@ function sanitizeProductName($name)
 
     // Replace underscores, hyphens, and multiple spaces with single space
     $name = preg_replace('/[_\-\s]+/', ' ', $name);
-
-    // Remove characters that aren't letters, numbers, spaces, or common symbols
-    $name = preg_replace('/[^A-Za-z0-9\s\.\,\&\'\(\)]/', '', $name);
-
+    
     // Trim and collapse multiple spaces
     $name = trim(preg_replace('/\s+/', ' ', $name));
 
