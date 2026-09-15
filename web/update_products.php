@@ -63,11 +63,18 @@ if (!$product) {
 }
 
 // ==============================================
-// BUILD THE IMAGE URL
+// BUILD THE IMAGE URL + RESOLVE THE IMAGE PATH
 // ==============================================
-$imageUrl = '';
+$imageUrl   = '';
+$imageExists = false;
+
 if (!empty($product['product_image'])) {
+    // Web URL (for <img src="">)
     $imageUrl = '../Products/' . htmlspecialchars($product['product_image']);
+
+    // Absolute filesystem path (for deletion check)
+    $absoluteImagePath = dirname(__DIR__) . '/Products/' . $product['product_image'];
+    $imageExists = file_exists($absoluteImagePath);
 }
 ?>
 <!DOCTYPE html>
@@ -252,7 +259,6 @@ if (!empty($product['product_image'])) {
             margin: 10px 0 20px 0;
         }
 
-        /* ✅ Live camera capture button (after retake) */
         .capture-actions {
             display: flex;
             gap: 8px;
@@ -279,6 +285,9 @@ if (!empty($product['product_image'])) {
             <input type="hidden" name="csrf_token" id="csrf_token"
                 value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
+
+            <!-- ✅ Flag: tells the API that the user actively chose to replace the image -->
+            <input type="hidden" name="replace_image" id="replace_image" value="0">
 
             <!-- ✅ Centered existing image -->
             <div class="product-image-wrapper" id="imageWrapper">
@@ -340,6 +349,7 @@ if (!empty($product['product_image'])) {
         const cameraBox = document.getElementById('cameraBox');
         const imageWrapper = document.getElementById('imageWrapper');
         const base64Input = document.getElementById('product_image_base64');
+        const replaceImageInput = document.getElementById('replace_image');
         let stream = null;
         let cameraActive = false;
 
@@ -358,7 +368,6 @@ if (!empty($product['product_image'])) {
                 video.style.display = 'block';
                 capturedPhoto.style.display = 'none';
 
-                // Show camera box, hide image, show capture button
                 cameraBox.classList.add('visible');
                 imageWrapper.style.display = 'none';
                 retakeBtn.style.display = 'none';
@@ -380,8 +389,10 @@ if (!empty($product['product_image'])) {
         }
 
         // ✅ Retake button — discards current image and opens camera
+        //    We mark replace_image=1 so the API knows to delete the old file.
         retakeBtn.addEventListener('click', () => {
             base64Input.value = '';
+            replaceImageInput.value = '1';   // 🆕 flag: user wants to replace
             startCamera();
         });
 
@@ -440,7 +451,6 @@ if (!empty($product['product_image'])) {
         // ✅ No auto-start — camera opens only when Retake is clicked
         window.addEventListener('load', () => {
             if (!<?php echo $imageUrl ? 'true' : 'false'; ?>) {
-                // If no existing image, open the camera immediately
                 startCamera();
             }
         });

@@ -87,6 +87,9 @@ if ($action === 'update_product') {
     $sellingPrice  = floatval($_POST['selling_price'] ?? 0);
     $description   = isset($_POST['description']) ? trim($_POST['description']) : '';
 
+    // 🆕 Flag sent by the frontend when the user clicks Retake
+    $replaceImage  = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
+
     // ==============================================
     // 5a. FETCH OLD PRODUCT FROM THE CORRECT TABLE
     // ==============================================
@@ -126,10 +129,8 @@ if ($action === 'update_product') {
     //       │     └── config.php
     //       ├── Products/
     //       └── Inv_Products/
-    //
-    //  From API/, go up one level → /public/ → into Products/
     // ==============================================
-    $projectRoot = dirname(__DIR__);                 // → /public/
+    $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
 
     if (!is_dir($uploadDir)) {
@@ -142,7 +143,6 @@ if ($action === 'update_product') {
         }
     }
 
-    // Make sure it's writable
     if (!is_writable($uploadDir)) {
         echo json_encode([
             'success' => false,
@@ -154,32 +154,21 @@ if ($action === 'update_product') {
     // ==============================================
     // 5d. HANDLE NEW IMAGE (if provided)
     // ==============================================
-    $imagePath = null;                // final filename to save in DB
-    $oldImageToDelete = null;         // old filename to delete after success
+    $imagePath        = null;   // final filename to save in DB
+    $oldImageToDelete = null;   // old filename to delete after success
 
     // Helper: build a safe filename from the product name
     $buildFileName = function (string $name, string $ext) {
-        // 1. Remove extension if present
         $name = pathinfo($name, PATHINFO_FILENAME);
-
-        // 2. Replace spaces, underscores, hyphens with hyphens
         $name = preg_replace('/[\s_\-]+/', '-', $name);
-
-        // 3. Remove anything that isn't alphanumeric, dash, or dot
         $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
-
-        // 4. Collapse multiple dashes
         $name = preg_replace('/-+/', '-', $name);
-
-        // 5. Trim dashes and dots from start/end
         $name = trim($name, '-.');
 
-        // 6. Fallback if empty
         if ($name === '') {
             $name = 'product-' . time();
         }
 
-        // 7. Limit length
         $name = substr($name, 0, 100);
 
         return $name . '.' . strtolower($ext);
@@ -217,7 +206,7 @@ if ($action === 'update_product') {
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
 
-        // Avoid overwriting — if the name already exists, append a counter
+        // Avoid overwriting — append a counter if the name already exists
         $counter = 1;
         while (file_exists($destPath)) {
             $fileName = $buildFileName($productName . '-' . $counter, $ext);
@@ -277,7 +266,14 @@ if ($action === 'update_product') {
             $oldImageToDelete = $oldProduct['product_image'];
         }
     }
-    // ---- Case C: no new image → keep existing ----
+    // ---- 🆕 Case C: user clicked Retake but didn't capture a new photo ----
+    elseif ($replaceImage) {
+        $imagePath = null;   // clear the DB column
+        if (!empty($oldProduct['product_image'])) {
+            $oldImageToDelete = $oldProduct['product_image'];
+        }
+    }
+    // ---- Case D: no image change at all → keep existing ----
     else {
         $imagePath = $oldProduct['product_image'];
     }
@@ -322,6 +318,7 @@ if ($action === 'update_product') {
             if ($oldProduct['qty_on_hand'] != $quantity)       $changes[] = "Quantity: {$oldProduct['qty_on_hand']} → {$quantity}";
             if ($oldProduct['selling_price'] != $sellingPrice) $changes[] = "Price: ₱{$oldProduct['selling_price']} → ₱{$sellingPrice}";
             if ($imagePath !== $oldProduct['product_image'])   $changes[] = "Image updated";
+            if ($imagePath === null && !empty($oldProduct['product_image'])) $changes[] = "Image removed (no replacement)";
 
             $logDetails = "Updated product in {$targetTable}: {$oldProduct['product_name']} (ID: {$productId}) | Changes: " . (empty($changes) ? "No changes" : implode(", ", $changes));
 
@@ -335,6 +332,8 @@ if ($action === 'update_product') {
             $pdo->commit();
 
             // ✅ Delete old image AFTER successful DB update
+            //    Triggers when a new image replaced the old one, OR when the user
+            //    clicked Retake without capturing (Case C → imagePath = null).
             if ($oldImageToDelete && $imagePath !== $oldProduct['product_image']) {
                 $oldFilePath = $uploadDir . $oldImageToDelete;
                 if (file_exists($oldFilePath)) {
