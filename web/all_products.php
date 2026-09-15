@@ -514,9 +514,6 @@ foreach ($allProducts as $product) {
             justify-content: center;
             gap: 5px;
             width: 100%;
-            text-decoration: none;
-            /* ✅ removes underline from <a> */
-            box-sizing: border-box;
         }
 
         .update-btn {
