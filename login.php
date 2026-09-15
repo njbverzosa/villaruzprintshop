@@ -18,42 +18,16 @@ require_once __DIR__ . '/DB_Conn/config.php';
 include __DIR__ . '/app_version.php';   // defines $latestVersion + $currentVersion
 
 // ==============================================
-// ✅ HELPER — normalize authorize_access to int
-//    Handles: NULL, '', '3 ', '3', 3, 'three'
-// ==============================================
-function normalizeAuthorizeAccess($value)
-{
-    if ($value === null || $value === '') {
-        return 0;
-    }
-    return (int) trim((string) $value);
-}
-
-// ==============================================
 // ✅ HELPER — resolve redirect URL for admins-table user
-//    Investor = authorize_access == 3
+// Investor = authorize_access == 3
 // ==============================================
 function resolveAdminRedirect($pdo, $userId)
 {
     $stmt = $pdo->prepare("SELECT authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $row = $stmt->fetch();
 
-    $access = normalizeAuthorizeAccess($row['authorize_access'] ?? 0);
-
-    if ($access === 3) {
-        return 'investors/all_products.php';
-    }
-    return 'web/all_products.php';
-}
-
-// ==============================================
-// ✅ HELPER — resolve redirect from a full admin row (avoids extra query)
-// ==============================================
-function resolveAdminRedirectFromRow($adminRow)
-{
-    $access = normalizeAuthorizeAccess($adminRow['authorize_access'] ?? 0);
-    if ($access === 3) {
+    if ($row && (int)$row['authorize_access'] === 3) {
         return 'investors/all_products.php';
     }
     return 'web/all_products.php';
@@ -191,7 +165,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userType = $_COOKIE['user_type'];
 
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
-    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id, acc_number FROM $table WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
 
@@ -221,15 +195,9 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     }
 
     $table = ($userType === 'Admin') ? 'admins' : 'customers';
-
-    // ✅ Include authorize_access for admins so we can resolve the redirect
-    if ($userType === 'Admin') {
-        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name, authorize_access FROM admins WHERE id = ?");
-    } else {
-        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM customers WHERE id = ?");
-    }
+    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $user = $stmt->fetch();
 
     if (!$user) {
         echo json_encode(['success' => false, 'message' => 'User not found']);
@@ -257,8 +225,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     // ✅ Biometric redirect — Admin / Investor / Customer
     if ($userType === 'Admin') {
-        // Use the row we already fetched (contains authorize_access)
-        $adminRedirect = resolveAdminRedirectFromRow($user);
+        $adminRedirect = resolveAdminRedirect($pdo, $user['id']);
 
         if ($isInApp) {
             $redirectUrl = $adminRedirect;
@@ -417,8 +384,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             // ✅ Regular-login redirect — Admin / Investor / Customer
             if ($userType === 'Admin') {
-                // ✅ Investor = authorize_access == 3 (normalized)
-                $adminRedirect = resolveAdminRedirectFromRow($user);
+                // Investor = authorize_access == 3
+                $adminRedirect = (isset($user['authorize_access']) && (int)$user['authorize_access'] === 3)
+                    ? 'investors/all_products.php'
+                    : 'web/all_products.php';
 
                 if ($isInApp) {
                     if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
