@@ -255,8 +255,8 @@ foreach ($allProducts as $product) {
       <div class="divider"></div>
 
       <label for="product_name">Product Name</label>
-      <input type="text" id="product_name" name="product_name" pattern="[A-Za-z0-9\s,\.\(\)\-]+"
-        title="Allowed: letters, numbers, spaces, and , . ( ) -" required>
+      <input type="text" id="product_name" name="product_name" 
+         required>
         
       <label for="unit">Unit</label>
       <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..." required>

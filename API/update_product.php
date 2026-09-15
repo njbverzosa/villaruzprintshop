@@ -158,10 +158,15 @@ if ($action === 'update_product') {
 
     // ==============================================
     // 5e. HANDLE NEW IMAGE
+    //    Allowed extensions: jpeg, jpg, png
     // ==============================================
     $imagePath        = null;
     $oldImageToDelete = null;
     $newFileWritten   = null;
+
+    // Allowed extensions + MIME types
+    $allowedExtensions = ['jpeg', 'jpg', 'png'];
+    $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
     // Helper: build a safe filename from the product name
     $buildFileName = function (string $name, string $ext) {
@@ -171,7 +176,7 @@ if ($action === 'update_product') {
         // 2. Replace spaces, underscores, hyphens with hyphens
         $name = preg_replace('/[\s_\-]+/', '-', $name);
 
-        // 3. Keep letters, numbers, dashes, and dots (for "2.0mp", "1.5L", etc.)
+        // 3. Keep letters, numbers, dashes, and dots (for "2.0", "1.5L", etc.)
         $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
 
         // 4. Collapse multiple dashes and dots
@@ -201,9 +206,9 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $type = strtolower($m[1]);
-        if (!in_array($type, ['png', 'jpeg', 'jpg', 'webp'], true)) {
-            echo json_encode(['success' => false, 'message' => 'Unsupported camera image type.']);
+        $type = strtolower($m[1]);   // jpeg, jpg, png
+        if (!in_array($type, $allowedExtensions, true)) {
+            echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
         }
 
@@ -258,17 +263,23 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $allowedMime = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-
-        if (!in_array($mime, $allowedMime, true)) {
-            echo json_encode(['success' => false, 'message' => 'Only PNG, JPG, JPEG, or WEBP images allowed.']);
+        // ✅ Check extension
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowedExtensions, true)) {
+            echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
-        $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        // ✅ Check MIME type
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($mime, $allowedMime, true)) {
+            echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
+            exit;
+        }
+
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
 
@@ -404,8 +415,9 @@ echo json_encode(['success' => false, 'message' => 'Invalid action']);
 
 // ==============================================
 // HELPER: Sanitize product name
-// Allows: letters, numbers, spaces, , . ( ) -
-// Strips: image extensions (.jpeg, .jpg, .png, .webp, ...)
+// Allows: letters, numbers, spaces, and , . ( ) -
+// Strips: image extensions (.jpeg, .jpg, .png)
+// Preserves user's casing (does NOT lowercase/ucwords)
 // ==============================================
 function sanitizeProductName($name)
 {
@@ -413,7 +425,7 @@ function sanitizeProductName($name)
     $name = pathinfo($name, PATHINFO_FILENAME);
 
     // 2. Strip any lingering image extensions (defense in depth)
-    $imageExtensions = ['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp'];
+    $imageExtensions = ['jpeg', 'jpg', 'png'];
     foreach ($imageExtensions as $ext) {
         $name = preg_replace('/\.' . preg_quote($ext, '/') . '$/i', '', $name);
     }
@@ -430,8 +442,7 @@ function sanitizeProductName($name)
     // 6. Collapse multiple spaces
     $name = preg_replace('/\s+/', ' ', $name);
 
-    // 7. Title-case after spaces, hyphens, and dots
-    $name = ucwords(strtolower($name), " \t\r\n-.");
+    // 7. ✅ PRESERVE user's casing — no ucwords, no strtolower
 
     return $name;
 }
