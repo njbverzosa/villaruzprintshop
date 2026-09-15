@@ -87,11 +87,30 @@ if ($action === 'update_product') {
     $sellingPrice  = floatval($_POST['selling_price'] ?? 0);
     $description   = isset($_POST['description']) ? trim($_POST['description']) : '';
 
-    // 🆕 Flag from frontend when the user clicks Retake
+    // Flag from frontend when the user clicks Retake
     $replaceImage  = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
 
     // ==============================================
-    // 5a. FETCH OLD PRODUCT
+    // 5a. SANITIZE + VALIDATE PRODUCT NAME
+    // ==============================================
+    $productName = sanitizeProductName($productName);
+
+    if (empty($productName)) {
+        echo json_encode(['success' => false, 'message' => 'Product name is required']);
+        exit;
+    }
+
+    // 🆕 Enforce allowed characters: letters, numbers, spaces, and , . ( ) -
+    if (!preg_match('/^[A-Za-z0-9\s,\.\(\)\-]+$/', $productName)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Product name can only contain letters, numbers, spaces, and , . ( ) -'
+        ]);
+        exit;
+    }
+
+    // ==============================================
+    // 5b. FETCH OLD PRODUCT
     // ==============================================
     $oldStmt = $pdo->prepare("SELECT * FROM {$targetTable} WHERE id = :id");
     $oldStmt->execute([':id' => $productId]);
@@ -103,12 +122,8 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5b. VALIDATION
+    // 5c. MORE VALIDATION
     // ==============================================
-    if (empty($productName)) {
-        echo json_encode(['success' => false, 'message' => 'Product name is required']);
-        exit;
-    }
     if ($sellingPrice <= 0) {
         echo json_encode(['success' => false, 'message' => 'Selling price must be greater than 0']);
         exit;
@@ -119,7 +134,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5c. RESOLVE THE UPLOAD DIRECTORY
+    // 5d. RESOLVE THE UPLOAD DIRECTORY
     // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
@@ -143,11 +158,11 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5d. HANDLE NEW IMAGE
+    // 5e. HANDLE NEW IMAGE
     // ==============================================
-    $imagePath        = null;   // final filename to save in DB
-    $oldImageToDelete = null;   // old filename to delete AFTER success
-    $newFileWritten   = null;   // new file to clean up on failure
+    $imagePath        = null;
+    $oldImageToDelete = null;
+    $newFileWritten   = null;
 
     // Helper: build a safe filename from the product name
     $buildFileName = function (string $name, string $ext) {
@@ -198,8 +213,7 @@ if ($action === 'update_product') {
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
 
-        // 🆕 DELETE the OLD image file FIRST if the target name matches it.
-        //    This frees up the clean filename so the new file can use it.
+        // DELETE the OLD image file FIRST if the target name matches it
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -208,7 +222,7 @@ if ($action === 'update_product') {
             $oldImageToDelete = $oldProduct['product_image'];
         }
 
-        // Now check if the target name still conflicts (with other products)
+        // Check if the target name still conflicts (with other products)
         $counter = 1;
         while (file_exists($destPath)) {
             $fileName = $buildFileName($productName . '-' . $counter, $ext);
@@ -247,7 +261,7 @@ if ($action === 'update_product') {
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
 
-        // 🆕 DELETE old image FIRST
+        // DELETE old image FIRST
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -275,7 +289,7 @@ if ($action === 'update_product') {
     elseif ($replaceImage) {
         $imagePath = null;
 
-        // 🆕 Delete the old image from disk right now
+        // Delete the old image from disk right now
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -290,7 +304,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5e. PERFORM THE UPDATE
+    // 5f. PERFORM THE UPDATE
     // ==============================================
     try {
         date_default_timezone_set('Asia/Manila');
@@ -355,8 +369,6 @@ if ($action === 'update_product') {
         } else {
             $pdo->rollBack();
 
-            // Rollback: restore the old file? We can't (it's deleted). But we CAN
-            // clean up the new file so we don't leave an orphan.
             if ($newFileWritten && file_exists($uploadDir . $newFileWritten)) {
                 @unlink($uploadDir . $newFileWritten);
             }
@@ -367,7 +379,6 @@ if ($action === 'update_product') {
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
 
-        // Same cleanup on exception
         if ($newFileWritten && file_exists($uploadDir . $newFileWritten)) {
             @unlink($uploadDir . $newFileWritten);
         }
@@ -379,3 +390,37 @@ if ($action === 'update_product') {
 
 // Invalid action
 echo json_encode(['success' => false, 'message' => 'Invalid action']);
+
+// ==============================================
+// HELPER: Sanitize product name
+// Allows: letters, numbers, spaces, , . ( ) -
+// Strips: image extensions (.jpeg, .jpg, .png, .webp, ...)
+// ==============================================
+function sanitizeProductName($name)
+{
+    // 1. Strip the file extension
+    $name = pathinfo($name, PATHINFO_FILENAME);
+
+    // 2. Strip any lingering image extensions (defense in depth)
+    $imageExtensions = ['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp'];
+    foreach ($imageExtensions as $ext) {
+        $name = preg_replace('/\.' . preg_quote($ext, '/') . '$/i', '', $name);
+    }
+
+    // 3. Collapse underscores and whitespace into single spaces
+    $name = preg_replace('/[_\s]+/', ' ', $name);
+
+    // 4. Keep ONLY: letters, numbers, spaces, and , . ( ) -
+    $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
+
+    // 5. Trim whitespace and stray dots from both ends
+    $name = trim($name, " \t\n\r\0\x0B.");
+
+    // 6. Collapse multiple spaces
+    $name = preg_replace('/\s+/', ' ', $name);
+
+    // 7. Title-case after spaces, hyphens, and dots
+    $name = ucwords(strtolower($name), " \t\r\n-.");
+
+    return $name;
+}

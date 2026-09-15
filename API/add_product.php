@@ -99,10 +99,8 @@ if ($action === 'add_product') {
     //       │     └── config.php
     //       ├── Products/
     //       └── Inv_Products/
-    //
-    //  From API/, go up one level → /public/ → into Products/ (or Inv_Products/)
     // ==============================================
-    $projectRoot = dirname(__DIR__);                 // → /public/
+    $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
 
     if (!is_dir($uploadDir)) {
@@ -125,8 +123,6 @@ if ($action === 'add_product') {
 
     // ==============================================
     // 6. HANDLE PRODUCT IMAGE
-    //    Product name is derived from the image filename
-    //    (or the submitted product_name for camera capture)
     // ==============================================
     $imagePath   = null;
     $productName = null;
@@ -258,13 +254,25 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 7. FINAL PRODUCT NAME VALIDATION
+    // 7. VALIDATE PRODUCT NAME (allowed characters only)
     // ==============================================
     if (empty($productName)) {
         if ($imagePath && file_exists($uploadDir . $imagePath)) {
             unlink($uploadDir . $imagePath);
         }
         echo json_encode(['success' => false, 'message' => 'Product name could not be determined from image.']);
+        exit;
+    }
+
+    // 🆕 Enforce allowed characters: letters, numbers, spaces, and , . ( ) -
+    if (!preg_match('/^[A-Za-z0-9\s,\.\(\)\-]+$/', $productName)) {
+        if ($imagePath && file_exists($uploadDir . $imagePath)) {
+            unlink($uploadDir . $imagePath);
+        }
+        echo json_encode([
+            'success' => false,
+            'message' => 'Product name can only contain letters, numbers, spaces, and , . ( ) -'
+        ]);
         exit;
     }
 
@@ -363,21 +371,35 @@ if ($action === 'add_product') {
 echo json_encode(['success' => false, 'message' => 'Invalid action']);
 
 // ==============================================
-// HELPER: Sanitize product name (from image filename)
+// HELPER: Sanitize product name
+// Allows: letters, numbers, spaces, , . ( ) -
+// Strips: image extensions (.jpeg, .jpg, .png, .webp, ...)
 // ==============================================
 function sanitizeProductName($name)
 {
-    // Remove extension if present
+    // 1. Strip the file extension
     $name = pathinfo($name, PATHINFO_FILENAME);
 
-    // Replace underscores, hyphens, and multiple spaces with single space
-    $name = preg_replace('/[_\-\s]+/', ' ', $name);
-    
-    // Trim and collapse multiple spaces
-    $name = trim(preg_replace('/\s+/', ' ', $name));
+    // 2. Strip any lingering image extensions (defense in depth)
+    $imageExtensions = ['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp'];
+    foreach ($imageExtensions as $ext) {
+        $name = preg_replace('/\.' . preg_quote($ext, '/') . '$/i', '', $name);
+    }
 
-    // Capitalize each word
-    $name = ucwords(strtolower($name));
+    // 3. Collapse underscores and whitespace into single spaces
+    $name = preg_replace('/[_\s]+/', ' ', $name);
+
+    // 4. Keep ONLY: letters, numbers, spaces, and , . ( ) -
+    $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
+
+    // 5. Trim whitespace and stray dots from both ends
+    $name = trim($name, " \t\n\r\0\x0B.");
+
+    // 6. Collapse multiple spaces
+    $name = preg_replace('/\s+/', ' ', $name);
+
+    // 7. Title-case after spaces, hyphens, and dots
+    $name = ucwords(strtolower($name), " \t\r\n-.");
 
     return $name;
 }
