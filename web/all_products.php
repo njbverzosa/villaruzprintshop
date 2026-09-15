@@ -1,5 +1,5 @@
 <?php
-// all_products.php
+// web/all_products.php
 
 session_start();
 
@@ -514,6 +514,8 @@ foreach ($allProducts as $product) {
             justify-content: center;
             gap: 5px;
             width: 100%;
+            text-decoration: none;
+            box-sizing: border-box;
         }
 
         .update-btn {
@@ -1162,6 +1164,20 @@ foreach ($allProducts as $product) {
                 document.body.style.overflow = '';
             }
         });
+
+        // ========== DROPDOWN TOGGLE (Sidebar) ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+            if (arrow) {
+                arrow.classList.toggle('rotated');
+            }
+        }
 
         // ========== DESCRIPTION MODAL ==========
         const descModal = document.getElementById('descriptionModal');
