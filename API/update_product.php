@@ -164,15 +164,19 @@ if ($action === 'update_product') {
 
     // ==============================================
     // 5e. HANDLE NEW IMAGE
-    //    Filename = <product_name>.<ext>  (spaces preserved)
-    //    Allowed extensions: jpeg, jpg, png
+    //    Filename = <product_name>.png  (always .png, spaces preserved)
+    //    Accepted source types: jpeg, jpg, png
     // ==============================================
     $imagePath        = null;
     $oldImageToDelete = null;
     $newFileWritten   = null;
 
-    $allowedExtensions = ['png'];
-    $allowedMime       = ['image/png'];
+    // Accepted source extensions + MIME types (from camera or upload)
+    $allowedSourceExt  = ['jpeg', 'jpg', 'png'];
+    $allowedSourceMime = ['image/jpeg', 'image/jpg', 'image/png'];
+
+    // ✅ The extension we always save as
+    $forcedExt = 'png';
 
     // ---- Case A: base64 camera image ----
     if (!empty($_POST['product_image_base64'])) {
@@ -184,8 +188,8 @@ if ($action === 'update_product') {
         }
 
         $type = strtolower($m[1]);   // jpeg, jpg, png
-        if (!in_array($type, $allowedExtensions, true)) {
-            echo json_encode(['success' => false, 'message' => 'Only PNG camera images allowed.']);
+        if (!in_array($type, $allowedSourceExt, true)) {
+            echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
         }
 
@@ -202,10 +206,10 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Extension preserved (jpeg stays jpeg)
-        $ext = strtolower($type);
+        // ✅ Always save as .png
+        $ext = $forcedExt;
 
-        // ✅ Filename = product name + extension (spaces preserved)
+        // ✅ Filename = product name + .png (spaces preserved)
         $fileName = $productName . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 
@@ -243,22 +247,27 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, $allowedExtensions, true)) {
+        // Validate source extension
+        $sourceExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($sourceExt, $allowedSourceExt, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
+        // Validate source MIME type
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
 
-        if (!in_array($mime, $allowedMime, true)) {
+        if (!in_array($mime, $allowedSourceMime, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
-        // ✅ Filename = product name + extension (spaces preserved)
+        // ✅ Always save as .png
+        $ext = $forcedExt;
+
+        // ✅ Filename = product name + .png (spaces preserved)
         $fileName = $productName . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 

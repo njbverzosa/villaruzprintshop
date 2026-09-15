@@ -142,13 +142,17 @@ if ($action === 'add_product') {
 
     // ==============================================
     // 7. HANDLE PRODUCT IMAGE
-    //    Filename = <product_name>.<ext>  (spaces preserved)
-    //    Allowed extensions: jpeg, jpg, png
+    //    ✅ Filename ALWAYS ends in .png
+    //    Allowed input types: jpeg, jpg, png (converted to .png)
     // ==============================================
     $imagePath = null;
 
-    $allowedExtensions = ['png'];
-    $allowedMime       = ['image/png'];
+    // Accepted input formats
+    $allowedExtensions = ['jpeg', 'jpg', 'png'];
+    $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
+
+    // ✅ Final extension is always png
+    $finalExt = 'png';
 
     // ---- Case A: standard file upload ----
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
@@ -159,10 +163,10 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Validate extension
+        // Validate incoming extension
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExtensions, true)) {
-            echo json_encode(['success' => false, 'message' => 'Only PNG images allowed.']);
+            echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
@@ -176,14 +180,14 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // ✅ Filename = product name + extension (spaces preserved)
-        $fileName = $productName . '.' . strtolower($ext);
+        // ✅ Filename ALWAYS ends in .png
+        $fileName = $productName . '.' . $finalExt;
         $destPath = $uploadDir . $fileName;
 
         // Avoid overwriting — append " (1)", " (2)", ... if the name exists
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $productName . ' (' . $counter . ').' . strtolower($ext);
+            $fileName = $productName . ' (' . $counter . ').' . $finalExt;
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -223,17 +227,14 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // ✅ Normalize jpeg → jpeg for the extension
-        $ext = strtolower($type);
-
-        // ✅ Filename = product name + extension (spaces preserved)
-        $fileName = $productName . '.' . $ext;
+        // ✅ Filename ALWAYS ends in .png
+        $fileName = $productName . '.' . $finalExt;
         $destPath = $uploadDir . $fileName;
 
         // Avoid overwriting — append " (1)", " (2)", ... if the name exists
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $productName . ' (' . $counter . ').' . $ext;
+            $fileName = $productName . ' (' . $counter . ').' . $finalExt;
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
