@@ -1,8 +1,6 @@
 <?php
 // login.php – desktop + mobile + in-app flows
-// ✅ 3 roles: Admin, Investor (both admins), Customer (customers)
-// ✅ Investor detection: admins.authorize_access = 3
-// ✅ Investor → investors/all_products.php on EVERY platform
+// ✅ 2 roles: Admin (admins) and Customer (customers)
 // ✅ Admin → web/all_products.php
 // ✅ Customer → public/shop.php
 // ✅ Biometric success shows inside the Login button
@@ -16,56 +14,6 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
 include __DIR__ . '/app_version.php';   // defines $latestVersion + $currentVersion
-
-// ==============================================
-// ✅ HELPER — normalize authorize_access to int
-//    Handles: NULL, '', '3 ', '3', 3, 'three', ' 3'
-// ==============================================
-function normalizeAuthorizeAccess($value)
-{
-    if ($value === null || $value === '') {
-        return 0;
-    }
-    return (int) trim((string) $value);
-}
-
-// ==============================================
-// ✅ HELPER — is the admin an investor?
-// ==============================================
-function isInvestor($adminRow)
-{
-    return normalizeAuthorizeAccess($adminRow['authorize_access'] ?? 0) === 3;
-}
-
-// ==============================================
-// ✅ HELPER — resolve redirect URL for admins-table user
-//    Investor (authorize_access == 3) → investors/all_products.php
-//    Otherwise                        → web/all_products.php
-// ==============================================
-function resolveAdminRedirect($pdo, $userId)
-{
-    $stmt = $pdo->prepare("SELECT authorize_access FROM admins WHERE id = ?");
-    $stmt->execute([$userId]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    $access = normalizeAuthorizeAccess($row['authorize_access'] ?? 0);
-
-    if ($access === 3) {
-        return 'investors/all_products.php';
-    }
-    return 'web/all_products.php';
-}
-
-// ==============================================
-// ✅ HELPER — resolve redirect from a full admin row (avoids extra query)
-// ==============================================
-function resolveAdminRedirectFromRow($adminRow)
-{
-    if (isInvestor($adminRow)) {
-        return 'investors/all_products.php';
-    }
-    return 'web/all_products.php';
-}
 
 // ==============================================
 // ✅ DETECT PLATFORM
@@ -167,7 +115,7 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     $userName = $_SESSION['acc_number'] ?? 'User';
 
     if ($_SESSION['user_role'] === 'Admin') {
-        $redirectUrl = resolveAdminRedirect($pdo, $_SESSION['user_id']);
+        $redirectUrl = 'web/all_products.php';
     } elseif ($_SESSION['user_role'] === 'Customer') {
         $redirectUrl = 'public/shop.php';
     }
@@ -228,9 +176,8 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         exit;
     }
 
-    // ✅ Include authorize_access for admins so we can resolve the redirect
     if ($userType === 'Admin') {
-        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name, authorize_access FROM admins WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM admins WHERE id = ?");
     } else {
         $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM customers WHERE id = ?");
     }
@@ -261,10 +208,15 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $updateTypeStmt->execute([$loginType, $user['id']]);
     }
 
-    // ✅ Biometric redirect — Investor always goes to investors/
+    // ✅ Biometric redirect — Admin / Customer
     if ($userType === 'Admin') {
-        // ✅ Investor → investors/ regardless of platform
-        $redirectUrl = resolveAdminRedirectFromRow($user);
+        if ($isInApp) {
+            $redirectUrl = 'web/all_products.php';
+        } elseif ($isMobileBrowser) {
+            $redirectUrl = 'download_app.php';
+        } else {
+            $redirectUrl = 'web/all_products.php';
+        }
     } else {
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
@@ -361,7 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
         $userType = null;
 
         if ($userTypeSelected === 'Admin') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, authorize_access, biometric_enrolled, biometric_id
+            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, biometric_enrolled, biometric_id
                               FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
             $stmt->execute([$selectedRole, $identifier]);
             $user = $stmt->fetch();
@@ -413,26 +365,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             $loginSuccess = true;
 
-            // ✅ Regular-login redirect — Investor always goes to investors/
+            // ✅ Regular-login redirect — Admin / Customer
             if ($userType === 'Admin') {
-
-                // ✅ Investor → investors/all_products.php on EVERY platform
-                if (isInvestor($user)) {
-                    $redirectUrl = 'investors/all_products.php';
-
-                    // If not yet enrolled in biometrics AND in the app → go to biometric.php first
-                    if ($isInApp && ($user['biometric_enrolled'] == 0 || empty($user['biometric_id']))) {
-                        $_SESSION['temp_user_id'] = $user['id'];
-                        $_SESSION['temp_user_type'] = $userType;
-                        $redirectUrl = 'biometric.php';
-                    }
-
-                    error_log('Investor redirect: ' . $redirectUrl);
-                    header('Location: ' . $redirectUrl);
-                    exit;
-                }
-
-                // Regular admin → web/all_products.php
                 $adminRedirect = 'web/all_products.php';
 
                 if ($isInApp) {
