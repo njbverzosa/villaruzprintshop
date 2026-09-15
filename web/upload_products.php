@@ -138,12 +138,20 @@
     const base64Input = document.getElementById('product_image_base64');
     let stream = null;
 
-    // Auto-start camera
+    // ✅ Auto-start BACK camera (environment = rear camera)
     window.addEventListener('load', async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },  // 👈 back camera
+            width: { ideal: 1280 },
+            height: { ideal: 1280 }
+          },
+          audio: false
+        });
         video.srcObject = stream;
       } catch (err) {
+        console.error('Camera error:', err);
         alert('Camera not available: ' + err.message);
       }
     });
@@ -185,7 +193,7 @@
       const formData = new FormData(e.target);
 
       try {
-        const res = await fetch('../API/update_product.php', {
+        const res = await fetch('../API/add_product.php', {
           method: 'POST',
           body: formData
         });
