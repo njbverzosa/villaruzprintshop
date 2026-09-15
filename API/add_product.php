@@ -20,6 +20,12 @@ $userId = $_SESSION['user_id'];
 $userRole = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
 
+// ==============================================
+// 2. FETCH USER NAME + authorize_access
+// ==============================================
+$userName = 'Unknown User';
+$authorizeAccess = 0;
+
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT f_name, authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
@@ -34,17 +40,14 @@ $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
 // 3. DECIDE TARGET TABLE + UPLOAD FOLDER
-//    based on authorize_access
 // ==============================================
 $allowedInv = [0, 1, 2];
 
 if ($authorizeAccess === 3) {
-    // Investors → /Inv_Products/
-    $targetTable = 'investors_product';
+    $targetTable  = 'investors_product';
     $uploadFolder = 'Inv_Products';
 } elseif (in_array($authorizeAccess, $allowedInv, true)) {
-    // Merchandise inventory → /Products/
-    $targetTable = 'merchandise_inventory';
+    $targetTable  = 'merchandise_inventory';
     $uploadFolder = 'Products';
 } else {
     echo json_encode(['success' => false, 'message' => 'Your account is not allowed to add products.']);
@@ -71,10 +74,10 @@ $action = $_POST['action'] ?? '';
 
 if ($action === 'add_product') {
 
-    $unit = trim($_POST['unit']);
-    $quantity = intval($_POST['quantity']);
-    $sellingPrice = floatval($_POST['selling_price']);
-    $description = isset($_POST['description']) ? trim($_POST['description']) : '';
+    $unit         = trim($_POST['unit'] ?? 'Pcs');
+    $quantity     = intval($_POST['quantity'] ?? 0);
+    $sellingPrice = floatval($_POST['selling_price'] ?? 0);
+    $description  = isset($_POST['description']) ? trim($_POST['description']) : '';
 
     if ($sellingPrice <= 0) {
         echo json_encode(['success' => false, 'message' => 'Selling price must be greater than 0']);
@@ -86,16 +89,75 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 5. HANDLE PRODUCT IMAGE
-    //    Product name will be derived from the image filename
+    // 5. RESOLVE THE UPLOAD DIRECTORY
+    //
+    //  Folder layout (shared parent):
+    //    /public/
+    //       ├── API/
+    //       │     └── add_product.php       ← we are here
+    //       ├── DB_Conn/
+    //       │     └── config.php
+    //       ├── Products/
+    //       └── Inv_Products/
+    //
+    //  From API/, go up one level → /public/ → into Products/ (or Inv_Products/)
     // ==============================================
-    $imagePath = null;
+    $projectRoot = dirname(__DIR__);                 // → /public/
+    $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
+
+    if (!is_dir($uploadDir)) {
+        if (!mkdir($uploadDir, 0755, true)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Upload folder could not be created: ' . $uploadDir
+            ]);
+            exit;
+        }
+    }
+
+    if (!is_writable($uploadDir)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Upload folder is not writable: ' . $uploadDir
+        ]);
+        exit;
+    }
+
+    // ==============================================
+    // 6. HANDLE PRODUCT IMAGE
+    //    Product name is derived from the image filename
+    //    (or the submitted product_name for camera capture)
+    // ==============================================
+    $imagePath   = null;
     $productName = null;
 
-    $uploadDir = __DIR__ . '/../' . $uploadFolder . '/';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-    }
+    // Helper: build a safe filename from the product name
+    $buildFileName = function (string $name, string $ext) {
+        // 1. Remove extension if present
+        $name = pathinfo($name, PATHINFO_FILENAME);
+
+        // 2. Replace spaces, underscores, hyphens with hyphens
+        $name = preg_replace('/[\s_\-]+/', '-', $name);
+
+        // 3. Remove anything that isn't alphanumeric, dash, or dot
+        $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
+
+        // 4. Collapse multiple dashes
+        $name = preg_replace('/-+/', '-', $name);
+
+        // 5. Trim dashes and dots from start/end
+        $name = trim($name, '-.');
+
+        // 6. Fallback if empty
+        if ($name === '') {
+            $name = 'product-' . time();
+        }
+
+        // 7. Limit length
+        $name = substr($name, 0, 100);
+
+        return $name . '.' . strtolower($ext);
+    };
 
     // ---- Case A: standard file upload ----
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
@@ -116,13 +178,21 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Extract filename WITHOUT extension → becomes the product name
+        // Product name from the uploaded filename
         $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
-        $productName = sanitizeProductName($originalName);
+        $productName  = sanitizeProductName($originalName);
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $fileName = 'prd_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
+
+        // Avoid overwriting — append a counter if the name already exists
+        $counter = 1;
+        while (file_exists($destPath)) {
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $destPath = $uploadDir . $fileName;
+            $counter++;
+        }
 
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
             echo json_encode(['success' => false, 'message' => 'Failed to save uploaded image.']);
@@ -159,13 +229,20 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // For camera captures: derive product name from the user-submitted product_name
-        $rawName = $_POST['product_name'] ?? 'product';
+        // Product name from the submitted product_name
+        $rawName     = $_POST['product_name'] ?? 'product';
         $productName = sanitizeProductName($rawName);
 
-        $ext = ($type === 'jpeg') ? 'jpg' : $type;
-        $fileName = 'prd_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $ext      = ($type === 'jpeg') ? 'jpg' : $type;
+        $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
+
+        $counter = 1;
+        while (file_exists($destPath)) {
+            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $destPath = $uploadDir . $fileName;
+            $counter++;
+        }
 
         if (file_put_contents($destPath, $data) === false) {
             echo json_encode(['success' => false, 'message' => 'Failed to save camera image.']);
@@ -181,7 +258,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 6. FINAL PRODUCT NAME VALIDATION
+    // 7. FINAL PRODUCT NAME VALIDATION
     // ==============================================
     if (empty($productName)) {
         if ($imagePath && file_exists($uploadDir . $imagePath)) {
@@ -192,7 +269,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 7. CHECK DUPLICATE PRODUCT NAME
+    // 8. CHECK DUPLICATE PRODUCT NAME
     // ==============================================
     $checkStmt = $pdo->prepare("SELECT id FROM {$targetTable} WHERE product_name = :product_name");
     $checkStmt->execute([':product_name' => $productName]);
@@ -209,7 +286,7 @@ if ($action === 'add_product') {
         $last_restocked = date('j F Y g:i A');
 
         // ==============================================
-        // 8. GENERATE PRODUCT NUMBER
+        // 9. GENERATE PRODUCT NUMBER
         // ==============================================
         $stmt = $pdo->prepare("
             SELECT MAX(CAST(SUBSTRING(product_number, 4) AS UNSIGNED)) AS max_num
@@ -221,7 +298,7 @@ if ($action === 'add_product') {
         $productNumber = 'PRD' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
         // ==============================================
-        // 9. INSERT
+        // 10. INSERT
         // ==============================================
         $pdo->beginTransaction();
 
@@ -234,12 +311,12 @@ if ($action === 'add_product') {
 
         $result = $stmt->execute([
             ':product_number' => $productNumber,
-            ':product_name' => $productName,
-            ':unit' => $unit,
-            ':qty_on_hand' => $quantity,
-            ':selling_price' => $sellingPrice,
-            ':description' => $description,
-            ':product_image' => $imagePath,
+            ':product_name'   => $productName,
+            ':unit'           => $unit,
+            ':qty_on_hand'    => $quantity,
+            ':selling_price'  => $sellingPrice,
+            ':description'    => $description,
+            ':product_image'  => $imagePath,
             ':last_restocked' => $last_restocked
         ]);
 
@@ -254,26 +331,30 @@ if ($action === 'add_product') {
             $pdo->commit();
 
             echo json_encode([
-                'success' => true,
-                'message' => 'Product added successfully',
-                'product_id' => $productId,
+                'success'        => true,
+                'message'        => 'Product added successfully',
+                'product_id'     => $productId,
                 'product_number' => $productNumber,
-                'product_name' => $productName,
-                'product_image' => $imagePath,
-                'table' => $targetTable,
-                'folder' => $uploadFolder
+                'product_name'   => $productName,
+                'product_image'  => $imagePath,
+                'table'          => $targetTable,
+                'folder'         => $uploadFolder,
+                'upload_dir'     => $uploadDir
             ]);
         } else {
             $pdo->rollBack();
-            if ($imagePath && file_exists($uploadDir . $imagePath))
+            if ($imagePath && file_exists($uploadDir . $imagePath)) {
                 unlink($uploadDir . $imagePath);
+            }
             echo json_encode(['success' => false, 'message' => 'Failed to add product']);
         }
     } catch (PDOException $e) {
-        if ($pdo->inTransaction())
+        if ($pdo->inTransaction()) {
             $pdo->rollBack();
-        if ($imagePath && file_exists($uploadDir . $imagePath))
+        }
+        if ($imagePath && file_exists($uploadDir . $imagePath)) {
             unlink($uploadDir . $imagePath);
+        }
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
     exit;
