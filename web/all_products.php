@@ -357,8 +357,8 @@ foreach ($allProducts as $product) {
             overflow-y: auto;
         }
 
-        
-        
+
+
         /* ========== SEARCH & ADD PRODUCT - STRAIGHT ALIGNED (Same as shop.php) ========== */
         .shop-controls {
             display: flex;
@@ -1417,9 +1417,11 @@ foreach ($allProducts as $product) {
                         <i class="fas fa-times"></i> Clear
                     </button>
                 </div>
-                <button class="add-product-btn" id="addProductBtn">
-                    <i class="fas fa-plus-circle"></i> Add New Product
-                </button>
+                <a href="upload_products.php" style="text-decoration:none;">
+                    <button class="add-product-btn" id="addProductBtn">
+                        <i class="fas fa-plus-circle"></i> Add New Product
+                    </button>
+                </a>
             </div>
             <div id="searchInfo" class="search-info"></div>
 
@@ -1544,106 +1546,9 @@ foreach ($allProducts as $product) {
         </div>
     </div>
 
-    <!-- Update Product Modal -->
-    <div id="updateProductModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-edit"></i> Update Product</h3>
 
-            <label>Product Name <span class="required">*</span></label>
-            <input type="text" id="updateProductName" placeholder="Enter product name">
-            <div class="error-message" id="updateNameError">Please enter a valid product name</div>
 
-            <label>Unit <span class="required">*</span></label>
-            <input type="text" id="updateUnit" placeholder="Enter unit (e.g., Pcs, box, ream)">
-            <div class="error-message" id="updateUnitError">Please enter a valid unit</div>
 
-            <label>Quantity <span class="required">*</span></label>
-            <input type="text" id="updateQuantity" placeholder="Enter quantity" pattern="[0-9]+">
-            <div class="error-message" id="updateQuantityError">Please enter a valid number (0-9 only)</div>
-
-            <label>Unit Cost (₱) <span class="required">*</span></label>
-            <input type="text" id="updatePrice" placeholder="Enter selling price">
-            <div class="error-message" id="updatePriceError">Please enter a valid price (numbers and decimal only)</div>
-
-            <label>Description</label>
-            <textarea id="updateDescription" placeholder="Enter product description (optional)"></textarea>
-
-            <div class="modal-buttons">
-                <button class="modal-btn modal-cancel" id="cancelUpdateProduct">Cancel</button>
-                <button class="modal-btn modal-confirm" id="confirmUpdateProduct">Update Now</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Product Modal -->
-    <div id="addProductModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-plus-circle"></i> Add New Product</h3>
-
-            <div class="modal-tabs">
-                <button class="tab-btn active" data-tab="manual">Manual Entry</button>
-                <button class="tab-btn" data-tab="excel">Upload Excel</button>
-            </div>
-
-            <div id="manualTab" class="tab-content active">
-                <label>Product Name <span class="required">*</span></label>
-                <input type="text" id="productName" placeholder="Enter product name">
-                <div class="error-message" id="addNameError">Please enter a valid product name</div>
-
-                <label>Unit <span class="required">*</span></label>
-                <input type="text" id="productUnit" placeholder="Enter unit (e.g., Pcs, Roll, Ream)" value="Pcs">
-                <div class="error-message" id="addUnitError">Please enter a valid unit</div>
-
-                <label>Quantity <span class="required">*</span></label>
-                <input type="number" id="productQuantity" placeholder="Enter quantity on hand" step="1" min="0">
-                <div class="error-message" id="addQuantityError">Please enter a valid quantity</div>
-
-                <label>Unit Cost (₱) <span class="required">*</span></label>
-                <input type="text" id="productPrice" placeholder="Enter selling price">
-                <div class="error-message" id="addPriceError">Please enter a valid price</div>
-
-                <label>Description</label>
-                <textarea id="productDescription" placeholder="Enter product description (optional)"></textarea>
-
-                <div class="modal-buttons">
-                    <button class="modal-btn modal-cancel" id="cancelAddProduct">Cancel</button>
-                    <button class="modal-btn modal-confirm" id="confirmAddProduct">Add Product</button>
-                </div>
-            </div>
-
-            <div id="excelTab" class="tab-content">
-                <div class="excel-info">
-                    <div class="excel-format-image">
-                        <img src="images/sample_excel.png" alt="Excel Sample Format">
-                    </div>
-                    <p class="excel-format-text">
-                        <strong>Note:</strong><br>
-                        Only columns B (Unit), C (Item Description), D (Quantity), E (Unit Cost) will be automatically
-                        inserted into the database.
-                    </p>
-                </div>
-
-                <div class="file-upload-area" id="fileUploadArea">
-                    <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none;">
-                    <div class="upload-placeholder">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Click or drag file to upload</p>
-                        <span class="file-hint">Supported: .xlsx, .xls (Max 5MB)</span>
-                    </div>
-                    <div class="upload-preview" style="display: none;">
-                        <i class="fas fa-file-excel"></i>
-                        <span class="file-name"></span>
-                        <button class="remove-file"><i class="fas fa-times"></i></button>
-                    </div>
-                </div>
-
-                <div class="modal-buttons">
-                    <button class="modal-btn modal-cancel" id="cancelExcelUpload">Cancel</button>
-                    <button class="modal-btn modal-confirm" id="confirmExcelUpload">Upload Products</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 

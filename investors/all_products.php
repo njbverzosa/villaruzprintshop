@@ -139,6 +139,10 @@ $allProducts = $stmt->fetchAll();
             .menu-overlay {
                 display: none !important;
             }
+
+            .sidebar-close-btn {
+                display: none !important;
+            }
         }
 
         .menu-overlay {
@@ -178,6 +182,32 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
+        .sidebar-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            display: none;
+            z-index: 10;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-close-btn {
+                display: block;
+            }
+        }
+
         .main-content {
             flex: 1;
             padding: 30px;
@@ -214,6 +244,26 @@ $allProducts = $stmt->fetchAll();
             font-size: 18px;
             font-weight: 600;
             color: #0f172a;
+        }
+
+        .menu-header {
+            padding: 25px 50px 25px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            flex-shrink: 0;
+        }
+
+        .menu-header .user-name {
+            font-weight: 700;
+            font-size: 18px;
+            color: #0f172a;
+            margin-top: 8px;
+        }
+
+        .menu-nav {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
         }
 
         .shop-controls {
@@ -298,7 +348,6 @@ $allProducts = $stmt->fetchAll();
             white-space: nowrap;
             flex-shrink: 0;
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            text-decoration: none;
         }
 
         .add-product-btn:hover {
@@ -339,6 +388,7 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
         }
 
+        /* Image sits BELOW the product title */
         .product-image {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -641,6 +691,126 @@ $allProducts = $stmt->fetchAll();
             gap: 8px;
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-content h3 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .modal-content h3 i {
+            color: #3b82f6;
+            margin-right: 8px;
+        }
+
+        .modal-content input,
+        .modal-content select,
+        .modal-content textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .modal-content input:focus,
+        .modal-content select:focus,
+        .modal-content textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: #ffffff;
+        }
+
+        .modal-content textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-content label {
+            display: block;
+            text-align: left;
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .modal-content label .required {
+            color: #ef4444;
+            margin-left: 4px;
+        }
+
+        .modal-content .error-message {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: -8px;
+            margin-bottom: 8px;
+            display: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .modal-confirm {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .modal-confirm:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .modal-cancel {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .modal-cancel:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
         /* TOAST */
         .toast-notification {
             position: fixed;
@@ -660,6 +830,235 @@ $allProducts = $stmt->fetchAll();
 
         .toast-error {
             background: #ef4444;
+        }
+
+        .save-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* TABS */
+        .modal-tabs {
+            display: flex;
+            gap: 60px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: #f5b342;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #f5b342;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* EXCEL UPLOAD */
+        .excel-info {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .excel-format-image {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .excel-format-image img {
+            max-width: 100%;
+            width: 600px;
+            height: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+        }
+
+        .excel-format-text {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area:hover {
+            border-color: #f5b342;
+            background: #fafafa;
+        }
+
+        .upload-placeholder i {
+            font-size: 48px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .upload-placeholder p {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .file-hint {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .upload-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: #e8f0fe;
+            border-radius: 8px;
+        }
+
+        .upload-preview i {
+            font-size: 24px;
+            color: #28a745;
+        }
+
+        .upload-preview .file-name {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #dc3545;
+            font-size: 16px;
+            padding: 0 5px;
+        }
+
+        /* CAMERA */
+        .camera-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px;
+            margin-top: 8px;
+        }
+
+        .camera-preview-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #0f172a;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            margin-bottom: 10px;
+        }
+
+        .camera-preview-wrap.visible {
+            display: block;
+        }
+
+        .camera-preview-wrap video,
+        .camera-preview-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .camera-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .camera-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .camera-btn-open {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .camera-btn-capture {
+            background: #10b981;
+            color: #fff;
+        }
+
+        .camera-btn-stop {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .camera-btn-retake {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .camera-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 6px;
+            text-align: center;
         }
 
         /* RESPONSIVE */
@@ -693,6 +1092,15 @@ $allProducts = $stmt->fetchAll();
             .add-product-btn {
                 padding: 8px 14px;
                 font-size: 12px;
+            }
+
+            .modal-content {
+                padding: 20px;
+                max-height: 85vh;
+            }
+
+            .modal-tabs {
+                gap: 30px;
             }
 
             .dashboard-header {
@@ -744,6 +1152,15 @@ $allProducts = $stmt->fetchAll();
                 font-size: 11px;
                 padding: 0 12px 8px 12px;
             }
+
+            .modal-tabs {
+                gap: 15px;
+            }
+
+            .tab-btn {
+                font-size: 12px;
+                padding: 8px 0;
+            }
         }
     </style>
 </head>
@@ -781,8 +1198,10 @@ $allProducts = $stmt->fetchAll();
                         <i class="fas fa-times"></i> Clear
                     </button>
                 </div>
-                <a href="upload_product.php" class="add-product-btn" id="addProductBtn">
-                    <i class="fas fa-plus-circle"></i> Add New Product
+                <a href="upload_product.php" style="text-decoration: none;">
+                    <button class="add-product-btn" id="addProductBtn">
+                        <i class="fas fa-plus-circle"></i> Add New Product
+                    </button>
                 </a>
             </div>
             <div id="searchInfo" class="search-info"></div>
@@ -804,13 +1223,16 @@ $allProducts = $stmt->fetchAll();
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>"
                             data-qty="<?php echo number_format($product['qty_on_hand']); ?>">
 
+                            <!-- Product name first -->
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
 
                             <div class="product-image-wrapper">
                                 <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                    style="width: 100px; height: auto;">
+                                    class="product-image-clickable"
+                                    onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
+                                    style="width: 100px; height: auto; cursor: pointer;">
                             </div>
 
                             <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
@@ -895,9 +1317,13 @@ $allProducts = $stmt->fetchAll();
         </div>
     </div>
 
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
     <script>
         /* ========== SIDEBAR ========== */
         const burgerBtn = document.getElementById('burgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const sidebarWrapper = document.getElementById('sidebarWrapper');
         const menuOverlay = document.getElementById('menuOverlay');
         let isSidebarOpen = false;
@@ -917,6 +1343,7 @@ $allProducts = $stmt->fetchAll();
         function toggleSidebar() { isSidebarOpen ? closeSidebar() : openSidebar(); }
 
         if (burgerBtn) burgerBtn.addEventListener('click', e => { e.stopPropagation(); toggleSidebar(); });
+        if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', e => { e.stopPropagation(); closeSidebar(); });
         if (menuOverlay) menuOverlay.addEventListener('click', closeSidebar);
 
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
@@ -924,6 +1351,15 @@ $allProducts = $stmt->fetchAll();
                 if (window.innerWidth <= 768 && !this.closest('.nav-dropdown-toggle')) closeSidebar();
             });
         });
+
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrow = document.getElementById(dropdownId.replace('Dropdown', 'Arrow'));
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('show');
+                arrow.classList.toggle('rotated');
+            }
+        }
 
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
@@ -961,6 +1397,57 @@ $allProducts = $stmt->fetchAll();
         if (closeDescModalBtn) closeDescModalBtn.addEventListener('click', closeDescriptionModal);
         if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
         window.addEventListener('click', e => { if (e.target === descModal) closeDescriptionModal(); });
+
+        /* ========== VALIDATION ========== */
+        function validateText(input, errEl, name) {
+            if (input.value.trim() === '') { errEl.style.display = 'block'; errEl.textContent = `Please enter a valid ${name}`; return false; }
+            errEl.style.display = 'none'; return true;
+        }
+        function validateUnit(input, errEl, name) {
+            if (input.value.trim() === '') { errEl.style.display = 'block'; errEl.textContent = `Please enter a valid ${name}`; return false; }
+            errEl.style.display = 'none'; return true;
+        }
+        function validateNumber(input, errEl) {
+            const v = input.value.trim();
+            if (v === '') { errEl.style.display = 'block'; errEl.textContent = 'This field is required'; return false; }
+            if (!/^\d+$/.test(v)) { errEl.style.display = 'block'; errEl.textContent = 'Please enter numbers only (0-9)'; return false; }
+            if (parseInt(v) < 0) { errEl.style.display = 'block'; errEl.textContent = 'Quantity cannot be negative'; return false; }
+            errEl.style.display = 'none'; return true;
+        }
+        function validatePrice(input, errEl) {
+            const v = input.value.trim();
+            if (v === '') { errEl.style.display = 'block'; errEl.textContent = 'This field is required'; return false; }
+            if (!/^\d+(\.\d{1,2})?$/.test(v)) { errEl.style.display = 'block'; errEl.textContent = 'Please enter a valid price (e.g., 99.99)'; return false; }
+            if (parseFloat(v) <= 0) { errEl.style.display = 'block'; errEl.textContent = 'Price must be greater than 0'; return false; }
+            errEl.style.display = 'none'; return true;
+        }
+        function clearAddValidationErrors() {
+            ['addNameError', 'addUnitError', 'addQuantityError', 'addPriceError'].forEach(id => document.getElementById(id).style.display = 'none');
+        }
+        function clearUpdateValidationErrors() {
+            ['updateNameError', 'updateUnitError', 'updateQuantityError', 'updatePriceError'].forEach(id => document.getElementById(id).style.display = 'none');
+        }
+
+        /* ========== INPUTS ========== */
+        const addNameInput = document.getElementById('productName');
+        const addUnitInput = document.getElementById('productUnit');
+        const addQuantityInput = document.getElementById('productQuantity');
+        const addPriceInput = document.getElementById('productPrice');
+
+        if (addNameInput) addNameInput.addEventListener('input', () => validateText(addNameInput, document.getElementById('addNameError'), 'product name'));
+        if (addUnitInput) addUnitInput.addEventListener('input', () => validateUnit(addUnitInput, document.getElementById('addUnitError'), 'unit'));
+        if (addQuantityInput) addQuantityInput.addEventListener('input', () => validateNumber(addQuantityInput, document.getElementById('addQuantityError')));
+        if (addPriceInput) addPriceInput.addEventListener('input', () => validatePrice(addPriceInput, document.getElementById('addPriceError')));
+
+        const updateNameInput = document.getElementById('updateProductName');
+        const updateUnitInput = document.getElementById('updateUnit');
+        const updateQuantityInput = document.getElementById('updateQuantity');
+        const updatePriceInput = document.getElementById('updatePrice');
+
+        if (updateNameInput) updateNameInput.addEventListener('input', () => validateText(updateNameInput, document.getElementById('updateNameError'), 'product name'));
+        if (updateUnitInput) updateUnitInput.addEventListener('input', () => validateUnit(updateUnitInput, document.getElementById('updateUnitError'), 'unit'));
+        if (updateQuantityInput) updateQuantityInput.addEventListener('input', () => validateNumber(updateQuantityInput, document.getElementById('updateQuantityError')));
+        if (updatePriceInput) updatePriceInput.addEventListener('input', () => validatePrice(updatePriceInput, document.getElementById('updatePriceError')));
 
         /* ========== SEARCH ========== */
         const searchInput = document.getElementById('liveSearchInput');
@@ -1039,8 +1526,299 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
+        /* ========== UPDATE PRODUCT ========== */
+        let selectedProductId = null;
+        const updateModal = document.getElementById('updateProductModal');
+        const cancelUpdate = document.getElementById('cancelUpdateProduct');
+        const confirmUpdate = document.getElementById('confirmUpdateProduct');
+
+        document.querySelectorAll('.update-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const card = this.closest('.product-card');
+                const productId = this.dataset.id;
+                const qtySpan = document.getElementById(`qty-${productId}`);
+
+                document.getElementById('updateProductName').value = card.querySelector('.product-title').textContent;
+                document.getElementById('updateUnit').value = card.querySelector('.product-unit')?.textContent || 'Pcs';
+                document.getElementById('updateQuantity').value = parseInt(qtySpan.textContent);
+                document.getElementById('updatePrice').value = parseFloat(card.querySelector('.product-price').textContent.replace('₱ ', '').replace(',', ''));
+                document.getElementById('updateDescription').value = card.getAttribute('data-description') || '';
+
+                selectedProductId = productId;
+                clearUpdateValidationErrors();
+                updateModal.style.display = 'flex';
+                setTimeout(() => document.getElementById('updateProductName').focus(), 100);
+            });
+        });
+
+        if (cancelUpdate) cancelUpdate.addEventListener('click', () => {
+            updateModal.style.display = 'none';
+            selectedProductId = null;
+        });
+
+        if (confirmUpdate) confirmUpdate.addEventListener('click', async () => {
+            const ok1 = validateText(updateNameInput, document.getElementById('updateNameError'), 'product name');
+            const ok2 = validateUnit(updateUnitInput, document.getElementById('updateUnitError'), 'unit');
+            const ok3 = validateNumber(updateQuantityInput, document.getElementById('updateQuantityError'));
+            const ok4 = validatePrice(updatePriceInput, document.getElementById('updatePriceError'));
+            if (!ok1 || !ok2 || !ok3 || !ok4) { showToast('Please correct the errors', 'error'); return; }
+
+            const formData = new FormData();
+            formData.append('action', 'update_product');
+            formData.append('product_id', selectedProductId);
+            formData.append('product_name', updateNameInput.value.trim());
+            formData.append('unit', updateUnitInput.value.trim());
+            formData.append('quantity', parseInt(updateQuantityInput.value.trim()));
+            formData.append('selling_price', parseFloat(updatePriceInput.value.trim()));
+            formData.append('description', document.getElementById('updateDescription').value.trim());
+            formData.append('csrf_token', csrfToken);
+
+            updateModal.style.display = 'none';
+            const spinner = document.createElement('span');
+            spinner.className = 'save-spinner';
+            confirmUpdate.appendChild(spinner);
+            confirmUpdate.disabled = true;
+
+            try {
+                const res = await fetch('../API/update_product.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Product updated successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Update failed', 'error');
+                }
+            } catch { showToast('Network error', 'error'); }
+            finally { spinner.remove(); confirmUpdate.disabled = false; }
+        });
+
+        /* ========== ADD PRODUCT ========== */
+        const addModal = document.getElementById('addProductModal');
+        const addBtn = document.getElementById('addProductBtn');
+        const cancelAdd = document.getElementById('cancelAddProduct');
+        const confirmAdd = document.getElementById('confirmAddProduct');
+
+        if (addBtn) addBtn.addEventListener('click', () => {
+            document.getElementById('productName').value = '';
+            document.getElementById('productUnit').value = 'Pcs';
+            document.getElementById('productQuantity').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productDescription').value = '';
+
+            capturedImageBase64 = null;
+            stopCameraStream();
+            if (cameraPhoto) cameraPhoto.src = '';
+            resetCameraUI();
+
+            clearAddValidationErrors();
+            addModal.style.display = 'flex';
+            setTimeout(() => document.getElementById('productName').focus(), 100);
+        });
+
+        if (cancelAdd) cancelAdd.addEventListener('click', () => {
+            stopCameraStream();
+            addModal.style.display = 'none';
+        });
+
+        if (confirmAdd) confirmAdd.addEventListener('click', async () => {
+            const ok1 = validateText(addNameInput, document.getElementById('addNameError'), 'product name');
+            const ok2 = validateUnit(addUnitInput, document.getElementById('addUnitError'), 'unit');
+            const ok3 = validateNumber(addQuantityInput, document.getElementById('addQuantityError'));
+            const ok4 = validatePrice(addPriceInput, document.getElementById('addPriceError'));
+            if (!ok1 || !ok2 || !ok3 || !ok4) { showToast('Please correct the errors', 'error'); return; }
+
+            const formData = new FormData();
+            formData.append('action', 'add_product');
+            formData.append('product_name', addNameInput.value.trim());
+            formData.append('unit', addUnitInput.value.trim());
+            formData.append('quantity', parseInt(addQuantityInput.value.trim()));
+            formData.append('selling_price', parseFloat(addPriceInput.value.trim()));
+            formData.append('description', document.getElementById('productDescription').value.trim());
+            formData.append('csrf_token', csrfToken);
+
+            if (capturedImageBase64) {
+                formData.append('product_image_base64', capturedImageBase64);
+            }
+
+            addModal.style.display = 'none';
+            stopCameraStream();
+
+            const spinner = document.createElement('span');
+            spinner.className = 'save-spinner';
+            confirmAdd.appendChild(spinner);
+            confirmAdd.disabled = true;
+
+            try {
+                const res = await fetch('../API/add_product.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Product added successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Add failed', 'error');
+                }
+            } catch { showToast('Network error', 'error'); }
+            finally { spinner.remove(); confirmAdd.disabled = false; }
+        });
+
+        /* ========== CAMERA CAPTURE ========== */
+        let cameraStream = null;
+        let capturedImageBase64 = null;
+
+        const cameraPreviewWrap = document.getElementById('cameraPreviewWrap');
+        const cameraVideo = document.getElementById('cameraVideo');
+        const cameraPhoto = document.getElementById('cameraPhoto');
+        const cameraActionsIdle = document.getElementById('cameraActionsIdle');
+        const cameraActionsLive = document.getElementById('cameraActionsLive');
+        const cameraActionsCaptured = document.getElementById('cameraActionsCaptured');
+        const openCameraBtn = document.getElementById('openCameraBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const removePhotoBtn = document.getElementById('removePhotoBtn');
+
+        function resetCameraUI() {
+            if (!cameraPreviewWrap) return;
+            cameraPreviewWrap.classList.remove('visible');
+            cameraVideo.style.display = 'none';
+            cameraPhoto.style.display = 'none';
+            cameraActionsIdle.style.display = 'flex';
+            cameraActionsLive.style.display = 'none';
+            cameraActionsCaptured.style.display = 'none';
+        }
+
+        function stopCameraStream() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+        }
+
+        async function openCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } },
+                    audio: false
+                });
+                cameraVideo.srcObject = cameraStream;
+                cameraVideo.style.display = 'block';
+                cameraPhoto.style.display = 'none';
+                cameraPreviewWrap.classList.add('visible');
+                cameraActionsIdle.style.display = 'none';
+                cameraActionsLive.style.display = 'flex';
+                cameraActionsCaptured.style.display = 'none';
+            } catch (err) {
+                console.error('Camera error:', err);
+                showToast('Could not open camera. Check permissions.', 'error');
+            }
+        }
+
+        function capturePhoto() {
+            if (!cameraStream || !cameraVideo.videoWidth) {
+                showToast('Camera not ready yet.', 'error');
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = cameraVideo.videoWidth;
+            canvas.height = cameraVideo.videoHeight;
+            canvas.getContext('2d').drawImage(cameraVideo, 0, 0);
+
+            capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+            cameraPhoto.src = capturedImageBase64;
+            cameraPhoto.style.display = 'block';
+            cameraVideo.style.display = 'none';
+
+            stopCameraStream();
+
+            cameraActionsLive.style.display = 'none';
+            cameraActionsCaptured.style.display = 'flex';
+        }
+
+        function retakePhoto() {
+            capturedImageBase64 = null;
+            cameraPhoto.src = '';
+            openCamera();
+        }
+
+        function removePhoto() {
+            capturedImageBase64 = null;
+            cameraPhoto.src = '';
+            stopCameraStream();
+            resetCameraUI();
+        }
+
+        if (openCameraBtn) openCameraBtn.addEventListener('click', openCamera);
+        if (captureBtn) captureBtn.addEventListener('click', capturePhoto);
+        if (stopCameraBtn) stopCameraBtn.addEventListener('click', () => { stopCameraStream(); resetCameraUI(); });
+        if (retakeBtn) retakeBtn.addEventListener('click', retakePhoto);
+        if (removePhotoBtn) removePhotoBtn.addEventListener('click', removePhoto);
+
+        /* ========== EXCEL UPLOAD ========== */
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const excelFile = document.getElementById('excelFile');
+        let selectedFile = null;
+
+        if (fileUploadArea && excelFile) {
+            fileUploadArea.addEventListener('click', () => excelFile.click());
+            fileUploadArea.addEventListener('dragover', e => { e.preventDefault(); fileUploadArea.style.borderColor = '#f5b342'; fileUploadArea.style.background = '#fafafa'; });
+            fileUploadArea.addEventListener('dragleave', () => { fileUploadArea.style.borderColor = '#ccc'; fileUploadArea.style.background = 'transparent'; });
+            fileUploadArea.addEventListener('drop', e => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                    selectedFile = file;
+                    updateFilePreview(file);
+                } else alert('Please upload a valid Excel file (.xlsx or .xls)');
+                fileUploadArea.style.borderColor = '#ccc';
+                fileUploadArea.style.background = 'transparent';
+            });
+            excelFile.addEventListener('change', e => {
+                const file = e.target.files[0];
+                if (file) { selectedFile = file; updateFilePreview(file); }
+            });
+        }
+
+        function updateFilePreview(file) {
+            const placeholder = document.querySelector('.upload-placeholder');
+            const preview = document.querySelector('.upload-preview');
+            const nameSpan = document.querySelector('.upload-preview .file-name');
+            if (placeholder) placeholder.style.display = 'none';
+            if (preview) preview.style.display = 'flex';
+            if (nameSpan) nameSpan.textContent = file.name;
+        }
+
+        document.querySelector('.remove-file')?.addEventListener('click', e => {
+            e.stopPropagation();
+            selectedFile = null;
+            document.querySelector('.upload-placeholder').style.display = 'block';
+            document.querySelector('.upload-preview').style.display = 'none';
+            excelFile.value = '';
+        });
+
+        /* ========== TABS ========== */
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab;
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                tabContents.forEach(c => c.classList.remove('active'));
+                document.getElementById(tabId + 'Tab').classList.add('active');
+            });
+        });
+
         /* ========== CSRF ========== */
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        /* ========== CLOSE MODALS ON OUTSIDE CLICK ========== */
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function (e) {
+                if (e.target === this) this.style.display = 'none';
+            });
+        });
     </script>
 
     <?php include '../footer.php'; ?>
