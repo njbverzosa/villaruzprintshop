@@ -1017,7 +1017,7 @@ foreach ($allProducts as $product) {
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
                                     onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
-                                    style="width: 200px; height: auto; cursor: pointer;border-radius:5px;">
+                                    style="width: 150px; height: auto; cursor: pointer;border-radius:5px;">
                             </div>
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="price-unit-grid">
