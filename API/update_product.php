@@ -100,7 +100,6 @@ if ($action === 'update_product') {
         exit;
     }
 
-    // 🆕 Enforce allowed characters: letters, numbers, spaces, and , . ( ) -
     if (!preg_match('/^[A-Za-z0-9\s,\.\(\)\-]+$/', $productName)) {
         echo json_encode([
             'success' => false,
@@ -166,16 +165,28 @@ if ($action === 'update_product') {
 
     // Helper: build a safe filename from the product name
     $buildFileName = function (string $name, string $ext) {
+        // 1. Remove extension if present
         $name = pathinfo($name, PATHINFO_FILENAME);
+
+        // 2. Replace spaces, underscores, hyphens with hyphens
         $name = preg_replace('/[\s_\-]+/', '-', $name);
+
+        // 3. Keep letters, numbers, dashes, and dots (for "2.0mp", "1.5L", etc.)
         $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
+
+        // 4. Collapse multiple dashes and dots
         $name = preg_replace('/-+/', '-', $name);
+        $name = preg_replace('/\.+/', '.', $name);
+
+        // 5. Trim leading/trailing dashes and dots
         $name = trim($name, '-.');
 
+        // 6. Fallback if empty
         if ($name === '') {
             $name = 'product-' . time();
         }
 
+        // 7. Limit length
         $name = substr($name, 0, 100);
 
         return $name . '.' . strtolower($ext);

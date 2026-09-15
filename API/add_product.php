@@ -15,7 +15,6 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['acc_number']) || !isset($_
     exit;
 }
 
-// Setted from login
 $userId = $_SESSION['user_id'];
 $userRole = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
@@ -89,16 +88,27 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 5. RESOLVE THE UPLOAD DIRECTORY
-    //
-    //  Folder layout (shared parent):
-    //    /public/
-    //       ├── API/
-    //       │     └── add_product.php       ← we are here
-    //       ├── DB_Conn/
-    //       │     └── config.php
-    //       ├── Products/
-    //       └── Inv_Products/
+    // 5. READ + SANITIZE PRODUCT NAME (from FORM, not filename)
+    // ==============================================
+    $rawName     = $_POST['product_name'] ?? '';
+    $productName = sanitizeProductName($rawName);
+
+    if (empty($productName)) {
+        echo json_encode(['success' => false, 'message' => 'Product name is required.']);
+        exit;
+    }
+
+    // Enforce allowed characters: letters, numbers, spaces, and , . ( ) -
+    if (!preg_match('/^[A-Za-z0-9\s,\.\(\)\-]+$/', $productName)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Product name can only contain letters, numbers, spaces, and , . ( ) -'
+        ]);
+        exit;
+    }
+
+    // ==============================================
+    // 6. RESOLVE THE UPLOAD DIRECTORY
     // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
@@ -122,10 +132,9 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 6. HANDLE PRODUCT IMAGE
+    // 7. HANDLE PRODUCT IMAGE
     // ==============================================
-    $imagePath   = null;
-    $productName = null;
+    $imagePath = null;
 
     // Helper: build a safe filename from the product name
     $buildFileName = function (string $name, string $ext) {
@@ -135,13 +144,14 @@ if ($action === 'add_product') {
         // 2. Replace spaces, underscores, hyphens with hyphens
         $name = preg_replace('/[\s_\-]+/', '-', $name);
 
-        // 3. Remove anything that isn't alphanumeric, dash, or dot
+        // 3. Keep letters, numbers, dashes, and dots (for "2.0mp", "1.5L", etc.)
         $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
 
-        // 4. Collapse multiple dashes
+        // 4. Collapse multiple dashes and dots
         $name = preg_replace('/-+/', '-', $name);
+        $name = preg_replace('/\.+/', '.', $name);
 
-        // 5. Trim dashes and dots from start/end
+        // 5. Trim leading/trailing dashes and dots
         $name = trim($name, '-.');
 
         // 6. Fallback if empty
@@ -174,10 +184,7 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Product name from the uploaded filename
-        $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
-        $productName  = sanitizeProductName($originalName);
-
+        // ✅ Filename is built FROM THE PRODUCT NAME, not the uploaded file
         $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
@@ -225,10 +232,6 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Product name from the submitted product_name
-        $rawName     = $_POST['product_name'] ?? 'product';
-        $productName = sanitizeProductName($rawName);
-
         $ext      = ($type === 'jpeg') ? 'jpg' : $type;
         $fileName = $buildFileName($productName, $ext);
         $destPath = $uploadDir . $fileName;
@@ -250,29 +253,6 @@ if ($action === 'add_product') {
     // ---- Case C: no image ----
     else {
         echo json_encode(['success' => false, 'message' => 'Product image is required.']);
-        exit;
-    }
-
-    // ==============================================
-    // 7. VALIDATE PRODUCT NAME (allowed characters only)
-    // ==============================================
-    if (empty($productName)) {
-        if ($imagePath && file_exists($uploadDir . $imagePath)) {
-            unlink($uploadDir . $imagePath);
-        }
-        echo json_encode(['success' => false, 'message' => 'Product name could not be determined from image.']);
-        exit;
-    }
-
-    // 🆕 Enforce allowed characters: letters, numbers, spaces, and , . ( ) -
-    if (!preg_match('/^[A-Za-z0-9\s,\.\(\)\-]+$/', $productName)) {
-        if ($imagePath && file_exists($uploadDir . $imagePath)) {
-            unlink($uploadDir . $imagePath);
-        }
-        echo json_encode([
-            'success' => false,
-            'message' => 'Product name can only contain letters, numbers, spaces, and , . ( ) -'
-        ]);
         exit;
     }
 
