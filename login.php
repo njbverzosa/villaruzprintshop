@@ -1,9 +1,10 @@
 <?php
 // login.php – desktop + mobile + in-app flows
-// ✅ Desktop → dashboard
-// ✅ Mobile browser → download_app.php
-// ✅ In-app version mismatch → installer modal (overlay)
-// ✅ In-app SKIP → use_old_app cookie for 1 day → login form unlocks
+// ✅ 3 roles: Admin, Investor (both admins), Customer (customers)
+// ✅ Investor detection: admins.authorize_access = 3
+// ✅ Admin → web/all_products.php
+// ✅ Investor → investors/all_products.php
+// ✅ Customer → public/shop.php
 // ✅ Biometric success shows inside the Login button
 // ✅ Biometric auto-prompt skipped on POST (password login)
 
@@ -15,6 +16,22 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
 include __DIR__ . '/app_version.php';   // defines $latestVersion + $currentVersion
+
+// ==============================================
+// ✅ HELPER — resolve redirect URL for admins-table user
+// Investor = authorize_access == 3
+// ==============================================
+function resolveAdminRedirect($pdo, $userId)
+{
+    $stmt = $pdo->prepare("SELECT authorize_access FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+
+    if ($row && (int)$row['authorize_access'] === 3) {
+        return 'investors/all_products.php';
+    }
+    return 'web/all_products.php';
+}
 
 // ==============================================
 // ✅ DETECT PLATFORM
@@ -101,10 +118,6 @@ $renderUpdateModal = ($isInApp && !$skipUpdate);
 
 // ==============================================
 // ✅ BIOMETRIC AUTO-PROMPT GATE
-// Skip biometric auto-prompt on any POST request.
-// Prevents the prompt from popping up right after a
-// password login attempt (success OR failure).
-// Still fires on: fresh app open, after logout, page reload.
 // ==============================================
 $skipBiometricAutoPrompt = ($_SERVER['REQUEST_METHOD'] === 'POST');
 
@@ -120,7 +133,7 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     $userName = $_SESSION['acc_number'] ?? 'User';
 
     if ($_SESSION['user_role'] === 'Admin') {
-        $redirectUrl = 'web/all_products.php';
+        $redirectUrl = resolveAdminRedirect($pdo, $_SESSION['user_id']);
     } elseif ($_SESSION['user_role'] === 'Customer') {
         $redirectUrl = 'public/shop.php';
     }
@@ -210,14 +223,16 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $updateTypeStmt->execute([$loginType, $user['id']]);
     }
 
-    // ✅ Biometric redirect logic
+    // ✅ Biometric redirect — Admin / Investor / Customer
     if ($userType === 'Admin') {
+        $adminRedirect = resolveAdminRedirect($pdo, $user['id']);
+
         if ($isInApp) {
-            $redirectUrl = 'web/all_products.php';
+            $redirectUrl = $adminRedirect;
         } elseif ($isMobileBrowser) {
             $redirectUrl = 'download_app.php';
         } else {
-            $redirectUrl = 'web/all_products.php';
+            $redirectUrl = $adminRedirect;
         }
     } else {
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
@@ -367,20 +382,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             $loginSuccess = true;
 
-            // ✅ Regular-login redirect logic
+            // ✅ Regular-login redirect — Admin / Investor / Customer
             if ($userType === 'Admin') {
+                // Investor = authorize_access == 3
+                $adminRedirect = (isset($user['authorize_access']) && (int)$user['authorize_access'] === 3)
+                    ? 'investors/all_products.php'
+                    : 'web/all_products.php';
+
                 if ($isInApp) {
                     if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
                         $_SESSION['temp_user_id'] = $user['id'];
                         $_SESSION['temp_user_type'] = $userType;
                         $redirectUrl = 'biometric.php';
                     } else {
-                        $redirectUrl = 'web/all_products.php';
+                        $redirectUrl = $adminRedirect;
                     }
                 } elseif ($isMobileBrowser) {
-                    $redirectUrl = 'web/all_products.php';
+                    $redirectUrl = $adminRedirect;
                 } else {
-                    $redirectUrl = 'web/all_products.php';
+                    $redirectUrl = $adminRedirect;
                 }
             } else {
                 $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
@@ -405,6 +425,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     $redirectUrl = $dashboardUrl;
                 }
             }
+
+            // ✅ Immediate redirect after login
+            header('Location: ' . $redirectUrl);
+            exit;
         }
     }
 }
@@ -1024,17 +1048,6 @@ if (isset($_SESSION['exit_message'])) {
                 </div>
             <?php endif; ?>
 
-            <?php if ($loginSuccess): ?>
-                <script>
-                    (function () {
-                        var redirectUrl = '<?php echo $redirectUrl; ?>';
-                        setTimeout(function () {
-                            window.location.href = redirectUrl;
-                        }, 3000);
-                    })();
-                </script>
-            <?php endif; ?>
-
             <div id="passwordSection">
                 <form method="POST" action="" id="loginForm">
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
@@ -1092,11 +1105,7 @@ if (isset($_SESSION['exit_message'])) {
                     </div>
 
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
-                        <?php if ($loginSuccess): ?>
-                            <span class="btn-spinner"></span>
-                        <?php else: ?>
-                            Login
-                        <?php endif; ?>
+                        Login
                     </button>
 
                     <div class="auth-footer">
@@ -1185,12 +1194,6 @@ if (isset($_SESSION['exit_message'])) {
         const latestVersion = <?php echo json_encode($latestVersion); ?>;
         const skipBiometricAutoPrompt = <?php echo $skipBiometricAutoPrompt ? 'true' : 'false'; ?>;
 
-        /**
-         * Reads the installed version, preferring:
-         *   1) window.__SOFIA_APP_VERSION__ — injected by MainActivity.onPageStarted()
-         *   2) AndroidBiometric.getAppVersion() bridge
-         *   3) 'unknown'
-         */
         function readInstalledVersion() {
             if (window.__SOFIA_APP_VERSION__) return window.__SOFIA_APP_VERSION__;
             try {
@@ -1208,7 +1211,6 @@ if (isset($_SESSION['exit_message'])) {
             return norm(a) === norm(b);
         }
 
-        /** Sets the Login button into a "busy" state (spinner only). */
         function setLoginButtonBusy(label) {
             var btn = document.getElementById('loginBtn');
             if (!btn) return;
@@ -1216,7 +1218,6 @@ if (isset($_SESSION['exit_message'])) {
             btn.innerHTML = '<span class="btn-spinner"></span>';
         }
 
-        /** Restores the Login button to its idle state. */
         function resetLoginButton() {
             var btn = document.getElementById('loginBtn');
             if (!btn) return;
@@ -1228,27 +1229,22 @@ if (isset($_SESSION['exit_message'])) {
             const installedVersion = readInstalledVersion();
             console.log('📱 Installed version:', installedVersion, '| Latest:', latestVersion);
 
-            // ✅ Fill hidden input with version for password-login POST
             var versionInput = document.getElementById('installedVersionInput');
             if (versionInput && isInApp) {
                 versionInput.value = installedVersion;
             }
 
-            // ✅ Decide modal visibility based on ACTUAL installed version
             const overlay = document.getElementById('updateOverlay');
             if (overlay) {
                 if (!isInApp) {
                     overlay.classList.remove('visible');
                 } else if (versionsEqual(installedVersion, latestVersion)) {
                     overlay.classList.remove('visible');
-                    console.log('✅ Version matches — modal stays hidden');
                 } else {
                     overlay.classList.add('visible');
-                    console.log('⚠️ Version mismatch — modal shown');
                 }
             }
 
-            // ✅ Update modal badge
             var badge = document.getElementById('installedVersionBadge');
             var versionValue = document.getElementById('installedVersionValue');
             if (badge && versionValue) {
@@ -1269,23 +1265,12 @@ if (isset($_SESSION['exit_message'])) {
                 }
             }
 
-            // ✅ Biometric auto-prompt — skip on POST (password login attempt)
             const modalVisible = overlay && overlay.classList.contains('visible');
             if (!skipBiometricAutoPrompt && !modalVisible && hasBiometric && isInApp && userId) {
-                console.log('🔐 Triggering biometric prompt');
                 window.AndroidBiometric.authenticate('auto');
-            } else {
-                console.log('⏭️ Biometric auto-prompt skipped', {
-                    skipBiometricAutoPrompt: skipBiometricAutoPrompt,
-                    modalVisible: modalVisible,
-                    hasBiometric: hasBiometric,
-                    isInApp: isInApp,
-                    userId: userId
-                });
             }
         });
 
-        // ✅ Show spinner on button click (password login)
         (function () {
             var form = document.getElementById('loginForm');
             var btn = document.getElementById('loginBtn');
@@ -1298,13 +1283,12 @@ if (isset($_SESSION['exit_message'])) {
         })();
 
         function showBiometricStatus(message, type) {
+            if (!biometricStatus) return;
             biometricStatus.textContent = message;
             biometricStatus.className = 'status-message show ' + type;
         }
 
         function biometricSuccess(data) {
-            console.log('✅ Biometric success called');
-
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
 
@@ -1315,8 +1299,6 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             var installedVersion = readInstalledVersion();
-
-            // ✅ Show progress inside the Login button (same style as password login)
             setLoginButtonBusy('');
 
             fetch(window.location.href, {
@@ -1359,8 +1341,10 @@ if (isset($_SESSION['exit_message'])) {
 
         function biometricCancel() {
             resetLoginButton();
-            biometricStatus.className = 'status-message';
-            biometricStatus.textContent = '';
+            if (biometricStatus) {
+                biometricStatus.className = 'status-message';
+                biometricStatus.textContent = '';
+            }
         }
 
         function biometricError(error) {
