@@ -27,7 +27,7 @@ $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
 $userData = null;
-if ($userRole === 'Admin') {
+if ($userRole === 'Investor') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
