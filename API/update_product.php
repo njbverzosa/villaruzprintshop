@@ -157,7 +157,7 @@ if ($action === 'update_product') {
 
     // ==============================================
     // 5e. HANDLE NEW IMAGE
-    //    Filename = <slugified-product-name>.<ext>
+    //    Filename = <product_name>.<ext>  (spaces preserved)
     //    Allowed extensions: jpeg, jpg, png
     // ==============================================
     $imagePath        = null;
@@ -167,30 +167,26 @@ if ($action === 'update_product') {
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
-    // ✅ Filesystem-safe filename builder (spaces → hyphens)
+    // ✅ Filename matches the product name exactly (spaces preserved)
     $buildFileName = function (string $name, string $ext) {
         // 1. Remove extension if present
         $name = pathinfo($name, PATHINFO_FILENAME);
 
-        // 2. Replace spaces, underscores, and hyphens with a single hyphen
-        $name = preg_replace('/[\s_\-]+/', '-', $name);
+        // 2. Collapse multiple spaces into a single space (keep spaces!)
+        $name = preg_replace('/\s+/', ' ', $name);
 
-        // 3. Keep only letters, numbers, dashes, and dots
-        $name = preg_replace('/[^A-Za-z0-9\-\.]/', '', $name);
+        // 3. Keep only letters, numbers, spaces, and , . ( ) -
+        $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
 
-        // 4. Collapse multiple dashes and dots
-        $name = preg_replace('/-+/', '-', $name);
-        $name = preg_replace('/\.+/', '.', $name);
+        // 4. Trim leading/trailing whitespace and dots
+        $name = trim($name, " \t\n\r\0\x0B.");
 
-        // 5. Trim dashes and dots from both ends
-        $name = trim($name, '-.');
-
-        // 6. Fallback if empty
+        // 5. Fallback if empty
         if ($name === '') {
             $name = 'product-' . time();
         }
 
-        // 7. Limit length
+        // 6. Limit length
         $name = substr($name, 0, 100);
 
         return $name . '.' . strtolower($ext);
@@ -240,7 +236,7 @@ if ($action === 'update_product') {
         // Check if the target name still conflicts
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -291,7 +287,7 @@ if ($action === 'update_product') {
 
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . '-' . $counter, $ext);
+            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
