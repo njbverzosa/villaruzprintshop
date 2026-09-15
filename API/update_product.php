@@ -92,7 +92,14 @@ if ($action === 'update_product') {
     // ==============================================
     // 5a. SANITIZE + VALIDATE PRODUCT NAME
     // ==============================================
-    $productName = sanitizeProductName($productName);
+    // Strip any image extension that may have been typed in
+    $productName = preg_replace('/\.(jpeg|jpg|png)$/i', '', $productName);
+
+    // Collapse multiple spaces
+    $productName = preg_replace('/\s+/', ' ', $productName);
+
+    // Trim
+    $productName = trim($productName);
 
     if (empty($productName)) {
         echo json_encode(['success' => false, 'message' => 'Product name is required']);
@@ -167,31 +174,6 @@ if ($action === 'update_product') {
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
-    // ✅ Filename matches the product name exactly (spaces preserved)
-    $buildFileName = function (string $name, string $ext) {
-        // 1. Remove extension if present
-        $name = pathinfo($name, PATHINFO_FILENAME);
-
-        // 2. Collapse multiple spaces into a single space (keep spaces!)
-        $name = preg_replace('/\s+/', ' ', $name);
-
-        // 3. Keep only letters, numbers, spaces, and , . ( ) -
-        $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
-
-        // 4. Trim leading/trailing whitespace and dots
-        $name = trim($name, " \t\n\r\0\x0B.");
-
-        // 5. Fallback if empty
-        if ($name === '') {
-            $name = 'product-' . time();
-        }
-
-        // 6. Limit length
-        $name = substr($name, 0, 100);
-
-        return $name . '.' . strtolower($ext);
-    };
-
     // ---- Case A: base64 camera image ----
     if (!empty($_POST['product_image_base64'])) {
         $dataUri = $_POST['product_image_base64'];
@@ -201,7 +183,7 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $type = strtolower($m[1]);
+        $type = strtolower($m[1]);   // jpeg, jpg, png
         if (!in_array($type, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
@@ -220,11 +202,14 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $ext      = ($type === 'jpeg') ? 'jpg' : $type;
-        $fileName = $buildFileName($productName, $ext);
+        // ✅ Extension preserved (jpeg stays jpeg)
+        $ext = strtolower($type);
+
+        // ✅ Filename = product name + extension (spaces preserved)
+        $fileName = $productName . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 
-        // DELETE the OLD image file FIRST
+        // ✅ DELETE the OLD image file FIRST (frees the clean name)
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -233,10 +218,10 @@ if ($action === 'update_product') {
             $oldImageToDelete = $oldProduct['product_image'];
         }
 
-        // Check if the target name still conflicts
+        // Avoid overwriting (with OTHER products' files) — append " (1)", " (2)", ...
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
+            $fileName = $productName . ' (' . $counter . ').' . $ext;
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -273,10 +258,11 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $fileName = $buildFileName($productName, $ext);
+        // ✅ Filename = product name + extension (spaces preserved)
+        $fileName = $productName . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 
-        // DELETE old image FIRST
+        // ✅ DELETE the OLD image file FIRST
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -287,7 +273,7 @@ if ($action === 'update_product') {
 
         $counter = 1;
         while (file_exists($destPath)) {
-            $fileName = $buildFileName($productName . ' (' . $counter . ')', $ext);
+            $fileName = $productName . ' (' . $counter . ').' . $ext;
             $destPath = $uploadDir . $fileName;
             $counter++;
         }
@@ -304,6 +290,7 @@ if ($action === 'update_product') {
     elseif ($replaceImage) {
         $imagePath = null;
 
+        // ✅ Delete the old image from disk right now
         if (!empty($oldProduct['product_image'])) {
             $oldFilePath = $uploadDir . $oldProduct['product_image'];
             if (file_exists($oldFilePath)) {
@@ -403,24 +390,3 @@ if ($action === 'update_product') {
 
 // Invalid action
 echo json_encode(['success' => false, 'message' => 'Invalid action']);
-
-// ==============================================
-// HELPER: Sanitize product name (spaces preserved)
-// Allows: letters, numbers, spaces, and , . ( ) -
-// ==============================================
-function sanitizeProductName($name)
-{
-    $name = pathinfo($name, PATHINFO_FILENAME);
-
-    $imageExtensions = ['jpeg', 'jpg', 'png'];
-    foreach ($imageExtensions as $ext) {
-        $name = preg_replace('/\.' . preg_quote($ext, '/') . '$/i', '', $name);
-    }
-
-    $name = preg_replace('/[_\s]+/', ' ', $name);
-    $name = preg_replace('/[^A-Za-z0-9\s,\.\(\)\-]/', '', $name);
-    $name = trim($name, " \t\n\r\0\x0B.");
-    $name = preg_replace('/\s+/', ' ', $name);
-
-    return $name;
-}
