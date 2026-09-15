@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    /* 7. Insert into admins + hash password */
+    /* 7. Insert into investors + hash password */
     if (empty($errors)) {
         date_default_timezone_set('Asia/Manila');
         $registeredAt    = date('d F Y');
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             // STEP 1 — insert with plain-text password (temporarily)
-            $sql = "INSERT INTO admins
+            $sql = "INSERT INTO investors
                     (registered_at, acc_number, f_name, user_name, phone_number,
                      password, text_pass, authorize_access, profile,
                      business_name, business_permit)
