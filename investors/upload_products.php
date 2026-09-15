@@ -69,7 +69,7 @@ $timezone = new DateTimeZone('Asia/Manila');
 // Since last_restocked is stored as string (e.g., "10 August 2026 1:39 PM"),
 // we need to convert it to a proper date for sorting
 $stmt = $pdo->prepare("
-    SELECT * FROM merchandise_inventory 
+    SELECT * FROM investors_inventory 
     ORDER BY 
         CASE 
             WHEN last_restocked IS NULL OR last_restocked = '' THEN 1 

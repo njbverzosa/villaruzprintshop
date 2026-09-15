@@ -67,7 +67,7 @@ if (!$product) {
 // ==============================================
 $imageUrl = '';
 if (!empty($product['product_image'])) {
-    $imageUrl = '../Products/' . htmlspecialchars($product['product_image']);
+    $imageUrl = '../Inv_Products/' . htmlspecialchars($product['product_image']);
 }
 ?>
 <!DOCTYPE html>
