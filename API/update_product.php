@@ -171,7 +171,7 @@ if ($action === 'update_product') {
     $oldImageToDelete = null;
     $newFileWritten   = null;
 
-    $allowedExtensions = ['jpeg', 'jpg', 'png'];
+    $allowedExtensions = ['png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
     // ---- Case A: base64 camera image ----

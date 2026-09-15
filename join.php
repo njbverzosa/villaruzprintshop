@@ -21,10 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     /* 2. Collect inputs */
-    $f_name = trim($_POST['f_name'] ?? '');
+    $f_name        = trim($_POST['f_name'] ?? '');
     $business_name = trim($_POST['business_name'] ?? '');
-    $phone_number = trim($_POST['phone_number'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $phone_number  = trim($_POST['phone_number'] ?? '');
+    $password      = $_POST['password'] ?? '';
 
     /* 3. Validate */
     if ($f_name === '')
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* 5. Account number + username */
     $acc_number = null;
-    $user_name = '';
+    $user_name  = '';
     if (empty($errors)) {
         $digits = preg_replace('/\D/', '', $phone_number);
         $acc_number = substr($digits, -4);
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mkdir($uploadDir, 0755, true);
         }
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $fileName = $acc_number . '_' . time() . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 
@@ -95,15 +95,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    /* 7. Insert */
+    /* 7. Insert into admins + hash password */
     if (empty($errors)) {
-        $registeredAt = date('d F Y');
-        $profile = 'profile.jpg';
-        $authorizeAccess = 3;
+        date_default_timezone_set('Asia/Manila');
+        $registeredAt    = date('d F Y');
+        $profile         = 'profile.jpg';
+        $authorizeAccess = 3;   // ✅ Investor
 
         try {
-            // STEP 1 — insert plain-text password into both password and text_pass
-            $sql = "INSERT INTO investors
+            // STEP 1 — insert with plain-text password (temporarily)
+            $sql = "INSERT INTO admins
                     (registered_at, acc_number, f_name, user_name, phone_number,
                      password, text_pass, authorize_access, profile,
                      business_name, business_permit)
@@ -114,11 +115,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $registeredAt,
                 $acc_number,
                 $f_name,
-                $user_name,        // ← first word of f_name
+                $user_name,
                 $phone_number,
-                $password,         // plain text first
-                $password,         // also in text_pass
-                $authorizeAccess,  // ← 3
+                $password,          // plain text first
+                $password,          // also in text_pass
+                $authorizeAccess,   // 3 → Investor
                 $profile,
                 $business_name,
                 $permitPath
@@ -126,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $newId = $pdo->lastInsertId();
 
-            // STEP 2 — hash and update the same row
+            // STEP 2 — hash and update the same row in admins
             $hashed = password_hash($password, PASSWORD_DEFAULT);
             $upd = $pdo->prepare("UPDATE admins SET password = ? WHERE id = ?");
             $upd->execute([$hashed, $newId]);

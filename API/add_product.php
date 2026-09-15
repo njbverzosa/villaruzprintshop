@@ -147,7 +147,7 @@ if ($action === 'add_product') {
     // ==============================================
     $imagePath = null;
 
-    $allowedExtensions = ['jpeg', 'jpg', 'png'];
+    $allowedExtensions = ['png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
 
     // ---- Case A: standard file upload ----
