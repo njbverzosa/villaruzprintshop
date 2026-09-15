@@ -15,15 +15,10 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['acc_number']) || !isset($_
     exit;
 }
 
+// Setted from login
 $userId = $_SESSION['user_id'];
 $userRole = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
-
-// ==============================================
-// 2. FETCH USER NAME + authorize_access
-// ==============================================
-$userName = 'Unknown User';
-$authorizeAccess = 0;
 
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT f_name, authorize_access FROM admins WHERE id = ?");
@@ -38,14 +33,19 @@ if ($userRole === 'Admin') {
 $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
-// 3. DECIDE TARGET TABLE
+// 3. DECIDE TARGET TABLE + UPLOAD FOLDER
+//    based on authorize_access
 // ==============================================
 $allowedInv = [0, 1, 2];
 
 if ($authorizeAccess === 3) {
+    // Investors → /Inv_Products/
     $targetTable = 'investors_product';
+    $uploadFolder = 'Inv_Products';
 } elseif (in_array($authorizeAccess, $allowedInv, true)) {
+    // Merchandise inventory → /Products/
     $targetTable = 'merchandise_inventory';
+    $uploadFolder = 'Products';
 } else {
     echo json_encode(['success' => false, 'message' => 'Your account is not allowed to add products.']);
     exit;
@@ -71,18 +71,13 @@ $action = $_POST['action'] ?? '';
 
 if ($action === 'add_product') {
 
-    $productName = trim($_POST['product_name']);
     $unit = trim($_POST['unit']);
     $quantity = intval($_POST['quantity']);
     $sellingPrice = floatval($_POST['selling_price']);
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
 
-    if (empty($productName)) {
-        echo json_encode(['success' => false, 'message' => 'Product name is required']);
-        exit;
-    }
     if ($sellingPrice <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Unit cost must be greater than 0']);
+        echo json_encode(['success' => false, 'message' => 'Selling price must be greater than 0']);
         exit;
     }
     if ($quantity < 0) {
@@ -92,17 +87,17 @@ if ($action === 'add_product') {
 
     // ==============================================
     // 5. HANDLE PRODUCT IMAGE
-    // Saves into /Products/ and stores filename in `product_image`
-    // Priority: 1) uploaded file  2) base64 camera image  3) none
+    //    Product name will be derived from the image filename
     // ==============================================
     $imagePath = null;
+    $productName = null;
 
-    $uploadDir = __DIR__ . '/../Products/';
+    $uploadDir = __DIR__ . '/../' . $uploadFolder . '/';
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0755, true);
     }
 
-    // Case A: standard file upload
+    // ---- Case A: standard file upload ----
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['product_image'];
 
@@ -121,6 +116,10 @@ if ($action === 'add_product') {
             exit;
         }
 
+        // Extract filename WITHOUT extension → becomes the product name
+        $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
+        $productName = sanitizeProductName($originalName);
+
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $fileName = 'prd_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $destPath = $uploadDir . $fileName;
@@ -130,10 +129,9 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Store only the filename (image sits in /Products/)
         $imagePath = $fileName;
     }
-    // Case B: camera capture (base64 image data URI)
+    // ---- Case B: camera capture (base64 data URI) ----
     elseif (!empty($_POST['product_image_base64'])) {
         $dataUri = $_POST['product_image_base64'];
 
@@ -142,7 +140,7 @@ if ($action === 'add_product') {
             exit;
         }
 
-        $type = strtolower($m[1]); // png, jpeg, jpg, webp
+        $type = strtolower($m[1]);
         if (!in_array($type, ['png', 'jpeg', 'jpg', 'webp'], true)) {
             echo json_encode(['success' => false, 'message' => 'Unsupported camera image type.']);
             exit;
@@ -161,6 +159,10 @@ if ($action === 'add_product') {
             exit;
         }
 
+        // For camera captures: derive product name from the user-submitted product_name
+        $rawName = $_POST['product_name'] ?? 'product';
+        $productName = sanitizeProductName($rawName);
+
         $ext = ($type === 'jpeg') ? 'jpg' : $type;
         $fileName = 'prd_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $destPath = $uploadDir . $fileName;
@@ -170,17 +172,31 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Store only the filename (image sits in /Products/)
         $imagePath = $fileName;
+    }
+    // ---- Case C: no image ----
+    else {
+        echo json_encode(['success' => false, 'message' => 'Product image is required.']);
+        exit;
     }
 
     // ==============================================
-    // 6. CHECK DUPLICATE
+    // 6. FINAL PRODUCT NAME VALIDATION
+    // ==============================================
+    if (empty($productName)) {
+        if ($imagePath && file_exists($uploadDir . $imagePath)) {
+            unlink($uploadDir . $imagePath);
+        }
+        echo json_encode(['success' => false, 'message' => 'Product name could not be determined from image.']);
+        exit;
+    }
+
+    // ==============================================
+    // 7. CHECK DUPLICATE PRODUCT NAME
     // ==============================================
     $checkStmt = $pdo->prepare("SELECT id FROM {$targetTable} WHERE product_name = :product_name");
     $checkStmt->execute([':product_name' => $productName]);
     if ($checkStmt->fetch()) {
-        // clean up orphan image if any
         if ($imagePath && file_exists($uploadDir . $imagePath)) {
             unlink($uploadDir . $imagePath);
         }
@@ -193,7 +209,7 @@ if ($action === 'add_product') {
         $last_restocked = date('j F Y g:i A');
 
         // ==============================================
-        // 7. GENERATE PRODUCT NUMBER
+        // 8. GENERATE PRODUCT NUMBER
         // ==============================================
         $stmt = $pdo->prepare("
             SELECT MAX(CAST(SUBSTRING(product_number, 4) AS UNSIGNED)) AS max_num
@@ -205,7 +221,7 @@ if ($action === 'add_product') {
         $productNumber = 'PRD' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
         // ==============================================
-        // 8. INSERT  (column: product_image)
+        // 9. INSERT
         // ==============================================
         $pdo->beginTransaction();
 
@@ -242,8 +258,10 @@ if ($action === 'add_product') {
                 'message' => 'Product added successfully',
                 'product_id' => $productId,
                 'product_number' => $productNumber,
+                'product_name' => $productName,
                 'product_image' => $imagePath,
-                'table' => $targetTable
+                'table' => $targetTable,
+                'folder' => $uploadFolder
             ]);
         } else {
             $pdo->rollBack();
@@ -262,3 +280,26 @@ if ($action === 'add_product') {
 }
 
 echo json_encode(['success' => false, 'message' => 'Invalid action']);
+
+// ==============================================
+// HELPER: Sanitize product name (from image filename)
+// ==============================================
+function sanitizeProductName($name)
+{
+    // Remove extension if present
+    $name = pathinfo($name, PATHINFO_FILENAME);
+
+    // Replace underscores, hyphens, and multiple spaces with single space
+    $name = preg_replace('/[_\-\s]+/', ' ', $name);
+
+    // Remove characters that aren't letters, numbers, spaces, or common symbols
+    $name = preg_replace('/[^A-Za-z0-9\s\.\,\&\'\(\)]/', '', $name);
+
+    // Trim and collapse multiple spaces
+    $name = trim(preg_replace('/\s+/', ' ', $name));
+
+    // Capitalize each word
+    $name = ucwords(strtolower($name));
+
+    return $name;
+}

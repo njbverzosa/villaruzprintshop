@@ -47,6 +47,7 @@
 
     /* Square camera box */
     .camera-box {
+      position: relative;
       width: 100%;
       aspect-ratio: 1 / 1;
       background: #000;
@@ -55,11 +56,17 @@
       margin-bottom: 15px;
     }
 
-    video {
+    .camera-box video,
+    .camera-box img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
+    }
+
+    /* Captured photo overlay — hidden until capture */
+    #capturedPhoto {
+      display: none;
     }
 
     button {
@@ -77,6 +84,10 @@
       padding: 12px;
       font-size: 16px;
       margin-bottom: 20px;
+    }
+
+    .btn-capture.retake {
+      background: #f59e0b;
     }
 
     .btn-submit {
@@ -108,6 +119,7 @@
       <!-- Camera section -->
       <div class="camera-box">
         <video id="camera" autoplay playsinline muted></video>
+        <img id="capturedPhoto" alt="Captured product">
       </div>
       <button type="button" class="btn-capture" id="captureBtn">📸 Capture Product</button>
 
@@ -134,30 +146,54 @@
 
   <script>
     const video = document.getElementById('camera');
+    const capturedPhoto = document.getElementById('capturedPhoto');
     const captureBtn = document.getElementById('captureBtn');
     const base64Input = document.getElementById('product_image_base64');
     let stream = null;
+    let isCaptured = false;
 
-    // ✅ Auto-start BACK camera (environment = rear camera)
-    window.addEventListener('load', async () => {
+    // ✅ Start BACK camera
+    async function startCamera() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: 'environment' },  // 👈 back camera
+            facingMode: { ideal: 'environment' },
             width: { ideal: 1280 },
             height: { ideal: 1280 }
           },
           audio: false
         });
         video.srcObject = stream;
+        video.style.display = 'block';
+        capturedPhoto.style.display = 'none';
+        isCaptured = false;
       } catch (err) {
         console.error('Camera error:', err);
         alert('Camera not available: ' + err.message);
       }
-    });
+    }
 
-    // Capture photo → convert to base64 → store in hidden input
+    // ✅ Stop camera tracks
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+    }
+
+    // ✅ Capture / Retake handler
     captureBtn.addEventListener('click', () => {
+      // ---- RETAKE mode ----
+      if (isCaptured) {
+        base64Input.value = '';
+        capturedPhoto.src = '';
+        captureBtn.textContent = '📸 Capture Product';
+        captureBtn.classList.remove('retake');
+        startCamera();
+        return;
+      }
+
+      // ---- CAPTURE mode ----
       if (!stream) {
         alert('Camera is not ready yet.');
         return;
@@ -168,20 +204,24 @@
       canvas.height = video.videoHeight;
       canvas.getContext('2d').drawImage(video, 0, 0);
 
-      // Send as base64 data URI (backend expects product_image_base64)
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
       base64Input.value = dataUrl;
 
-      // Visual feedback
-      captureBtn.textContent = '✅ Photo Captured';
-      captureBtn.style.background = '#155724';
-      setTimeout(() => {
-        captureBtn.textContent = '📸 Capture Product';
-        captureBtn.style.background = '#28a745';
-      }, 1500);
+      // Show captured photo in place of video
+      capturedPhoto.src = dataUrl;
+      capturedPhoto.style.display = 'block';
+      video.style.display = 'none';
+
+      // Stop the live stream (no longer needed)
+      stopCamera();
+
+      // Change button to "Retake"
+      captureBtn.textContent = '🔄 Retake Photo';
+      captureBtn.classList.add('retake');
+      isCaptured = true;
     });
 
-    // Submit form via fetch (matches backend JSON response)
+    // ✅ Submit form
     document.getElementById('productForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -204,6 +244,12 @@
           alert('✅ ' + data.message + '\nProduct #: ' + data.product_number);
           e.target.reset();
           base64Input.value = '';
+          capturedPhoto.src = '';
+          capturedPhoto.style.display = 'none';
+          isCaptured = false;
+          captureBtn.textContent = '📸 Capture Product';
+          captureBtn.classList.remove('retake');
+          startCamera(); // restart for the next product
         } else {
           alert('❌ ' + data.message);
         }
@@ -211,6 +257,9 @@
         alert('Request failed: ' + err.message);
       }
     });
+
+    // Auto-start on page load
+    window.addEventListener('load', startCamera);
   </script>
 </body>
 </html>
