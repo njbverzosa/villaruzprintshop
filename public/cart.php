@@ -18,7 +18,6 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
@@ -52,13 +51,12 @@ $user = $userData;
 // 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
 // ==============================================
 date_default_timezone_set('Asia/Manila');
-$currentTime = date('M j, g:i A'); // e.g., Aug 31, 2:30 PM
+$currentTime = date('M j, g:i A');
 
 if ($userRole === 'Customer') {
     $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
     $updateStmt->execute([$currentTime, $userData['id']]);
 }
-
 
 $userAccNumber = $user['acc_number'] ?? '';
 $userFullName = $user['f_name'] ?? '';
@@ -71,19 +69,31 @@ $userAddressData = $stmt->fetch(PDO::FETCH_ASSOC);
 $userStreet = $userAddressData['street'] ?? '';
 $userBarangay = $userAddressData['barangay'] ?? '';
 
-// Check if user has both street and barangay (address is complete)
 $hasCompleteAddress = !empty($userStreet) && !empty($userBarangay);
 
-// Build full address for display
 $userAddress = '';
 if (!empty($userStreet) && !empty($userBarangay)) {
     $userAddress = $userStreet . ', ' . $userBarangay;
 }
 
-// Fetch ALL cart items for current user
-$stmt = $pdo->prepare("SELECT * FROM cart WHERE acc_number = ? ORDER BY id ASC");
+// ==============================================
+// 4b. FETCH CART ITEMS + JOIN PRODUCT IMAGE
+// ✅ Joins merchandise_inventory to get product_image
+// ==============================================
+$stmt = $pdo->prepare("
+    SELECT 
+        c.*,
+        m.product_image,
+        m.unit AS inv_unit,
+        m.product_number
+    FROM cart c
+    LEFT JOIN merchandise_inventory m 
+        ON m.product_name = c.product_name
+    WHERE c.acc_number = ?
+    ORDER BY c.id ASC
+");
 $stmt->execute([$userAccNumber]);
-$cartItems = $stmt->fetchAll();
+$cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate cart totals
 $totalItems = 0;
@@ -105,7 +115,7 @@ $cartCountStmt->execute([$userAccNumber]);
 $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
 $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 
-// Check if address exists (both street and barangay must be present)
+// Check if address exists
 $hasAddress = $hasCompleteAddress;
 $addressDisplay = !empty($userAddress) ? htmlspecialchars($userAddress) : 'No Saved Address';
 
@@ -134,7 +144,6 @@ if ($totalAmount >= 500 && !empty($barangay)) {
     $deliveryFee = 0;
 }
 
-// Calculate total with delivery fee
 $totalWithDelivery = $totalAmount + $deliveryFee;
 
 // Check if user is VIP
@@ -269,21 +278,53 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             border-bottom: none;
         }
 
+        /* ✅ Cart item now has image + text side-by-side */
         .cart-item-left {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            align-items: center;
+            gap: 14px;
             flex: 1;
             min-width: 0;
         }
 
-        .cart-item-left .product-name {
+        .cart-item-image {
+            width: 70px;
+            height: 70px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .cart-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .cart-item-text {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .cart-item-text .product-name {
             font-size: 16px;
             font-weight: 600;
             color: #0f172a;
             margin-bottom: 4px;
+            word-break: break-word;
+            line-height: 1.3;
         }
 
-        .cart-item-left .product-unit {
+        .cart-item-text .product-unit {
             font-size: 12px;
             color: #94a3b8;
         }
@@ -1113,11 +1154,18 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 gap: 8px;
             }
 
-            .cart-item-left .product-name {
+            /* ✅ Image smaller on mobile */
+            .cart-item-image {
+                width: 56px;
+                height: 56px;
+                border-radius: 6px;
+            }
+
+            .cart-item-text .product-name {
                 font-size: 14px;
             }
 
-            .cart-item-left .product-unit {
+            .cart-item-text .product-unit {
                 font-size: 11px;
             }
 
@@ -1258,7 +1306,8 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
             }
         }
-         /* VIP Avatar Styles */
+
+        /* VIP Avatar Styles */
         .user-badge .avatar.vip {
             background: linear-gradient(135deg, #f59e0b, #f97316) !important;
             font-size: 12px;
@@ -1282,11 +1331,10 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             <div class="welcome">
                 <h3><i class="fas fa-shopping-cart"></i> Cart</h3>
             </div>
-           <div class="user-badge">
+            <div class="user-badge">
                 <div class="avatar <?php echo (isset($user['vip']) && $user['vip'] == 1) ? 'vip' : ''; ?>">
                     <?php
                     $isVip = isset($user['vip']) && $user['vip'] == 1;
-
                     if ($isVip):
                         ?>
                         <i class="fas fa-crown"></i>
@@ -1305,13 +1353,36 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     <div class="empty-cart">
                         <i class="fas fa-shopping-bag"></i>
                         <p>Looks like you haven't added any items to your cart yet.</p>
+                        <a href="shop.php" class="shop-now-btn">Shop Now</a>
                     </div>
                 <?php else: ?>
                     <?php foreach ($cartItems as $item): ?>
+                        <?php
+                        // ✅ Resolve the image path
+                        $cartImageFile = $item['product_image'] ?? '';
+                        $cartImageUrl = '';
+                        if (!empty($cartImageFile)) {
+                            $absPath = dirname(__DIR__) . '/Products/' . $cartImageFile;
+                            if (file_exists($absPath)) {
+                                $cartImageUrl = '../Products/' . $cartImageFile;
+                            }
+                        }
+                        if ($cartImageUrl === '') {
+                            $cartImageUrl = 'https://via.placeholder.com/150x150?text=No+Image';
+                        }
+                        ?>
                         <div class="cart-item" data-id="<?php echo $item['id']; ?>">
                             <div class="cart-item-left">
-                                <div class="product-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
-                                <div class="product-unit"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></div>
+                                <!-- ✅ Product image -->
+                                <div class="cart-item-image">
+                                    <img src="<?php echo htmlspecialchars($cartImageUrl); ?>"
+                                         alt="<?php echo htmlspecialchars($item['product_name']); ?>"
+                                         loading="lazy">
+                                </div>
+                                <div class="cart-item-text">
+                                    <div class="product-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
+                                    <div class="product-unit"><?php echo htmlspecialchars($item['unit'] ?? $item['inv_unit'] ?? 'Pcs'); ?></div>
+                                </div>
                             </div>
 
                             <div class="cart-item-center">
@@ -1439,7 +1510,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                                 <?php endif; ?>
                             </span>
                         </div>
-                        
+
                         <div class="summary-row total">
                             <span>Total:</span>
                             <span id="totalAmountDisplay">₱ <?php echo number_format($totalWithDelivery, 2); ?></span>
@@ -1532,7 +1603,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             let currentTotalAmount = subtotalAmount;
             let existingOrderData = null;
 
-            // Address Selection State
             let savedAddress = '<?php echo htmlspecialchars($userAddress); ?>';
             let isUsingSavedAddress = <?php echo $hasAddress ? 'true' : 'false'; ?>;
 
@@ -1660,8 +1730,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 });
 
                 document.getElementById('totalItems').textContent = totalItems;
-                
-                // Update delivery fee and total
+
                 updateTotalsWithDelivery(totalAmount, barangay);
 
                 const badge = document.getElementById('cartBadge');
