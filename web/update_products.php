@@ -93,7 +93,7 @@ if (!empty($product['product_image'])) {
             font-family: Arial, sans-serif;
             background: #f2f2f2;
             padding: 20px;
-            padding-bottom: 100px;
+            padding-bottom: 120px;   /* space for the floating buttons */
         }
 
         .container {
@@ -259,9 +259,10 @@ if (!empty($product['product_image'])) {
         }
 
         /* ============================================================
-           FLOATING CAMERA BUTTON — bottom-center of screen
+           FLOATING BUTTONS — bottom-center of screen
+           Shared base class .btn-floating
            ============================================================ */
-        .btn-floating-camera {
+        .btn-floating {
             position: fixed;
             bottom: 24px;
             left: 50%;
@@ -269,7 +270,6 @@ if (!empty($product['product_image'])) {
             width: 68px;
             height: 68px;
             border-radius: 50%;
-            background: blue;
             color: #ffffff;
             cursor: pointer;
             display: none;
@@ -279,18 +279,40 @@ if (!empty($product['product_image'])) {
             transition: all 0.2s ease;
             z-index: 1000;
             font-family: inherit;
-            box-shadow: 0 6px 20px rgba(0, 0, 255, 0.35);
         }
 
-        .btn-floating-camera.visible {
+        .btn-floating.visible {
             display: inline-flex;
         }
 
-        .btn-floating-camera:active {
+        .btn-floating:active {
             transform: translateX(-50%) scale(0.96);
         }
 
-        .btn-floating-camera i {
+        .btn-floating i {
+            pointer-events: none;
+        }
+
+        /* Floating camera (blue) — idle state, no image */
+        .btn-floating-camera {
+            background: blue;
+            box-shadow: 0 6px 20px rgba(0, 0, 255, 0.35);
+        }
+
+        /* Floating capture (green shutter) — camera live */
+        .btn-floating-capture {
+            background: #28a745;
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.45);
+            border: 4px solid #ffffff;
+        }
+
+        .btn-floating-capture::after {
+            content: "";
+            position: absolute;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
             pointer-events: none;
         }
 
@@ -316,19 +338,6 @@ if (!empty($product['product_image'])) {
 
         .btn-upload:hover {
             background: #0284c7;
-        }
-
-        .btn-capture {
-            background: #28a745;
-            width: 100%;
-            padding: 12px;
-            font-size: 15px;
-            margin-bottom: 8px;
-            display: none;
-        }
-
-        .btn-capture.visible {
-            display: block;
         }
 
         .btn-submit {
@@ -407,11 +416,6 @@ if (!empty($product['product_image'])) {
                 </div>
             </div>
 
-            <!-- Capture Product — shown during camera preview -->
-            <button type="button" class="btn-capture" id="captureBtn">
-                Capture Product
-            </button>
-
             <!-- Upload Photo — shown only when no image -->
             <button type="button" class="btn-upload" id="uploadBtn">
                 Upload Photo
@@ -443,8 +447,17 @@ if (!empty($product['product_image'])) {
         </form>
     </div>
 
-    <!-- FLOATING CAMERA BUTTON -->
-    <button type="button" class="btn-floating-camera" id="retakeBtn" title="Take a photo">
+    <!-- ============================================================
+         FLOATING CAMERA BUTTON (idle — blue camera)
+         ============================================================ -->
+    <button type="button" class="btn-floating btn-floating-camera" id="retakeBtn" title="Take a photo">
+        <i class="fas fa-camera"></i>
+    </button>
+
+    <!-- ============================================================
+         FLOATING CAPTURE BUTTON (camera live — green shutter)
+         ============================================================ -->
+    <button type="button" class="btn-floating btn-floating-capture" id="captureBtn" title="Capture photo">
         <i class="fas fa-camera"></i>
     </button>
 
@@ -478,6 +491,9 @@ if (!empty($product['product_image'])) {
         function showFloatingCamera() { retakeBtn.classList.add('visible'); }
         function hideFloatingCamera() { retakeBtn.classList.remove('visible'); }
 
+        function showFloatingCapture() { captureBtn.classList.add('visible'); }
+        function hideFloatingCapture() { captureBtn.classList.remove('visible'); }
+
         function showUploadButton() { uploadBtn.style.display = 'block'; }
         function hideUploadButton() { uploadBtn.style.display = 'none'; }
 
@@ -485,28 +501,31 @@ if (!empty($product['product_image'])) {
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
         // ============================================================
-        // VIEW STATE — controls what's visible
+        // VIEW STATES
         // ============================================================
         function viewHasImage() {
             // Image present → show ONLY trash
             hideFloatingCamera();
+            hideFloatingCapture();
             hideUploadButton();
             showCancelButton();
             hidePlaceholder();
         }
 
         function viewNoImage() {
-            // No image → show floating camera + Upload Photo
+            // No image & camera idle → show floating camera + Upload
             hideCancelButton();
             showFloatingCamera();
+            hideFloatingCapture();
             showUploadButton();
             showPlaceholder();
         }
 
         function viewCameraActive() {
-            // Live camera → show only Capture
+            // Live camera → show ONLY floating capture
             hideCancelButton();
             hideFloatingCamera();
+            showFloatingCapture();
             hideUploadButton();
             hidePlaceholder();
         }
@@ -516,6 +535,11 @@ if (!empty($product['product_image'])) {
         // ============================================================
         async function startCamera() {
             try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Camera not supported in this browser. Please use HTTPS or a modern browser.');
+                    return;
+                }
+
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: { ideal: 'environment' },
@@ -524,20 +548,26 @@ if (!empty($product['product_image'])) {
                     },
                     audio: false
                 });
+
                 video.srcObject = stream;
                 video.style.display = 'block';
                 capturedPhoto.style.display = 'none';
 
                 cameraBox.classList.add('visible');
                 imageWrapper.style.display = 'none';
-                captureBtn.classList.add('visible');
 
                 viewCameraActive();
 
                 cameraActive = true;
             } catch (err) {
                 console.error('Camera error:', err);
-                alert('Camera not available: ' + err.message);
+                alert('Camera not available: ' + (err.message || err.name || 'Unknown error'));
+                // Reset back to no-image state so the user can retry
+                if (originalImageExists) {
+                    viewHasImage();
+                } else {
+                    viewNoImage();
+                }
             }
         }
 
@@ -564,7 +594,7 @@ if (!empty($product['product_image'])) {
         });
 
         // ============================================================
-        // CAPTURE
+        // FLOATING CAPTURE BUTTON — take snapshot
         // ============================================================
         captureBtn.addEventListener('click', () => {
             if (!stream) {
@@ -584,8 +614,6 @@ if (!empty($product['product_image'])) {
             capturedPhoto.src = dataUrl;
             capturedPhoto.style.display = 'block';
             video.style.display = 'none';
-
-            captureBtn.classList.remove('visible');
 
             stopCamera();
 
@@ -701,8 +729,22 @@ if (!empty($product['product_image'])) {
                     method: 'POST',
                     body: formData
                 });
-                const data = await res.json();
-                console.log(data);
+
+                const text = await res.text();
+                console.log('HTTP status:', res.status);
+                console.log('Raw response:', text);
+
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (jsonErr) {
+                    alert(
+                        'Server did not return JSON.\n\n' +
+                        'HTTP status: ' + res.status + '\n\n' +
+                        'Response preview:\n' + text.substring(0, 500)
+                    );
+                    return;
+                }
 
                 if (data.success) {
                     window.location.href = data.redirect;
