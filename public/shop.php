@@ -939,6 +939,15 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                 height: 56px;
             }
 
+            /* ✅ INFO + UPDATE aligned in one grid row */
+            .card-actions-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                width: 100%;
+                margin-top: 4px;
+            }
+
             .bottom-nav .nav-item {
                 padding: 2px 6px;
                 min-width: 36px;
@@ -1073,13 +1082,13 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                     data-price="<?php echo $product['selling_price']; ?>">
 
-                    <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                     <div class="product-image-wrapper">
                         <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                             alt="<?php echo htmlspecialchars($product['product_name']); ?>" class="product-image-clickable"
                             onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
-                            style="width: 100px; height: auto; cursor: pointer;">
+                            style="width: 150px; height: auto; cursor: pointer;border-radius:5px;">
                     </div>
+                    <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                     <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                     <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
 
@@ -1090,20 +1099,24 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                         <button class="qty-btn increment" data-id="<?php echo $product['id']; ?>">+</button>
                     </div>
 
-                    <button class="card-add-btn add-to-cart-card" data-id="<?php echo $product['id']; ?>"
-                        data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                        data-price="<?php echo $product['selling_price']; ?>"
-                        data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
-                        <i class="fas fa-cart-plus"></i> Add
-                    </button>
 
-                    <button class="card-desc-btn desc-btn" data-id="<?php echo $product['id']; ?>"
-                        data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                        data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
-                        data-price="<?php echo number_format($product['selling_price'], 2); ?>"
-                        data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
-                        <i class="fas fa-info-circle"></i> Info
-                    </button>
+                    <div class="card-actions-grid">
+                        <button class="card-add-btn add-to-cart-card" data-id="<?php echo $product['id']; ?>"
+                            data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                            data-price="<?php echo $product['selling_price']; ?>"
+                            data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
+                            <i class="fas fa-cart-plus"></i> Add
+                        </button>
+
+                        <button class="card-desc-btn desc-btn" data-id="<?php echo $product['id']; ?>"
+                            data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                            data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
+                            data-price="<?php echo number_format($product['selling_price'], 2); ?>"
+                            data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
+                            <i class="fas fa-info-circle"></i> Info
+                        </button>
+                    </div>
+
                 </div>
             <?php endforeach; ?>
         </div>
