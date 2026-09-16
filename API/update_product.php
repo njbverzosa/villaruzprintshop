@@ -18,39 +18,22 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['acc_number']) || !isset($_
 $userId = $_SESSION['user_id'];
 $userRole = $_SESSION['user_role'];
 
-// ==============================================
-// 2. FETCH USER NAME + authorize_access
-// ==============================================
-$userName = 'Unknown User';
-$authorizeAccess = 0;
-
 if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT f_name, authorize_access FROM admins WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userName = $user['f_name'];
-        $authorizeAccess = (int) ($user['authorize_access'] ?? 0);
     }
 }
 
 $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
-// 3. DECIDE TARGET TABLE + UPLOAD FOLDER
+// 3. TARGET TABLE + UPLOAD FOLDER
 // ==============================================
-$allowedInv = [0, 1, 2];
-
-if ($authorizeAccess === 3) {
-    $targetTable  = 'investors_product';
-    $uploadFolder = 'Inv_Products';
-} elseif (in_array($authorizeAccess, $allowedInv, true)) {
-    $targetTable  = 'merchandise_inventory';
-    $uploadFolder = 'Products';
-} else {
-    echo json_encode(['success' => false, 'message' => 'Your account is not allowed to update products.']);
-    exit;
-}
+$targetTable  = 'merchandise_inventory';
+$uploadFolder = 'Products';
 
 // ==============================================
 // 4. VERIFY CSRF
@@ -365,6 +348,9 @@ if ($action === 'update_product') {
 
             $pdo->commit();
 
+            // ✅ Relative URL to redirect to after success
+            $redirectUrl = '../web/all_products.php';
+
             echo json_encode([
                 'success'       => true,
                 'message'       => 'Product updated successfully',
@@ -373,7 +359,8 @@ if ($action === 'update_product') {
                 'table'         => $targetTable,
                 'folder'        => $uploadFolder,
                 'upload_dir'    => $uploadDir,
-                'last_updated'  => $formattedDate
+                'last_updated'  => $formattedDate,
+                'redirect'      => $redirectUrl 
             ]);
         } else {
             $pdo->rollBack();

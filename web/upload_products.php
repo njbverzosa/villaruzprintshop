@@ -255,9 +255,8 @@ foreach ($allProducts as $product) {
       <div class="divider"></div>
 
       <label for="product_name">Product Name</label>
-      <input type="text" id="product_name" name="product_name" 
-         required>
-        
+      <input type="text" id="product_name" name="product_name" required>
+
       <label for="unit">Unit</label>
       <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..." required>
 
@@ -371,18 +370,12 @@ foreach ($allProducts as $product) {
         console.log(data);
 
         if (data.success) {
-          alert('✅ ' + data.message + '\nProduct #: ' + data.product_number);
-          e.target.reset();
-          base64Input.value = '';
-          capturedPhoto.src = '';
-          capturedPhoto.style.display = 'none';
-          isCaptured = false;
-          captureBtn.textContent = 'Capture Product';
-          captureBtn.classList.remove('retake');
-          startCamera(); // restart for the next product
+          // optional: show a success toast here
+          window.location.href = data.redirect;
         } else {
-          alert('❌ ' + data.message);
+          alert(data.message);
         }
+
       } catch (err) {
         alert('Request failed: ' + err.message);
       }

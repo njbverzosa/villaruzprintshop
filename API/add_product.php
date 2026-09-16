@@ -20,38 +20,25 @@ $userRole = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 2. FETCH USER NAME + authorize_access
+// 2. FETCH USER NAME
 // ==============================================
-$userName = 'Unknown User';
-$authorizeAccess = 0;
 
 if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT f_name, authorize_access FROM admins WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userName = $user['f_name'];
-        $authorizeAccess = (int) ($user['authorize_access'] ?? 0);
     }
 }
 
 $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
-// 3. DECIDE TARGET TABLE + UPLOAD FOLDER
+// 3. TARGET TABLE + UPLOAD FOLDER
 // ==============================================
-$allowedInv = [0, 1, 2];
-
-if ($authorizeAccess === 3) {
-    $targetTable  = 'investors_product';
-    $uploadFolder = 'Inv_Products';
-} elseif (in_array($authorizeAccess, $allowedInv, true)) {
-    $targetTable  = 'merchandise_inventory';
-    $uploadFolder = 'Products';
-} else {
-    echo json_encode(['success' => false, 'message' => 'Your account is not allowed to add products.']);
-    exit;
-}
+$targetTable  = 'merchandise_inventory';
+$uploadFolder = 'Products';
 
 // ==============================================
 // 4. VERIFY CSRF
@@ -304,7 +291,7 @@ if ($action === 'add_product') {
             ':last_restocked' => $last_restocked
         ]);
 
-        if ($result) {
+                if ($result) {
             $productId = $pdo->lastInsertId();
 
             $logDetails = "Added new product to {$targetTable}: {$productName} | Product #: {$productNumber} | Unit: {$unit} | Quantity: {$quantity} | Price: ₱{$sellingPrice} | Image: " . ($imagePath ?: 'None') . " | Description: " . ($description ?: 'N/A');
@@ -313,6 +300,9 @@ if ($action === 'add_product') {
             $logStmt->execute([$firstName, "Added New Product", $logDetails, $last_restocked]);
 
             $pdo->commit();
+
+            // ✅ Relative URL to redirect to after success
+            $redirectUrl = '../web/all_products.php';
 
             echo json_encode([
                 'success'        => true,
@@ -323,7 +313,8 @@ if ($action === 'add_product') {
                 'product_image'  => $imagePath,
                 'table'          => $targetTable,
                 'folder'         => $uploadFolder,
-                'upload_dir'     => $uploadDir
+                'upload_dir'     => $uploadDir,
+                'redirect'       => $redirectUrls
             ]);
         } else {
             $pdo->rollBack();

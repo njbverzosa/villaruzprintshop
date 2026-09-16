@@ -65,7 +65,7 @@ if (!$product) {
 // ==============================================
 // BUILD THE IMAGE URL + RESOLVE THE IMAGE PATH
 // ==============================================
-$imageUrl   = '';
+$imageUrl = '';
 $imageExists = false;
 
 if (!empty($product['product_image'])) {
@@ -291,11 +291,10 @@ if (!empty($product['product_image'])) {
 
             <!-- ✅ Centered existing image -->
             <div class="product-image-wrapper" id="imageWrapper">
-                <img src="<?php echo $imageUrl; ?>"
-                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                     id="productImage"
-                     onclick="openImageModal('<?php echo $imageUrl; ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
-                     style="cursor: pointer; <?php echo $imageUrl ? '' : 'display:none;'; ?>">
+                <img src="<?php echo $imageUrl; ?>" alt="<?php echo htmlspecialchars($product['product_name']); ?>"
+                    id="productImage"
+                    onclick="openImageModal('<?php echo $imageUrl; ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
+                    style="cursor: pointer; <?php echo $imageUrl ? '' : 'display:none;'; ?>">
             </div>
 
             <!-- ✅ Square camera box (shown only when retaking) -->
@@ -305,7 +304,8 @@ if (!empty($product['product_image'])) {
             </div>
 
             <!-- ✅ Retake button — always visible when an image exists -->
-            <button type="button" class="btn-retake" id="retakeBtn" style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
+            <button type="button" class="btn-retake" id="retakeBtn"
+                style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
                 Retake Photo
             </button>
 
@@ -438,10 +438,9 @@ if (!empty($product['product_image'])) {
                 console.log(data);
 
                 if (data.success) {
-                    alert('✅ ' + data.message);
-                    window.location.href = 'all_products.php';
+                    window.location.href = data.redirect;
                 } else {
-                    alert('❌ ' + data.message);
+                    alert(data.message);
                 }
             } catch (err) {
                 alert('Request failed: ' + err.message);
