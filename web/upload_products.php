@@ -62,7 +62,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             font-family: Arial, sans-serif;
             background: #f2f2f2;
             padding: 20px;
-            padding-bottom: 100px;
+            padding-bottom: 120px;   /* extra space for the floating buttons */
         }
 
         /* ============================================================
@@ -260,9 +260,10 @@ $timezone = new DateTimeZone('Asia/Manila');
         }
 
         /* ============================================================
-           FLOATING CAMERA BUTTON — bottom-center of screen
+           FLOATING BUTTONS — bottom-center of screen
+           Shared base class .btn-floating
            ============================================================ */
-        .btn-floating-camera {
+        .btn-floating {
             position: fixed;
             bottom: 24px;
             left: 50%;
@@ -270,7 +271,6 @@ $timezone = new DateTimeZone('Asia/Manila');
             width: 68px;
             height: 68px;
             border-radius: 50%;
-            background: blue;
             color: #ffffff;
             cursor: pointer;
             display: none;
@@ -280,18 +280,40 @@ $timezone = new DateTimeZone('Asia/Manila');
             transition: all 0.2s ease;
             z-index: 1000;
             font-family: inherit;
-            box-shadow: 0 6px 20px rgba(0, 0, 255, 0.35);
         }
 
-        .btn-floating-camera.visible {
+        .btn-floating.visible {
             display: inline-flex;
         }
 
-        .btn-floating-camera:active {
+        .btn-floating:active {
             transform: translateX(-50%) scale(0.96);
         }
 
-        .btn-floating-camera i {
+        .btn-floating i {
+            pointer-events: none;
+        }
+
+        /* Floating camera (blue) — used when no image and camera is idle */
+        .btn-floating-camera {
+            background: blue;
+            box-shadow: 0 6px 20px rgba(0, 0, 255, 0.35);
+        }
+
+        /* Floating capture (green, shutter) — used when camera is live */
+        .btn-floating-capture {
+            background: #28a745;
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.45);
+            border: 4px solid #ffffff;
+        }
+
+        .btn-floating-capture::after {
+            content: "";
+            position: absolute;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
             pointer-events: none;
         }
 
@@ -318,20 +340,6 @@ $timezone = new DateTimeZone('Asia/Manila');
 
         .btn-upload:hover {
             background: #0284c7;
-        }
-
-        .btn-capture {
-            background: #28a745;
-            width: 100%;
-            padding: 12px;
-            font-size: 15px;
-            margin-top: 10px;
-            margin-bottom: 8px;
-            display: none;
-        }
-
-        .btn-capture.visible {
-            display: block;
         }
 
         .btn-submit {
@@ -390,11 +398,6 @@ $timezone = new DateTimeZone('Asia/Manila');
                 </div>
             </div>
 
-            <!-- Capture Product -->
-            <button type="button" class="btn-capture" id="captureBtn">
-                Capture Product
-            </button>
-
             <!-- Upload Photo -->
             <button type="button" class="btn-upload" id="uploadBtn">
                 Upload Photo
@@ -409,7 +412,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             <div class="subtitle">Fill in the product details below</div>
 
             <form id="productForm" enctype="multipart/form-data">
-                <!-- ✅ Same action as the OLD file — backend untouched -->
+                <!-- Same action as the old file — backend untouched -->
                 <input type="hidden" name="action" value="add_product">
                 <input type="hidden" name="csrf_token" id="csrf_token"
                     value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
@@ -438,8 +441,17 @@ $timezone = new DateTimeZone('Asia/Manila');
         </div>
     </div>
 
-    <!-- FLOATING CAMERA BUTTON -->
-    <button type="button" class="btn-floating-camera" id="retakeBtn" title="Take a photo">
+    <!-- ============================================================
+         FLOATING CAMERA BUTTON (idle state — blue camera icon)
+         ============================================================ -->
+    <button type="button" class="btn-floating btn-floating-camera" id="retakeBtn" title="Take a photo">
+        <i class="fas fa-camera"></i>
+    </button>
+
+    <!-- ============================================================
+         FLOATING CAPTURE BUTTON (camera live — green shutter)
+         ============================================================ -->
+    <button type="button" class="btn-floating btn-floating-capture" id="captureBtn" title="Capture photo">
         <i class="fas fa-camera"></i>
     </button>
 
@@ -469,6 +481,9 @@ $timezone = new DateTimeZone('Asia/Manila');
         function showFloatingCamera() { retakeBtn.classList.add('visible'); }
         function hideFloatingCamera() { retakeBtn.classList.remove('visible'); }
 
+        function showFloatingCapture() { captureBtn.classList.add('visible'); }
+        function hideFloatingCapture() { captureBtn.classList.remove('visible'); }
+
         function showUploadButton() { uploadBtn.style.display = 'block'; }
         function hideUploadButton() { uploadBtn.style.display = 'none'; }
 
@@ -479,22 +494,28 @@ $timezone = new DateTimeZone('Asia/Manila');
         // VIEW STATES
         // ============================================================
         function viewHasImage() {
+            // Image present → show ONLY trash (hide both floating buttons + upload)
             hideFloatingCamera();
+            hideFloatingCapture();
             hideUploadButton();
             showCancelButton();
             hidePlaceholder();
         }
 
         function viewNoImage() {
+            // No image & camera idle → show floating camera + Upload
             hideCancelButton();
             showFloatingCamera();
+            hideFloatingCapture();
             showUploadButton();
             showPlaceholder();
         }
 
         function viewCameraActive() {
+            // Live camera → show ONLY floating capture
             hideCancelButton();
             hideFloatingCamera();
+            showFloatingCapture();
             hideUploadButton();
             hidePlaceholder();
         }
@@ -524,7 +545,6 @@ $timezone = new DateTimeZone('Asia/Manila');
 
                 cameraBox.classList.add('visible');
                 imageWrapper.style.display = 'none';
-                captureBtn.classList.add('visible');
 
                 viewCameraActive();
 
@@ -532,6 +552,8 @@ $timezone = new DateTimeZone('Asia/Manila');
             } catch (err) {
                 console.error('Camera error:', err);
                 alert('Camera not available: ' + (err.message || err.name || 'Unknown error'));
+                // Reset back to no-image state so the user can retry
+                viewNoImage();
             }
         }
 
@@ -548,7 +570,7 @@ $timezone = new DateTimeZone('Asia/Manila');
         }
 
         // ============================================================
-        // FLOATING CAMERA BUTTON
+        // FLOATING CAMERA BUTTON — start camera
         // ============================================================
         retakeBtn.addEventListener('click', function () {
             base64Input.value = '';
@@ -557,7 +579,7 @@ $timezone = new DateTimeZone('Asia/Manila');
         });
 
         // ============================================================
-        // CAPTURE
+        // FLOATING CAPTURE BUTTON — take snapshot
         // ============================================================
         captureBtn.addEventListener('click', function () {
             if (!stream) {
@@ -576,8 +598,6 @@ $timezone = new DateTimeZone('Asia/Manila');
             capturedPhoto.src = dataUrl;
             capturedPhoto.style.display = 'block';
             video.style.display = 'none';
-
-            captureBtn.classList.remove('visible');
 
             stopCamera();
             cameraBox.classList.add('visible');
@@ -647,7 +667,7 @@ $timezone = new DateTimeZone('Asia/Manila');
         });
 
         // ============================================================
-        // FORM SUBMIT — same endpoint, same action as before
+        // FORM SUBMIT — same endpoint as before
         // ============================================================
         document.getElementById('productForm').addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -658,7 +678,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             }
 
             var formData = new FormData(e.target);
-            formData.delete('product_image');   // we send base64, not the raw file
+            formData.delete('product_image');
 
             try {
                 var res = await fetch('../API/add_product.php', {
@@ -666,7 +686,6 @@ $timezone = new DateTimeZone('Asia/Manila');
                     body: formData
                 });
 
-                // ✅ Read as TEXT first so we can see non-JSON responses (useful for debugging)
                 var text = await res.text();
                 console.log('HTTP status:', res.status);
                 console.log('Raw response:', text);
@@ -694,7 +713,7 @@ $timezone = new DateTimeZone('Asia/Manila');
         });
 
         // ============================================================
-        // ON PAGE LOAD — no image yet → show floating camera + Upload
+        // ON PAGE LOAD — no image yet → floating camera + Upload
         // ============================================================
         window.addEventListener('load', function () {
             viewNoImage();
