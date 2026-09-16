@@ -15,8 +15,12 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['acc_number']) || !isset($_
     exit;
 }
 
-$userId = $_SESSION['user_id'];
+$userId   = $_SESSION['user_id'];
 $userRole = $_SESSION['user_role'];
+
+// ==============================================
+// 2. FETCH USER NAME
+// ==============================================
 
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
@@ -63,14 +67,14 @@ if ($action === 'update_product') {
         exit;
     }
 
-    $productId     = intval($_POST['product_id']);
-    $productName   = trim($_POST['product_name']);
-    $unit          = trim($_POST['unit'] ?? 'Pcs');
-    $quantity      = intval($_POST['quantity'] ?? 0);
-    $sellingPrice  = floatval($_POST['selling_price'] ?? 0);
-    $description   = isset($_POST['description']) ? trim($_POST['description']) : '';
+    $productId    = intval($_POST['product_id']);
+    $productName  = trim($_POST['product_name']);
+    $unit         = trim($_POST['unit'] ?? 'Pcs');
+    $quantity     = intval($_POST['quantity'] ?? 0);
+    $sellingPrice = floatval($_POST['selling_price'] ?? 0);
+    $description  = isset($_POST['description']) ? trim($_POST['description']) : '';
 
-    $replaceImage  = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
+    $replaceImage = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
 
     // ==============================================
     // 5a. SANITIZE + VALIDATE PRODUCT NAME
@@ -149,17 +153,31 @@ if ($action === 'update_product') {
     // 5e. HANDLE NEW IMAGE
     //    Filename = <product_name>.png  (always .png, spaces preserved)
     //    Accepted source types: jpeg, jpg, png
+    //
+    //    ⚠️ IMPORTANT: The OLD image file is NOT deleted here.
+    //    It is only deleted AFTER the DB update is committed successfully.
+    //    This prevents data loss if the DB update fails.
     // ==============================================
-    $imagePath        = null;
-    $oldImageToDelete = null;
-    $newFileWritten   = null;
+    $imagePath        = null;   // what we'll store in the DB
+    $newFileWritten   = null;   // name of the newly written file (to delete on failure)
+    $oldImageToDelete = null;   // old file to delete AFTER commit
 
-    // Accepted source extensions + MIME types (from camera or upload)
     $allowedSourceExt  = ['jpeg', 'jpg', 'png'];
     $allowedSourceMime = ['image/jpeg', 'image/jpg', 'image/png'];
+    $forcedExt         = 'png';
 
-    // ✅ The extension we always save as
-    $forcedExt = 'png';
+    // Helper: build a safe, non-colliding filename for a given product name
+    $buildDestPath = function (string $name) use ($uploadDir, $forcedExt): array {
+        $fileName = $name . '.' . $forcedExt;
+        $destPath = $uploadDir . $fileName;
+        $counter  = 1;
+        while (file_exists($destPath)) {
+            $fileName = $name . ' (' . $counter . ').' . $forcedExt;
+            $destPath = $uploadDir . $fileName;
+            $counter++;
+        }
+        return [$fileName, $destPath];
+    };
 
     // ---- Case A: base64 camera image ----
     if (!empty($_POST['product_image_base64'])) {
@@ -170,7 +188,7 @@ if ($action === 'update_product') {
             exit;
         }
 
-        $type = strtolower($m[1]);   // jpeg, jpg, png
+        $type = strtolower($m[1]);
         if (!in_array($type, $allowedSourceExt, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
@@ -189,37 +207,16 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Always save as .png
-        $ext = $forcedExt;
-
-        // ✅ Filename = product name + .png (spaces preserved)
-        $fileName = $productName . '.' . $ext;
-        $destPath = $uploadDir . $fileName;
-
-        // ✅ DELETE the OLD image file FIRST (frees the clean name)
-        if (!empty($oldProduct['product_image'])) {
-            $oldFilePath = $uploadDir . $oldProduct['product_image'];
-            if (file_exists($oldFilePath)) {
-                @unlink($oldFilePath);
-            }
-            $oldImageToDelete = $oldProduct['product_image'];
-        }
-
-        // Avoid overwriting (with OTHER products' files) — append " (1)", " (2)", ...
-        $counter = 1;
-        while (file_exists($destPath)) {
-            $fileName = $productName . ' (' . $counter . ').' . $ext;
-            $destPath = $uploadDir . $fileName;
-            $counter++;
-        }
+        [$fileName, $destPath] = $buildDestPath($productName);
 
         if (file_put_contents($destPath, $data) === false) {
             echo json_encode(['success' => false, 'message' => 'Failed to save camera image.']);
             exit;
         }
 
-        $imagePath      = $fileName;
-        $newFileWritten = $fileName;
+        $imagePath        = $fileName;
+        $newFileWritten   = $fileName;
+        $oldImageToDelete = !empty($oldProduct['product_image']) ? $oldProduct['product_image'] : null;
     }
     // ---- Case B: standard file upload ----
     elseif (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
@@ -247,49 +244,22 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Always save as .png
-        $ext = $forcedExt;
-
-        // ✅ Filename = product name + .png (spaces preserved)
-        $fileName = $productName . '.' . $ext;
-        $destPath = $uploadDir . $fileName;
-
-        // ✅ DELETE the OLD image file FIRST
-        if (!empty($oldProduct['product_image'])) {
-            $oldFilePath = $uploadDir . $oldProduct['product_image'];
-            if (file_exists($oldFilePath)) {
-                @unlink($oldFilePath);
-            }
-            $oldImageToDelete = $oldProduct['product_image'];
-        }
-
-        $counter = 1;
-        while (file_exists($destPath)) {
-            $fileName = $productName . ' (' . $counter . ').' . $ext;
-            $destPath = $uploadDir . $fileName;
-            $counter++;
-        }
+        [$fileName, $destPath] = $buildDestPath($productName);
 
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
             echo json_encode(['success' => false, 'message' => 'Failed to save uploaded image.']);
             exit;
         }
 
-        $imagePath      = $fileName;
-        $newFileWritten = $fileName;
+        $imagePath        = $fileName;
+        $newFileWritten   = $fileName;
+        $oldImageToDelete = !empty($oldProduct['product_image']) ? $oldProduct['product_image'] : null;
     }
     // ---- Case C: user clicked Retake but didn't capture ----
     elseif ($replaceImage) {
-        $imagePath = null;
-
-        // ✅ Delete the old image from disk right now
-        if (!empty($oldProduct['product_image'])) {
-            $oldFilePath = $uploadDir . $oldProduct['product_image'];
-            if (file_exists($oldFilePath)) {
-                @unlink($oldFilePath);
-            }
-            $oldImageToDelete = $oldProduct['product_image'];
-        }
+        // No new file. We want to clear the image, and delete the old file after commit.
+        $imagePath        = null;
+        $oldImageToDelete = !empty($oldProduct['product_image']) ? $oldProduct['product_image'] : null;
     }
     // ---- Case D: no image change → keep existing ----
     else {
@@ -329,6 +299,7 @@ if ($action === 'update_product') {
         ]);
 
         if ($result) {
+            // ---- Build change log ----
             $changes = [];
             if ($oldProduct['product_name'] != $productName)   $changes[] = "Name: '{$oldProduct['product_name']}' → '{$productName}'";
             if ($oldProduct['unit'] != $unit)                  $changes[] = "Unit: '{$oldProduct['unit']}' → '{$unit}'";
@@ -348,7 +319,46 @@ if ($action === 'update_product') {
 
             $pdo->commit();
 
-            // ✅ Relative URL to redirect to after success
+            // ==============================================
+            // ✅ POST-COMMIT FILE SWAP
+            //    Now that the DB is safely updated, we can:
+            //     1. Delete the OLD image file.
+            //     2. Rename the NEW file to the clean product name (if it got a " (n)" suffix).
+            //     3. Update the DB with the clean name if renamed.
+            // ==============================================
+            if ($newFileWritten !== null && $oldImageToDelete !== null) {
+                // 1. Delete old file
+                $oldPath = $uploadDir . $oldImageToDelete;
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+
+                // 2. Try to rename new file → clean name
+                $cleanName = $productName . '.' . $forcedExt;
+                $cleanPath = $uploadDir . $cleanName;
+                $newPath   = $uploadDir . $newFileWritten;
+
+                if ($newFileWritten !== $cleanName && file_exists($newPath)) {
+                    if (@rename($newPath, $cleanPath)) {
+                        // 3. Update DB with the clean filename
+                        try {
+                            $pdo->prepare("UPDATE {$targetTable} SET product_image = ? WHERE id = ?")
+                                ->execute([$cleanName, $productId]);
+                            $imagePath = $cleanName;
+                        } catch (PDOException $renameErr) {
+                            error_log("Failed to update product_image after rename: " . $renameErr->getMessage());
+                        }
+                    }
+                }
+            } elseif ($newFileWritten === null && $oldImageToDelete !== null) {
+                // Case C: no replacement file, just delete the old one
+                $oldPath = $uploadDir . $oldImageToDelete;
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            // ✅ Redirect URL for the frontend
             $redirectUrl = '../web/all_products.php';
 
             echo json_encode([
@@ -360,11 +370,12 @@ if ($action === 'update_product') {
                 'folder'        => $uploadFolder,
                 'upload_dir'    => $uploadDir,
                 'last_updated'  => $formattedDate,
-                'redirect'      => $redirectUrl 
+                'redirect'      => $redirectUrl
             ]);
         } else {
             $pdo->rollBack();
 
+            // ✅ DB failed → remove the NEW file, keep the OLD one
             if ($newFileWritten && file_exists($uploadDir . $newFileWritten)) {
                 @unlink($uploadDir . $newFileWritten);
             }
@@ -375,6 +386,7 @@ if ($action === 'update_product') {
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
 
+        // ✅ Only remove the NEW file — old file must stay because DB was not changed
         if ($newFileWritten && file_exists($uploadDir . $newFileWritten)) {
             @unlink($uploadDir . $newFileWritten);
         }

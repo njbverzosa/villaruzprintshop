@@ -447,7 +447,6 @@ if (!empty($product['product_image'])) {
             }
         });
 
-        // ✅ No auto-start — camera opens only when Retake is clicked
         window.addEventListener('load', () => {
             if (!<?php echo $imageUrl ? 'true' : 'false'; ?>) {
                 startCamera();
