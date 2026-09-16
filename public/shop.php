@@ -290,6 +290,21 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
+        /* ========== CARD ACTION BUTTONS (Add + Info) ========== */
+        .card-actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .card-actions-grid .card-add-btn,
+        .card-actions-grid .card-desc-btn {
+            width: 100%;
+            margin-bottom: 0;
+        }
+
         /* ========== BUTTONS ========== */
         .card-add-btn {
             background: #3b82f6;
@@ -306,7 +321,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            margin-bottom: 6px;
         }
 
         .card-add-btn:hover {
@@ -325,7 +339,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             border: none;
             width: 100%;
             padding: 9px 0;
-            border-radius: 25px;
+            border-radius: 5px;
             font-weight: 600;
             font-size: 12px;
             color: #ffffff;
@@ -937,15 +951,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             .bottom-nav {
                 padding: 4px 0 8px;
                 height: 56px;
-            }
-
-            /* ✅ INFO + UPDATE aligned in one grid row */
-            .card-actions-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                width: 100%;
-                margin-top: 4px;
             }
 
             .bottom-nav .nav-item {
