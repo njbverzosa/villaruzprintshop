@@ -490,7 +490,6 @@ if (isset($_SESSION['exit_message'])) {
             flex: 1;
             width: 100%;
             min-height: calc(100vh - 74px);
-            /* fallback if nav is present */
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -499,17 +498,15 @@ if (isset($_SESSION['exit_message'])) {
             background: #f1f5f9;
         }
 
+        /* ✅ Card — a proper card, NOT a container */
         .auth-card {
-            flex: 1;
+            background: #ffffff;
+            border-radius: 5px;
+            padding: 30px;
             width: 100%;
-            min-height: calc(100vh - 74px);
-            /* fallback if nav is present */
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 30px 20px;
-            background: #f1f5f9;
+            max-width: 450px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
         }
 
         .auth-sub {
