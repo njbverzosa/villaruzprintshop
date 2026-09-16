@@ -221,14 +221,11 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             line-height: 1.3;
         }
 
+        /* ✅ Unit — background removed */
         .product-unit {
             font-size: 11px;
             color: #64748b;
             margin-bottom: 6px;
-            background: #f1f5f9;
-            padding: 2px 10px;
-            border-radius: 20px;
-            display: inline-block;
         }
 
         .product-price {
