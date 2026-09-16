@@ -285,11 +285,189 @@ if (!empty($product['product_image'])) {
             margin-top: 10px;
         }
 
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         button:hover { opacity: 0.9; }
 
         .divider { border-top: 1px solid #eee; margin: 10px 0 20px 0; }
 
         #productImageFile { display: none; }
+
+        /* ============================================================
+           ✅ SUCCESS MODAL — loader → check
+           ============================================================ */
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        .success-overlay.visible {
+            display: flex;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .success-card {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 340px;
+            padding: 40px 24px 32px 24px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+            animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .success-icon-wrap {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 22px auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* -------- Spinner -------- */
+        .success-spinner {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 5px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-right-color: #3b82f6;
+            animation: spin 0.9s linear infinite;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        /* -------- Checkmark SVG (hidden initially) -------- */
+        .success-check {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .success-check svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Circle */
+        .success-check circle {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 3;
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+        }
+
+        /* Tick */
+        .success-check path {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+        }
+
+        /* ---- State: loading ---- */
+        .success-card.loading .success-spinner {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .success-card.loading .success-check {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        /* ---- State: done ---- */
+        .success-card.done .success-spinner {
+            opacity: 0;
+            transform: scale(0.6);
+        }
+
+        .success-card.done .success-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Trigger the SVG drawing animation when in "done" state */
+        .success-card.done .success-check circle {
+            animation: drawCircle 0.5s ease-out forwards;
+        }
+
+        .success-card.done .success-check path {
+            animation: drawCheck 0.35s 0.4s ease-out forwards;
+        }
+
+        .success-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .success-message {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            margin-bottom: 4px;
+            min-height: 42px;
+        }
+
+        .success-redirect-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .success-card.done .success-redirect-hint {
+            opacity: 1;
+        }
+
+        /* ---- Animations ---- */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(12px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes drawCircle {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes drawCheck {
+            to { stroke-dashoffset: 0; }
+        }
     </style>
 </head>
 
@@ -307,7 +485,7 @@ if (!empty($product['product_image'])) {
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
             <input type="hidden" name="replace_image" id="replace_image" value="0">
 
-            <!-- ✅ File input — NOT inside the form's main flow; kept hidden and read via JS only -->
+            <!-- File input (hidden — used only via JS) -->
             <input type="file" id="productImageFile" accept="image/jpeg,image/jpg,image/png,image/webp">
 
             <div class="image-stage" id="imageStage">
@@ -358,7 +536,7 @@ if (!empty($product['product_image'])) {
             <label for="description">Product Description</label>
             <textarea id="description" name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
 
-            <button type="submit" class="btn-submit">Save Changes</button>
+            <button type="submit" class="btn-submit" id="saveBtn">Save Changes</button>
         </form>
     </div>
 
@@ -369,6 +547,30 @@ if (!empty($product['product_image'])) {
     <button type="button" class="btn-floating btn-floating-capture" id="captureBtn" title="Capture photo">
         <i class="fas fa-camera"></i>
     </button>
+
+    <!-- ============================================================
+         ✅ SUCCESS MODAL — loader then check
+         ============================================================ -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-card loading" id="successCard">
+            <div class="success-icon-wrap">
+
+                <!-- Spinner (shown first) -->
+                <div class="success-spinner"></div>
+
+                <!-- Green check (fades in after) -->
+                <div class="success-check">
+                    <svg viewBox="0 0 52 52">
+                        <circle cx="26" cy="26" r="24" />
+                        <path d="M14 27 L23 36 L39 18" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="success-title" id="successTitle">Saving Changes…</div>
+            <div class="success-message" id="successMessage">Please wait while we update the product.</div>
+        </div>
+    </div>
 
     <script>
         const video = document.getElementById('camera');
@@ -384,6 +586,12 @@ if (!empty($product['product_image'])) {
         const fileInput = document.getElementById('productImageFile');
         const base64Input = document.getElementById('product_image_base64');
         const replaceImageInput = document.getElementById('replace_image');
+        const saveBtn = document.getElementById('saveBtn');
+
+        const successOverlay = document.getElementById('successOverlay');
+        const successCard    = document.getElementById('successCard');
+        const successTitle   = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
 
         const originalImageSrc = '<?php echo $imageUrl; ?>';
         const originalImageExists = <?php echo $imageUrl ? 'true' : 'false'; ?>;
@@ -512,15 +720,12 @@ if (!empty($product['product_image'])) {
         });
 
         // ============================================================
-        // UPLOAD PHOTO — opens the file picker
+        // UPLOAD PHOTO
         // ============================================================
         uploadBtn.addEventListener('click', () => {
             fileInput.click();
         });
 
-        // ============================================================
-        // FILE CHOSEN — read into base64 and preview
-        // ============================================================
         fileInput.addEventListener('change', function () {
             const file = this.files[0];
             if (!file) return;
@@ -545,7 +750,6 @@ if (!empty($product['product_image'])) {
                 base64Input.value = dataUrl;
                 replaceImageInput.value = '1';
 
-                // Preview
                 capturedPhoto.src = dataUrl;
                 capturedPhoto.style.display = 'block';
                 video.style.display = 'none';
@@ -592,9 +796,10 @@ if (!empty($product['product_image'])) {
                 return;
             }
 
-            const formData = new FormData(e.target);
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
 
-            // ✅ No file input is inside the form anymore, so nothing to delete.
+            const formData = new FormData(e.target);
 
             try {
                 const res = await fetch('../API/update_product.php', {
@@ -610,6 +815,8 @@ if (!empty($product['product_image'])) {
                 try {
                     data = JSON.parse(text);
                 } catch (jsonErr) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Changes';
                     alert(
                         'Server did not return JSON.\n\n' +
                         'HTTP status: ' + res.status + '\n\n' +
@@ -619,15 +826,58 @@ if (!empty($product['product_image'])) {
                 }
 
                 if (data.success) {
-                    window.location.href = data.redirect;
+                    // ✅ Loader → check → redirect
+                    showSuccessLoaderThenCheck(
+                        data.redirect,
+                        'Update Successful!',
+                        'Your product changes have been saved.'
+                    );
                 } else {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Changes';
                     alert(data.message);
                 }
             } catch (err) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Changes';
                 alert('Request failed: ' + err.message);
             }
         });
 
+        // ============================================================
+        // SUCCESS MODAL — loader → check → redirect
+        // ============================================================
+        function showSuccessLoaderThenCheck(redirectUrl, doneTitle, doneMessage) {
+            // Reset to loading state
+            successCard.classList.remove('done');
+            successCard.classList.add('loading');
+            successTitle.textContent = 'Saving Changes…';
+            successMessage.textContent = 'Please wait while we update the product.';
+
+            // Show the overlay
+            successOverlay.classList.add('visible');
+
+            // Phase 1: spinner runs for 1 second
+            setTimeout(function () {
+                // Phase 2: switch to green check
+                successCard.classList.remove('loading');
+                successCard.classList.add('done');
+
+                successTitle.textContent = doneTitle || 'Update Successful!';
+                successMessage.textContent = doneMessage || 'Your product changes have been saved.';
+
+                // Phase 3: after the check draws, redirect
+                setTimeout(function () {
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    }
+                }, 1200);
+            }, 1000);
+        }
+
+        // ============================================================
+        // ON PAGE LOAD
+        // ============================================================
         window.addEventListener('load', () => {
             if (originalImageExists) viewHasImage();
             else viewNoImage();

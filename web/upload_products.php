@@ -52,22 +52,15 @@ $timezone = new DateTimeZone('Asia/Manila');
     <title>Add Product — Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: Arial, sans-serif;
             background: #f2f2f2;
             padding: 20px;
-            padding-bottom: 120px;   /* extra space for the floating buttons */
+            padding-bottom: 120px;
         }
 
-        /* ============================================================
-           CARD LAYOUT — image left (50%), form right
-           ============================================================ */
         .container {
             display: flex;
             gap: 20px;
@@ -87,32 +80,16 @@ $timezone = new DateTimeZone('Asia/Manila');
             min-height: 500px;
         }
 
-        .form-column {
-            flex: 1;
-            min-width: 0;
-        }
+        .form-column { flex: 1; min-width: 0; }
 
         @media (max-width: 700px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .image-column {
-                flex: 1 1 auto;
-                min-height: 350px;
-            }
+            .container { flex-direction: column; }
+            .image-column { flex: 1 1 auto; min-height: 350px; }
         }
 
-        h2 {
-            margin-bottom: 5px;
-            color: #333;
-        }
+        h2 { margin-bottom: 5px; color: #333; }
 
-        .subtitle {
-            font-size: 13px;
-            color: #777;
-            margin-bottom: 20px;
-        }
+        .subtitle { font-size: 13px; color: #777; margin-bottom: 20px; }
 
         label {
             display: block;
@@ -122,9 +99,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             font-size: 14px;
         }
 
-        input[type="text"],
-        input[type="number"],
-        textarea {
+        input[type="text"], input[type="number"], textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -133,14 +108,8 @@ $timezone = new DateTimeZone('Asia/Manila');
             font-size: 14px;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
+        textarea { resize: vertical; min-height: 70px; }
 
-        /* ============================================================
-           IMAGE STAGE
-           ============================================================ */
         .image-stage {
             position: relative;
             flex: 1;
@@ -180,23 +149,17 @@ $timezone = new DateTimeZone('Asia/Manila');
             display: none;
         }
 
-        .camera-box.visible {
-            display: block;
-        }
+        .camera-box.visible { display: block; }
 
-        .camera-box video,
-        .camera-box img {
+        .camera-box video, .camera-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        #capturedPhoto {
-            display: none;
-        }
+        #capturedPhoto { display: none; }
 
-        /* Empty placeholder */
         .image-placeholder {
             display: none;
             position: absolute;
@@ -210,18 +173,9 @@ $timezone = new DateTimeZone('Asia/Manila');
             background: #f8fafc;
         }
 
-        .image-placeholder.visible {
-            display: flex;
-        }
+        .image-placeholder.visible { display: flex; }
+        .image-placeholder i { font-size: 48px; color: #cbd5e1; }
 
-        .image-placeholder i {
-            font-size: 48px;
-            color: #cbd5e1;
-        }
-
-        /* ============================================================
-           TRASH BUTTON — top-right of image
-           ============================================================ */
         .cancel-x-btn {
             position: absolute;
             top: 8px;
@@ -245,24 +199,10 @@ $timezone = new DateTimeZone('Asia/Manila');
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        .cancel-x-btn.visible {
-            display: inline-flex;
-        }
+        .cancel-x-btn.visible { display: inline-flex; }
+        .cancel-x-btn:hover { background: #ef4444; color: #ffffff; }
+        .cancel-x-btn i { font-size: 13px; pointer-events: none; }
 
-        .cancel-x-btn:hover {
-            background: #ef4444;
-            color: #ffffff;
-        }
-
-        .cancel-x-btn i {
-            font-size: 13px;
-            pointer-events: none;
-        }
-
-        /* ============================================================
-           FLOATING BUTTONS — bottom-center of screen
-           Shared base class .btn-floating
-           ============================================================ */
         .btn-floating {
             position: fixed;
             bottom: 24px;
@@ -282,25 +222,15 @@ $timezone = new DateTimeZone('Asia/Manila');
             font-family: inherit;
         }
 
-        .btn-floating.visible {
-            display: inline-flex;
-        }
+        .btn-floating.visible { display: inline-flex; }
+        .btn-floating:active { transform: translateX(-50%) scale(0.96); }
+        .btn-floating i { pointer-events: none; }
 
-        .btn-floating:active {
-            transform: translateX(-50%) scale(0.96);
-        }
-
-        .btn-floating i {
-            pointer-events: none;
-        }
-
-        /* Floating camera (blue) — used when no image and camera is idle */
         .btn-floating-camera {
             background: blue;
             box-shadow: 0 6px 20px rgba(0, 0, 255, 0.35);
         }
 
-        /* Floating capture (green, shutter) — used when camera is live */
         .btn-floating-capture {
             background: #28a745;
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.45);
@@ -317,7 +247,6 @@ $timezone = new DateTimeZone('Asia/Manila');
             pointer-events: none;
         }
 
-        /* ========== OTHER BUTTONS ========== */
         button {
             padding: 10px 15px;
             border: none;
@@ -338,9 +267,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             display: none;
         }
 
-        .btn-upload:hover {
-            background: #0284c7;
-        }
+        .btn-upload:hover { background: #0284c7; }
 
         .btn-submit {
             background: #333;
@@ -350,18 +277,188 @@ $timezone = new DateTimeZone('Asia/Manila');
             margin-top: 10px;
         }
 
-        button:hover {
-            opacity: 0.9;
-        }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        #productImageFile {
-            display: none;
-        }
+        button:hover { opacity: 0.9; }
+
+        #productImageFile { display: none; }
 
         @media (max-width: 700px) {
-            .image-stage {
-                min-height: 300px;
-            }
+            .image-stage { min-height: 300px; }
+        }
+
+        /* ============================================================
+           ✅ SUCCESS MODAL — loader → check
+           ============================================================ */
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        .success-overlay.visible {
+            display: flex;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .success-card {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 340px;
+            padding: 40px 24px 32px 24px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+            animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Container for both loader and check */
+        .success-icon-wrap {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 22px auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* -------- Spinner -------- */
+        .success-spinner {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 5px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-right-color: #3b82f6;
+            animation: spin 0.9s linear infinite;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        /* -------- Checkmark SVG (hidden initially) -------- */
+        .success-check {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .success-check svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Circle */
+        .success-check circle {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 3;
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+        }
+
+        /* Tick */
+        .success-check path {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+        }
+
+        /* ---- State: loading ---- */
+        .success-card.loading .success-spinner {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .success-card.loading .success-check {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        /* ---- State: done ---- */
+        .success-card.done .success-spinner {
+            opacity: 0;
+            transform: scale(0.6);
+        }
+
+        .success-card.done .success-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Trigger the SVG drawing animation when in "done" state */
+        .success-card.done .success-check circle {
+            animation: drawCircle 0.5s ease-out forwards;
+        }
+
+        .success-card.done .success-check path {
+            animation: drawCheck 0.35s 0.4s ease-out forwards;
+        }
+
+        .success-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .success-message {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            margin-bottom: 4px;
+            min-height: 42px;
+        }
+
+        .success-redirect-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .success-card.done .success-redirect-hint {
+            opacity: 1;
+        }
+
+        /* ---- Animations ---- */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(12px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes drawCircle {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes drawCheck {
+            to { stroke-dashoffset: 0; }
         }
     </style>
 </head>
@@ -375,30 +472,25 @@ $timezone = new DateTimeZone('Asia/Manila');
         <div class="image-column">
             <div class="image-stage" id="imageStage">
 
-                <!-- Trash button -->
                 <button type="button" class="cancel-x-btn" id="cancelUploadBtn" title="Remove image">
                     <i class="fas fa-trash"></i>
                 </button>
 
-                <!-- Image preview -->
                 <div class="product-image-wrapper" id="imageWrapper" style="display:none;">
                     <img src="" alt="Product" id="productImage">
                 </div>
 
-                <!-- Empty placeholder -->
                 <div class="image-placeholder" id="imagePlaceholder">
                     <i class="fas fa-image"></i>
                     <span>No image</span>
                 </div>
 
-                <!-- Camera box -->
                 <div class="camera-box" id="cameraBox">
                     <video id="camera" autoplay playsinline muted></video>
                     <img id="capturedPhoto" alt="Captured product">
                 </div>
             </div>
 
-            <!-- Upload Photo -->
             <button type="button" class="btn-upload" id="uploadBtn">
                 Upload Photo
             </button>
@@ -412,7 +504,6 @@ $timezone = new DateTimeZone('Asia/Manila');
             <div class="subtitle">Fill in the product details below</div>
 
             <form id="productForm" enctype="multipart/form-data">
-                <!-- Same action as the old file — backend untouched -->
                 <input type="hidden" name="action" value="add_product">
                 <input type="hidden" name="csrf_token" id="csrf_token"
                     value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
@@ -436,24 +527,42 @@ $timezone = new DateTimeZone('Asia/Manila');
                 <label for="description">Product Description</label>
                 <textarea id="description" name="description"></textarea>
 
-                <button type="submit" class="btn-submit">Save Product</button>
+                <button type="submit" class="btn-submit" id="saveBtn">Save Product</button>
             </form>
         </div>
     </div>
 
-    <!-- ============================================================
-         FLOATING CAMERA BUTTON (idle state — blue camera icon)
-         ============================================================ -->
     <button type="button" class="btn-floating btn-floating-camera" id="retakeBtn" title="Take a photo">
         <i class="fas fa-camera"></i>
     </button>
 
-    <!-- ============================================================
-         FLOATING CAPTURE BUTTON (camera live — green shutter)
-         ============================================================ -->
     <button type="button" class="btn-floating btn-floating-capture" id="captureBtn" title="Capture photo">
         <i class="fas fa-camera"></i>
     </button>
+
+    <!-- ============================================================
+         ✅ SUCCESS MODAL — loader then check
+         ============================================================ -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-card loading" id="successCard">
+            <div class="success-icon-wrap">
+
+                <!-- Spinner (shown first) -->
+                <div class="success-spinner"></div>
+
+                <!-- Green check (fades in after) -->
+                <div class="success-check">
+                    <svg viewBox="0 0 52 52">
+                        <circle cx="26" cy="26" r="24" />
+                        <path d="M14 27 L23 36 L39 18" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="success-title" id="successTitle">Saving Product…</div>
+            <div class="success-message" id="successMessage">Please wait while we process your upload.</div>
+        </div>
+    </div>
 
     <script>
         var video = document.getElementById('camera');
@@ -468,6 +577,12 @@ $timezone = new DateTimeZone('Asia/Manila');
         var productImage = document.getElementById('productImage');
         var fileInput = document.getElementById('productImageFile');
         var base64Input = document.getElementById('product_image_base64');
+        var saveBtn = document.getElementById('saveBtn');
+
+        var successOverlay = document.getElementById('successOverlay');
+        var successCard    = document.getElementById('successCard');
+        var successTitle   = document.getElementById('successTitle');
+        var successMessage = document.getElementById('successMessage');
 
         var stream = null;
         var cameraActive = false;
@@ -494,7 +609,6 @@ $timezone = new DateTimeZone('Asia/Manila');
         // VIEW STATES
         // ============================================================
         function viewHasImage() {
-            // Image present → show ONLY trash (hide both floating buttons + upload)
             hideFloatingCamera();
             hideFloatingCapture();
             hideUploadButton();
@@ -503,7 +617,6 @@ $timezone = new DateTimeZone('Asia/Manila');
         }
 
         function viewNoImage() {
-            // No image & camera idle → show floating camera + Upload
             hideCancelButton();
             showFloatingCamera();
             hideFloatingCapture();
@@ -512,7 +625,6 @@ $timezone = new DateTimeZone('Asia/Manila');
         }
 
         function viewCameraActive() {
-            // Live camera → show ONLY floating capture
             hideCancelButton();
             hideFloatingCamera();
             showFloatingCapture();
@@ -547,19 +659,14 @@ $timezone = new DateTimeZone('Asia/Manila');
                 imageWrapper.style.display = 'none';
 
                 viewCameraActive();
-
                 cameraActive = true;
             } catch (err) {
                 console.error('Camera error:', err);
                 alert('Camera not available: ' + (err.message || err.name || 'Unknown error'));
-                // Reset back to no-image state so the user can retry
                 viewNoImage();
             }
         }
 
-        // ============================================================
-        // STOP CAMERA
-        // ============================================================
         function stopCamera() {
             if (stream) {
                 stream.getTracks().forEach(function (t) { t.stop(); });
@@ -569,18 +676,12 @@ $timezone = new DateTimeZone('Asia/Manila');
             cameraBox.classList.remove('visible');
         }
 
-        // ============================================================
-        // FLOATING CAMERA BUTTON — start camera
-        // ============================================================
         retakeBtn.addEventListener('click', function () {
             base64Input.value = '';
             fileInput.value = '';
             startCamera();
         });
 
-        // ============================================================
-        // FLOATING CAPTURE BUTTON — take snapshot
-        // ============================================================
         captureBtn.addEventListener('click', function () {
             if (!stream) {
                 alert('Camera is not ready yet.');
@@ -605,16 +706,10 @@ $timezone = new DateTimeZone('Asia/Manila');
             viewHasImage();
         });
 
-        // ============================================================
-        // UPLOAD PHOTO
-        // ============================================================
         uploadBtn.addEventListener('click', function () {
             fileInput.click();
         });
 
-        // ============================================================
-        // FILE CHOSEN
-        // ============================================================
         fileInput.addEventListener('change', function () {
             var file = fileInput.files[0];
             if (!file) return;
@@ -649,9 +744,6 @@ $timezone = new DateTimeZone('Asia/Manila');
             reader.readAsDataURL(file);
         });
 
-        // ============================================================
-        // TRASH BUTTON
-        // ============================================================
         cancelUploadBtn.addEventListener('click', function () {
             base64Input.value = '';
             fileInput.value = '';
@@ -667,7 +759,7 @@ $timezone = new DateTimeZone('Asia/Manila');
         });
 
         // ============================================================
-        // FORM SUBMIT — same endpoint as before
+        // FORM SUBMIT
         // ============================================================
         document.getElementById('productForm').addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -676,6 +768,9 @@ $timezone = new DateTimeZone('Asia/Manila');
                 alert('Please capture or upload a product image first.');
                 return;
             }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
 
             var formData = new FormData(e.target);
             formData.delete('product_image');
@@ -694,6 +789,8 @@ $timezone = new DateTimeZone('Asia/Manila');
                 try {
                     data = JSON.parse(text);
                 } catch (jsonErr) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Product';
                     alert(
                         'Server did not return JSON.\n\n' +
                         'HTTP status: ' + res.status + '\n\n' +
@@ -703,17 +800,57 @@ $timezone = new DateTimeZone('Asia/Manila');
                 }
 
                 if (data.success) {
-                    window.location.href = data.redirect;
+                    // ✅ Show loader → check → redirect
+                    showSuccessLoaderThenCheck(
+                        data.redirect,
+                        'Upload Successful!',
+                        'Your new product has been added.'
+                    );
                 } else {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Product';
                     alert(data.message);
                 }
             } catch (err) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Product';
                 alert('Request failed: ' + err.message);
             }
         });
 
         // ============================================================
-        // ON PAGE LOAD — no image yet → floating camera + Upload
+        // SUCCESS MODAL — loader → check → redirect
+        // ============================================================
+        function showSuccessLoaderThenCheck(redirectUrl, doneTitle, doneMessage) {
+            // Reset to loading state
+            successCard.classList.remove('done');
+            successCard.classList.add('loading');
+            successTitle.textContent = 'Saving Product…';
+            successMessage.textContent = 'Please wait while we process your upload.';
+
+            // Show the overlay
+            successOverlay.classList.add('visible');
+
+            // Phase 1: spinner runs for 1 second
+            setTimeout(function () {
+                // Phase 2: switch to green check
+                successCard.classList.remove('loading');
+                successCard.classList.add('done');
+
+                successTitle.textContent = doneTitle || 'Upload Successful!';
+                successMessage.textContent = doneMessage || 'Your new product has been added.';
+
+                // Phase 3: after the check draws, redirect
+                setTimeout(function () {
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    }
+                }, 1200);
+            }, 1000);
+        }
+
+        // ============================================================
+        // ON PAGE LOAD
         // ============================================================
         window.addEventListener('load', function () {
             viewNoImage();
