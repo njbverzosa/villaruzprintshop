@@ -73,25 +73,6 @@ $cartCountStmt->execute([$accNumber]);
 $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
 $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 
-// ==============================================
-// 8. BUILD IMAGE URL
-// ==============================================
-$imageUrl = '';
-$imageExists = false;
-
-if (!empty($product['product_image'])) {
-    $relativePath = '../Products/' . $product['product_image'];
-    $absolutePath = dirname(__DIR__) . '/Products/' . $product['product_image'];
-
-    if (file_exists($absolutePath)) {
-        $imageUrl = $relativePath;
-        $imageExists = true;
-    } else {
-        $imageUrl = 'https://via.placeholder.com/300x300?text=No+Image';
-    }
-} else {
-    $imageUrl = 'https://via.placeholder.com/300x300?text=No+Image';
-}
 
 // ==============================================
 // 9. FORMAT VALUES FOR DISPLAY
@@ -811,10 +792,10 @@ $lastRestocked = htmlspecialchars($product['last_restocked'] ?? '—');
              data-price="<?php echo htmlspecialchars($product['selling_price']); ?>">
 
             <div class="product-image-wrapper">
-                <img src="<?php echo $imageUrl; ?>"
+                <img src="<?php echo htmlspecialchars($product['product_image']); ?>"
                      alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                      class="product-image-clickable"
-                     onclick="openImageModal('<?php echo $imageUrl; ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
+                     onclick="openImageModal('<?php echo htmlspecialchars($product['product_image']); ?>')">
             </div>
 
             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
