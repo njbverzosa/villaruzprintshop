@@ -296,7 +296,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             border: none;
             width: 100%;
             padding: 9px 0;
-            border-radius: 25px;
+            border-radius: 5px;
             font-weight: 600;
             font-size: 12px;
             color: #ffffff;
