@@ -436,6 +436,8 @@ foreach ($allProducts as $product) {
         }
 
         .product-card {
+            position: relative;
+            /* ✅ needed for absolute trash */
             background: #ffffff;
             border-radius: 5px;
             padding: 16px 12px;
@@ -550,6 +552,33 @@ foreach ($allProducts as $product) {
             margin-top: 10px;
             margin-bottom: 10px;
         }
+
+        .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 3;
+        }
+
+
+        .delete-btn:hover i {
+            transform: rotate(-8deg);
+        }
+
+
 
         /* ========== MODALS ========== */
         .desc-modal {
@@ -999,7 +1028,7 @@ foreach ($allProducts as $product) {
                         <i class="fas fa-download"></i> Images
                     </a>
                 <?php endif; ?>
-                
+
             </div>
             <div id="searchInfo" class="search-info"></div>
 
@@ -1018,13 +1047,19 @@ foreach ($allProducts as $product) {
                             data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>">
 
+                            <!-- ✅ Trash button — top-right corner -->
+                            <a href="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                class="delete-btn" onclick="return confirm('Are you sure you want to delete this product?');"
+                                title="Delete product">
+                                <i class="fas fa-trash"></i>
+                            </a>
 
                             <div class="product-image-wrapper">
                                 <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
                                     onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
-                                    style="width: 150px; height: auto; cursor: pointer;border-radius:5px;">
+                                    style="width: 150px; height: auto;border-radius:5px;">
                             </div>
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="price-unit-grid">
