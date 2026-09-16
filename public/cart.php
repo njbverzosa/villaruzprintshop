@@ -1357,25 +1357,12 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     </div>
                 <?php else: ?>
                     <?php foreach ($cartItems as $item): ?>
-                        <?php
-                        // ✅ Resolve the image path
-                        $cartImageFile = $item['product_image'] ?? '';
-                        $cartImageUrl = '';
-                        if (!empty($cartImageFile)) {
-                            $absPath = dirname(__DIR__) . '/Products/' . $cartImageFile;
-                            if (file_exists($absPath)) {
-                                $cartImageUrl = '../Products/' . $cartImageFile;
-                            }
-                        }
-                        if ($cartImageUrl === '') {
-                            $cartImageUrl = 'https://via.placeholder.com/150x150?text=No+Image';
-                        }
-                        ?>
+                
                         <div class="cart-item" data-id="<?php echo $item['id']; ?>">
                             <div class="cart-item-left">
                                 <!-- ✅ Product image -->
                                 <div class="cart-item-image">
-                                    <img src="<?php echo htmlspecialchars($cartImageUrl); ?>"
+                                    <img src="../Products/<?php echo htmlspecialchars($item['product_image']); ?>"
                                          alt="<?php echo htmlspecialchars($item['product_name']); ?>"
                                          loading="lazy">
                                 </div>
