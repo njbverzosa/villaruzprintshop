@@ -866,8 +866,8 @@ $description = htmlspecialchars($product['description'] ?? '');
              data-price="<?php echo htmlspecialchars($product['selling_price']); ?>">
 
             <div class="product-image-wrapper">
-                <img src="<?php echo $imageUrl; ?>"
-                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
+                <img src="../Products/<?php echo $imageUrl; ?>"
+                     alt="../Products/<?php echo htmlspecialchars($product['product_name']); ?>"
                      class="product-image-clickable"
                      onclick="openImageModal('<?php echo $imageUrl; ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
             </div>
@@ -891,52 +891,11 @@ $description = htmlspecialchars($product['description'] ?? '');
                     <i class="fas fa-cart-plus"></i> Add
                 </button>
 
-                <button class="card-desc-btn desc-btn"
-                        data-id="<?php echo (int) $product['id']; ?>"
-                        data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                        data-unit="<?php echo $unit; ?>"
-                        data-price="<?php echo $price; ?>"
-                        data-description="<?php echo $description; ?>">
-                    <i class="fas fa-info-circle"></i> Info
-                </button>
+               
             </div>
 
         </div>
 
-        <!-- Product Info Panel -->
-        <div class="info-panel">
-            <h3><i class="fas fa-info-circle"></i> Product Details</h3>
-
-            <div class="info-row">
-                <span class="info-label">Product #</span>
-                <span class="info-value"><?php echo htmlspecialchars($product['product_number']); ?></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Name</span>
-                <span class="info-value"><?php echo htmlspecialchars($product['product_name']); ?></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Unit</span>
-                <span class="info-value"><?php echo $unit; ?></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Price</span>
-                <span class="info-value">₱ <?php echo $price; ?></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">In Stock</span>
-                <span class="info-value"><?php echo (int) ($product['qty_on_hand'] ?? 0); ?></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Last Restocked</span>
-                <span class="info-value"><?php echo htmlspecialchars($product['last_restocked'] ?? '—'); ?></span>
-            </div>
-
-            <div class="description-block">
-                <strong style="display:block;margin-bottom:6px;color:#0f172a;">Description</strong>
-                <?php echo !empty($description) ? nl2br($description) : '<em style="color:#94a3b8;">No description available.</em>'; ?>
-            </div>
-        </div>
 
     </div>
 
