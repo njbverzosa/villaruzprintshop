@@ -1075,7 +1075,6 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             </div>
         </div>
 
-        <!-- Products Grid -->
         <div class="products-grid" id="productsGrid">
             <?php foreach ($allProducts as $product): ?>
                 <div class="product-card" data-id="<?php echo $product['id']; ?>"
@@ -1088,7 +1087,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
                     onclick="goToProduct('<?php echo htmlspecialchars($product['product_number']); ?>')">
 
                     <div class="product-image-wrapper">
-                        <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                             alt="<?php echo htmlspecialchars($product['product_name']); ?>" class="product-image-clickable"
                             onclick="event.stopPropagation(); openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
                             style="width: 150px; height: auto; cursor: pointer;border-radius:5px;">
