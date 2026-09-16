@@ -16,6 +16,7 @@
  * 
  * Also handles removing individual items from orders (remove_order_item)
  * And updating multiple order items (update_order_items)
+ * And reordering items (reorder_items)
  */
 
 session_start();
@@ -52,9 +53,6 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
 
 /**
  * Validate and sanitize delivery status
- * 
- * @param string $status The status to validate
- * @return bool True if status is valid
  */
 function isValidStatus($status)
 {
@@ -64,10 +62,6 @@ function isValidStatus($status)
 
 /**
  * Get current status of a delivery order
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number to lookup
- * @return array|null Current status and delivery_date or null if not found
  */
 function getCurrentDeliveryStatus($pdo, $deliveryNumber)
 {
@@ -78,12 +72,6 @@ function getCurrentDeliveryStatus($pdo, $deliveryNumber)
 
 /**
  * Update delivery status and delivery date in for_deliveries table
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @param string $newStatus New status to set
- * @param string|null $deliveryDate New delivery date (optional)
- * @return bool True on success
  */
 function updateDeliveryStatus($pdo, $deliveryNumber, $newStatus, $deliveryDate = null)
 {
@@ -105,11 +93,6 @@ function updateDeliveryStatus($pdo, $deliveryNumber, $newStatus, $deliveryDate =
 
 /**
  * Update status in order_status_history for all items under a delivery
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @param string $newStatus New status to set
- * @return bool True on success
  */
 function updateOrderHistoryStatus($pdo, $deliveryNumber, $newStatus)
 {
@@ -122,10 +105,6 @@ function updateOrderHistoryStatus($pdo, $deliveryNumber, $newStatus)
 
 /**
  * Get all order items for a specific delivery
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @return array Array of order items with product_name and pieces
  */
 function getDeliveryOrderItems($pdo, $deliveryNumber)
 {
@@ -140,10 +119,6 @@ function getDeliveryOrderItems($pdo, $deliveryNumber)
 
 /**
  * Check current stock level of a product
- * 
- * @param PDO $pdo Database connection
- * @param string $productName Product name to check
- * @return array|null Product data or null if not found
  */
 function getProductStock($pdo, $productName)
 {
@@ -158,31 +133,20 @@ function getProductStock($pdo, $productName)
 
 /**
  * Update selling price in inventory
- * 
- * @param PDO $pdo Database connection
- * @param string $productName Product name
- * @param float $sellingPrice New selling price
- * @param string $dateTime Current date for last_restocked
- * @return bool True on success
  */
 function updateInventorySellingPrice($pdo, $productName, $sellingPrice, $dateTime)
 {
-    // Check if product exists
     $currentStock = getProductStock($pdo, $productName);
-    
-    if (!$currentStock) {
-        // Product not found in inventory, skip
+    if (!$currentStock)
         return false;
-    }
-    
-    // Update selling price and last_restocked
+
     $stmt = $pdo->prepare("
         UPDATE merchandise_inventory 
         SET selling_price = :selling_price,
             last_restocked = :last_restocked
         WHERE product_name = :product_name
     ");
-    
+
     return $stmt->execute([
         ':selling_price' => $sellingPrice,
         ':last_restocked' => $dateTime,
@@ -191,36 +155,24 @@ function updateInventorySellingPrice($pdo, $productName, $sellingPrice, $dateTim
 }
 
 /**
- * Deduct quantity from product inventory (when order is PAID)
- * 
- * @param PDO $pdo Database connection
- * @param string $productName Product name
- * @param int $quantity Quantity to deduct
- * @param string $dateTime Current date for last_restocked
- * @return bool True on success
- * @throws Exception If insufficient stock
+ * Deduct quantity from product inventory
  */
 function deductProductStock($pdo, $productName, $quantity, $dateTime)
 {
-    // Check current stock first
     $currentStock = getProductStock($pdo, $productName);
 
     if (!$currentStock) {
-        // Product not found - log but don't throw
         error_log("Product '{$productName}' not found in inventory during deduction");
         return false;
     }
 
     if ($currentStock['qty_on_hand'] < $quantity) {
-        // Insufficient stock - log but allow deduction to negative (or zero)
         error_log("Insufficient stock for '{$productName}'. Available: {$currentStock['qty_on_hand']}, Required: {$quantity}");
-        // Deduct whatever is available (set to 0)
         $newQuantity = max(0, $currentStock['qty_on_hand'] - $quantity);
     } else {
         $newQuantity = $currentStock['qty_on_hand'] - $quantity;
     }
 
-    // Perform deduction
     $stmt = $pdo->prepare("
         UPDATE merchandise_inventory 
         SET qty_on_hand = :new_quantity,
@@ -236,13 +188,7 @@ function deductProductStock($pdo, $productName, $quantity, $dateTime)
 }
 
 /**
- * Restore quantity to product inventory (when PAID order is CANCELLED)
- * 
- * @param PDO $pdo Database connection
- * @param string $productName Product name
- * @param int $quantity Quantity to restore
- * @param string $dateTime Current date for last_restocked
- * @return bool True on success
+ * Restore quantity to product inventory
  */
 function restoreProductStock($pdo, $productName, $quantity, $dateTime)
 {
@@ -262,12 +208,6 @@ function restoreProductStock($pdo, $productName, $quantity, $dateTime)
 
 /**
  * Process inventory deduction when order is marked as PAID
- * Continues even if some items fail to deduct
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @param string $dateTime Current date time
- * @return array Array with success flag and errors if any
  */
 function processPaidOrderInventory($pdo, $deliveryNumber, $dateTime)
 {
@@ -286,17 +226,11 @@ function processPaidOrderInventory($pdo, $deliveryNumber, $dateTime)
 
     foreach ($orderItems as $item) {
         try {
-            $result = deductProductStock(
-                $pdo,
-                $item['product_name'],
-                intval($item['pieces']),
-                $dateTime
-            );
-            if ($result) {
+            $result = deductProductStock($pdo, $item['product_name'], intval($item['pieces']), $dateTime);
+            if ($result)
                 $successCount++;
-            } else {
+            else
                 $errors[] = "Failed to deduct stock for '{$item['product_name']}'";
-            }
         } catch (Exception $e) {
             $errors[] = $e->getMessage();
         }
@@ -313,61 +247,35 @@ function processPaidOrderInventory($pdo, $deliveryNumber, $dateTime)
 
 /**
  * Process inventory restoration when PAID order is CANCELLED
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @param string $dateTime Current date time
  */
 function processCancelledPaidOrderInventory($pdo, $deliveryNumber, $dateTime)
 {
     $orderItems = getDeliveryOrderItems($pdo, $deliveryNumber);
-
     if (!empty($orderItems)) {
         foreach ($orderItems as $item) {
-            restoreProductStock(
-                $pdo,
-                $item['product_name'],
-                intval($item['pieces']),
-                $dateTime
-            );
+            restoreProductStock($pdo, $item['product_name'], intval($item['pieces']), $dateTime);
         }
     }
 }
 
 /**
  * Process inventory restoration when PAID order is changed to CREDIT
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @param string $dateTime Current date time
  */
 function processCreditFromPaidInventory($pdo, $deliveryNumber, $dateTime)
 {
     $orderItems = getDeliveryOrderItems($pdo, $deliveryNumber);
-
     if (!empty($orderItems)) {
         foreach ($orderItems as $item) {
-            restoreProductStock(
-                $pdo,
-                $item['product_name'],
-                intval($item['pieces']),
-                $dateTime
-            );
+            restoreProductStock($pdo, $item['product_name'], intval($item['pieces']), $dateTime);
         }
     }
 }
 
 /**
  * Remove an item from order_status_history
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @param string $productName Product name to remove
- * @return array Result with success flag and message
  */
 function removeOrderItem($pdo, $deliveryNumber, $productName)
 {
-    // Check if the item exists
     $checkStmt = $pdo->prepare("
         SELECT * FROM order_status_history 
         WHERE delivery_number = :delivery_number AND product_name = :product_name
@@ -382,7 +290,6 @@ function removeOrderItem($pdo, $deliveryNumber, $productName)
         throw new Exception("Item '{$productName}' not found in this order");
     }
 
-    // Delete the item from order_status_history
     $deleteStmt = $pdo->prepare("
         DELETE FROM order_status_history 
         WHERE delivery_number = :delivery_number AND product_name = :product_name
@@ -396,7 +303,6 @@ function removeOrderItem($pdo, $deliveryNumber, $productName)
         throw new Exception("Failed to remove item from order");
     }
 
-    // Check if there are any items left for this delivery
     $checkRemainingStmt = $pdo->prepare("
         SELECT COUNT(*) as count FROM order_status_history 
         WHERE delivery_number = :delivery_number
@@ -404,7 +310,6 @@ function removeOrderItem($pdo, $deliveryNumber, $productName)
     $checkRemainingStmt->execute([':delivery_number' => $deliveryNumber]);
     $remaining = $checkRemainingStmt->fetch(PDO::FETCH_ASSOC);
 
-    // If no items left, delete the delivery record
     if ($remaining['count'] == 0) {
         $deleteDeliveryStmt = $pdo->prepare("
             DELETE FROM for_deliveries WHERE delivery_number = :delivery_number
@@ -428,12 +333,6 @@ function removeOrderItem($pdo, $deliveryNumber, $productName)
 
 /**
  * Update multiple order items with delivery date
- * 
- * @param PDO $pdo Database connection
- * @param string $deliveryNumber Delivery number
- * @param array $items Array of items to update
- * @param string|null $deliveryDate New delivery date (optional)
- * @return array Result with success flag and message
  */
 function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
 {
@@ -443,13 +342,11 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
     $currentDateTime = date('j F Y g:i A');
 
     foreach ($items as $item) {
-        // Validate required fields
         if (empty($item['product_name']) || empty($item['pieces']) || !isset($item['selling_price']) || empty($item['total_amount'])) {
             $errors[] = "Missing required fields for an item";
             continue;
         }
 
-        // Check if the item exists - use ID if available, otherwise use product_name
         if (!empty($item['id'])) {
             $checkStmt = $pdo->prepare("
                 SELECT * FROM order_status_history 
@@ -469,7 +366,7 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
                 ':product_name' => $item['product_name']
             ]);
         }
-        
+
         $existingItem = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$existingItem) {
@@ -477,7 +374,6 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
             continue;
         }
 
-        // Update the item with selling_price
         $updateStmt = $pdo->prepare("
             UPDATE order_status_history 
             SET product_name = :product_name,
@@ -500,12 +396,9 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
 
         if ($result) {
             $updatedCount++;
-            
-            // Update the selling price in merchandise_inventory
             try {
                 updateInventorySellingPrice($pdo, $item['product_name'], $item['selling_price'], $currentDateTime);
             } catch (Exception $e) {
-                // Log but don't fail the main update
                 error_log("Failed to update selling price for {$item['product_name']}: " . $e->getMessage());
             }
         } else {
@@ -517,7 +410,6 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
         throw new Exception("Update errors: " . implode(", ", $errors));
     }
 
-    // Update the total amount in for_deliveries table
     $totalStmt = $pdo->prepare("
         SELECT SUM(total_amount) as total 
         FROM order_status_history 
@@ -527,7 +419,6 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
     $totalResult = $totalStmt->fetch(PDO::FETCH_ASSOC);
     $newTotal = $totalResult['total'] ?? 0;
 
-    // Update delivery total and optionally delivery date
     if ($deliveryDate !== null) {
         $updateDeliveryStmt = $pdo->prepare("
             UPDATE for_deliveries 
@@ -571,104 +462,67 @@ $action = $_POST['action'] ?? '';
 // ACTION 1: UPDATE ORDER STATUS
 // ==============================================
 if ($action === 'update_order_status') {
-    // Get and validate input parameters
     $deliveryNumber = trim($_POST['delivery_number'] ?? '');
     $newStatus = trim($_POST['status'] ?? '');
 
-    // Validate delivery number
     if (empty($deliveryNumber)) {
         echo json_encode(['success' => false, 'message' => 'Delivery number is required']);
         exit;
     }
 
-    // Validate status value
     if (!isValidStatus($newStatus)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status value']);
         exit;
     }
 
     try {
-        // Start database transaction - all operations must succeed or rollback
         $pdo->beginTransaction();
 
-
-        // Get current date for last_restocked field - Format: j M Y (e.g., "15 May 2026")
         date_default_timezone_set('Asia/Manila');
         $currentDateTime = date('j F Y g:i A');
 
-        // STEP 1: Get current status before making any changes
         $deliveryInfo = getCurrentDeliveryStatus($pdo, $deliveryNumber);
-
         if ($deliveryInfo === null) {
             throw new Exception("Delivery #{$deliveryNumber} not found");
         }
 
         $oldStatus = $deliveryInfo['status'];
 
-        // STEP 2: Update status in for_deliveries table
         $updateResult = updateDeliveryStatus($pdo, $deliveryNumber, $newStatus);
-
         if (!$updateResult) {
             throw new Exception("Failed to update delivery status");
         }
 
-        // STEP 3: Handle inventory changes based on status transition
         $inventoryErrors = [];
-        
-        // Case 1: PENDING/CREDIT -> PAID
-        // Action: Deduct stock from inventory (continues even if errors)
+
+        // PENDING/CREDIT -> PAID: Deduct stock
         if ($newStatus === 'PAID' && $oldStatus !== 'PAID') {
             $inventoryResult = processPaidOrderInventory($pdo, $deliveryNumber, $currentDateTime);
             $inventoryErrors = $inventoryResult['errors'] ?? [];
         }
-        
-        // Case 2: PAID -> CANCELLED
-        // Action: Restore stock back to inventory
+
+        // PAID -> CANCELLED: Restore stock
         if ($newStatus === 'CANCELLED' && $oldStatus === 'PAID') {
             processCancelledPaidOrderInventory($pdo, $deliveryNumber, $currentDateTime);
         }
-        
-        // Case 3: PENDING -> CREDIT
-        // Action: No inventory change (reservation only)
-        if ($newStatus === 'CREDIT' && $oldStatus === 'PENDING') {
-            // No inventory changes needed for CREDIT
-        }
-        
-        // Case 4: PAID -> CREDIT
-        // Action: Restore stock back to inventory
+
+        // PAID -> CREDIT: Restore stock
         if ($newStatus === 'CREDIT' && $oldStatus === 'PAID') {
             processCreditFromPaidInventory($pdo, $deliveryNumber, $currentDateTime);
         }
-        
-        // Case 5: CREDIT -> CANCELLED
-        // Action: No inventory change
-        if ($newStatus === 'CANCELLED' && $oldStatus === 'CREDIT') {
-            // No inventory restoration needed
-        }
-        
-        // Case 6: CREDIT -> PENDING
-        // Action: No inventory change
-        if ($newStatus === 'PENDING' && $oldStatus === 'CREDIT') {
-            // No inventory changes needed
-        }
-        
-        // Case 7: PAID -> PENDING
-        // Action: Restore stock back to inventory
+
+        // PAID -> PENDING: Restore stock
         if ($newStatus === 'PENDING' && $oldStatus === 'PAID') {
             processCancelledPaidOrderInventory($pdo, $deliveryNumber, $currentDateTime);
         }
 
-        // STEP 4: Update status in order_status_history for all items
         $historyUpdateResult = updateOrderHistoryStatus($pdo, $deliveryNumber, $newStatus);
-
         if (!$historyUpdateResult) {
             throw new Exception("Failed to update order history status");
         }
 
-        // STEP 5: Commit all changes to database
         $pdo->commit();
 
-        // STEP 6: Prepare success response message
         $message = "Order status updated to {$newStatus} successfully!";
 
         if ($newStatus === 'PAID' && $oldStatus !== 'PAID') {
@@ -697,19 +551,10 @@ if ($action === 'update_order_status') {
         ]);
 
     } catch (Exception $e) {
-        // Rollback transaction on any error
-        if ($pdo->inTransaction()) {
+        if ($pdo->inTransaction())
             $pdo->rollBack();
-        }
-
-        // Log error for debugging
         error_log("Update Order Status Error: " . $e->getMessage());
-
-        // Return error response
-        echo json_encode([
-            'success' => false,
-            'message' => $e->getMessage()
-        ]);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
     exit;
 }
@@ -721,7 +566,6 @@ elseif ($action === 'remove_order_item') {
     $deliveryNumber = trim($_POST['delivery_number'] ?? '');
     $productName = trim($_POST['product_name'] ?? '');
 
-    // Validate inputs
     if (empty($deliveryNumber) || empty($productName)) {
         echo json_encode(['success' => false, 'message' => 'Delivery number and product name are required']);
         exit;
@@ -729,18 +573,12 @@ elseif ($action === 'remove_order_item') {
 
     try {
         $pdo->beginTransaction();
-
-        // Remove the item using the helper function
         $result = removeOrderItem($pdo, $deliveryNumber, $productName);
-
         $pdo->commit();
-
         echo json_encode($result);
-
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
+        if ($pdo->inTransaction())
             $pdo->rollBack();
-        }
         error_log("Remove Order Item Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -755,7 +593,6 @@ elseif ($action === 'update_order_items') {
     $itemsJson = $_POST['items'] ?? '';
     $deliveryDate = isset($_POST['delivery_date']) && !empty($_POST['delivery_date']) ? trim($_POST['delivery_date']) : null;
 
-    // Validate inputs
     if (empty($deliveryNumber)) {
         echo json_encode(['success' => false, 'message' => 'Delivery number is required']);
         exit;
@@ -775,18 +612,12 @@ elseif ($action === 'update_order_items') {
 
     try {
         $pdo->beginTransaction();
-
-        // Update all items using the helper function with delivery date
         $result = updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate);
-
         $pdo->commit();
-
         echo json_encode($result);
-
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
+        if ($pdo->inTransaction())
             $pdo->rollBack();
-        }
         error_log("Update Order Items Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -799,7 +630,6 @@ elseif ($action === 'update_order_items') {
 elseif ($action === 'delete_order') {
     $deliveryNumber = trim($_POST['delivery_number'] ?? '');
 
-    // Validate inputs
     if (empty($deliveryNumber)) {
         echo json_encode(['success' => false, 'message' => 'Delivery number is required']);
         exit;
@@ -808,7 +638,6 @@ elseif ($action === 'delete_order') {
     try {
         $pdo->beginTransaction();
 
-        // First, check if the delivery exists
         $checkStmt = $pdo->prepare("SELECT delivery_number FROM for_deliveries WHERE delivery_number = :delivery_number");
         $checkStmt->execute([':delivery_number' => $deliveryNumber]);
         $exists = $checkStmt->fetch();
@@ -817,20 +646,16 @@ elseif ($action === 'delete_order') {
             throw new Exception("Delivery #{$deliveryNumber} not found");
         }
 
-        // Delete from order_status_history
         $stmt1 = $pdo->prepare("DELETE FROM order_status_history WHERE delivery_number = :delivery_number");
         $result1 = $stmt1->execute([':delivery_number' => $deliveryNumber]);
 
-        // Delete from for_deliveries
         $stmt2 = $pdo->prepare("DELETE FROM for_deliveries WHERE delivery_number = :delivery_number");
         $result2 = $stmt2->execute([':delivery_number' => $deliveryNumber]);
 
-        // Check if at least one deletion was successful
         if (!$result1 && !$result2) {
             throw new Exception("Failed to delete order data");
         }
 
-        // Log what was deleted
         $deletedFromHistory = $stmt1->rowCount();
         $deletedFromDeliveries = $stmt2->rowCount();
 
@@ -844,15 +669,65 @@ elseif ($action === 'delete_order') {
         ]);
 
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
+        if ($pdo->inTransaction())
             $pdo->rollBack();
-        }
         error_log("Delete Order Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
     exit;
 }
 
+// ==============================================
+// ACTION 5: REORDER ITEMS (drag-and-drop)
+// ==============================================
+elseif ($action === 'reorder_items') {
+    $deliveryNumber = trim($_POST['delivery_number'] ?? '');
+    $orderJson = $_POST['order'] ?? '[]';
+
+    $newOrder = json_decode($orderJson, true);
+
+    if (empty($deliveryNumber) || !is_array($newOrder) || empty($newOrder)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid data']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        // ✅ Uses order_id — NOT sort_order
+        $stmt = $pdo->prepare("
+            UPDATE order_status_history 
+            SET order_id = ? 
+            WHERE id = ? AND delivery_number = ?
+        ");
+
+        foreach ($newOrder as $item) {
+            $id = intval($item['id'] ?? 0);
+            $position = intval($item['sort_order'] ?? 0);
+
+            if ($id > 0) {
+                $stmt->execute([$position, $id, $deliveryNumber]);
+            }
+        }
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Item order updated successfully'
+        ]);
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction())
+            $pdo->rollBack();
+
+        // ✅ Send the actual error message so we can debug
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
 // ==============================================
 // INVALID ACTION
 // ==============================================

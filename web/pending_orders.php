@@ -2,14 +2,8 @@
 // web/pending_orders.php
 session_start();
 
-// ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
-// ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 
-// ==============================================
-// 2. CHECK LOGIN STATUS
-// ==============================================
 function isLoggedIn()
 {
     return isset($_SESSION['user_role']) &&
@@ -17,21 +11,16 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 3. GET USER DATA FROM SESSION
-// ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
 $userData = null;
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
@@ -40,61 +29,51 @@ if ($userRole === 'Admin') {
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
 $user = $userData;
 
-// Get delivery_number from URL
 $selectedDeliveryNumber = isset($_GET['delivery_number']) ? $_GET['delivery_number'] : '';
 
 if (empty($selectedDeliveryNumber)) {
     exit;
 }
 
-// Fetch order items from order_status_history for this delivery number
-$stmt = $pdo->prepare("SELECT * FROM order_status_history WHERE delivery_number = ?");
+// ✅ Order by sort_order, then id
+$stmt = $pdo->prepare("
+    SELECT * FROM order_status_history 
+    WHERE delivery_number = ? 
+    ORDER BY order_id ASC, id ASC
+");
 $stmt->execute([$selectedDeliveryNumber]);
 $orderItems = $stmt->fetchAll();
 
-// Debug: Check if table has data but different column name
 if (empty($orderItems)) {
-    // Try to get the first row to see column names
     $stmt = $pdo->query("SELECT * FROM order_status_history LIMIT 1");
     $columns = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($columns) {
         $availableColumns = array_keys($columns);
-        // Check if there's a similar column name
         $possibleColumns = ['delivery_num', 'delivery_id', 'order_number', 'order_id'];
         foreach ($possibleColumns as $col) {
             if (in_array($col, $availableColumns)) {
-                // Try with the found column name
-                $stmt = $pdo->prepare("SELECT * FROM order_status_history WHERE $col = ?");
+                $stmt = $pdo->prepare("SELECT * FROM order_status_history WHERE $col = ? ORDER BY sort_order ASC, id ASC");
                 $stmt->execute([$selectedDeliveryNumber]);
                 $orderItems = $stmt->fetchAll();
-                if (!empty($orderItems)) {
-                    break;
-                }
+                if (!empty($orderItems)) break;
             }
         }
     }
 }
 
-// Fetch delivery information from for_deliveries table
 $stmt = $pdo->prepare("SELECT * FROM for_deliveries WHERE delivery_number = ?");
 $stmt->execute([$selectedDeliveryNumber]);
 $deliveryInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// If not found in for_deliveries table, try to get from order_status_history
 if (!$deliveryInfo && !empty($orderItems)) {
-    // Get the first item's delivery info if available
     $firstItem = $orderItems[0];
     $deliveryInfo = [
         'ordered_by' => $firstItem['ordered_by'] ?? ($firstItem['customer_name'] ?? 'Unknown Customer'),
@@ -105,7 +84,6 @@ if (!$deliveryInfo && !empty($orderItems)) {
     ];
 }
 
-// Set default if still no delivery info
 if (!$deliveryInfo) {
     $deliveryInfo = [
         'ordered_by' => 'Customer Information Not Found',
@@ -116,10 +94,8 @@ if (!$deliveryInfo) {
     ];
 }
 
-// Get customer name - prioritize from deliveryInfo first, then from order items
 $customerName = $deliveryInfo['ordered_by'] ?? '';
 if (empty($customerName) && !empty($orderItems)) {
-    // Try to get customer name from order items
     if (isset($orderItems[0]['ordered_by'])) {
         $customerName = $orderItems[0]['ordered_by'];
     } elseif (isset($orderItems[0]['customer_name'])) {
@@ -133,21 +109,13 @@ $monthYear = $deliveryInfo['delivery_m_y'] ?? '';
 $deliveryNumber = $deliveryInfo['delivery_number'] ?? $selectedDeliveryNumber;
 $currentStatus = $deliveryInfo['status'] ?? 'PENDING';
 
-// Calculate total amount
 $totalAmount = 0;
 foreach ($orderItems as $item) {
     $totalAmount += floatval($item['total_amount'] ?? 0);
 }
 
-// Encode monthYear for JavaScript
 $encodedMonthYear = urlencode($monthYear);
 
-/**
- * Format delivery date for display
- * 
- * @param string|null $date Date in Y-m-d format
- * @return string Formatted date (e.g., "26 August 2026")
- */
 function formatDeliveryDate($date)
 {
     if (empty($date) || $date === '0000-00-00' || $date === '1970-01-01') {
@@ -170,7 +138,6 @@ function formatDeliveryDate($date)
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Pending Orders | <?= htmlspecialchars($selectedDeliveryNumber) ?> | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- SheetJS for Excel export -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -194,7 +161,7 @@ function formatDeliveryDate($date)
             flex-direction: column;
         }
 
-        /* ========== SIDEBAR - LEFT SIDE ========== */
+        /* ========== SIDEBAR - KEEPS OLD STRUCTURE ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -218,7 +185,6 @@ function formatDeliveryDate($date)
             position: relative;
         }
 
-        /* Mobile: sidebar hidden by default */
         @media (max-width: 768px) {
             .sidebar-wrapper {
                 transform: translateX(-100%);
@@ -229,7 +195,6 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* Desktop: sidebar always visible */
         @media (min-width: 769px) {
             .sidebar-wrapper {
                 transform: translateX(0) !important;
@@ -253,7 +218,6 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* Mobile overlay */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -270,7 +234,6 @@ function formatDeliveryDate($date)
             display: block;
         }
 
-        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -299,7 +262,6 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -410,7 +372,7 @@ function formatDeliveryDate($date)
             overflow-y: auto;
         }
 
-        
+        /* ========== ORDERS ========== */
         .orders-container {
             background: #ffffff;
             border-radius: 5px;
@@ -424,7 +386,6 @@ function formatDeliveryDate($date)
             overflow: hidden;
         }
 
-        /* ========== DELIVERY HEADER ========== */
         .delivery-header {
             background: black;
             color: white;
@@ -438,12 +399,7 @@ function formatDeliveryDate($date)
             gap: 10px;
         }
 
-        .delivery-header .customer-info {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
+        .delivery-header .customer-info,
         .delivery-header .delivery-date-info {
             display: flex;
             align-items: center;
@@ -469,7 +425,6 @@ function formatDeliveryDate($date)
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
-        /* Mobile View (480px and below) */
         @media (max-width: 480px) {
             .delivery-header {
                 flex-direction: column;
@@ -478,25 +433,14 @@ function formatDeliveryDate($date)
                 gap: 6px;
             }
 
-            .delivery-header .customer-info {
+            .delivery-header .customer-info,
+            .delivery-header .delivery-date-info {
                 font-size: 12px;
                 width: 100%;
             }
 
             .delivery-header .delivery-date-info {
-                font-size: 12px;
-                width: 100%;
                 flex-wrap: wrap;
-            }
-
-            .delivery-header .delivery-date-info #deliveryDateDisplay {
-                font-size: 12px;
-            }
-
-            .delivery-header .delivery-date-info #deliveryDateInput {
-                font-size: 11px;
-                padding: 3px 6px;
-                max-width: 140px;
             }
 
             .delivery-header i {
@@ -525,10 +469,6 @@ function formatDeliveryDate($date)
             font-size: 13px;
         }
 
-        .orders-table td:first-child {
-            font-weight: 500;
-        }
-
         .orders-table tr:hover {
             background: #f8fafc;
         }
@@ -543,7 +483,54 @@ function formatDeliveryDate($date)
             padding: 12px 15px;
         }
 
-        /* Buttons */
+        /* ========== ✅ DRAG HANDLE ========== */
+        .orders-table td.drag-handle {
+            width: 36px;
+            padding: 12px 6px !important;
+            color: #94a3b8;
+            user-select: none;
+            text-align: center;
+        }
+
+        .orders-table td.drag-handle i {
+            font-size: 14px;
+        }
+
+        .orders-table tr[draggable="true"] {
+            cursor: grab;
+        }
+
+        .orders-table tr.dragging {
+            opacity: 0.4;
+            background: #f0f9ff;
+        }
+
+        .orders-table tr.drag-over {
+            border-top: 2px solid #3b82f6 !important;
+            background: #eff6ff;
+        }
+
+        .orders-table tr.drag-over-bottom {
+            border-bottom: 2px solid #3b82f6 !important;
+            background: #eff6ff;
+        }
+
+        .orders-table tr.dragging:hover {
+            background: #f0f9ff;
+        }
+
+        @media (max-width: 480px) {
+            .orders-table td.drag-handle {
+                width: 28px;
+                padding: 4px 4px !important;
+            }
+
+            .orders-table td.drag-handle i {
+                font-size: 12px;
+            }
+        }
+
+        /* ========== BUTTONS ========== */
         .receipt-btn {
             display: inline-flex;
             align-items: center;
@@ -558,6 +545,7 @@ function formatDeliveryDate($date)
             cursor: pointer;
             border: 1px solid #ccc;
             font-size: 14px;
+            white-space: nowrap;
         }
 
         .receipt-btn:hover {
@@ -566,10 +554,36 @@ function formatDeliveryDate($date)
         }
 
         .receipt-btn i {
-            font-size: 18px;
+            font-size: 14px;
         }
 
-        /* Custom Select Styles */
+        /* ✅ Share button variant */
+        .receipt-btn.share-receipt {
+            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            color: #ffffff;
+            border-color: #3b82f6;
+        }
+
+        .receipt-btn.share-receipt:hover {
+            background: linear-gradient(145deg, #2563eb, #4f46e5);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .receipt-btn.share-receipt i {
+            color: #ffffff;
+        }
+
+        .status-share-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-share-group .status-wrapper {
+            position: relative;
+        }
+
         .status-select {
             display: inline-flex;
             align-items: center;
@@ -607,8 +621,6 @@ function formatDeliveryDate($date)
             font-size: 14px;
         }
 
-        /* ========== RECEIPT ACTIONS - MOBILE ALIGNMENT ONLY ========== */
-        /* Desktop view - stays exactly as it was */
         .receipt-actions {
             display: flex;
             justify-content: center;
@@ -620,7 +632,6 @@ function formatDeliveryDate($date)
             flex-wrap: wrap;
         }
 
-        /* Mobile View - ONLY changes for mobile devices */
         @media (max-width: 768px) {
             .receipt-actions {
                 display: grid;
@@ -635,18 +646,18 @@ function formatDeliveryDate($date)
                 margin: 0;
             }
 
-            .receipt-actions .status-wrapper {
-                width: 100%;
-                grid-column: 1 / -1;
+            .status-share-group {
+                display: contents;
             }
 
-            .receipt-actions .status-select {
+            .status-share-group .receipt-btn.share-receipt,
+            .status-share-group .status-wrapper,
+            .status-share-group .status-select {
                 width: 100%;
                 justify-content: center;
             }
         }
 
-        /* Only change button sizes on small mobile (480px and below) */
         @media (max-width: 480px) {
             .receipt-actions {
                 grid-template-columns: 1fr 1fr;
@@ -654,18 +665,14 @@ function formatDeliveryDate($date)
                 padding: 12px;
             }
 
-            .receipt-btn {
+            .receipt-btn,
+            .status-select {
                 padding: 8px 12px;
                 font-size: 11px;
             }
 
             .receipt-btn i {
                 font-size: 12px;
-            }
-
-            .status-select {
-                padding: 8px 12px;
-                font-size: 11px;
             }
         }
 
@@ -675,29 +682,13 @@ function formatDeliveryDate($date)
                 gap: 8px;
             }
 
-            .receipt-actions .status-wrapper {
-                grid-column: 1;
+            .status-share-group {
+                display: contents;
             }
         }
 
-        /* Editable input styles */
-        .editable-input {
-            width: 100%;
-            padding: 6px 10px;
-            border: 2px solid #8b5cf6;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: 'Poppins', sans-serif;
-            background: #fff;
-            transition: all 0.2s;
-        }
-
-        .editable-input:focus {
-            outline: none;
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-        }
-
+        /* Editable inputs */
+        .editable-input,
         .editable-select {
             width: 100%;
             padding: 6px 10px;
@@ -706,12 +697,13 @@ function formatDeliveryDate($date)
             font-size: 13px;
             font-family: 'Poppins', sans-serif;
             background: #fff;
-            cursor: pointer;
         }
 
+        .editable-input:focus,
         .editable-select:focus {
             outline: none;
             border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
         .empty-state {
@@ -733,8 +725,7 @@ function formatDeliveryDate($date)
             color: #64748b;
         }
 
-
-        /* Computer-Style Modal Dialog */
+        /* ========== SYSTEM MODAL ========== */
         .system-modal-overlay {
             position: fixed;
             top: 0;
@@ -784,7 +775,6 @@ function formatDeliveryDate($date)
             font-weight: 600;
             font-size: 14px;
             letter-spacing: 0.5px;
-            font-family: 'Segoe UI', monospace;
         }
 
         .system-modal-header i {
@@ -850,7 +840,6 @@ function formatDeliveryDate($date)
             background: #e0e0e0;
             border: 1px solid #8a8a8a;
             cursor: pointer;
-            transition: all 0.1s ease;
             min-width: 70px;
         }
 
@@ -859,38 +848,16 @@ function formatDeliveryDate($date)
             border-color: #666;
         }
 
-        .system-modal-btn:active {
-            transform: translateY(1px);
-        }
-
         .system-modal-btn.primary {
             background: #3a6ea5;
             border-color: #2a4d73;
             color: white;
         }
 
-        .system-modal-btn.primary:hover {
-            background: #2a5a8a;
-        }
-
         .system-modal-btn.danger {
             background: #d32f2f;
             border-color: #9a1a1a;
             color: white;
-        }
-
-        .system-modal-btn.danger:hover {
-            background: #b71c1c;
-        }
-
-        .system-modal-btn.success-btn {
-            background: #10b981;
-            border-color: #059669;
-            color: white;
-        }
-
-        .system-modal-btn.success-btn:hover {
-            background: #059669;
         }
 
         .xampp-btn {
@@ -905,7 +872,6 @@ function formatDeliveryDate($date)
             box-shadow: inset 1px 1px 0px #fff;
         }
 
-        /* Hover state mimics standard Windows buttons */
         .xampp-btn:hover {
             background: linear-gradient(to bottom, #e5f1fb 0%, #e5f1fb 100%);
             border-color: #0078d7;
@@ -924,37 +890,12 @@ function formatDeliveryDate($date)
                 padding: 5px 15px;
                 min-width: 60px;
             }
-
-            .editable-input,
-            .editable-select {
-                font-size: 11px;
-                padding: 4px 6px;
-            }
         }
 
         @media (max-width: 768px) {
-            .main-content {
-                padding: 20px;
-                padding-top: 20px;
-            }
-
             .orders-table td {
                 padding: 4px 5px;
                 font-size: 10px;
-            }
-
-            .delivery-header {
-                font-size: 12px;
-                padding: 10px 15px;
-            }
-
-            .breadcrumb {
-                padding: 10px 15px;
-            }
-
-            .breadcrumb-item,
-            .breadcrumb-current {
-                font-size: 11px;
             }
 
             .welcome h4 {
@@ -986,22 +927,17 @@ function formatDeliveryDate($date)
 
 <body>
     <div class="app-wrapper">
-        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <?php
-                include 'sidebar.php';
-                ?>
+                <?php include 'sidebar.php'; ?>
             </div>
         </div>
 
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="header-left">
-                    <!-- Burger Button (Mobile Only) -->
                     <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
@@ -1058,23 +994,22 @@ function formatDeliveryDate($date)
                                             data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
                                             data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
-                                            <td class="product-name">
-                                                <?= htmlspecialchars($item['product_name'] ?? 'N/A') ?>
+                                            <!-- ✅ Drag handle -->
+                                            <td class="drag-handle" title="Drag to reorder">
+                                                <i class="fas fa-grip-vertical"></i>
                                             </td>
+                                            <td class="product-name"><?= htmlspecialchars($item['product_name'] ?? 'N/A') ?></td>
                                             <td class="pieces"><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
                                             <td class="unit"><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
-                                            <td class="selling_price">₱
-                                                <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?>
-                                            </td>
-                                            <td class="total-amount">
-                                                ₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?>
-                                            </td>
+                                            <td class="selling_price">₱ <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?></td>
+                                            <td class="total-amount">₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?></td>
                                             <td style="text-align: center;">
                                                 <button class="xampp-btn remove-btn" data-row-id="<?= $index ?>">Remove</button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
                                     <tr class="total-row">
+                                        <td></td>
                                         <td colspan="2" style="text-align: right; font-weight: 600;">Total Items: <span
                                                 id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
                                         </td>
@@ -1088,7 +1023,6 @@ function formatDeliveryDate($date)
                                 </tbody>
                             </table>
                         </div>
-                        <!-- Receipt Buttons and Status Update -->
                         <div class="receipt-actions">
                             <button class="receipt-btn delivery-receipt" onclick="generateReceipt('delivery')">
                                 Delivery Receipt
@@ -1103,22 +1037,19 @@ function formatDeliveryDate($date)
                                 Edit
                             </button>
 
-                            <!-- Update Status Dropdown -->
-                            <div class="status-wrapper">
-                                <select class="status-select" id="status-select"
-                                    data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
-                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>
-                                        PENDING
-                                    </option>
-                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID
-                                    </option>
-                                    <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>
-                                        CANCELLED
-                                    </option>
-                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>
-                                        CREDIT
-                                    </option>
-                                </select>
+                            <div class="status-share-group">
+                                <button class="receipt-btn share-receipt" id="share-receipt-btn">
+                                    <i class="fas fa-share-alt"></i> Share
+                                </button>
+                                <div class="status-wrapper">
+                                    <select class="status-select" id="status-select"
+                                        data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
+                                        <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING</option>
+                                        <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
+                                        <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>CANCELLED</option>
+                                        <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1127,12 +1058,10 @@ function formatDeliveryDate($date)
         </main>
     </div>
 
-    <?php
-    include '../footer.php';
-    ?>
+    <?php include '../footer.php'; ?>
 
     <script>
-        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        // ========== SIDEBAR ==========
         const burgerBtn = document.getElementById('burgerBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const sidebarWrapper = document.getElementById('sidebarWrapper');
@@ -1154,78 +1083,45 @@ function formatDeliveryDate($date)
         }
 
         function toggleSidebar() {
-            if (isSidebarOpen) {
-                closeSidebar();
-            } else {
-                openSidebar();
-            }
+            if (isSidebarOpen) closeSidebar();
+            else openSidebar();
         }
 
-        if (burgerBtn) {
-            burgerBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                toggleSidebar();
-            });
-        }
+        if (burgerBtn) burgerBtn.addEventListener('click', e => { e.stopPropagation(); toggleSidebar(); });
+        if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', e => { e.stopPropagation(); closeSidebar(); });
+        if (menuOverlay) menuOverlay.addEventListener('click', closeSidebar);
 
-        if (sidebarCloseBtn) {
-            sidebarCloseBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                closeSidebar();
-            });
-        }
-
-        if (menuOverlay) {
-            menuOverlay.addEventListener('click', closeSidebar);
-        }
-
-        // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
-                if (window.innerWidth <= 768) {
-                    // Don't close if it's a dropdown toggle
-                    if (!this.closest('.nav-dropdown-toggle')) {
-                        closeSidebar();
-                    }
+                if (window.innerWidth <= 768 && !this.closest('.nav-dropdown-toggle')) {
+                    closeSidebar();
                 }
             });
         });
 
-        // ========== DROPDOWN TOGGLE ==========
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768 && isSidebarOpen) closeSidebar();
+        });
+
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
             const arrowId = dropdownId.replace('Dropdown', 'Arrow');
             const arrow = document.getElementById(arrowId);
-
             if (dropdown && arrow) {
                 dropdown.classList.toggle('show');
                 arrow.classList.toggle('rotated');
             }
         }
 
-        // ========== BURGER VISIBILITY ON RESIZE ==========
-        window.addEventListener('resize', function () {
-            if (window.innerWidth > 768) {
-                // Desktop: close sidebar if open and hide overlay
-                if (isSidebarOpen) {
-                    closeSidebar();
-                }
-                sidebarWrapper.classList.remove('open');
-                menuOverlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        });
-
-        // ========== EXISTING FUNCTIONS ==========
+        // ========== CONSTANTS ==========
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
         const deliveryNumber = '<?= htmlspecialchars($selectedDeliveryNumber) ?>';
         const monthYear = '<?= htmlspecialchars($monthYear) ?>';
         const encodedMonthYear = '<?= $encodedMonthYear ?>';
-
         const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
 
         let isEditMode = false;
-        let originalData = new Map(); // Store original data for each row
+        let originalData = new Map();
         let isProcessing = false;
 
         function generateReceipt(type) {
@@ -1236,7 +1132,150 @@ function formatDeliveryDate($date)
             }
         }
 
-        // ========== EXCEL DOWNLOAD FUNCTION ==========
+        // ============================================================
+        // ✅ DRAG-AND-DROP ROW REORDERING
+        // ============================================================
+        (function initDragAndDrop() {
+            const tbody = document.querySelector('#orders-table tbody');
+            if (!tbody) return;
+
+            let draggedRow = null;
+
+            tbody.querySelectorAll('tr:not(.total-row)').forEach(row => {
+                row.setAttribute('draggable', 'true');
+                row.addEventListener('dragstart', handleDragStart);
+                row.addEventListener('dragend', handleDragEnd);
+                row.addEventListener('dragover', handleDragOver);
+                row.addEventListener('dragleave', handleDragLeave);
+                row.addEventListener('drop', handleDrop);
+            });
+
+            function handleDragStart(e) {
+                if (isEditMode) { e.preventDefault(); return; }
+                draggedRow = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.innerHTML);
+            }
+
+            function handleDragEnd() {
+                this.classList.remove('dragging');
+                tbody.querySelectorAll('tr').forEach(r => {
+                    r.classList.remove('drag-over', 'drag-over-bottom');
+                });
+                draggedRow = null;
+            }
+
+            function handleDragOver(e) {
+                if (!draggedRow || this === draggedRow) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                const rect = this.getBoundingClientRect();
+                const midpoint = rect.top + rect.height / 2;
+
+                tbody.querySelectorAll('tr').forEach(r => {
+                    r.classList.remove('drag-over', 'drag-over-bottom');
+                });
+
+                if (e.clientY < midpoint) {
+                    this.classList.add('drag-over');
+                } else {
+                    this.classList.add('drag-over-bottom');
+                }
+            }
+
+            function handleDragLeave() {
+                this.classList.remove('drag-over', 'drag-over-bottom');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (!draggedRow || this === draggedRow) return;
+
+                const rect = this.getBoundingClientRect();
+                const midpoint = rect.top + rect.height / 2;
+                const dropBefore = e.clientY < midpoint;
+
+                if (dropBefore) {
+                    tbody.insertBefore(draggedRow, this);
+                } else {
+                    this.parentNode.insertBefore(draggedRow, this.nextSibling);
+                }
+
+                this.classList.remove('drag-over', 'drag-over-bottom');
+                draggedRow.classList.remove('dragging');
+
+                saveRowOrder();
+            }
+
+            async function saveRowOrder() {
+                const newOrder = [];
+                tbody.querySelectorAll('tr:not(.total-row)').forEach((row, index) => {
+                    newOrder.push({
+                        id: row.dataset.id,
+                        sort_order: index
+                    });
+                });
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'reorder_items');
+                    formData.append('delivery_number', deliveryNumber);
+                    formData.append('csrf_token', csrfToken);
+                    formData.append('order', JSON.stringify(newOrder));
+
+                    const response = await fetch('../API/update_delivery_status.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showMessageModal('✅ ORDER SAVED', 'Item order updated successfully.', 'success');
+                    } else {
+                        showMessageModal('ERROR', data.message || 'Failed to save order', 'error');
+                    }
+                } catch (err) {
+                    showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
+                }
+            }
+        })();
+
+        // ========== SHARE RECEIPT ==========
+        document.getElementById('share-receipt-btn')?.addEventListener('click', async function () {
+            const receiptUrl = 'https://villaruz-print-shop-and-general-merchandise.shop/delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
+            const shareTitle = 'Delivery Receipt — ' + deliveryNumber;
+            const shareText = 'Here is the delivery receipt for ' + deliveryNumber;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: shareTitle, text: shareText, url: receiptUrl });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    console.warn('Share failed, falling back to copy:', err);
+                }
+            }
+
+            try {
+                await navigator.clipboard.writeText(receiptUrl);
+                showMessageModal(
+                    '✅ LINK COPIED',
+                    'Receipt link has been copied:<br><br>' +
+                    '<code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">' +
+                    escapeHtml(receiptUrl) + '</code>',
+                    'success'
+                );
+            } catch (err) {
+                prompt('Copy this link manually:', receiptUrl);
+            }
+        });
+
+        // ========== EXCEL DOWNLOAD ==========
         document.getElementById('download-excel-btn')?.addEventListener('click', function () {
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             const excelData = [];
@@ -1245,24 +1284,18 @@ function formatDeliveryDate($date)
 
             let rowNumber = 1;
             rows.forEach(row => {
-                const unit = row.cells[2]?.innerText || '';
-                const itemDescription = row.cells[0]?.innerText || '';
-                const quantity = row.cells[1]?.innerText || '0';
-                let unitCost = row.cells[3]?.innerText || '0';
-                let totalCost = row.cells[4]?.innerText || '0';
+                const cells = row.cells;
+                // ✅ Shifted by 1 because of new drag-handle cell
+                const unit = cells[3]?.innerText || '';
+                const itemDescription = cells[1]?.innerText || '';
+                const quantity = cells[2]?.innerText || '0';
+                let unitCost = cells[4]?.innerText || '0';
+                let totalCost = cells[5]?.innerText || '0';
 
                 unitCost = unitCost.replace('₱', '').replace(/,/g, '').trim();
                 totalCost = totalCost.replace('₱', '').replace(/,/g, '').trim();
 
-                excelData.push([
-                    rowNumber,
-                    unit,
-                    itemDescription,
-                    quantity,
-                    unitCost,
-                    totalCost
-                ]);
-
+                excelData.push([rowNumber, unit, itemDescription, quantity, unitCost, totalCost]);
                 rowNumber++;
             });
 
@@ -1277,42 +1310,6 @@ function formatDeliveryDate($date)
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
 
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let row = range.s.r; row <= range.e.r; row++) {
-                for (let col = range.s.c; col <= range.e.c; col++) {
-                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                    if (!ws[cellAddress]) continue;
-                    ws[cellAddress].s = {
-                        alignment: {
-                            horizontal: "center",
-                            vertical: "center"
-                        }
-                    };
-                }
-            }
-
-            for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-                if (ws[cellAddress]) {
-                    ws[cellAddress].s = {
-                        font: { bold: true, color: { rgb: "FFFFFF" } },
-                        fill: { fgColor: { rgb: "4CAF50" } },
-                        alignment: { horizontal: "center", vertical: "center" }
-                    };
-                }
-            }
-
-            const totalRowIndex = excelData.length - 1;
-            for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: totalRowIndex, c: col });
-                if (ws[cellAddress]) {
-                    ws[cellAddress].s = {
-                        font: { bold: true },
-                        alignment: { horizontal: "center", vertical: "center" }
-                    };
-                }
-            }
-
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `Order_${deliveryNumber}`);
             XLSX.writeFile(wb, `Order_${deliveryNumber}.xlsx`);
@@ -1320,13 +1317,11 @@ function formatDeliveryDate($date)
             showMessageModal('EXPORT SUCCESS', 'Order data has been exported to Excel successfully!', 'success');
         });
 
-        // ========== COMPUTER-STYLE SYSTEM MODAL ==========
+        // ========== SYSTEM MODAL ==========
         function showSystemModal(title, message, type = 'warning', buttons = []) {
             return new Promise((resolve) => {
                 const existingModal = document.querySelector('.system-modal-overlay');
-                if (existingModal) {
-                    existingModal.remove();
-                }
+                if (existingModal) existingModal.remove();
 
                 const overlay = document.createElement('div');
                 overlay.className = 'system-modal-overlay';
@@ -1335,21 +1330,9 @@ function formatDeliveryDate($date)
                 let iconColor = 'warning';
 
                 switch (type) {
-                    case 'error':
-                        iconClass = 'fa-times-circle';
-                        iconColor = 'error';
-                        break;
-                    case 'success':
-                        iconClass = 'fa-check-circle';
-                        iconColor = 'success';
-                        break;
-                    case 'info':
-                        iconClass = 'fa-info-circle';
-                        iconColor = 'info';
-                        break;
-                    default:
-                        iconClass = 'fa-exclamation-triangle';
-                        iconColor = 'warning';
+                    case 'error': iconClass = 'fa-times-circle'; iconColor = 'error'; break;
+                    case 'success': iconClass = 'fa-check-circle'; iconColor = 'success'; break;
+                    case 'info': iconClass = 'fa-info-circle'; iconColor = 'info'; break;
                 }
 
                 let buttonsHtml = '';
@@ -1360,7 +1343,6 @@ function formatDeliveryDate($date)
                         let btnClass = 'system-modal-btn';
                         if (btn.type === 'primary') btnClass += ' primary';
                         if (btn.type === 'danger') btnClass += ' danger';
-                        if (btn.type === 'success-btn') btnClass += ' success-btn';
                         return `<button class="${btnClass}" data-action="${btn.action}">${btn.label}</button>`;
                     }).join('');
                 }
@@ -1377,58 +1359,40 @@ function formatDeliveryDate($date)
                                 <div class="message-text">${message}</div>
                             </div>
                         </div>
-                        <div class="system-modal-footer">
-                            ${buttonsHtml}
-                        </div>
+                        <div class="system-modal-footer">${buttonsHtml}</div>
                     </div>
                 `;
 
                 document.body.appendChild(overlay);
 
-                const buttonsElements = overlay.querySelectorAll('.system-modal-btn');
-                buttonsElements.forEach(btn => {
+                overlay.querySelectorAll('.system-modal-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        const action = btn.dataset.action;
                         overlay.remove();
-                        resolve(action);
+                        resolve(btn.dataset.action);
                     });
                 });
             });
         }
 
         function showConfirmModal(title, message, onConfirm, onCancel = null) {
-            showSystemModal(title, message, 'warning', [{
-                label: 'CANCEL',
-                action: 'cancel',
-                type: ''
-            },
-            {
-                label: 'CONFIRM',
-                action: 'confirm',
-                type: 'primary'
-            }
+            showSystemModal(title, message, 'warning', [
+                { label: 'CANCEL', action: 'cancel', type: '' },
+                { label: 'CONFIRM', action: 'confirm', type: 'primary' }
             ]).then(result => {
-                if (result === 'confirm' && onConfirm) {
-                    onConfirm();
-                } else if (result === 'cancel' && onCancel) {
-                    onCancel();
-                }
+                if (result === 'confirm' && onConfirm) onConfirm();
+                else if (result === 'cancel' && onCancel) onCancel();
             });
         }
 
         function showMessageModal(title, message, type = 'info', onOk = null) {
-            showSystemModal(title, message, type, [{
-                label: 'OK',
-                action: 'ok',
-                type: 'primary'
-            }]).then(() => {
-                if (onOk) onOk();
-            });
+            showSystemModal(title, message, type, [
+                { label: 'OK', action: 'ok', type: 'primary' }
+            ]).then(() => { if (onOk) onOk(); });
         }
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>]/g, function (m) {
+            return str.replace(/[&<>]/g, m => {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -1436,7 +1400,6 @@ function formatDeliveryDate($date)
             });
         }
 
-        // ========== HELPER: Redirect to pending_folder_with with month ==========
         function redirectToPendingFolderWith() {
             if (monthYear) {
                 window.location.href = 'pending_folder_with.php?month=' + encodeURIComponent(monthYear);
@@ -1445,11 +1408,10 @@ function formatDeliveryDate($date)
             }
         }
 
-        // ========== PAID STATUS FUNCTION ==========
+        // ========== PAID / CANCELLED ==========
         async function processPaidStatus() {
             if (isProcessing) return;
             isProcessing = true;
-
             try {
                 const formData = new FormData();
                 formData.append('action', 'update_order_status');
@@ -1457,18 +1419,13 @@ function formatDeliveryDate($date)
                 formData.append('status', 'PAID');
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/update_delivery_status.php', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('../API/update_delivery_status.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('✅ SUCCESS', data.message, 'success', () => {
-                        redirectToPendingFolderWith();
-                    });
+                    showMessageModal('✅ SUCCESS', data.message, 'success', () => redirectToPendingFolderWith());
                 } else {
-                    showMessageModal('❌ ERROR', data.message || 'Failed to update status', 'error');
+                    showMessageModal('❌ ERROR', data.message || 'Failed', 'error');
                 }
             } catch (err) {
                 showMessageModal('❌ NETWORK ERROR', 'Connection error: ' + err.message, 'error');
@@ -1477,29 +1434,22 @@ function formatDeliveryDate($date)
             }
         }
 
-        // ========== CANCELLED STATUS FUNCTION ==========
         async function processCancelledStatus() {
             if (isProcessing) return;
             isProcessing = true;
-
             try {
                 const formData = new FormData();
                 formData.append('action', 'delete_order');
                 formData.append('delivery_number', deliveryNumber);
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/update_delivery_status.php', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('../API/update_delivery_status.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('✅ SUCCESS', data.message, 'success', () => {
-                        redirectToPendingFolderWith();
-                    });
+                    showMessageModal('✅ SUCCESS', data.message, 'success', () => redirectToPendingFolderWith());
                 } else {
-                    showMessageModal('❌ ERROR', data.message || 'Failed to cancel order', 'error');
+                    showMessageModal('❌ ERROR', data.message || 'Failed', 'error');
                 }
             } catch (err) {
                 showMessageModal('❌ NETWORK ERROR', 'Connection error: ' + err.message, 'error');
@@ -1508,7 +1458,7 @@ function formatDeliveryDate($date)
             }
         }
 
-        // ========== EDIT MODE FUNCTIONALITY ==========
+        // ========== EDIT MODE ==========
         const editModeBtn = document.getElementById('edit-mode-btn');
 
         function enableEditMode() {
@@ -1517,7 +1467,6 @@ function formatDeliveryDate($date)
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
-            // Show date input and hide display
             const dateDisplay = document.getElementById('deliveryDateDisplay');
             const dateInput = document.getElementById('deliveryDateInput');
             if (dateDisplay && dateInput) {
@@ -1528,11 +1477,12 @@ function formatDeliveryDate($date)
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
 
             rows.forEach((row, index) => {
-                const originalProduct = row.cells[0].innerText;
-                const originalPieces = row.cells[1].innerText;
-                const originalUnit = row.cells[2].innerText;
-                const originalSellingPrice = row.cells[3].innerText.replace('₱', '').replace(/,/g, '');
-                const originalTotal = row.cells[4].innerText.replace('₱', '').replace(/,/g, '');
+                // ✅ Shifted cell indices by 1 (drag-handle is cell 0)
+                const originalProduct = row.cells[1].innerText;
+                const originalPieces = row.cells[2].innerText;
+                const originalUnit = row.cells[3].innerText;
+                const originalSellingPrice = row.cells[4].innerText.replace('₱', '').replace(/,/g, '');
+                const originalTotal = row.cells[5].innerText.replace('₱', '').replace(/,/g, '');
 
                 originalData.set(index, {
                     product: originalProduct,
@@ -1542,26 +1492,20 @@ function formatDeliveryDate($date)
                     total: originalTotal
                 });
 
-                row.cells[0].innerHTML =
-                    `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
-                row.cells[1].innerHTML =
-                    `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
-                row.cells[2].innerHTML =
-                    `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
-                row.cells[3].innerHTML =
-                    `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
-                row.cells[4].innerHTML =
-                    `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
+                row.cells[1].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
+                row.cells[2].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
+                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
+                row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
+                row.cells[5].innerHTML = `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
 
-                const piecesInput = row.cells[1].querySelector('input');
-                const sellingPriceInput = row.cells[3].querySelector('input');
-                const totalInput = row.cells[4].querySelector('input');
+                const piecesInput = row.cells[2].querySelector('input');
+                const sellingPriceInput = row.cells[4].querySelector('input');
+                const totalInput = row.cells[5].querySelector('input');
 
                 function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
                     const price = parseFloat(sellingPriceInput.value) || 0;
-                    const newTotal = pieces * price;
-                    totalInput.value = newTotal.toFixed(2);
+                    totalInput.value = (pieces * price).toFixed(2);
                     updateGrandTotal();
                 }
 
@@ -1570,16 +1514,12 @@ function formatDeliveryDate($date)
                     sellingPriceInput.addEventListener('input', calculateRowTotal);
 
                     piecesInput.addEventListener('blur', function () {
-                        if (this.value === '' || isNaN(this.value)) {
-                            this.value = 0;
-                        }
+                        if (this.value === '' || isNaN(this.value)) this.value = 0;
                         calculateRowTotal();
                     });
 
                     sellingPriceInput.addEventListener('blur', function () {
-                        if (this.value === '' || isNaN(this.value)) {
-                            this.value = 0;
-                        }
+                        if (this.value === '' || isNaN(this.value)) this.value = 0;
                         calculateRowTotal();
                     });
                 }
@@ -1588,33 +1528,25 @@ function formatDeliveryDate($date)
             setTimeout(updateGrandTotal, 100);
         }
 
-        // ========== UPDATE GRAND TOTAL ==========
         function updateGrandTotal() {
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             let grandTotal = 0;
             let totalItems = 0;
 
             rows.forEach(row => {
-                const piecesInput = row.cells[1]?.querySelector('input');
-                const totalInput = row.cells[4]?.querySelector('input');
-
-                const pieces = parseFloat(piecesInput?.value) || 0;
-                const total = parseFloat(totalInput?.value) || 0;
-
-                totalItems += pieces;
-                grandTotal += total;
+                const piecesInput = row.cells[2]?.querySelector('input');
+                const totalInput = row.cells[5]?.querySelector('input');
+                totalItems += parseFloat(piecesInput?.value) || 0;
+                grandTotal += parseFloat(totalInput?.value) || 0;
             });
 
             const totalDisplay = document.getElementById('total-amount-display');
             if (totalDisplay) {
-                totalDisplay.innerHTML =
-                    `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                totalDisplay.innerHTML = `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
 
             const totalItemsDisplay = document.getElementById('totalItemsDisplay');
-            if (totalItemsDisplay) {
-                totalItemsDisplay.textContent = totalItems;
-            }
+            if (totalItemsDisplay) totalItemsDisplay.textContent = totalItems;
         }
 
         async function disableEditMode() {
@@ -1624,16 +1556,15 @@ function formatDeliveryDate($date)
 
             const dateInput = document.getElementById('deliveryDateInput');
             const updatedDeliveryDate = dateInput ? dateInput.value : '';
-            const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
 
             updateGrandTotal();
 
             rows.forEach((row, index) => {
-                const productInput = row.cells[0].querySelector('input');
-                const piecesInput = row.cells[1].querySelector('input');
-                const unitInput = row.cells[2].querySelector('input');
-                const sellingPriceInput = row.cells[3].querySelector('input');
-                const totalInput = row.cells[4].querySelector('input');
+                const productInput = row.cells[1].querySelector('input');
+                const piecesInput = row.cells[2].querySelector('input');
+                const unitInput = row.cells[3].querySelector('input');
+                const sellingPriceInput = row.cells[4].querySelector('input');
+                const totalInput = row.cells[5].querySelector('input');
 
                 if (!productInput || !piecesInput || !unitInput || !sellingPriceInput || !totalInput) {
                     isValid = false;
@@ -1648,9 +1579,7 @@ function formatDeliveryDate($date)
 
                 if (!newProduct || !newPieces || newPieces <= 0 || newSellingPrice < 0 || newTotal <= 0) {
                     isValid = false;
-                    showMessageModal('INVALID DATA',
-                        'Please fill all fields with valid values (Product name, pieces > 0, selling price >= 0, total > 0)',
-                        'error');
+                    showMessageModal('INVALID DATA', 'Please fill all fields with valid values.', 'error');
                     return;
                 }
 
@@ -1663,8 +1592,7 @@ function formatDeliveryDate($date)
                         unit: newUnit,
                         selling_price: newSellingPrice,
                         total: newTotal
-                    },
-                    rowElement: row
+                    }
                 });
             });
 
@@ -1690,17 +1618,11 @@ function formatDeliveryDate($date)
             }
 
             let confirmMessage = 'Are you sure you want to update the order?';
-            if (dateChanged) {
-                confirmMessage += '\n\n📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
-            }
+            if (dateChanged) confirmMessage += '\n\n📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
 
-            showConfirmModal(
-                'UPDATE ORDER ITEMS',
-                confirmMessage,
-                async () => {
-                    await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged);
-                }
-            );
+            showConfirmModal('UPDATE ORDER ITEMS', confirmMessage, async () => {
+                await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged);
+            });
         }
 
         async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged) {
@@ -1722,19 +1644,13 @@ function formatDeliveryDate($date)
                     formData.append('delivery_date', updatedDeliveryDate);
                 }
 
-                const response = await fetch('../API/update_delivery_status.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch('../API/update_delivery_status.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('SUCCESS', data.message, 'success', () => {
-                        window.location.reload();
-                    });
+                    showMessageModal('SUCCESS', data.message, 'success', () => window.location.reload());
                 } else {
-                    showMessageModal('ERROR', data.message || 'Failed to update items', 'error');
+                    showMessageModal('ERROR', data.message || 'Failed', 'error');
                 }
             } catch (err) {
                 showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
@@ -1747,11 +1663,8 @@ function formatDeliveryDate($date)
 
         if (editModeBtn) {
             editModeBtn.addEventListener('click', () => {
-                if (!isEditMode) {
-                    enableEditMode();
-                } else {
-                    disableEditMode();
-                }
+                if (!isEditMode) enableEditMode();
+                else disableEditMode();
             });
         }
 
@@ -1766,51 +1679,31 @@ function formatDeliveryDate($date)
                 if (newStatus === 'PAID') {
                     showSystemModal(
                         '⚠️ PAYMENT CONFIRMATION',
-                        `
-                        This action will mark this order as PAID and deduct stock from inventory.<br><br>
-                        <strong>Are you sure you want to proceed?</strong>`,
-                        'warning', [{
-                            label: 'CANCEL',
-                            action: 'cancel',
-                            type: ''
-                        }, {
-                            label: 'OK',
-                            action: 'confirm',
-                            type: 'primary'
-                        }]
+                        'This action will mark this order as PAID and deduct stock from inventory.<br><br><strong>Are you sure?</strong>',
+                        'warning',
+                        [
+                            { label: 'CANCEL', action: 'cancel', type: '' },
+                            { label: 'OK', action: 'confirm', type: 'primary' }
+                        ]
                     ).then(result => {
-                        if (result === 'confirm') {
-                            processPaidStatus();
-                        } else {
-                            statusSelect.value = previousStatus;
-                        }
+                        if (result === 'confirm') processPaidStatus();
+                        else statusSelect.value = previousStatus;
                     });
                     statusSelect.value = previousStatus;
                 } else if (newStatus === 'CANCELLED') {
                     showSystemModal(
                         '⚠️ CANCELLATION CONFIRMATION',
-                        `<strong>Delivery #${deliveryNumber}</strong><br>
-                        Customer: <?= htmlspecialchars($customerName) ?><br>
-                        Total Amount: <strong>₱ <?= number_format($totalAmount, 2) ?></strong><br><br>
-                        <strong style="color: #dc2626;">WARNING:</strong> This action will <strong>DELETE</strong> all data for this delivery from both:<br>
-                        • order_status_history table<br>
-                        • for_deliveries table<br><br>
-                        <strong>This action cannot be undone!</strong>`,
-                        'error', [{
-                            label: 'CANCEL',
-                            action: 'cancel',
-                            type: ''
-                        }, {
-                            label: 'DELETE ORDER',
-                            action: 'confirm',
-                            type: 'danger'
-                        }]
+                        `<strong>Delivery #${deliveryNumber}</strong><br>Customer: <?= htmlspecialchars($customerName) ?><br>
+                        Total: <strong>₱ <?= number_format($totalAmount, 2) ?></strong><br><br>
+                        <strong style="color: #dc2626;">WARNING:</strong> This will <strong>DELETE</strong> all data!`,
+                        'error',
+                        [
+                            { label: 'CANCEL', action: 'cancel', type: '' },
+                            { label: 'DELETE ORDER', action: 'confirm', type: 'danger' }
+                        ]
                     ).then(result => {
-                        if (result === 'confirm') {
-                            processCancelledStatus();
-                        } else {
-                            statusSelect.value = previousStatus;
-                        }
+                        if (result === 'confirm') processCancelledStatus();
+                        else statusSelect.value = previousStatus;
                     });
                     statusSelect.value = previousStatus;
                 } else {
@@ -1832,18 +1725,13 @@ function formatDeliveryDate($date)
                 formData.append('status', newStatus);
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/update_delivery_status.php', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('../API/update_delivery_status.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('✅ SUCCESS', data.message, 'success', () => {
-                        redirectToPendingFolderWith();
-                    });
+                    showMessageModal('✅ SUCCESS', data.message, 'success', () => redirectToPendingFolderWith());
                 } else {
-                    showMessageModal('ERROR', data.message || 'Failed to update status', 'error');
+                    showMessageModal('ERROR', data.message || 'Failed', 'error');
                     if (statusSelect) statusSelect.value = previousStatus;
                 }
             } catch (err) {
@@ -1854,7 +1742,7 @@ function formatDeliveryDate($date)
             }
         }
 
-        // ========== REMOVE ITEM FUNCTIONALITY ==========
+        // ========== REMOVE ITEM ==========
         document.querySelectorAll('.remove-btn').forEach(button => {
             button.addEventListener('click', async function () {
                 if (isEditMode) {
@@ -1865,16 +1753,14 @@ function formatDeliveryDate($date)
                 }
 
                 const row = this.closest('tr');
-                const productName = row.cells[0]?.innerText || '';
-                const pieces = row.cells[1]?.innerText || '0';
-                const totalAmount = row.cells[4]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
+                const productName = row.cells[1]?.innerText || '';
+                const pieces = row.cells[2]?.innerText || '0';
+                const totalAmount = row.cells[5]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
 
                 showConfirmModal(
                     'REMOVE ITEM',
                     `Are you sure you want to remove "${productName}" (${pieces} pcs) from this order?\n\nThis action cannot be undone.`,
-                    async () => {
-                        await removeOrderItem(productName, pieces, totalAmount, row);
-                    }
+                    async () => { await removeOrderItem(productName, pieces, totalAmount, row); }
                 );
             });
         });
@@ -1888,34 +1774,26 @@ function formatDeliveryDate($date)
                 formData.append('pieces', pieces);
                 formData.append('csrf_token', csrfToken);
 
-                const response = await fetch('../API/update_delivery_status.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch('../API/update_delivery_status.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
                     row.remove();
 
                     const totalDisplay = document.getElementById('total-amount-display');
-                    const currentTotalText = totalDisplay.innerText.replace('₱', '').replace(/,/g, '');
-                    const currentTotal = parseFloat(currentTotalText) || 0;
+                    const currentTotal = parseFloat(totalDisplay.innerText.replace('₱', '').replace(/,/g, '')) || 0;
                     const newTotal = currentTotal - parseFloat(totalAmount);
 
-                    totalDisplay.innerHTML =
-                        `₱ ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    totalDisplay.innerHTML = `₱ ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
                     const remainingRows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)').length;
                     if (remainingRows === 0) {
-                        showMessageModal('ORDER EMPTY', 'No items remaining in this order. Redirecting...', 'info', () => {
-                            redirectToPendingFolderWith();
-                        });
+                        showMessageModal('ORDER EMPTY', 'No items remaining. Redirecting...', 'info', () => redirectToPendingFolderWith());
                     } else {
                         showMessageModal('SUCCESS', data.message, 'success');
                     }
                 } else {
-                    showMessageModal('ERROR', data.message || 'Failed to remove item', 'error');
+                    showMessageModal('ERROR', data.message || 'Failed', 'error');
                 }
             } catch (err) {
                 showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
@@ -1928,11 +1806,9 @@ function formatDeliveryDate($date)
             const tempInput = document.createElement('input');
             tempInput.value = deliveryNumber;
             document.body.appendChild(tempInput);
-
             tempInput.select();
             tempInput.setSelectionRange(0, 99999);
             document.execCommand('copy');
-
             document.body.removeChild(tempInput);
 
             const copyIcon = document.querySelector('.fa-copy');
