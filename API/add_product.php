@@ -1,5 +1,8 @@
 <?php
 // API/add_product.php
+error_reporting(E_ALL);
+ini_set('display_errors', 0);   // ✅ never leak warnings into the JSON response
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -22,6 +25,7 @@ $accNumber = $_SESSION['acc_number'];
 // ==============================================
 // 2. FETCH USER NAME
 // ==============================================
+$userName = 'Unknown User';
 
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
@@ -291,7 +295,7 @@ if ($action === 'add_product') {
             ':last_restocked' => $last_restocked
         ]);
 
-                if ($result) {
+        if ($result) {
             $productId = $pdo->lastInsertId();
 
             $logDetails = "Added new product to {$targetTable}: {$productName} | Product #: {$productNumber} | Unit: {$unit} | Quantity: {$quantity} | Price: ₱{$sellingPrice} | Image: " . ($imagePath ?: 'None') . " | Description: " . ($description ?: 'N/A');
@@ -314,7 +318,7 @@ if ($action === 'add_product') {
                 'table'          => $targetTable,
                 'folder'         => $uploadFolder,
                 'upload_dir'     => $uploadDir,
-                'redirect'       => $redirectUrls
+                'redirect'       => $redirectUrl   // ✅ FIXED — was $redirectUrls
             ]);
         } else {
             $pdo->rollBack();

@@ -1,389 +1,705 @@
 <?php
-
+//web/upload_products.php
 session_start();
 
-// ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
-// ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 
-// ==============================================
-// STORE USER NAME IN SESSION FOR API USE
-// ==============================================
 if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
-  $_SESSION['user_name'] = $userData['f_name'];
+    $_SESSION['user_name'] = $userData['f_name'];
 }
 
-// ==============================================
-// 2. CHECK LOGIN STATUS
-// ==============================================
 function isLoggedIn()
 {
-  return isset($_SESSION['user_role']) &&
-    isset($_SESSION['user_id']) &&
-    isset($_SESSION['acc_number']);
+    return isset($_SESSION['user_role']) &&
+        isset($_SESSION['user_id']) &&
+        isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
-  $_SESSION['login_error'] = 'Please login first to access the shop.';
-  header('Location: ../login.php');
-  exit;
+    $_SESSION['login_error'] = 'Please login first to access the shop.';
+    header('Location: ../login.php');
+    exit;
 }
 
-// ==============================================
-// 3. GET USER DATA FROM SESSION
-// ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
 $userData = null;
 if ($userRole === 'Admin') {
-  $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
-  $stmt->execute([$userId]);
-  $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+    $stmt->execute([$userId]);
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
-  // User not found in database, logout
-  session_destroy();
-  header('Location: ../login.php');
-  exit;
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
 $user = $userData;
 
-// ==============================================
-// 5. SET TIMEZONE
-// ==============================================
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
-
-
-// ===== FIXED QUERY - PROPER DATE SORTING =====
-// Since last_restocked is stored as string (e.g., "10 August 2026 1:39 PM"),
-// we need to convert it to a proper date for sorting
-$stmt = $pdo->prepare("
-    SELECT * FROM merchandise_inventory 
-    ORDER BY 
-        CASE 
-            WHEN last_restocked IS NULL OR last_restocked = '' THEN 1 
-            ELSE 0 
-        END,
-        STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC,
-        id DESC
-");
-$stmt->execute();
-$allProducts = $stmt->fetchAll();
-
-// Group products by restock status for display
-$recentlyRestocked = [];
-$olderRestocked = [];
-$neverRestocked = [];
-
-foreach ($allProducts as $product) {
-  if (empty($product['last_restocked'])) {
-    $neverRestocked[] = $product;
-  } else {
-    try {
-      // Parse the date string
-      $restockDate = DateTime::createFromFormat('j M Y g:i A', $product['last_restocked']);
-      if ($restockDate === false) {
-        // If parsing fails, try alternative format
-        $restockDate = new DateTime($product['last_restocked']);
-      }
-      $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
-
-      if ($daysDiff <= 7) {
-        $recentlyRestocked[] = $product;
-      } else {
-        $olderRestocked[] = $product;
-      }
-    } catch (Exception $e) {
-      // If date parsing fails, treat as never restocked
-      $neverRestocked[] = $product;
-    }
-  }
-}
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add Product</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product — Villaruz Print Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      padding: 20px;
-    }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
 
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
+        /* ============================================================
+           CARD LAYOUT — image left (50%), form right
+           ============================================================ */
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            align-items: stretch;
+        }
 
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
+        .image-column {
+            flex: 0 0 50%;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
 
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #555;
-      font-size: 14px;
-    }
+        .form-column {
+            flex: 1;
+            min-width: 0;
+        }
 
-    input[type="text"],
-    input[type="number"],
-    textarea {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 14px;
-    }
+        @media (max-width: 700px) {
+            .container {
+                flex-direction: column;
+            }
 
-    textarea {
-      resize: vertical;
-      min-height: 70px;
-    }
+            .image-column {
+                flex: 1 1 auto;
+                min-height: 350px;
+            }
+        }
 
-    /* Square camera box */
-    .camera-box {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      background: #000;
-      border-radius: 10px;
-      overflow: hidden;
-      margin-bottom: 15px;
-    }
+        h2 {
+            margin-bottom: 5px;
+            color: #333;
+        }
 
-    .camera-box video,
-    .camera-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
+        .subtitle {
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 20px;
+        }
 
-    /* Captured photo overlay — hidden until capture */
-    #capturedPhoto {
-      display: none;
-    }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
 
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 5px;
-      font-size: 14px;
-      cursor: pointer;
-      color: white;
-    }
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
 
-    .btn-capture {
-      background: #28a745;
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      margin-bottom: 20px;
-    }
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
 
-    .btn-capture.retake {
-      background: #f59e0b;
-    }
+        /* ============================================================
+           IMAGE STAGE
+           ============================================================ */
+        .image-stage {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            min-height: 400px;
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    .btn-submit {
-      background: #333;
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      margin-top: 10px;
-    }
+        .product-image-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
 
-    button:hover {
-      opacity: 0.9;
-    }
+        .product-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+            display: block;
+            background: #f8fafc;
+        }
 
-    .divider {
-      border-top: 1px solid #eee;
-      margin: 10px 0 20px 0;
-    }
-  </style>
+        .camera-box {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            overflow: hidden;
+            display: none;
+        }
+
+        .camera-box.visible {
+            display: block;
+        }
+
+        .camera-box video,
+        .camera-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        #capturedPhoto {
+            display: none;
+        }
+
+        /* Empty placeholder */
+        .image-placeholder {
+            display: none;
+            position: absolute;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+            color: #94a3b8;
+            font-size: 13px;
+            background: #f8fafc;
+        }
+
+        .image-placeholder.visible {
+            display: flex;
+        }
+
+        .image-placeholder i {
+            font-size: 48px;
+            color: #cbd5e1;
+        }
+
+        /* ============================================================
+           TRASH BUTTON — top-right of image
+           ============================================================ */
+        .cancel-x-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            background: #ffffff;
+            color: black;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 5;
+            line-height: 1;
+            font-family: inherit;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .cancel-x-btn.visible {
+            display: inline-flex;
+        }
+
+        .cancel-x-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .cancel-x-btn i {
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        /* ============================================================
+           FLOATING CAMERA BUTTON — bottom-center of screen
+           ============================================================ */
+        .btn-floating-camera {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: blue;
+            color: #ffffff;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            transition: all 0.2s ease;
+            z-index: 1000;
+            font-family: inherit;
+            box-shadow: 0 6px 20px rgba(0, 0, 255, 0.35);
+        }
+
+        .btn-floating-camera.visible {
+            display: inline-flex;
+        }
+
+        .btn-floating-camera:active {
+            transform: translateX(-50%) scale(0.96);
+        }
+
+        .btn-floating-camera i {
+            pointer-events: none;
+        }
+
+        /* ========== OTHER BUTTONS ========== */
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            color: white;
+            font-family: inherit;
+        }
+
+        .btn-upload {
+            background: #0ea5e9;
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+            display: none;
+        }
+
+        .btn-upload:hover {
+            background: #0284c7;
+        }
+
+        .btn-capture {
+            background: #28a745;
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+            display: none;
+        }
+
+        .btn-capture.visible {
+            display: block;
+        }
+
+        .btn-submit {
+            background: #333;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #productImageFile {
+            display: none;
+        }
+
+        @media (max-width: 700px) {
+            .image-stage {
+                min-height: 300px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
-    <h2>Add Product</h2>
+    <div class="container">
 
-    <form id="productForm" enctype="multipart/form-data">
-      <!-- Required hidden fields for the backend -->
-      <input type="hidden" name="action" value="add_product">
-      <input type="hidden" name="csrf_token" id="csrf_token"
-        value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
-      <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
+        <!-- ============================================================
+             LEFT COLUMN — IMAGE
+             ============================================================ -->
+        <div class="image-column">
+            <div class="image-stage" id="imageStage">
 
-      <!-- Camera section -->
-      <div class="camera-box">
-        <video id="camera" autoplay playsinline muted></video>
-        <img id="capturedPhoto" alt="Captured product">
-      </div>
-      <button type="button" class="btn-capture" id="captureBtn">Capture Product</button>
+                <!-- Trash button -->
+                <button type="button" class="cancel-x-btn" id="cancelUploadBtn" title="Remove image">
+                    <i class="fas fa-trash"></i>
+                </button>
 
-      <div class="divider"></div>
+                <!-- Image preview -->
+                <div class="product-image-wrapper" id="imageWrapper" style="display:none;">
+                    <img src="" alt="Product" id="productImage">
+                </div>
 
-      <label for="product_name">Product Name</label>
-      <input type="text" id="product_name" name="product_name" required>
+                <!-- Empty placeholder -->
+                <div class="image-placeholder" id="imagePlaceholder">
+                    <i class="fas fa-image"></i>
+                    <span>No image</span>
+                </div>
 
-      <label for="unit">Unit</label>
-      <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..." required>
+                <!-- Camera box -->
+                <div class="camera-box" id="cameraBox">
+                    <video id="camera" autoplay playsinline muted></video>
+                    <img id="capturedPhoto" alt="Captured product">
+                </div>
+            </div>
 
-      <label for="quantity">Product Quantity</label>
-      <input type="number" id="quantity" name="quantity" min="0" required>
+            <!-- Capture Product -->
+            <button type="button" class="btn-capture" id="captureBtn">
+                Capture Product
+            </button>
 
-      <label for="selling_price">Selling Price (₱)</label>
-      <input type="number" id="selling_price" name="selling_price" step="0.01" min="0.01" required>
+            <!-- Upload Photo -->
+            <button type="button" class="btn-upload" id="uploadBtn">
+                Upload Photo
+            </button>
+        </div>
 
-      <label for="description">Product Description</label>
-      <textarea id="description" name="description"></textarea>
+        <!-- ============================================================
+             RIGHT COLUMN — FORM
+             ============================================================ -->
+        <div class="form-column">
+            <h2>Add Product</h2>
+            <div class="subtitle">Fill in the product details below</div>
 
-      <button type="submit" class="btn-submit">Save Product</button>
-    </form>
-  </div>
+            <form id="productForm" enctype="multipart/form-data">
+                <!-- ✅ Same action as the OLD file — backend untouched -->
+                <input type="hidden" name="action" value="add_product">
+                <input type="hidden" name="csrf_token" id="csrf_token"
+                    value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
+                <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
 
-  <script>
-    const video = document.getElementById('camera');
-    const capturedPhoto = document.getElementById('capturedPhoto');
-    const captureBtn = document.getElementById('captureBtn');
-    const base64Input = document.getElementById('product_image_base64');
-    let stream = null;
-    let isCaptured = false;
+                <input type="file" id="productImageFile" name="product_image"
+                    accept="image/jpeg,image/jpg,image/png,image/webp">
 
-    // ✅ Start BACK camera
-    async function startCamera() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 1280 }
-          },
-          audio: false
-        });
-        video.srcObject = stream;
-        video.style.display = 'block';
-        capturedPhoto.style.display = 'none';
-        isCaptured = false;
-      } catch (err) {
-        console.error('Camera error:', err);
-        alert('Camera not available: ' + err.message);
-      }
-    }
+                <label for="product_name">Product Name</label>
+                <input type="text" id="product_name" name="product_name" required>
 
-    // ✅ Stop camera tracks
-    function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-      }
-    }
+                <label for="unit">Unit</label>
+                <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..." required>
 
-    // ✅ Capture / Retake handler
-    captureBtn.addEventListener('click', () => {
-      // ---- RETAKE mode ----
-      if (isCaptured) {
-        base64Input.value = '';
-        capturedPhoto.src = '';
-        captureBtn.textContent = 'Capture Product';
-        captureBtn.classList.remove('retake');
-        startCamera();
-        return;
-      }
+                <label for="quantity">Product Quantity</label>
+                <input type="number" id="quantity" name="quantity" min="0" required>
 
-      // ---- CAPTURE mode ----
-      if (!stream) {
-        alert('Camera is not ready yet.');
-        return;
-      }
+                <label for="selling_price">Selling Price (₱)</label>
+                <input type="number" id="selling_price" name="selling_price" step="0.01" min="0.01" required>
 
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
+                <label for="description">Product Description</label>
+                <textarea id="description" name="description"></textarea>
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      base64Input.value = dataUrl;
+                <button type="submit" class="btn-submit">Save Product</button>
+            </form>
+        </div>
+    </div>
 
-      // Show captured photo in place of video
-      capturedPhoto.src = dataUrl;
-      capturedPhoto.style.display = 'block';
-      video.style.display = 'none';
+    <!-- FLOATING CAMERA BUTTON -->
+    <button type="button" class="btn-floating-camera" id="retakeBtn" title="Take a photo">
+        <i class="fas fa-camera"></i>
+    </button>
 
-      // Stop the live stream (no longer needed)
-      stopCamera();
+    <script>
+        var video = document.getElementById('camera');
+        var capturedPhoto = document.getElementById('capturedPhoto');
+        var captureBtn = document.getElementById('captureBtn');
+        var retakeBtn = document.getElementById('retakeBtn');
+        var uploadBtn = document.getElementById('uploadBtn');
+        var cancelUploadBtn = document.getElementById('cancelUploadBtn');
+        var cameraBox = document.getElementById('cameraBox');
+        var imageWrapper = document.getElementById('imageWrapper');
+        var imagePlaceholder = document.getElementById('imagePlaceholder');
+        var productImage = document.getElementById('productImage');
+        var fileInput = document.getElementById('productImageFile');
+        var base64Input = document.getElementById('product_image_base64');
 
-      // Change button to "Retake"
-      captureBtn.textContent = 'Retake Photo';
-      captureBtn.classList.add('retake');
-      isCaptured = true;
-    });
+        var stream = null;
+        var cameraActive = false;
 
-    // ✅ Submit form
-    document.getElementById('productForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+        // ============================================================
+        // SHOW / HIDE helpers
+        // ============================================================
+        function showCancelButton() { cancelUploadBtn.classList.add('visible'); }
+        function hideCancelButton() { cancelUploadBtn.classList.remove('visible'); }
 
-      if (!base64Input.value) {
-        alert('Please capture the product image first.');
-        return;
-      }
+        function showFloatingCamera() { retakeBtn.classList.add('visible'); }
+        function hideFloatingCamera() { retakeBtn.classList.remove('visible'); }
 
-      const formData = new FormData(e.target);
+        function showUploadButton() { uploadBtn.style.display = 'block'; }
+        function hideUploadButton() { uploadBtn.style.display = 'none'; }
 
-      try {
-        const res = await fetch('../API/add_product.php', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-        console.log(data);
+        function showPlaceholder() { imagePlaceholder.classList.add('visible'); }
+        function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
-        if (data.success) {
-          // optional: show a success toast here
-          window.location.href = data.redirect;
-        } else {
-          alert(data.message);
+        // ============================================================
+        // VIEW STATES
+        // ============================================================
+        function viewHasImage() {
+            hideFloatingCamera();
+            hideUploadButton();
+            showCancelButton();
+            hidePlaceholder();
         }
 
-      } catch (err) {
-        alert('Request failed: ' + err.message);
-      }
-    });
+        function viewNoImage() {
+            hideCancelButton();
+            showFloatingCamera();
+            showUploadButton();
+            showPlaceholder();
+        }
 
-    // Auto-start on page load
-    window.addEventListener('load', startCamera);
-  </script>
+        function viewCameraActive() {
+            hideCancelButton();
+            hideFloatingCamera();
+            hideUploadButton();
+            hidePlaceholder();
+        }
+
+        // ============================================================
+        // START BACK CAMERA
+        // ============================================================
+        async function startCamera() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Camera not supported in this browser. Please use HTTPS or a modern browser.');
+                    return;
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 1280 }
+                    },
+                    audio: false
+                });
+
+                video.srcObject = stream;
+                video.style.display = 'block';
+                capturedPhoto.style.display = 'none';
+
+                cameraBox.classList.add('visible');
+                imageWrapper.style.display = 'none';
+                captureBtn.classList.add('visible');
+
+                viewCameraActive();
+
+                cameraActive = true;
+            } catch (err) {
+                console.error('Camera error:', err);
+                alert('Camera not available: ' + (err.message || err.name || 'Unknown error'));
+            }
+        }
+
+        // ============================================================
+        // STOP CAMERA
+        // ============================================================
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(function (t) { t.stop(); });
+                stream = null;
+            }
+            cameraActive = false;
+            cameraBox.classList.remove('visible');
+        }
+
+        // ============================================================
+        // FLOATING CAMERA BUTTON
+        // ============================================================
+        retakeBtn.addEventListener('click', function () {
+            base64Input.value = '';
+            fileInput.value = '';
+            startCamera();
+        });
+
+        // ============================================================
+        // CAPTURE
+        // ============================================================
+        captureBtn.addEventListener('click', function () {
+            if (!stream) {
+                alert('Camera is not ready yet.');
+                return;
+            }
+
+            var canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            base64Input.value = dataUrl;
+
+            capturedPhoto.src = dataUrl;
+            capturedPhoto.style.display = 'block';
+            video.style.display = 'none';
+
+            captureBtn.classList.remove('visible');
+
+            stopCamera();
+            cameraBox.classList.add('visible');
+
+            viewHasImage();
+        });
+
+        // ============================================================
+        // UPLOAD PHOTO
+        // ============================================================
+        uploadBtn.addEventListener('click', function () {
+            fileInput.click();
+        });
+
+        // ============================================================
+        // FILE CHOSEN
+        // ============================================================
+        fileInput.addEventListener('change', function () {
+            var file = fileInput.files[0];
+            if (!file) return;
+
+            var allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (allowed.indexOf(file.type) === -1) {
+                alert('Please choose a JPG, PNG, or WebP image.');
+                fileInput.value = '';
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image is too large. Max 5MB.');
+                fileInput.value = '';
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var dataUrl = e.target.result;
+
+                base64Input.value = dataUrl;
+
+                capturedPhoto.src = dataUrl;
+                capturedPhoto.style.display = 'block';
+                video.style.display = 'none';
+                cameraBox.classList.add('visible');
+
+                imageWrapper.style.display = 'none';
+                viewHasImage();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // ============================================================
+        // TRASH BUTTON
+        // ============================================================
+        cancelUploadBtn.addEventListener('click', function () {
+            base64Input.value = '';
+            fileInput.value = '';
+
+            productImage.src = '';
+            productImage.style.display = 'none';
+            imageWrapper.style.display = 'none';
+            capturedPhoto.style.display = 'none';
+            capturedPhoto.src = '';
+            cameraBox.classList.remove('visible');
+
+            viewNoImage();
+        });
+
+        // ============================================================
+        // FORM SUBMIT — same endpoint, same action as before
+        // ============================================================
+        document.getElementById('productForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            if (!base64Input.value) {
+                alert('Please capture or upload a product image first.');
+                return;
+            }
+
+            var formData = new FormData(e.target);
+            formData.delete('product_image');   // we send base64, not the raw file
+
+            try {
+                var res = await fetch('../API/add_product.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // ✅ Read as TEXT first so we can see non-JSON responses (useful for debugging)
+                var text = await res.text();
+                console.log('HTTP status:', res.status);
+                console.log('Raw response:', text);
+
+                var data;
+                try {
+                    data = JSON.parse(text);
+                } catch (jsonErr) {
+                    alert(
+                        'Server did not return JSON.\n\n' +
+                        'HTTP status: ' + res.status + '\n\n' +
+                        'Response preview:\n' + text.substring(0, 500)
+                    );
+                    return;
+                }
+
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
+            }
+        });
+
+        // ============================================================
+        // ON PAGE LOAD — no image yet → show floating camera + Upload
+        // ============================================================
+        window.addEventListener('load', function () {
+            viewNoImage();
+        });
+    </script>
 </body>
 
 </html>
