@@ -792,10 +792,10 @@ $lastRestocked = htmlspecialchars($product['last_restocked'] ?? '—');
              data-price="<?php echo htmlspecialchars($product['selling_price']); ?>">
 
             <div class="product-image-wrapper">
-                <img src="<?php echo htmlspecialchars($product['product_image']); ?>"
-                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                     class="product-image-clickable"
-                     onclick="openImageModal('<?php echo htmlspecialchars($product['product_image']); ?>')">
+                <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                            alt="<?php echo htmlspecialchars($product['product_name']); ?>" class="product-image-clickable"
+                            onclick="event.stopPropagation(); openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
+                            style="width: 150px; height: auto;border-radius:5px;">
             </div>
 
             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
