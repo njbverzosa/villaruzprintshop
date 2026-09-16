@@ -43,9 +43,6 @@ $user = $userData;
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
-// ==============================================
-// FETCH PRODUCT BY product_number (from URL)
-// ==============================================
 $productNumber = $_GET['product_number'] ?? '';
 
 if (empty($productNumber)) {
@@ -62,9 +59,6 @@ if (!$product) {
     exit;
 }
 
-// ==============================================
-// BUILD THE IMAGE URL + RESOLVE THE IMAGE PATH
-// ==============================================
 $imageUrl = '';
 $imageExists = false;
 
@@ -83,17 +77,13 @@ if (!empty($product['product_image'])) {
     <title>Update Product — <?php echo htmlspecialchars($product['product_name']); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: Arial, sans-serif;
             background: #f2f2f2;
             padding: 20px;
-            padding-bottom: 120px;   /* space for the floating buttons */
+            padding-bottom: 120px;
         }
 
         .container {
@@ -105,10 +95,7 @@ if (!empty($product['product_image'])) {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        h2 {
-            margin-bottom: 5px;
-            color: #333;
-        }
+        h2 { margin-bottom: 5px; color: #333; }
 
         .product-number {
             font-size: 13px;
@@ -124,9 +111,7 @@ if (!empty($product['product_image'])) {
             font-size: 14px;
         }
 
-        input[type="text"],
-        input[type="number"],
-        textarea {
+        input[type="text"], input[type="number"], textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -135,14 +120,8 @@ if (!empty($product['product_image'])) {
             font-size: 14px;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
+        textarea { resize: vertical; min-height: 70px; }
 
-        /* ============================================================
-           IMAGE STAGE
-           ============================================================ */
         .image-stage {
             position: relative;
             width: 260px;
@@ -177,23 +156,17 @@ if (!empty($product['product_image'])) {
             display: none;
         }
 
-        .camera-box.visible {
-            display: block;
-        }
+        .camera-box.visible { display: block; }
 
-        .camera-box video,
-        .camera-box img {
+        .camera-box video, .camera-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        #capturedPhoto {
-            display: none;
-        }
+        #capturedPhoto { display: none; }
 
-        /* Empty placeholder */
         .image-placeholder {
             display: none;
             width: 100%;
@@ -209,18 +182,9 @@ if (!empty($product['product_image'])) {
             font-size: 13px;
         }
 
-        .image-placeholder.visible {
-            display: flex;
-        }
+        .image-placeholder.visible { display: flex; }
+        .image-placeholder i { font-size: 36px; color: #cbd5e1; }
 
-        .image-placeholder i {
-            font-size: 36px;
-            color: #cbd5e1;
-        }
-
-        /* ============================================================
-           TRASH BUTTON — top-right of image
-           ============================================================ */
         .cancel-x-btn {
             position: absolute;
             top: -3px;
@@ -244,24 +208,10 @@ if (!empty($product['product_image'])) {
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        .cancel-x-btn.visible {
-            display: inline-flex;
-        }
+        .cancel-x-btn.visible { display: inline-flex; }
+        .cancel-x-btn:hover { background: #ef4444; color: #ffffff; }
+        .cancel-x-btn i { font-size: 13px; pointer-events: none; }
 
-        .cancel-x-btn:hover {
-            background: #ef4444;
-            color: #ffffff;
-        }
-
-        .cancel-x-btn i {
-            font-size: 13px;
-            pointer-events: none;
-        }
-
-        /* ============================================================
-           FLOATING BUTTONS — bottom-center of screen
-           Shared base class .btn-floating
-           ============================================================ */
         .btn-floating {
             position: fixed;
             bottom: 24px;
@@ -281,25 +231,15 @@ if (!empty($product['product_image'])) {
             font-family: inherit;
         }
 
-        .btn-floating.visible {
-            display: inline-flex;
-        }
+        .btn-floating.visible { display: inline-flex; }
+        .btn-floating:active { transform: translateX(-50%) scale(0.96); }
+        .btn-floating i { pointer-events: none; }
 
-        .btn-floating:active {
-            transform: translateX(-50%) scale(0.96);
-        }
-
-        .btn-floating i {
-            pointer-events: none;
-        }
-
-        /* Floating camera (blue) — idle state, no image */
         .btn-floating-camera {
             background: blue;
             box-shadow: 0 6px 20px rgba(0, 0, 255, 0.35);
         }
 
-        /* Floating capture (green shutter) — camera live */
         .btn-floating-capture {
             background: #28a745;
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.45);
@@ -316,7 +256,6 @@ if (!empty($product['product_image'])) {
             pointer-events: none;
         }
 
-        /* ========== OTHER BUTTONS ========== */
         button {
             padding: 10px 15px;
             border: none;
@@ -333,12 +272,10 @@ if (!empty($product['product_image'])) {
             padding: 12px;
             font-size: 15px;
             margin-bottom: 8px;
-            display: none;      /* hidden by default — JS toggles */
+            display: none;
         }
 
-        .btn-upload:hover {
-            background: #0284c7;
-        }
+        .btn-upload:hover { background: #0284c7; }
 
         .btn-submit {
             background: #333;
@@ -348,18 +285,11 @@ if (!empty($product['product_image'])) {
             margin-top: 10px;
         }
 
-        button:hover {
-            opacity: 0.9;
-        }
+        button:hover { opacity: 0.9; }
 
-        .divider {
-            border-top: 1px solid #eee;
-            margin: 10px 0 20px 0;
-        }
+        .divider { border-top: 1px solid #eee; margin: 10px 0 20px 0; }
 
-        #productImageFile {
-            display: none;
-        }
+        #productImageFile { display: none; }
     </style>
 </head>
 
@@ -369,33 +299,22 @@ if (!empty($product['product_image'])) {
         <div class="product-number">Product #: <?php echo htmlspecialchars($product['product_number']); ?></div>
 
         <form id="productForm" enctype="multipart/form-data">
-            <!-- Hidden fields -->
             <input type="hidden" name="action" value="update_product">
             <input type="hidden" name="product_id" value="<?php echo (int) $product['id']; ?>">
-            <input type="hidden" name="product_number"
-                value="<?php echo htmlspecialchars($product['product_number']); ?>">
+            <input type="hidden" name="product_number" value="<?php echo htmlspecialchars($product['product_number']); ?>">
             <input type="hidden" name="csrf_token" id="csrf_token"
                 value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
-
-            <!-- 0 = keep original, 1 = replace with new image, 2 = delete entirely -->
             <input type="hidden" name="replace_image" id="replace_image" value="0">
 
-            <!-- Hidden file input -->
-            <input type="file" id="productImageFile" name="product_image"
-                accept="image/jpeg,image/jpg,image/png,image/webp">
+            <!-- ✅ File input — NOT inside the form's main flow; kept hidden and read via JS only -->
+            <input type="file" id="productImageFile" accept="image/jpeg,image/jpg,image/png,image/webp">
 
-            <!-- ============================================================
-                 IMAGE STAGE
-                 ============================================================ -->
             <div class="image-stage" id="imageStage">
-
-                <!-- Trash button — top-right of image -->
                 <button type="button" class="cancel-x-btn" id="cancelUploadBtn" title="Remove image">
                     <i class="fas fa-trash"></i>
                 </button>
 
-                <!-- Image preview -->
                 <div class="product-image-wrapper" id="imageWrapper">
                     <img src="<?php echo $imageUrl; ?>"
                         alt="<?php echo htmlspecialchars($product['product_name']); ?>"
@@ -403,20 +322,17 @@ if (!empty($product['product_image'])) {
                         style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
                 </div>
 
-                <!-- Empty placeholder -->
                 <div class="image-placeholder" id="imagePlaceholder">
                     <i class="fas fa-image"></i>
                     <span>No image</span>
                 </div>
 
-                <!-- Camera box (live feed + captured preview) -->
                 <div class="camera-box" id="cameraBox">
                     <video id="camera" autoplay playsinline muted></video>
                     <img id="capturedPhoto" alt="Captured product">
                 </div>
             </div>
 
-            <!-- Upload Photo — shown only when no image -->
             <button type="button" class="btn-upload" id="uploadBtn">
                 Upload Photo
             </button>
@@ -440,23 +356,16 @@ if (!empty($product['product_image'])) {
                 value="<?php echo number_format($product['selling_price'], 2, '.', ''); ?>" required>
 
             <label for="description">Product Description</label>
-            <textarea id="description"
-                name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
+            <textarea id="description" name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
 
             <button type="submit" class="btn-submit">Save Changes</button>
         </form>
     </div>
 
-    <!-- ============================================================
-         FLOATING CAMERA BUTTON (idle — blue camera)
-         ============================================================ -->
     <button type="button" class="btn-floating btn-floating-camera" id="retakeBtn" title="Take a photo">
         <i class="fas fa-camera"></i>
     </button>
 
-    <!-- ============================================================
-         FLOATING CAPTURE BUTTON (camera live — green shutter)
-         ============================================================ -->
     <button type="button" class="btn-floating btn-floating-capture" id="captureBtn" title="Capture photo">
         <i class="fas fa-camera"></i>
     </button>
@@ -504,7 +413,6 @@ if (!empty($product['product_image'])) {
         // VIEW STATES
         // ============================================================
         function viewHasImage() {
-            // Image present → show ONLY trash
             hideFloatingCamera();
             hideFloatingCapture();
             hideUploadButton();
@@ -513,7 +421,6 @@ if (!empty($product['product_image'])) {
         }
 
         function viewNoImage() {
-            // No image & camera idle → show floating camera + Upload
             hideCancelButton();
             showFloatingCamera();
             hideFloatingCapture();
@@ -522,7 +429,6 @@ if (!empty($product['product_image'])) {
         }
 
         function viewCameraActive() {
-            // Live camera → show ONLY floating capture
             hideCancelButton();
             hideFloatingCamera();
             showFloatingCapture();
@@ -557,23 +463,14 @@ if (!empty($product['product_image'])) {
                 imageWrapper.style.display = 'none';
 
                 viewCameraActive();
-
                 cameraActive = true;
             } catch (err) {
                 console.error('Camera error:', err);
                 alert('Camera not available: ' + (err.message || err.name || 'Unknown error'));
-                // Reset back to no-image state so the user can retry
-                if (originalImageExists) {
-                    viewHasImage();
-                } else {
-                    viewNoImage();
-                }
+                if (originalImageExists) viewHasImage(); else viewNoImage();
             }
         }
 
-        // ============================================================
-        // STOP CAMERA
-        // ============================================================
         function stopCamera() {
             if (stream) {
                 stream.getTracks().forEach(t => t.stop());
@@ -583,9 +480,6 @@ if (!empty($product['product_image'])) {
             cameraBox.classList.remove('visible');
         }
 
-        // ============================================================
-        // FLOATING CAMERA BUTTON — start retake
-        // ============================================================
         retakeBtn.addEventListener('click', () => {
             base64Input.value = '';
             fileInput.value = '';
@@ -593,9 +487,6 @@ if (!empty($product['product_image'])) {
             startCamera();
         });
 
-        // ============================================================
-        // FLOATING CAPTURE BUTTON — take snapshot
-        // ============================================================
         captureBtn.addEventListener('click', () => {
             if (!stream) {
                 alert('Camera is not ready yet.');
@@ -616,38 +507,34 @@ if (!empty($product['product_image'])) {
             video.style.display = 'none';
 
             stopCamera();
-
-            // ✅ Re-show the camera box with the captured preview
             cameraBox.classList.add('visible');
-
-            // ✅ Now image exists → show ONLY trash
             viewHasImage();
         });
 
         // ============================================================
-        // UPLOAD PHOTO
+        // UPLOAD PHOTO — opens the file picker
         // ============================================================
         uploadBtn.addEventListener('click', () => {
             fileInput.click();
         });
 
         // ============================================================
-        // FILE CHOSEN
+        // FILE CHOSEN — read into base64 and preview
         // ============================================================
-        fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0];
+        fileInput.addEventListener('change', function () {
+            const file = this.files[0];
             if (!file) return;
 
             const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
             if (!allowed.includes(file.type)) {
                 alert('Please choose a JPG, PNG, or WebP image.');
-                fileInput.value = '';
+                this.value = '';
                 return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
                 alert('Image is too large. Max 5MB.');
-                fileInput.value = '';
+                this.value = '';
                 return;
             }
 
@@ -658,32 +545,29 @@ if (!empty($product['product_image'])) {
                 base64Input.value = dataUrl;
                 replaceImageInput.value = '1';
 
-                // Show as preview
+                // Preview
                 capturedPhoto.src = dataUrl;
                 capturedPhoto.style.display = 'block';
                 video.style.display = 'none';
                 cameraBox.classList.add('visible');
 
                 imageWrapper.style.display = 'none';
-
-                // ✅ Now image exists → show ONLY trash
                 viewHasImage();
+            };
+            reader.onerror = () => {
+                alert('Failed to read the image file. Please try another.');
             };
             reader.readAsDataURL(file);
         });
 
         // ============================================================
-        // TRASH BUTTON — remove current image
+        // TRASH BUTTON
         // ============================================================
         cancelUploadBtn.addEventListener('click', () => {
-            // Clear any new selection
             base64Input.value = '';
             fileInput.value = '';
-
-            // Mark image for deletion on save
             replaceImageInput.value = '2';
 
-            // Hide the image, hide camera preview
             productImage.src = '';
             productImage.style.display = 'none';
             imageWrapper.style.display = 'none';
@@ -691,7 +575,6 @@ if (!empty($product['product_image'])) {
             capturedPhoto.src = '';
             cameraBox.classList.remove('visible');
 
-            // ✅ Now no image → show floating camera + Upload Photo
             viewNoImage();
         });
 
@@ -702,27 +585,16 @@ if (!empty($product['product_image'])) {
             e.preventDefault();
 
             const hasNewImage = base64Input.value !== '';
-            const hasFile = fileInput.files.length > 0;
             const isDeleting = replaceImageInput.value === '2';
 
-            if (!hasNewImage && !hasFile && !originalImageExists && !isDeleting) {
+            if (!hasNewImage && !originalImageExists && !isDeleting) {
                 alert('Please capture or upload a product image.');
                 return;
             }
 
-            if (hasFile && !hasNewImage) {
-                await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        base64Input.value = ev.target.result;
-                        resolve();
-                    };
-                    reader.readAsDataURL(fileInput.files[0]);
-                });
-            }
-
             const formData = new FormData(e.target);
-            formData.delete('product_image');
+
+            // ✅ No file input is inside the form anymore, so nothing to delete.
 
             try {
                 const res = await fetch('../API/update_product.php', {
@@ -756,17 +628,9 @@ if (!empty($product['product_image'])) {
             }
         });
 
-        // ============================================================
-        // ON PAGE LOAD
-        // ============================================================
         window.addEventListener('load', () => {
-            if (originalImageExists) {
-                // ✅ Image exists → show ONLY trash
-                viewHasImage();
-            } else {
-                // ✅ No image → show floating camera + Upload Photo
-                viewNoImage();
-            }
+            if (originalImageExists) viewHasImage();
+            else viewNoImage();
         });
     </script>
 </body>
