@@ -100,9 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         date_default_timezone_set('Asia/Manila');
         $registeredAt = date('d F Y');
         $profile = 'profile.jpg';
-        $authorizeAccess = 3;   // ✅ Investor
+        $authorizeAccess = 3; 
 
-        // ✅ Hash the password ONCE, before insert
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         try {
