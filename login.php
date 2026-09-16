@@ -500,13 +500,16 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .auth-card {
-            background: #ffffff;
-            border-radius: 5px;
-            padding: 30px;
+            flex: 1;
             width: 100%;
-            max-width: 450px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
+            min-height: calc(100vh - 74px);
+            /* fallback if nav is present */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 20px;
+            background: #f1f5f9;
         }
 
         .auth-sub {
