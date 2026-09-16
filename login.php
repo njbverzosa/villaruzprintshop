@@ -1,7 +1,8 @@
 <?php
 // login.php – desktop + mobile + in-app flows
-// ✅ 2 roles: Admin (admins) and Customer (customers)
+// ✅ 3 roles: Admin (admins), Investor (investors), Customer (customers)
 // ✅ Admin → web/all_products.php
+// ✅ Investor → public/shop.php
 // ✅ Customer → public/shop.php
 // ✅ Biometric success shows inside the Login button
 // ✅ Biometric auto-prompt skipped on POST (password login)
@@ -13,7 +14,7 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
-include __DIR__ . '/app_version.php';   // defines $latestVersion + $currentVersion
+include __DIR__ . '/app_version.php';
 
 // ==============================================
 // ✅ DETECT PLATFORM
@@ -24,21 +25,11 @@ $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
 function isMobileBrowser($userAgent)
 {
     $mobileKeywords = [
-        'Android',
-        'webOS',
-        'iPhone',
-        'iPad',
-        'iPod',
-        'BlackBerry',
-        'Windows Phone',
-        'Opera Mini',
-        'IEMobile',
-        'Mobile'
+        'Android', 'webOS', 'iPhone', 'iPad', 'iPod', 'BlackBerry',
+        'Windows Phone', 'Opera Mini', 'IEMobile', 'Mobile'
     ];
     foreach ($mobileKeywords as $keyword) {
-        if (stripos($userAgent, $keyword) !== false) {
-            return true;
-        }
+        if (stripos($userAgent, $keyword) !== false) return true;
     }
     return false;
 }
@@ -75,19 +66,15 @@ $remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
 $reminded = ($remindedVersion === $latestVersion);
 
 // ==============================================
-// ✅ SKIP — set cookie for 1 day, refresh
+// ✅ SKIP
 // ==============================================
 if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
-    setcookie(
-        'use_old_app',
-        '1',
-        [
-            'expires' => time() + 86400,
-            'path' => '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]
-    );
+    setcookie('use_old_app', '1', [
+        'expires' => time() + 86400,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     header('Location: login.php');
     exit;
 }
@@ -116,6 +103,8 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
 
     if ($_SESSION['user_role'] === 'Admin') {
         $redirectUrl = 'web/all_products.php';
+    } elseif ($_SESSION['user_role'] === 'Investor') {
+        $redirectUrl = 'public/shop.php';
     } elseif ($_SESSION['user_role'] === 'Customer') {
         $redirectUrl = 'public/shop.php';
     }
@@ -132,7 +121,9 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
 
-    $table = ($userType === 'Admin') ? 'admins' : 'customers';
+    $tableMap = ['Admin' => 'admins', 'Investor' => 'investors', 'Customer' => 'customers'];
+    $table = $tableMap[$userType] ?? 'customers';
+
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -146,7 +137,9 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
 
-    $table = ($userType === 'Admin') ? 'admins' : 'customers';
+    $tableMap = ['Admin' => 'admins', 'Investor' => 'investors', 'Customer' => 'customers'];
+    $table = $tableMap[$userType] ?? 'customers';
+
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id, acc_number FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -176,11 +169,10 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         exit;
     }
 
-    if ($userType === 'Admin') {
-        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM admins WHERE id = ?");
-    } else {
-        $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM customers WHERE id = ?");
-    }
+    $tableMap = ['Admin' => 'admins', 'Investor' => 'investors', 'Customer' => 'customers'];
+    $table = $tableMap[$userType] ?? 'customers';
+
+    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -208,15 +200,12 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         $updateTypeStmt->execute([$loginType, $user['id']]);
     }
 
-    // ✅ Biometric redirect — Admin / Customer
     if ($userType === 'Admin') {
-        if ($isInApp) {
-            $redirectUrl = 'web/all_products.php';
-        } elseif ($isMobileBrowser) {
-            $redirectUrl = 'download_app.php';
-        } else {
-            $redirectUrl = 'web/all_products.php';
-        }
+        if ($isInApp) $redirectUrl = 'web/all_products.php';
+        elseif ($isMobileBrowser) $redirectUrl = 'download_app.php';
+        else $redirectUrl = 'web/all_products.php';
+    } elseif ($userType === 'Investor') {
+        $redirectUrl = 'public/shop.php';
     } else {
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
@@ -230,18 +219,11 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
             exit;
         }
 
-        if ($isMobileBrowser) {
-            $redirectUrl = 'download_app.php';
-        } else {
-            $redirectUrl = $dashboardUrl;
-        }
+        if ($isMobileBrowser) $redirectUrl = 'download_app.php';
+        else $redirectUrl = $dashboardUrl;
     }
 
-    echo json_encode([
-        'success' => true,
-        'redirect' => $redirectUrl,
-        'message' => ''
-    ]);
+    echo json_encode(['success' => true, 'redirect' => $redirectUrl, 'message' => '']);
     exit;
 }
 
@@ -252,6 +234,16 @@ function getAllAdmins($pdo)
 {
     $stmt = $pdo->query("SELECT id, acc_number, f_name FROM admins ORDER BY f_name");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getAllInvestors($pdo)
+{
+    try {
+        $stmt = $pdo->query("SELECT id, acc_number, f_name FROM investors ORDER BY f_name");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
+    }
 }
 
 function getAllCustomers($pdo)
@@ -267,6 +259,7 @@ $errors = [];
 $loginSuccess = false;
 $userTypeSelected = 'Admin';
 $selectedRole = '';
+$selectedInvestorId = '';
 $selectedCustomerId = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) {
@@ -276,37 +269,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
     $userTypeSelected = trim($_POST['user_type'] ?? 'Admin');
     $selectedRole = trim($_POST['role'] ?? '');
+    $selectedInvestorId = trim($_POST['investor'] ?? '');
     $selectedCustomerId = trim($_POST['customer'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (empty($password)) {
-        $errors[] = 'Password cannot be empty.';
-    }
-
-    if ($userTypeSelected === 'Admin' && empty($selectedRole)) {
-        $errors[] = 'Please select an admin account.';
-    }
-
-    if ($userTypeSelected === 'Customer' && empty($selectedCustomerId)) {
-        $errors[] = 'Please select a customer account.';
-    }
+    if (empty($password)) $errors[] = 'Password cannot be empty.';
+    if ($userTypeSelected === 'Admin' && empty($selectedRole)) $errors[] = 'Please select an admin account.';
+    if ($userTypeSelected === 'Investor' && empty($selectedInvestorId)) $errors[] = 'Please select an investor account.';
+    if ($userTypeSelected === 'Customer' && empty($selectedCustomerId)) $errors[] = 'Please select a customer account.';
 
     if (empty($errors)) {
         $identifier = '';
+
         if ($userTypeSelected === 'Admin') {
             $stmt = $pdo->prepare("SELECT phone_number FROM admins WHERE id = ?");
             $stmt->execute([$selectedRole]);
             $info = $stmt->fetch();
-            if ($info) {
-                $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
-            }
+            if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
+        } elseif ($userTypeSelected === 'Investor') {
+            $stmt = $pdo->prepare("SELECT phone_number FROM investors WHERE id = ?");
+            $stmt->execute([$selectedInvestorId]);
+            $info = $stmt->fetch();
+            if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
         } elseif ($userTypeSelected === 'Customer') {
             $stmt = $pdo->prepare("SELECT phone_number FROM customers WHERE id = ?");
             $stmt->execute([$selectedCustomerId]);
             $info = $stmt->fetch();
-            if ($info) {
-                $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
-            }
+            if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
         }
 
         $user = null;
@@ -314,36 +303,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
         if ($userTypeSelected === 'Admin') {
             $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, biometric_enrolled, biometric_id
-                              FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
+                                   FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
             $stmt->execute([$selectedRole, $identifier]);
             $user = $stmt->fetch();
-
             if ($user) {
-                if (password_verify($password, $user['password'])) {
-                    $userType = 'Admin';
-                } else {
-                    $errors[] = 'Invalid credentials. Please try again.';
-                }
-            } else {
-                $errors[] = 'Invalid credentials. Please try again.';
-            }
+                if (password_verify($password, $user['password'])) $userType = 'Admin';
+                else $errors[] = 'Invalid credentials. Please try again.';
+            } else $errors[] = 'Invalid credentials. Please try again.';
+        } elseif ($userTypeSelected === 'Investor') {
+            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, 'Investor' as role, status, email, biometric_enrolled, biometric_id
+                                   FROM investors WHERE id = ? AND RIGHT(phone_number, 4) = ?");
+            $stmt->execute([$selectedInvestorId, $identifier]);
+            $user = $stmt->fetch();
+            if ($user) {
+                if (password_verify($password, $user['password'])) $userType = 'Investor';
+                else $errors[] = 'Invalid credentials. Please try again.';
+            } else $errors[] = 'Invalid credentials. Please try again.';
         } elseif ($userTypeSelected === 'Customer') {
             $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email, biometric_enrolled, biometric_id
-                              FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
+                                   FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
             $stmt->execute([$selectedCustomerId, $identifier]);
             $user = $stmt->fetch();
-
             if ($user) {
-                if ($user['account'] == 1) {
-                    $errors[] = 'Account locked. Please contact support.';
-                } elseif (password_verify($password, $user['password'])) {
-                    $userType = 'Customer';
-                } else {
-                    $errors[] = 'Invalid credentials. Please try again.';
-                }
-            } else {
-                $errors[] = 'Invalid credentials. Please try again.';
-            }
+                if ($user['account'] == 1) $errors[] = 'Account locked. Please contact support.';
+                elseif (password_verify($password, $user['password'])) $userType = 'Customer';
+                else $errors[] = 'Invalid credentials. Please try again.';
+            } else $errors[] = 'Invalid credentials. Please try again.';
         }
 
         if (empty($errors) && $user && $userType) {
@@ -365,48 +350,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             $loginSuccess = true;
 
-            // ✅ Regular-login redirect — Admin / Customer
             if ($userType === 'Admin') {
                 $adminRedirect = 'web/all_products.php';
-
-                if ($isInApp) {
-                    if ($user['biometric_enrolled'] == 0 || empty($user['biometric_id'])) {
-                        $_SESSION['temp_user_id'] = $user['id'];
-                        $_SESSION['temp_user_type'] = $userType;
-                        $redirectUrl = 'biometric.php';
-                    } else {
-                        $redirectUrl = $adminRedirect;
-                    }
-                } elseif ($isMobileBrowser) {
-                    $redirectUrl = $adminRedirect;
-                } else {
-                    $redirectUrl = $adminRedirect;
-                }
+                if ($isInApp && ($user['biometric_enrolled'] == 0 || empty($user['biometric_id']))) {
+                    $_SESSION['temp_user_id'] = $user['id'];
+                    $_SESSION['temp_user_type'] = $userType;
+                    $redirectUrl = 'biometric.php';
+                } else $redirectUrl = $adminRedirect;
+            } elseif ($userType === 'Investor') {
+                $redirectUrl = 'public/shop.php';
             } else {
                 $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
                 $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
                 $hasBiometricEnrolled = ($user['biometric_enrolled'] == 1 && !empty($user['biometric_id']));
 
-                if ($isInApp) {
-                    if (!$hasBiometricEnrolled) {
-                        $_SESSION['temp_user_id'] = $user['id'];
-                        $_SESSION['temp_user_type'] = $userType;
-                        $redirectUrl = 'biometric.php';
-                    } else {
-                        if (!$appVersionMatch && !$skipUpdate) {
-                            $redirectUrl = 'public/download_app.php';
-                        } else {
-                            $redirectUrl = $dashboardUrl;
-                        }
-                    }
-                } elseif ($isMobileBrowser) {
-                    $redirectUrl = 'public/download_app.php';
-                } else {
-                    $redirectUrl = $dashboardUrl;
-                }
+                if ($isInApp && !$hasBiometricEnrolled) {
+                    $_SESSION['temp_user_id'] = $user['id'];
+                    $_SESSION['temp_user_type'] = $userType;
+                    $redirectUrl = 'biometric.php';
+                } elseif ($isMobileBrowser) $redirectUrl = 'public/download_app.php';
+                else $redirectUrl = $dashboardUrl;
             }
 
-            // ✅ Immediate redirect after login
             header('Location: ' . $redirectUrl);
             exit;
         }
@@ -417,6 +382,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 // GET DATA FOR DROPDOWNS
 // ==============================================
 $existingAdmins = getAllAdmins($pdo);
+$existingInvestors = getAllInvestors($pdo);
 $existingCustomers = getAllCustomers($pdo);
 
 if (empty($_SESSION['csrf_token'])) {
@@ -458,39 +424,37 @@ if (isset($_SESSION['exit_message'])) {
             flex-direction: column;
         }
 
-        nav {
+        .logo {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            padding: 15px 5%;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            margin-bottom: 20px;
+            gap: 6px;
         }
 
         .logo img {
             width: 100px;
             height: auto;
             object-fit: contain;
+            display: block;
         }
 
-        .nav-link {
+        .version-badge {
+            font-size: 12px;
+            font-weight: 600;
             color: #64748b;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
+            padding: 2px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.02em;
         }
 
-        .nav-link:hover {
-            color: #3b82f6;
-        }
-
-        /* ✅ Auth container fills the full remaining viewport */
         .auth-container {
             flex: 1;
             width: 100%;
-            min-height: calc(100vh - 74px);
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -498,7 +462,6 @@ if (isset($_SESSION['exit_message'])) {
             background: #f1f5f9;
         }
 
-        /* ✅ Card — a proper card, NOT a container */
         .auth-card {
             background: #ffffff;
             border-radius: 5px;
@@ -507,6 +470,7 @@ if (isset($_SESSION['exit_message'])) {
             max-width: 450px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
+            margin: 0 auto;
         }
 
         .auth-sub {
@@ -516,6 +480,79 @@ if (isset($_SESSION['exit_message'])) {
             font-size: 18px;
         }
 
+        /* ==============================================
+           SLIDING SEGMENTED CONTROL
+           ============================================== */
+        .user-type-toggle {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            margin-bottom: 20px;
+            padding: 4px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            /* ✅ No overflow:hidden — keeps pill border visible */
+        }
+
+        /* The sliding background pill — positioned by left/right for exact alignment */
+        .user-type-toggle::before {
+            content: "";
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 4px;
+            right: calc(200% / 3 + 4px);
+            background: #eff6ff;
+            border: 2px solid #3b82f6;
+            border-radius: 9px;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 0;
+            pointer-events: none;
+            box-sizing: border-box;
+        }
+
+        /* Investor (2nd column) */
+        .user-type-toggle[data-active="Investor"]::before {
+            left: calc(100% / 3 + 4px);
+            right: calc(100% / 3 + 4px);
+        }
+
+        /* Customer (3rd column) */
+        .user-type-toggle[data-active="Customer"]::before {
+            left: calc(200% / 3 + 4px);
+            right: 4px;
+        }
+
+        .user-type-toggle button {
+            position: relative;
+            z-index: 1;
+            background: transparent;
+            border: none;
+            padding: 10px 6px;
+            border-radius: 9px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #64748b;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .user-type-toggle button:hover,
+        .user-type-toggle button.active {
+            color: #3b82f6;
+        }
+
+        /* ==============================================
+           FORM
+           ============================================== */
         .form-group {
             margin-bottom: 20px;
         }
@@ -539,6 +576,7 @@ if (isset($_SESSION['exit_message'])) {
             font-size: 15px;
             outline: none;
             transition: 0.3s;
+            font-family: 'Poppins', sans-serif;
         }
 
         .form-group select:focus,
@@ -566,6 +604,10 @@ if (isset($_SESSION['exit_message'])) {
             color: #94a3b8;
             transition: color 0.3s;
             font-size: 18px;
+        }
+
+        .password-wrapper i:hover {
+            color: #3b82f6;
         }
 
         .forgot-password-link {
@@ -602,6 +644,7 @@ if (isset($_SESSION['exit_message'])) {
             align-items: center;
             justify-content: center;
             gap: 8px;
+            font-family: 'Poppins', sans-serif;
         }
 
         .btn-primary:hover:not(:disabled) {
@@ -612,7 +655,6 @@ if (isset($_SESSION['exit_message'])) {
         .btn-primary:disabled {
             opacity: 1;
             cursor: not-allowed;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
             transform: none !important;
         }
 
@@ -637,19 +679,57 @@ if (isset($_SESSION['exit_message'])) {
             }
         }
 
-        .auth-footer {
-            text-align: center;
-            margin-top: 25px;
-            color: #64748b;
-            font-size: 14px;
+        /* ==============================================
+           ✅ FINGERPRINT — small circle button centered under Login
+           ============================================== */
+        .fingerprint-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
         }
 
-        .auth-footer a {
+        .btn-fingerprint {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
             color: #3b82f6;
-            text-decoration: none;
-            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
         }
 
+        .btn-fingerprint i {
+            font-size: 24px;
+            color: #3b82f6;
+            transition: color 0.3s;
+        }
+
+        .btn-fingerprint:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-fingerprint:hover i {
+            color: #2563eb;
+        }
+
+        .btn-fingerprint:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ==============================================
+           ALERTS
+           ============================================== */
         .alert {
             padding: 14px 18px;
             border-radius: 10px;
@@ -688,77 +768,43 @@ if (isset($_SESSION['exit_message'])) {
             }
         }
 
-        .user-type-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .user-type-toggle button {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            background: #f8fafc;
-            color: #64748b;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .user-type-toggle button.active {
-            border-color: #3b82f6;
-            background: #eff6ff;
-            color: #3b82f6;
-        }
-
-        .user-type-toggle button:hover {
-            background: #f1f5f9;
-        }
-
         .select-group {
             display: none;
         }
 
         .select-group.visible {
             display: block;
+            animation: fadeIn 0.25s ease-out;
         }
 
-        .status-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #64748b;
             font-size: 14px;
-            display: none;
         }
 
-        .status-message.show {
-            display: block;
+        .auth-footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
         }
 
-        .status-message.success {
-            background: #f0fdf4;
-            color: #065f46;
-            border: 1px solid #bbf7d0;
-        }
-
-        .status-message.error {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-
-        .status-message.info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Update modal */
+        /* ==============================================
+           UPDATE MODAL
+           ============================================== */
         .update-overlay {
             position: fixed;
             inset: 0;
@@ -771,21 +817,10 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             overflow-y: auto;
             padding: 24px 16px;
-            animation: fadeIn 0.2s ease-out;
         }
 
         .update-overlay.visible {
             display: flex;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
         }
 
         .update-card {
@@ -795,20 +830,7 @@ if (isset($_SESSION['exit_message'])) {
             max-width: 480px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
             overflow: hidden;
-            animation: popIn 0.25s ease-out;
             margin: auto;
-        }
-
-        @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
         }
 
         .update-header {
@@ -827,7 +849,6 @@ if (isset($_SESSION['exit_message'])) {
             font-weight: 700;
             color: #000513;
             text-decoration: none;
-            letter-spacing: 0.02em;
             padding: 6px 12px;
             border-radius: 5px;
         }
@@ -848,7 +869,6 @@ if (isset($_SESSION['exit_message'])) {
             font-size: 1.35rem;
             font-weight: 700;
             color: #0b1e2e;
-            letter-spacing: -0.015em;
         }
 
         .update-installed-version {
@@ -861,18 +881,6 @@ if (isset($_SESSION['exit_message'])) {
             padding: 4px 12px;
             border-radius: 5px;
             border: 1px solid #e2e8f0;
-        }
-
-        .update-installed-version.match {
-            background: #f0fdf4;
-            color: #065f46;
-            border-color: #bbf7d0;
-        }
-
-        .update-installed-version.mismatch {
-            background: #fef2f2;
-            color: #dc2626;
-            border-color: #fecaca;
         }
 
         .update-recommended {
@@ -896,10 +904,6 @@ if (isset($_SESSION['exit_message'])) {
             font-size: 0.875rem;
             color: #1e2b3c;
             line-height: 1.5;
-        }
-
-        .update-info-block strong {
-            color: #1e40af;
         }
 
         .update-info-label {
@@ -958,8 +962,6 @@ if (isset($_SESSION['exit_message'])) {
             border: 1px solid transparent;
             cursor: pointer;
             text-decoration: none;
-            line-height: 1.2;
-            transition: background 0.15s, box-shadow 0.15s;
             width: 100%;
         }
 
@@ -967,11 +969,6 @@ if (isset($_SESSION['exit_message'])) {
             background: #1d4ed8;
             color: #ffffff;
             border-color: #1d4ed8;
-            box-shadow: 0 2px 6px rgba(29, 78, 216, 0.2);
-        }
-
-        .update-btn-primary:hover {
-            background: #1e40af;
         }
 
         .update-btn-outline {
@@ -980,16 +977,12 @@ if (isset($_SESSION['exit_message'])) {
             border-color: #cbd5e1;
         }
 
-        .update-btn-outline:hover {
-            background: #f8fafd;
-        }
-
-        /* ✅ Responsive: full-viewport feel on mobile */
+        /* ==============================================
+           RESPONSIVE
+           ============================================== */
         @media (max-width: 500px) {
             .auth-container {
                 padding: 20px 16px;
-                align-items: flex-start;
-                padding-top: 30px;
             }
 
             .auth-card {
@@ -1002,16 +995,26 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             .user-type-toggle button {
+                font-size: 11px;
+                padding: 10px 4px;
+                gap: 4px;
+            }
+
+            .user-type-toggle button i {
                 font-size: 13px;
-                padding: 8px;
             }
 
             .forgot-password-link {
                 font-size: 12px;
             }
 
-            .update-card {
-                max-width: 100%;
+            .btn-fingerprint {
+                width: 50px;
+                height: 50px;
+            }
+
+            .btn-fingerprint i {
+                font-size: 22px;
             }
         }
     </style>
@@ -1021,7 +1024,11 @@ if (isset($_SESSION['exit_message'])) {
 
     <div class="auth-container">
         <div class="auth-card">
-            <p class="auth-sub">Log In your account</p>
+            <div class="logo">
+                <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png"
+                    alt="Villaruz Print Shop Logo">
+                <span class="version-badge">V<?php echo $latestVersion; ?></span>
+            </div>
 
             <?php if (!empty($offlineMessage)): ?>
                 <div class="alert alert-info">
@@ -1041,13 +1048,17 @@ if (isset($_SESSION['exit_message'])) {
                 <form method="POST" action="" id="loginForm">
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
-                    <div class="user-type-toggle">
+                    <div class="user-type-toggle" id="userTypeToggle" data-active="<?php echo $userTypeSelected; ?>">
                         <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>"
-                            onclick="switchUserType('Admin')">
+                            data-role="Admin" onclick="switchUserType('Admin')">
                             <i class="fas fa-user-tie"></i> Admin
                         </button>
+                        <button type="button" class="<?php echo $userTypeSelected === 'Investor' ? 'active' : ''; ?>"
+                            data-role="Investor" onclick="switchUserType('Investor')">
+                            <i class="fas fa-chart-line"></i> Investor
+                        </button>
                         <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>"
-                            onclick="switchUserType('Customer')">
+                            data-role="Customer" onclick="switchUserType('Customer')">
                             <i class="fas fa-user"></i> Customer
                         </button>
                     </div>
@@ -1057,7 +1068,7 @@ if (isset($_SESSION['exit_message'])) {
 
                     <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
                         id="adminSelectGroup">
-                        <label><i class="fas fa-users"></i> Select Admin Account</label>
+                        <label><i class="fas fa-users"></i> Select Account</label>
                         <select name="role" id="adminSelect">
                             <option value="">-- Select your account --</option>
                             <?php foreach ($existingAdmins as $admin): ?>
@@ -1068,9 +1079,22 @@ if (isset($_SESSION['exit_message'])) {
                         </select>
                     </div>
 
+                    <div class="form-group select-group <?php echo $userTypeSelected === 'Investor' ? 'visible' : ''; ?>"
+                        id="investorSelectGroup">
+                        <label><i class="fas fa-chart-line"></i> Select Account</label>
+                        <select name="investor" id="investorSelect">
+                            <option value="">-- Select your account --</option>
+                            <?php foreach ($existingInvestors as $investor): ?>
+                                <option value="<?php echo $investor['id']; ?>" <?php echo ($selectedInvestorId == $investor['id'] && $userTypeSelected === 'Investor') ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($investor['acc_number']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
                     <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
                         id="customerSelectGroup">
-                        <label><i class="fas fa-users"></i> Select Customer Account</label>
+                        <label><i class="fas fa-users"></i> Select Account</label>
                         <select name="customer" id="customerSelect">
                             <option value="">-- Select your account --</option>
                             <?php foreach ($existingCustomers as $customer): ?>
@@ -1096,6 +1120,14 @@ if (isset($_SESSION['exit_message'])) {
                     <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
                         Login
                     </button>
+
+                    <!-- ✅ Fingerprint button under Login -->
+                    <div class="fingerprint-row">
+                        <button type="button" class="btn-fingerprint" id="fingerprintBtn"
+                            onclick="triggerBiometric()" title="Login with fingerprint">
+                            <i class="fas fa-fingerprint"></i>
+                        </button>
+                    </div>
 
                     <div class="auth-footer">
                         Don't have an account? <a href="registration.php">Sign Up</a>
@@ -1132,9 +1164,7 @@ if (isset($_SESSION['exit_message'])) {
                 <div class="update-body">
                     <div class="update-info-block">
                         <div class="update-info-label">Update Notice</div>
-                        A new version of the <strong>Sofia App</strong> is now available. Update or download the latest
-                        release for improved performance, a hassle-free application process, and password-free login
-                        using your device security.
+                        A new version of the <strong>Sofia App</strong> is now available.
                     </div>
 
                     <div class="update-info-block">
@@ -1174,7 +1204,6 @@ if (isset($_SESSION['exit_message'])) {
     <?php endif; ?>
 
     <script>
-        const biometricStatus = document.getElementById('biometricStatus');
         const isInApp = typeof window.AndroidBiometric !== 'undefined';
         const hasBiometric = <?php echo $hasBiometric ? 'true' : 'false'; ?>;
         const userId = <?php echo json_encode($biometricUserId); ?>;
@@ -1188,9 +1217,7 @@ if (isset($_SESSION['exit_message'])) {
                 if (window.AndroidBiometric && window.AndroidBiometric.getAppVersion) {
                     return window.AndroidBiometric.getAppVersion() || 'unknown';
                 }
-            } catch (e) {
-                console.warn('Could not read app version:', e);
-            }
+            } catch (e) { }
             return 'unknown';
         }
 
@@ -1199,7 +1226,7 @@ if (isset($_SESSION['exit_message'])) {
             return norm(a) === norm(b);
         }
 
-        function setLoginButtonBusy(label) {
+        function setLoginButtonBusy() {
             var btn = document.getElementById('loginBtn');
             if (!btn) return;
             btn.disabled = true;
@@ -1213,20 +1240,40 @@ if (isset($_SESSION['exit_message'])) {
             btn.innerHTML = 'Login';
         }
 
+        // ============================================================
+        // ✅ FINGERPRINT — trigger biometric manually
+        // ============================================================
+        function triggerBiometric() {
+            if (!isInApp) {
+                alert('Fingerprint login is only available inside the SofiaApp.');
+                return;
+            }
+
+            if (!hasBiometric || !userId) {
+                alert('No fingerprint enrolled. Please log in with password first and enroll your fingerprint.');
+                return;
+            }
+
+            var fpBtn = document.getElementById('fingerprintBtn');
+            if (fpBtn) fpBtn.disabled = true;
+
+            if (window.AndroidBiometric && window.AndroidBiometric.authenticate) {
+                window.AndroidBiometric.authenticate('manual');
+            } else {
+                alert('Biometric bridge not available.');
+                if (fpBtn) fpBtn.disabled = false;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const installedVersion = readInstalledVersion();
-            console.log('📱 Installed version:', installedVersion, '| Latest:', latestVersion);
 
             var versionInput = document.getElementById('installedVersionInput');
-            if (versionInput && isInApp) {
-                versionInput.value = installedVersion;
-            }
+            if (versionInput && isInApp) versionInput.value = installedVersion;
 
             const overlay = document.getElementById('updateOverlay');
             if (overlay) {
-                if (!isInApp) {
-                    overlay.classList.remove('visible');
-                } else if (versionsEqual(installedVersion, latestVersion)) {
+                if (!isInApp || versionsEqual(installedVersion, latestVersion)) {
                     overlay.classList.remove('visible');
                 } else {
                     overlay.classList.add('visible');
@@ -1238,17 +1285,12 @@ if (isset($_SESSION['exit_message'])) {
             if (badge && versionValue) {
                 if (!isInApp) {
                     badge.textContent = 'Not running in the app';
-                    badge.classList.add('mismatch');
                     versionValue.textContent = 'N/A';
                 } else if (!installedVersion || installedVersion === 'unknown') {
                     badge.textContent = 'Version unknown';
-                    badge.classList.add('mismatch');
                     versionValue.textContent = 'Unknown';
                 } else {
-                    var matched = versionsEqual(installedVersion, latestVersion);
                     badge.textContent = 'Installed: ' + installedVersion;
-                    badge.classList.remove('match', 'mismatch');
-                    badge.classList.add(matched ? 'match' : 'mismatch');
                     versionValue.textContent = installedVersion;
                 }
             }
@@ -1265,29 +1307,18 @@ if (isset($_SESSION['exit_message'])) {
             if (form && btn) {
                 form.addEventListener('submit', function () {
                     if (btn.disabled) return;
-                    setLoginButtonBusy('Logging in...');
+                    setLoginButtonBusy();
                 });
             }
         })();
-
-        function showBiometricStatus(message, type) {
-            if (!biometricStatus) return;
-            biometricStatus.textContent = message;
-            biometricStatus.className = 'status-message show ' + type;
-        }
 
         function biometricSuccess(data) {
             const userId = <?php echo json_encode($biometricUserId); ?>;
             const userType = <?php echo json_encode($biometricUserType); ?>;
 
-            if (!userId) {
-                showBiometricStatus('Biometric not registered. Please login with password.', 'error');
-                resetLoginButton();
-                return;
-            }
+            if (!userId) { resetLoginButton(); return; }
 
             var installedVersion = readInstalledVersion();
-            setLoginButtonBusy('');
 
             fetch(window.location.href, {
                 method: 'POST',
@@ -1297,47 +1328,36 @@ if (isset($_SESSION['exit_message'])) {
                     + '&user_type=' + encodeURIComponent(userType)
                     + '&installed_version=' + encodeURIComponent(installedVersion)
             })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
+                .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        setTimeout(function () {
-                            window.location.href = data.redirect;
-                        }, 800);
+                        setTimeout(() => window.location.href = data.redirect, 800);
                     } else if (data.show_update_modal) {
-                        const overlay = document.getElementById('updateOverlay');
-                        if (overlay) overlay.classList.add('visible');
+                        document.getElementById('updateOverlay')?.classList.add('visible');
                         resetLoginButton();
                     } else {
                         resetLoginButton();
-                        showBiometricStatus('' + data.message, 'error');
                     }
                 })
-                .catch(error => {
-                    console.error('❌ Fetch error:', error);
-                    resetLoginButton();
-                    showBiometricStatus('Error: ' + error.message, 'error');
-                });
+                .catch(() => resetLoginButton());
         }
 
         function biometricFailed() {
             resetLoginButton();
-            showBiometricStatus('Authentication failed. Please try again.', 'error');
+            var fpBtn = document.getElementById('fingerprintBtn');
+            if (fpBtn) fpBtn.disabled = false;
         }
 
         function biometricCancel() {
             resetLoginButton();
-            if (biometricStatus) {
-                biometricStatus.className = 'status-message';
-                biometricStatus.textContent = '';
-            }
+            var fpBtn = document.getElementById('fingerprintBtn');
+            if (fpBtn) fpBtn.disabled = false;
         }
 
-        function biometricError(error) {
+        function biometricError() {
             resetLoginButton();
-            showBiometricStatus('Error: ' + error, 'error');
+            var fpBtn = document.getElementById('fingerprintBtn');
+            if (fpBtn) fpBtn.disabled = false;
         }
 
         const togglePassword = document.getElementById('togglePassword');
@@ -1354,23 +1374,27 @@ if (isset($_SESSION['exit_message'])) {
         function switchUserType(type) {
             document.getElementById('userTypeInput').value = type;
 
-            const buttons = document.querySelectorAll('.user-type-toggle button');
-            buttons.forEach(btn => btn.classList.remove('active'));
+            const toggle = document.getElementById('userTypeToggle');
+            toggle.setAttribute('data-active', type);
+
+            toggle.querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.role === type);
+            });
 
             document.querySelectorAll('.select-group').forEach(group => {
                 group.classList.remove('visible');
             });
 
-            if (type === 'Admin') {
-                buttons[0].classList.add('active');
-                document.getElementById('adminSelectGroup').classList.add('visible');
-                document.getElementById('adminSelect').disabled = false;
-                document.getElementById('customerSelect').disabled = true;
-            } else {
-                buttons[1].classList.add('active');
-                document.getElementById('customerSelectGroup').classList.add('visible');
-                document.getElementById('customerSelect').disabled = false;
-                document.getElementById('adminSelect').disabled = true;
+            const map = {
+                'Admin':    'adminSelectGroup',
+                'Investor': 'investorSelectGroup',
+                'Customer': 'customerSelectGroup'
+            };
+
+            const groupId = map[type];
+            if (groupId) {
+                const el = document.getElementById(groupId);
+                if (el) el.classList.add('visible');
             }
         }
     </script>
