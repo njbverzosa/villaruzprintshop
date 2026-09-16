@@ -445,6 +445,11 @@ if (isset($_SESSION['exit_message'])) {
             font-family: 'Poppins', sans-serif;
         }
 
+        html,
+        body {
+            height: 100%;
+        }
+
         body {
             background: #f1f5f9;
             color: #1e293b;
@@ -480,12 +485,18 @@ if (isset($_SESSION['exit_message'])) {
             color: #3b82f6;
         }
 
+        /* ✅ Auth container fills the full remaining viewport */
         .auth-container {
             flex: 1;
+            width: 100%;
+            min-height: calc(100vh - 74px);
+            /* fallback if nav is present */
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 50px 20px;
+            padding: 30px 20px;
+            background: #f1f5f9;
         }
 
         .auth-card {
@@ -973,9 +984,17 @@ if (isset($_SESSION['exit_message'])) {
             background: #f8fafd;
         }
 
+        /* ✅ Responsive: full-viewport feel on mobile */
         @media (max-width: 500px) {
+            .auth-container {
+                padding: 20px 16px;
+                align-items: flex-start;
+                padding-top: 30px;
+            }
+
             .auth-card {
-                padding: 30px 25px;
+                padding: 30px 22px;
+                max-width: 100%;
             }
 
             .logo img {
@@ -999,16 +1018,6 @@ if (isset($_SESSION['exit_message'])) {
 </head>
 
 <body>
-
-    <nav>
-        <div class="logo">
-            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
-                alt="Villaruz Print Shop Logo">
-        </div>
-        <div>
-            <a href="index.php" class="nav-link">Home</a>
-        </div>
-    </nav>
 
     <div class="auth-container">
         <div class="auth-card">
@@ -1102,7 +1111,6 @@ if (isset($_SESSION['exit_message'])) {
         </div>
     </div>
 
-    <?php include 'footer.php'; ?>
 
     <?php if ($renderUpdateModal): ?>
         <div class="update-overlay" id="updateOverlay">
