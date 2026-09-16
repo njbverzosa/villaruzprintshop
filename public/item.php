@@ -80,12 +80,16 @@ $imageUrl = '';
 $imageExists = false;
 
 if (!empty($product['product_image'])) {
-    $imageUrl = '../Products/' . htmlspecialchars($product['product_image']);
+    $relativePath = '../Products/' . $product['product_image'];
     $absolutePath = dirname(__DIR__) . '/Products/' . $product['product_image'];
-    $imageExists = file_exists($absolutePath);
-}
 
-if (!$imageExists) {
+    if (file_exists($absolutePath)) {
+        $imageUrl = $relativePath;
+        $imageExists = true;
+    } else {
+        $imageUrl = 'https://via.placeholder.com/300x300?text=No+Image';
+    }
+} else {
     $imageUrl = 'https://via.placeholder.com/300x300?text=No+Image';
 }
 
@@ -96,6 +100,8 @@ $unit = htmlspecialchars($product['unit'] ?? 'Pcs');
 $price = number_format((float) $product['selling_price'], 2);
 $priceRaw = (float) $product['selling_price'];
 $description = htmlspecialchars($product['description'] ?? '');
+$stock = (int) ($product['qty_on_hand'] ?? 0);
+$lastRestocked = htmlspecialchars($product['last_restocked'] ?? '—');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -156,7 +162,7 @@ $description = htmlspecialchars($product['description'] ?? '');
             transform: translateX(-3px);
         }
 
-        /* ========== PRODUCT CARD (same design, larger) ========== */
+        /* ========== PRODUCT CARD ========== */
         .product-card {
             background: #ffffff;
             border-radius: 7px;
@@ -311,67 +317,6 @@ $description = htmlspecialchars($product['description'] ?? '');
         .card-desc-btn:hover {
             background: #7c3aed;
             transform: scale(0.97);
-        }
-
-        /* ========== PRODUCT INFO PANEL ========== */
-        .info-panel {
-            margin-top: 20px;
-            background: #ffffff;
-            border-radius: 7px;
-            border: 1px solid #e2e8f0;
-            padding: 20px 22px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-        }
-
-        .info-panel h3 {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-panel h3 i {
-            color: #8b5cf6;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 14px;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            color: #64748b;
-            font-weight: 500;
-        }
-
-        .info-value {
-            color: #0f172a;
-            font-weight: 600;
-            text-align: right;
-            max-width: 60%;
-            word-break: break-word;
-        }
-
-        .description-block {
-            margin-top: 8px;
-            padding: 12px;
-            background: #f8fafc;
-            border-radius: 10px;
-            color: #475569;
-            font-size: 13.5px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            word-wrap: break-word;
         }
 
         /* ========== BOTTOM NAVIGATION ========== */
@@ -855,7 +800,7 @@ $description = htmlspecialchars($product['description'] ?? '');
             <i class="fas fa-arrow-left"></i> Back to Shop
         </a>
 
-        <!-- Product Card (same design as shop.php) -->
+        <!-- Product Card -->
         <div class="product-card"
              data-id="<?php echo (int) $product['id']; ?>"
              data-product-number="<?php echo htmlspecialchars($product['product_number']); ?>"
@@ -866,8 +811,8 @@ $description = htmlspecialchars($product['description'] ?? '');
              data-price="<?php echo htmlspecialchars($product['selling_price']); ?>">
 
             <div class="product-image-wrapper">
-                <img src="../Products/<?php echo $imageUrl; ?>"
-                     alt="../Products/<?php echo htmlspecialchars($product['product_name']); ?>"
+                <img src="<?php echo $imageUrl; ?>"
+                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                      class="product-image-clickable"
                      onclick="openImageModal('<?php echo $imageUrl; ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
             </div>
@@ -891,11 +836,17 @@ $description = htmlspecialchars($product['description'] ?? '');
                     <i class="fas fa-cart-plus"></i> Add
                 </button>
 
-               
+                <button class="card-desc-btn desc-btn"
+                        data-id="<?php echo (int) $product['id']; ?>"
+                        data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                        data-unit="<?php echo $unit; ?>"
+                        data-price="<?php echo $price; ?>"
+                        data-description="<?php echo $description; ?>">
+                    <i class="fas fa-info-circle"></i> Info
+                </button>
             </div>
 
         </div>
-
 
     </div>
 
