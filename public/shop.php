@@ -205,6 +205,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
             flex-direction: column;
             align-items: center;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            cursor: pointer;
         }
 
         .product-card:hover {
@@ -1220,11 +1221,20 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         const productNameFromUrl = <?php echo json_encode($productNameFromUrl); ?>;
 
         // ============================================================
+        // NAVIGATE TO PRODUCT DETAIL (item.php)
+        // ============================================================
+        function goToProduct(productNumber) {
+            if (!productNumber) return;
+            window.location.href = 'item.php?product_number=' + encodeURIComponent(productNumber);
+        }
+
+        // ============================================================
         // QUANTITY CONTROLS
         // ============================================================
         document.querySelectorAll('.decrement').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 const productId = this.dataset.id;
                 const qtyInput = document.getElementById(`qty-${productId}`);
                 if (qtyInput) {
@@ -1239,6 +1249,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         document.querySelectorAll('.increment').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 const productId = this.dataset.id;
                 const qtyInput = document.getElementById(`qty-${productId}`);
                 if (qtyInput) {
@@ -1491,6 +1502,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         document.querySelectorAll('.add-to-cart-card').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 const productId = this.dataset.id;
                 const productName = this.dataset.name;
                 const price = parseFloat(this.dataset.price);
@@ -1504,6 +1516,7 @@ $isVip = isset($user['vip']) && $user['vip'] == 1;
         document.querySelectorAll('.desc-btn').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 const productName = this.dataset.name;
                 const productUnit = this.dataset.unit;
                 const productPrice = this.dataset.price;
