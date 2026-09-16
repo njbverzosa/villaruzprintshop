@@ -990,8 +990,8 @@ foreach ($allProducts as $product) {
                         <i class="fas fa-times"></i> Clear
                     </button>
                 </div>
-                <a href="download_images.php" class="add-product-btn" id="addProductBtn">
-                    <i class="fas fa-plus-circle"></i> Download
+                <a href="upload_products.php" class="add-product-btn" id="addProductBtn">
+                    <i class="fas fa-plus-circle"></i> Add New
                 </a>
 
                 <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
