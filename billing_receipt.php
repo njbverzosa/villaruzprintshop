@@ -584,11 +584,11 @@ if (!empty($qrData)) {
             <div class="totals-card">
                 <div class="total-row">
                     <strong>Sub Total</strong>
-                    <span class="total-amount">₱ <?php echo number_format($totalSales, 2); ?></span>
+                    <span class="total-amount">₱ <?php echo number_format($totalSales, 3); ?></span>
                 </div>
                 <div class="total-row tax-line">
                     <strong>Withholding Tax (4%)</strong>
-                    <span class="total-amount">- ₱ <?php echo number_format($withholdingTax, 2); ?></span>
+                    <span class="total-amount">- ₱ <?php echo number_format($withholdingTax, 3); ?></span>
                 </div>
                 <div class="total-row">
                     <span style="font-weight: 700; font-size: 12px;">TOTAL AMOUNT DUE</span>
