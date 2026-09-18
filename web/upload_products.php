@@ -52,7 +52,11 @@ $timezone = new DateTimeZone('Asia/Manila');
     <title>Add Product — Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: Arial, sans-serif;
@@ -80,16 +84,32 @@ $timezone = new DateTimeZone('Asia/Manila');
             min-height: 500px;
         }
 
-        .form-column { flex: 1; min-width: 0; }
-
-        @media (max-width: 700px) {
-            .container { flex-direction: column; }
-            .image-column { flex: 1 1 auto; min-height: 350px; }
+        .form-column {
+            flex: 1;
+            min-width: 0;
         }
 
-        h2 { margin-bottom: 5px; color: #333; }
+        @media (max-width: 700px) {
+            .container {
+                flex-direction: column;
+            }
 
-        .subtitle { font-size: 13px; color: #777; margin-bottom: 20px; }
+            .image-column {
+                flex: 1 1 auto;
+                min-height: 350px;
+            }
+        }
+
+        h2 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 20px;
+        }
 
         label {
             display: block;
@@ -99,7 +119,9 @@ $timezone = new DateTimeZone('Asia/Manila');
             font-size: 14px;
         }
 
-        input[type="text"], input[type="number"], textarea {
+        input[type="text"],
+        input[type="number"],
+        textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -108,7 +130,22 @@ $timezone = new DateTimeZone('Asia/Manila');
             font-size: 14px;
         }
 
-        textarea { resize: vertical; min-height: 70px; }
+         select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            background: #fff;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
 
         .image-stage {
             position: relative;
@@ -149,16 +186,21 @@ $timezone = new DateTimeZone('Asia/Manila');
             display: none;
         }
 
-        .camera-box.visible { display: block; }
+        .camera-box.visible {
+            display: block;
+        }
 
-        .camera-box video, .camera-box img {
+        .camera-box video,
+        .camera-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        #capturedPhoto { display: none; }
+        #capturedPhoto {
+            display: none;
+        }
 
         .image-placeholder {
             display: none;
@@ -173,8 +215,14 @@ $timezone = new DateTimeZone('Asia/Manila');
             background: #f8fafc;
         }
 
-        .image-placeholder.visible { display: flex; }
-        .image-placeholder i { font-size: 48px; color: #cbd5e1; }
+        .image-placeholder.visible {
+            display: flex;
+        }
+
+        .image-placeholder i {
+            font-size: 48px;
+            color: #cbd5e1;
+        }
 
         .cancel-x-btn {
             position: absolute;
@@ -199,9 +247,19 @@ $timezone = new DateTimeZone('Asia/Manila');
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        .cancel-x-btn.visible { display: inline-flex; }
-        .cancel-x-btn:hover { background: #ef4444; color: #ffffff; }
-        .cancel-x-btn i { font-size: 13px; pointer-events: none; }
+        .cancel-x-btn.visible {
+            display: inline-flex;
+        }
+
+        .cancel-x-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .cancel-x-btn i {
+            font-size: 13px;
+            pointer-events: none;
+        }
 
         .btn-floating {
             position: fixed;
@@ -222,9 +280,17 @@ $timezone = new DateTimeZone('Asia/Manila');
             font-family: inherit;
         }
 
-        .btn-floating.visible { display: inline-flex; }
-        .btn-floating:active { transform: translateX(-50%) scale(0.96); }
-        .btn-floating i { pointer-events: none; }
+        .btn-floating.visible {
+            display: inline-flex;
+        }
+
+        .btn-floating:active {
+            transform: translateX(-50%) scale(0.96);
+        }
+
+        .btn-floating i {
+            pointer-events: none;
+        }
 
         .btn-floating-camera {
             background: blue;
@@ -267,7 +333,9 @@ $timezone = new DateTimeZone('Asia/Manila');
             display: none;
         }
 
-        .btn-upload:hover { background: #0284c7; }
+        .btn-upload:hover {
+            background: #0284c7;
+        }
 
         .btn-submit {
             background: #333;
@@ -277,14 +345,23 @@ $timezone = new DateTimeZone('Asia/Manila');
             margin-top: 10px;
         }
 
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
-        button:hover { opacity: 0.9; }
+        button:hover {
+            opacity: 0.9;
+        }
 
-        #productImageFile { display: none; }
+        #productImageFile {
+            display: none;
+        }
 
         @media (max-width: 700px) {
-            .image-stage { min-height: 300px; }
+            .image-stage {
+                min-height: 300px;
+            }
         }
 
         /* ============================================================
@@ -440,25 +517,43 @@ $timezone = new DateTimeZone('Asia/Manila');
 
         /* ---- Animations ---- */
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(12px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes drawCircle {
-            to { stroke-dashoffset: 0; }
+            to {
+                stroke-dashoffset: 0;
+            }
         }
 
         @keyframes drawCheck {
-            to { stroke-dashoffset: 0; }
+            to {
+                stroke-dashoffset: 0;
+            }
         }
     </style>
 </head>
@@ -516,8 +611,69 @@ $timezone = new DateTimeZone('Asia/Manila');
                 <input type="text" id="product_name" name="product_name" required>
 
                 <label for="unit">Unit</label>
-                <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..." required>
+                <select name="unit" id="unit">
+                    <!-- Count / Pieces -->
+                    <option value="pcs">Pcs</option>
+                    <option value="piece">Piece</option>
+                    <option value="pieces">Pieces</option>
+                    <option value="unit">Unit</option>
+                    <option value="set">Set</option>
+                    <option value="pair">Pair</option>
+                    <option value="dozen">Dozen</option>
 
+                    <!-- Containers / Packaging -->
+                    <option value="box">Box</option>
+                    <option value="carton">Carton</option>
+                    <option value="case">Case</option>
+                    <option value="crate">Crate</option>
+                    <option value="pack">Pack</option>
+                    <option value="packet">Packet</option>
+                    <option value="sachet">Sachet</option>
+                    <option value="pouch">Pouch</option>
+                    <option value="bag">Bag</option>
+                    <option value="sack">Sack</option>
+                    <option value="bundle">Bundle</option>
+                    <option value="ream">Ream</option>
+                    <option value="roll">Roll</option>
+                    <option value="rolls">Rolls</option>
+                    <option value="pad">Pad</option>
+                    <option value="pads">Pads</option>
+                    <option value="sheet">Sheet</option>
+                    <option value="sheets">Sheets</option>
+
+                    <!-- Liquids / Volumes -->
+                    <option value="bottle">Bottle</option>
+                    <option value="can">Can</option>
+                    <option value="tin">Tin</option>
+                    <option value="jar">Jar</option>
+                    <option value="tube">Tube</option>
+                    <option value="sachet">Sachet</option>
+                    <option value="drum">Drum</option>
+                    <option value="barrel">Barrel</option>
+                    <option value="gallon">Gallon</option>
+                    <option value="liter">Liter</option>
+                    <option value="ml">Milliliter (mL)</option>
+
+                    <!-- Weight -->
+                    <option value="gram">Gram (g)</option>
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="ton">Ton</option>
+                    <option value="lb">Pound (lb)</option>
+                    <option value="oz">Ounce (oz)</option>
+
+                    <!-- Length -->
+                    <option value="meter">Meter (m)</option>
+                    <option value="cm">Centimeter (cm)</option>
+                    <option value="ft">Foot (ft)</option>
+                    <option value="in">Inch (in)</option>
+                    <option value="yard">Yard</option>
+
+                    <!-- Time / Service -->
+                    <option value="hour">Hour</option>
+                    <option value="day">Day</option>
+                    <option value="month">Month</option>
+                    <option value="session">Session</option>
+                </select>
                 <label for="quantity">Product Quantity</label>
                 <input type="number" id="quantity" name="quantity" min="0" required>
 
@@ -580,8 +736,8 @@ $timezone = new DateTimeZone('Asia/Manila');
         var saveBtn = document.getElementById('saveBtn');
 
         var successOverlay = document.getElementById('successOverlay');
-        var successCard    = document.getElementById('successCard');
-        var successTitle   = document.getElementById('successTitle');
+        var successCard = document.getElementById('successCard');
+        var successTitle = document.getElementById('successTitle');
         var successMessage = document.getElementById('successMessage');
 
         var stream = null;

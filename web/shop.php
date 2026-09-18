@@ -41,23 +41,17 @@ if ($userRole === 'Admin') {
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
 $user = $userData;
-
 
 // Fetch all merchandise inventory
 $stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -90,7 +84,7 @@ $allProducts = $stmt->fetchAll();
             flex-direction: column;
         }
 
-        /* ========== SIDEBAR - LEFT SIDE ========== */
+        /* ========== SIDEBAR ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -114,7 +108,6 @@ $allProducts = $stmt->fetchAll();
             position: relative;
         }
 
-        /* Mobile: sidebar hidden by default */
         @media (max-width: 768px) {
             .sidebar-wrapper {
                 transform: translateX(-100%);
@@ -125,7 +118,6 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        /* Desktop: sidebar always visible */
         @media (min-width: 769px) {
             .sidebar-wrapper {
                 transform: translateX(0) !important;
@@ -149,7 +141,6 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        /* Mobile overlay */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -166,7 +157,7 @@ $allProducts = $stmt->fetchAll();
             display: block;
         }
 
-        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
+        /* ========== BURGER BUTTON ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -195,7 +186,7 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
+        /* ========== SIDEBAR CLOSE BUTTON ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -275,40 +266,7 @@ $allProducts = $stmt->fetchAll();
             color: #f59e0b;
         }
 
-        .menu-header {
-            padding: 25px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            background: #f8fafc;
-            flex-shrink: 0;
-            padding-right: 50px;
-        }
-
-        .menu-header .user-name {
-            font-weight: 700;
-            font-size: 18px;
-            color: #0f172a;
-            margin-top: 8px;
-        }
-
-        .menu-header .user-greeting {
-            font-size: 13px;
-            color: #64748b;
-        }
-
-        .menu-header i {
-            font-size: 40px;
-            color: #3b82f6;
-        }
-
-        .menu-nav {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        
-
-        /* ========== SEARCH & ADD PRODUCT - STRAIGHT ALIGNED ========== */
+        /* ========== SEARCH & ADD PRODUCT ========== */
         .shop-controls {
             display: flex;
             align-items: center;
@@ -408,10 +366,10 @@ $allProducts = $stmt->fetchAll();
             padding: 0 25px 10px 25px;
         }
 
-        /* Products Grid */
+        /* ========== PRODUCTS GRID ========== */
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 16px;
             margin-top: 10px;
             padding: 20px;
@@ -420,7 +378,7 @@ $allProducts = $stmt->fetchAll();
         .product-card {
             background: #ffffff;
             border-radius: 16px;
-            padding: 16px 10px;
+            padding: 14px 10px;
             text-align: center;
             transition: all 0.3s;
             border: 1px solid #e2e8f0;
@@ -436,16 +394,60 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
         }
 
-        .product-icon {
-            font-size: 42px;
-            color: #3b82f6;
+        /* ============================================================
+           ✅ IMAGE WRAPPER — anchor for the trash button
+           ============================================================ */
+        .product-image-wrapper {
+            position: relative;
+            display: inline-block;
             margin-bottom: 10px;
+            line-height: 0;
         }
 
+        .product-image-clickable {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            display: block;
+        }
+
+        .product-image-clickable:hover {
+            transform: scale(1.04);
+        }
+
+        /* ✅ Trash button — top-right corner of the IMAGE */
+        .delete-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 13px;
+        }
+
+
+        .delete-btn i {
+            pointer-events: none;
+        }
+
+        /* ========== PRODUCT TEXT ========== */
         .product-title {
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             color: #0f172a;
             line-height: 1.3;
         }
@@ -467,7 +469,7 @@ $allProducts = $stmt->fetchAll();
             margin-bottom: 12px;
         }
 
-        /* Quantity control inside card */
+        /* ========== QUANTITY CONTROL ========== */
         .card-qty-control {
             display: flex;
             align-items: center;
@@ -507,12 +509,23 @@ $allProducts = $stmt->fetchAll();
             color: #0f172a;
         }
 
-        .card-add-btn {
-            background: #3b82f6;
+        /* ============================================================
+           ✅ ADD + DESCRIPTION — side-by-side in a 2-column grid
+           ============================================================ */
+        .card-actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .card-add-btn,
+        .card-desc-btn {
             border: none;
             width: 100%;
-            padding: 8px 0;
-            border-radius: 30px;
+            padding: 9px 0;
+            border-radius: 5px;
             font-weight: 600;
             font-size: 12px;
             color: #ffffff;
@@ -521,8 +534,12 @@ $allProducts = $stmt->fetchAll();
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            margin-bottom: 6px;
+            gap: 5px;
+            margin: 0;
+        }
+
+        .card-add-btn {
+            background: #3b82f6;
         }
 
         .card-add-btn:hover {
@@ -532,19 +549,6 @@ $allProducts = $stmt->fetchAll();
 
         .card-desc-btn {
             background: #8b5cf6;
-            border: none;
-            width: 100%;
-            padding: 8px 0;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 12px;
-            color: #ffffff;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
         }
 
         .card-desc-btn:hover {
@@ -552,7 +556,7 @@ $allProducts = $stmt->fetchAll();
             transform: scale(0.97);
         }
 
-        /* Description Modal - Modern Design */
+        /* ========== DESCRIPTION MODAL ========== */
         .desc-modal {
             display: none;
             position: fixed;
@@ -747,7 +751,7 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
         }
 
-        /* Toast Notification */
+        /* ========== TOAST ========== */
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -844,193 +848,6 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        /* Add Product Modal */
-        .add-product-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            z-index: 1300;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .add-product-modal-content {
-            background: #ffffff;
-            border-radius: 24px;
-            max-width: 550px;
-            width: 92%;
-            animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .add-product-modal-header {
-            background: linear-gradient(135deg, #10b981, #059669);
-            padding: 20px 28px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .add-product-modal-header h3 {
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .add-product-modal-header h3 i {
-            font-size: 24px;
-        }
-
-        .close-add-product-modal {
-            font-size: 32px;
-            font-weight: 300;
-            cursor: pointer;
-            transition: all 0.2s;
-            line-height: 1;
-            opacity: 0.8;
-        }
-
-        .close-add-product-modal:hover {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-
-        .add-product-modal-body {
-            padding: 28px;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 13px;
-            color: #0f172a;
-            margin-bottom: 6px;
-        }
-
-        .form-group label i {
-            color: #10b981;
-            margin-right: 6px;
-        }
-
-        .form-group label .required {
-            color: #ef4444;
-            margin-left: 2px;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 14px;
-            transition: all 0.3s;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .form-group .hint {
-            font-size: 11px;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
-
-        .add-product-modal-footer {
-            padding: 20px 28px 28px;
-            border-top: 1px solid #e2e8f0;
-            background: #f8fafc;
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .btn-cancel-add {
-            padding: 12px 28px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            background: white;
-            color: #475569;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-cancel-add:hover {
-            background: #f1f5f9;
-        }
-
-        .btn-submit-add {
-            padding: 12px 32px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-submit-add:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
-        }
-
-        .btn-submit-add:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-submit-add .spinner {
-            display: none;
-            width: 18px;
-            height: 18px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #ffffff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .btn-submit-add.loading .spinner {
-            display: inline-block;
-        }
-
-        .btn-submit-add.loading .btn-text {
-            display: none;
-        }
-
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .main-content {
@@ -1040,9 +857,14 @@ $allProducts = $stmt->fetchAll();
             }
 
             .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
                 gap: 12px;
                 padding: 15px;
+            }
+
+            .product-image-clickable {
+                width: 130px;
+                height: 130px;
             }
 
             .desc-modal-content {
@@ -1102,9 +924,14 @@ $allProducts = $stmt->fetchAll();
             }
 
             .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
                 gap: 10px;
                 padding: 10px;
+            }
+
+            .product-image-clickable {
+                width: 120px;
+                height: 120px;
             }
 
             .shop-controls {
@@ -1148,26 +975,20 @@ $allProducts = $stmt->fetchAll();
                 padding: 0 15px 8px 15px;
             }
 
-            .add-product-modal-content {
-                width: 95%;
+            /* Slightly smaller buttons on tiny screens */
+            .card-add-btn,
+            .card-desc-btn {
+                font-size: 11px;
+                padding: 8px 0;
+                gap: 4px;
             }
 
-            .add-product-modal-body {
-                padding: 20px;
-            }
-
-            .add-product-modal-footer {
-                flex-direction: column;
-            }
-
-            .btn-cancel-add,
-            .btn-submit-add {
-                width: 100%;
-                justify-content: center;
+            .card-add-btn i,
+            .card-desc-btn i {
+                font-size: 11px;
             }
         }
 
-        /* Extra small screens - prevent wrapping */
         @media (max-width: 380px) {
             .shop-controls {
                 gap: 4px;
@@ -1198,7 +1019,7 @@ $allProducts = $stmt->fetchAll();
             }
 
             .search-input i {
-                left: 10px;F
+                left: 10px;
                 font-size: 11px;
             }
         }
@@ -1213,30 +1034,23 @@ $allProducts = $stmt->fetchAll();
         <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <?php
-                include 'sidebar.php';
-                ?>
+                <?php include 'sidebar.php'; ?>
             </div>
         </div>
 
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="header-left">
-                    <!-- Burger Button (Mobile Only) -->
                     <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="welcome">
-                        <h4>
-                            Purchase Order
-                        </h4>
+                        <h4>Purchase Order</h4>
                     </div>
                 </div>
             </div>
 
-            <!-- Products Grid -->
             <div class="merchandise-section">
-                <!-- Search Bar & Add Product - Straight Aligned -->
                 <div class="shop-controls">
                     <div class="search-wrapper">
                         <div class="search-input">
@@ -1248,11 +1062,16 @@ $allProducts = $stmt->fetchAll();
                             <i class="fas fa-times"></i> Clear
                         </button>
                     </div>
-                    <button class="add-product-btn" id="addProductBtn">
-                        <i class="fas fa-plus-circle"></i> Add Product
-                    </button>
+                    <a href="upload_products.php" class="add-product-btn" id="addProductBtn" style="text-decoration: none;">
+                        <i class="fas fa-plus-circle"></i> Add New
+                    </a>
+
+                    <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
+                        <a href="/API/download_images.php" class="add-product-btn" id="downloadImagesBtn" style="text-decoration: none;">
+                            <i class="fas fa-download"></i> Images
+                        </a>
+                    <?php endif; ?>
                 </div>
-                <div id="searchInfo" class="search-info"></div>
 
                 <!-- Products Grid -->
                 <div class="products-grid" id="productsGrid">
@@ -1263,31 +1082,51 @@ $allProducts = $stmt->fetchAll();
                             data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>"
                             data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>">
+
+                            <!-- ✅ Image wrapper with trash at the top-right corner of the IMAGE -->
+                            <div class="product-image-wrapper">
+                                <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                                    alt="<?php echo htmlspecialchars($product['product_name']); ?>"
+                                    class="product-image-clickable"
+                                    onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
+
+                                <a href="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                    class="delete-btn"
+                                    onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this product?');"
+                                    title="Delete product">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                             <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
 
                             <div class="card-qty-control">
-                                <button class="card-qty-btn decrement-card"
-                                    data-id="<?php echo $product['id']; ?>">-</button>
+                                <button class="card-qty-btn decrement-card" data-id="<?php echo $product['id']; ?>">-</button>
                                 <span class="card-qty-value" id="qty-<?php echo $product['id']; ?>">0</span>
-                                <button class="card-qty-btn increment-card"
-                                    data-id="<?php echo $product['id']; ?>">+</button>
+                                <button class="card-qty-btn increment-card" data-id="<?php echo $product['id']; ?>">+</button>
                             </div>
 
-                            <button class="card-add-btn add-to-cart-card" data-id="<?php echo $product['id']; ?>"
-                                data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                data-price="<?php echo $product['selling_price']; ?>"
-                                data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
-                                <i class="fas fa-cart-plus"></i> Add to Cart
-                            </button>
-                            <button class="card-desc-btn desc-btn" data-id="<?php echo $product['id']; ?>"
-                                data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
-                                data-price="<?php echo number_format($product['selling_price'], 2); ?>"
-                                data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
-                                <i class="fas fa-info-circle"></i> Description
-                            </button>
+                            <!-- ✅ Add + Description side-by-side in a 2-column grid -->
+                            <div class="card-actions-grid">
+                                <button class="card-add-btn add-to-cart-card"
+                                    data-id="<?php echo $product['id']; ?>"
+                                    data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                                    data-price="<?php echo $product['selling_price']; ?>"
+                                    data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
+                                     Add
+                                </button>
+
+                                <button class="card-desc-btn desc-btn"
+                                    data-id="<?php echo $product['id']; ?>"
+                                    data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                                    data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
+                                    data-price="<?php echo number_format($product['selling_price'], 2); ?>"
+                                    data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
+                                     Description
+                                </button>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -1295,54 +1134,7 @@ $allProducts = $stmt->fetchAll();
         </main>
     </div>
 
-    <!-- Add Product Modal -->
-    <div id="addProductModal" class="add-product-modal">
-        <div class="add-product-modal-content">
-            <div class="add-product-modal-header">
-                <h3>
-                    <i class="fas fa-box"></i>
-                    Add New Product
-                </h3>
-                <span class="close-add-product-modal">&times;</span>
-            </div>
-            <div class="add-product-modal-body">
-                <form id="addProductForm">
-                    <div class="form-group">
-                        <label><i class="fas fa-tag"></i> Product Name <span class="required">*</span></label>
-                        <input type="text" id="product_name" placeholder="Enter product name" required>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-cube"></i> Unit <span class="required">*</span></label>
-                        <input type="text" id="unit" placeholder="e.g., Pcs, Box, Kg" required>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-sort-numeric-up"></i> Quantity <span class="required">*</span></label>
-                        <input type="number" id="quantity" placeholder="Enter initial quantity" required min="0"
-                            step="1">
-                        <div class="hint">Enter the initial stock quantity.</div>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-coins"></i> Unit Cost <span class="required">*</span></label>
-                        <input type="number" id="selling_price" placeholder="0.00" required min="0" step="0.01">
-                        <div class="hint">Enter the selling price per unit.</div>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-align-left"></i> Description</label>
-                        <textarea id="description" placeholder="Enter product description (optional)"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="add-product-modal-footer">
-                <button class="btn-cancel-add" id="cancelAddProduct">Cancel</button>
-                <button class="btn-submit-add" id="submitAddProduct">
-                    <span class="spinner"></span>
-                    <span class="btn-text"><i class="fas fa-save"></i> Save Product</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Description Modal - Modern Design -->
+    <!-- Description Modal -->
     <div id="descriptionModal" class="desc-modal">
         <div class="desc-modal-content">
             <div class="desc-modal-header">
@@ -1355,27 +1147,21 @@ $allProducts = $stmt->fetchAll();
             <div class="desc-modal-body">
                 <div class="product-info-section">
                     <div class="product-detail-row">
-                        <div class="product-detail-icon">
-                            <i class="fas fa-box"></i>
-                        </div>
+                        <div class="product-detail-icon"><i class="fas fa-box"></i></div>
                         <div class="product-detail-text">
                             <div class="product-detail-label">Product Name</div>
                             <div class="product-detail-value" id="descProductName">-</div>
                         </div>
                     </div>
                     <div class="product-detail-row">
-                        <div class="product-detail-icon">
-                            <i class="fas fa-tag"></i>
-                        </div>
+                        <div class="product-detail-icon"><i class="fas fa-tag"></i></div>
                         <div class="product-detail-text">
                             <div class="product-detail-label">Unit</div>
                             <div class="product-detail-value" id="descProductUnit">-</div>
                         </div>
                     </div>
                     <div class="product-detail-row">
-                        <div class="product-detail-icon">
-                            <i class="fas fa-coins"></i>
-                        </div>
+                        <div class="product-detail-icon"><i class="fas fa-coins"></i></div>
                         <div class="product-detail-text">
                             <div class="product-detail-label">Price</div>
                             <div class="product-detail-value" id="descProductPrice">-</div>
@@ -1401,6 +1187,17 @@ $allProducts = $stmt->fetchAll();
         </div>
     </div>
 
+    <!-- Image Modal (referenced by product images) -->
+    <div id="imageModal" class="desc-modal" onclick="closeImageModal()">
+        <div class="desc-modal-content" style="max-width: 90%; background: #000; padding: 12px;" onclick="event.stopPropagation()">
+            <img id="imageModalImg" src="" alt="Product Image"
+                style="width: 100%; height: auto; max-height: 80vh; object-fit: contain; border-radius: 12px;">
+            <button class="close-desc-btn" style="margin-top: 12px;" onclick="closeImageModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">
             <i class="fas fa-spinner"></i>
@@ -1408,9 +1205,7 @@ $allProducts = $stmt->fetchAll();
         </div>
     </div>
 
-    <?php
-    include '../footer.php';
-    ?>
+    <?php include '../footer.php'; ?>
 
     <script>
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
@@ -1438,11 +1233,8 @@ $allProducts = $stmt->fetchAll();
         }
 
         function toggleSidebar() {
-            if (isSidebarOpen) {
-                closeSidebar();
-            } else {
-                openSidebar();
-            }
+            if (isSidebarOpen) closeSidebar();
+            else openSidebar();
         }
 
         if (burgerBtn) {
@@ -1463,7 +1255,6 @@ $allProducts = $stmt->fetchAll();
             menuOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
@@ -1474,31 +1265,26 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
-        // ========== DROPDOWN TOGGLE ==========
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
             const arrowId = dropdownId.replace('Dropdown', 'Arrow');
             const arrow = document.getElementById(arrowId);
-
             if (dropdown && arrow) {
                 dropdown.classList.toggle('show');
                 arrow.classList.toggle('rotated');
             }
         }
 
-        // ========== BURGER VISIBILITY ON RESIZE ==========
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
-                if (isSidebarOpen) {
-                    closeSidebar();
-                }
+                if (isSidebarOpen) closeSidebar();
                 sidebarWrapper.classList.remove('open');
                 menuOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
         });
 
-        // ========== DESCRIPTION MODAL FUNCTIONS ==========
+        // ========== DESCRIPTION MODAL ==========
         const descModal = document.getElementById('descriptionModal');
         const closeDescModalBtn = document.querySelector('.close-desc-modal');
         const closeDescFooterBtn = document.querySelector('.close-desc-btn');
@@ -1528,9 +1314,7 @@ $allProducts = $stmt->fetchAll();
         if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
 
         window.addEventListener('click', (e) => {
-            if (e.target === descModal) {
-                closeDescriptionModal();
-            }
+            if (e.target === descModal) closeDescriptionModal();
         });
 
         document.addEventListener('keydown', function (e) {
@@ -1539,132 +1323,20 @@ $allProducts = $stmt->fetchAll();
             }
         });
 
-        // ========== ADD PRODUCT MODAL ==========
-        const addProductModal = document.getElementById('addProductModal');
-        const addProductBtn = document.getElementById('addProductBtn');
-        const closeAddProductModalBtn = document.querySelector('.close-add-product-modal');
-        const cancelAddProductBtn = document.getElementById('cancelAddProduct');
-        const submitAddProductBtn = document.getElementById('submitAddProduct');
-        const addProductForm = document.getElementById('addProductForm');
-
-        function openAddProductModal() {
-            addProductModal.style.display = 'flex';
+        // ========== IMAGE MODAL ==========
+        function openImageModal(imageSrc, productName) {
+            const modal = document.getElementById('imageModal');
+            document.getElementById('imageModalImg').src = imageSrc;
+            modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            addProductForm.reset();
-            submitAddProductBtn.disabled = false;
-            submitAddProductBtn.classList.remove('loading');
         }
 
-        function closeAddProductModal() {
-            addProductModal.style.display = 'none';
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
             document.body.style.overflow = '';
         }
 
-        if (addProductBtn) {
-            addProductBtn.addEventListener('click', openAddProductModal);
-        }
-
-        if (closeAddProductModalBtn) {
-            closeAddProductModalBtn.addEventListener('click', closeAddProductModal);
-        }
-
-        if (cancelAddProductBtn) {
-            cancelAddProductBtn.addEventListener('click', closeAddProductModal);
-        }
-
-        window.addEventListener('click', (e) => {
-            if (e.target === addProductModal) {
-                closeAddProductModal();
-            }
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && addProductModal.style.display === 'flex') {
-                closeAddProductModal();
-            }
-        });
-
-        // ========== SUBMIT ADD PRODUCT ==========
-        if (submitAddProductBtn) {
-            submitAddProductBtn.addEventListener('click', async function (e) {
-                e.preventDefault();
-
-                const productName = document.getElementById('product_name').value.trim();
-                const unit = document.getElementById('unit').value.trim();
-                const quantity = document.getElementById('quantity').value.trim();
-                const sellingPrice = document.getElementById('selling_price').value.trim();
-                const description = document.getElementById('description').value.trim();
-
-                if (!productName) {
-                    showToast('Please enter product name', 'error');
-                    document.getElementById('product_name').focus();
-                    return;
-                }
-
-                if (!unit) {
-                    showToast('Please enter unit', 'error');
-                    document.getElementById('unit').focus();
-                    return;
-                }
-
-                if (!quantity || parseInt(quantity) < 0) {
-                    showToast('Please enter valid quantity', 'error');
-                    document.getElementById('quantity').focus();
-                    return;
-                }
-
-                if (!sellingPrice || parseFloat(sellingPrice) <= 0) {
-                    showToast('Please enter valid unit cost (must be greater than 0)', 'error');
-                    document.getElementById('selling_price').focus();
-                    return;
-                }
-
-                submitAddProductBtn.disabled = true;
-                submitAddProductBtn.classList.add('loading');
-
-                try {
-                    const formData = new FormData();
-                    formData.append('action', 'add_product');
-                    formData.append('product_name', productName);
-                    formData.append('unit', unit);
-                    formData.append('quantity', quantity);
-                    formData.append('selling_price', sellingPrice);
-                    formData.append('description', description);
-                    formData.append('csrf_token', csrfToken);
-
-                    const response = await fetch('../API/add_product.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const data = await response.json();
-
-                    if (data.success) {
-                        showToast(data.message || 'Product added successfully!', 'success');
-                        closeAddProductModal();
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
-                    } else {
-                        showToast(data.message || 'Error adding product', 'error');
-                    }
-                } catch (err) {
-                    console.error('Error:', err);
-                    showToast('Network error. Please try again.', 'error');
-                } finally {
-                    submitAddProductBtn.disabled = false;
-                    submitAddProductBtn.classList.remove('loading');
-                }
-            });
-        }
-
-        document.getElementById('addProductForm').addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                document.getElementById('submitAddProduct').click();
-            }
-        });
-
-        // ========== TOAST NOTIFICATION ==========
+        // ========== TOAST ==========
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
@@ -1697,7 +1369,12 @@ $allProducts = $stmt->fetchAll();
             });
         }
 
-        // ========== SEARCH FUNCTIONALITY ==========
+        // ========== SEARCH ==========
+        const searchInput = document.getElementById('liveSearchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const searchInfo = document.getElementById('searchInfo');
+        const productsGrid = document.getElementById('productsGrid');
+
         function filterProducts() {
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const cards = productsGrid.querySelectorAll('.product-card');
@@ -1705,30 +1382,29 @@ $allProducts = $stmt->fetchAll();
 
             cards.forEach(card => {
                 const productName = card.getAttribute('data-fullname') || '';
-                const productNameLower = productName.toLowerCase();
-
-                let searchMatch = true;
-                if (searchTerm !== '') {
-                    searchMatch = productNameLower.includes(searchTerm);
-                }
-
-                if (searchMatch) {
-                    card.style.display = '';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
+                const match = searchTerm === '' || productName.toLowerCase().includes(searchTerm);
+                card.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
             });
-
-            if (searchTerm === '') {
-                searchInfo.innerHTML = `<i class="fas fa-info-circle"></i> Showing all ${visibleCount} products`;
-            } else {
-                searchInfo.innerHTML =
-                    `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
-            }
         }
 
-        // ========== ADD TO CART FUNCTION ==========
+        let searchTimeout;
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(filterProducts, 300);
+            });
+        }
+
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                filterProducts();
+                searchInput.focus();
+            });
+        }
+
+        // ========== ADD TO CART ==========
         async function addToCart(productId, productName, price, unit, quantity) {
             if (quantity <= 0) {
                 showToast('Please select quantity first (use + button to increase)', 'error');
@@ -1758,9 +1434,7 @@ $allProducts = $stmt->fetchAll();
 
                 if (data.success) {
                     const qtySpan = document.getElementById(`qty-${productId}`);
-                    if (qtySpan) {
-                        qtySpan.textContent = '0';
-                    }
+                    if (qtySpan) qtySpan.textContent = '0';
                     showToast(`An item(s) added to cart!`, 'success');
                     return true;
                 } else {
@@ -1776,7 +1450,7 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        // ========== QUANTITY CONTROL EVENT LISTENERS ==========
+        // ========== QUANTITY CONTROLS ==========
         document.querySelectorAll('.decrement-card').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -1784,9 +1458,7 @@ $allProducts = $stmt->fetchAll();
                 const qtySpan = document.getElementById(`qty-${productId}`);
                 if (!qtySpan) return;
                 let currentQty = parseInt(qtySpan.textContent) || 0;
-                if (currentQty > 0) {
-                    qtySpan.textContent = currentQty - 1;
-                }
+                if (currentQty > 0) qtySpan.textContent = currentQty - 1;
             });
         });
 
@@ -1801,7 +1473,7 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
-        // ========== ADD TO CART BUTTON EVENT LISTENERS ==========
+        // ========== ADD TO CART BUTTONS ==========
         document.querySelectorAll('.add-to-cart-card').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -1815,45 +1487,20 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
-        // ========== DESCRIPTION BUTTON EVENT LISTENERS ==========
+        // ========== DESCRIPTION BUTTONS ==========
         document.querySelectorAll('.desc-btn').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                const productName = this.dataset.name;
-                const productUnit = this.dataset.unit;
-                const productPrice = this.dataset.price;
-                const productDescription = this.dataset.description || '';
-                openDescriptionModal(productName, productUnit, productPrice, productDescription);
+                openDescriptionModal(
+                    this.dataset.name,
+                    this.dataset.unit,
+                    this.dataset.price,
+                    this.dataset.description || ''
+                );
             });
         });
 
-        // ========== LIVE SEARCH FUNCTIONALITY ==========
-        const searchInput = document.getElementById('liveSearchInput');
-        const clearSearchBtn = document.getElementById('clearSearchBtn');
-        const searchInfo = document.getElementById('searchInfo');
-        const productsGrid = document.getElementById('productsGrid');
-
-        function performLiveSearch() {
-            filterProducts();
-        }
-
-        let searchTimeout;
-        if (searchInput) {
-            searchInput.addEventListener('input', function () {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(performLiveSearch, 300);
-            });
-        }
-
-        if (clearSearchBtn) {
-            clearSearchBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                performLiveSearch();
-                searchInput.focus();
-            });
-        }
-
-        performLiveSearch();
+        filterProducts();
 
         console.log('📱 Sidebar menu loaded - Left Side');
         console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
