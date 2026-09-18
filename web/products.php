@@ -542,19 +542,13 @@ foreach ($allProducts as $product) {
             height: 32px;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
             color: black;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.2s ease;
             z-index: 3;
         }
 
-        .delete-btn:hover {
-            background: #ef4444;
-            color: #ffffff;
-        }
+
 
         /* ========== MODALS ========== */
         .desc-modal {
