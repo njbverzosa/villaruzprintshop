@@ -341,6 +341,38 @@
         color: #10b981;
     }
 
+    /* ===== INVESTORS (Pink) ===== */
+    .nav-dropdown-item.active_investors {
+        background: #eff6ff;
+        color: #db2777;
+        border-left: 3px solid #ec4899;
+    }
+
+    .nav-dropdown-item.active_investors:hover {
+        background: #fce7f3;
+        color: #9d174d;
+    }
+
+    .nav-dropdown-item.active_investors i {
+        color: #ec4899;
+    }
+
+    /* ===== PRODUCTS - SOURCE (Indigo) ===== */
+    .nav-dropdown-item.active_products_source {
+        background: #eff6ff;
+        color: #4f46e5;
+        border-left: 3px solid #6366f1;
+    }
+
+    .nav-dropdown-item.active_products_source:hover {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .nav-dropdown-item.active_products_source i {
+        color: #6366f1;
+    }
+
     /* ===== DROPDOWN MENU CONTAINER ===== */
     .nav-dropdown-menu {
         display: none;
@@ -500,6 +532,31 @@
                 class="nav-dropdown-item <?php echo in_array($currentPage, ['registered_customers.php', 'chat_view.php']) ? 'active_customers' : ''; ?>">
                 <i class="fas fa-user"></i>
                 <span>List</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Source Dropdown - Visible to ALL -->
+    <?php
+    $sourceActive = in_array($currentPage, ['investors.php', 'products.php']);
+    ?>
+    <div class="nav-dropdown">
+        <div class="nav-dropdown-toggle" onclick="toggleDropdown('sourceDropdown')">
+            <i class="fas fa-layer-group"></i>
+            <span>Source</span>
+            <i class="fas fa-chevron-down dropdown-arrow <?php echo $sourceActive ? 'rotated' : ''; ?>"
+                id="sourceArrow"></i>
+        </div>
+        <div class="nav-dropdown-menu <?php echo $sourceActive ? 'show' : ''; ?>" id="sourceDropdown">
+            <a href="investors.php"
+                class="nav-dropdown-item <?php echo $currentPage == 'investors.php' ? 'active_investors' : ''; ?>">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Investors</span>
+            </a>
+            <a href="products.php"
+                class="nav-dropdown-item <?php echo $currentPage == 'products.php' ? 'active_products_source' : ''; ?>">
+                <i class="fas fa-boxes"></i>
+                <span>Products</span>
             </a>
         </div>
     </div>

@@ -1,9 +1,13 @@
 <?php
-// web/shop.php - Admin Shop Page
+// web/all_products.php
 
 session_start();
 
 require_once __DIR__ . '/../DB_Conn/config.php';
+
+if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
+    $_SESSION['user_name'] = $userData['f_name'];
+}
 
 function isLoggedIn()
 {
@@ -37,9 +41,47 @@ if (!$userData) {
 
 $user = $userData;
 
-$stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
+date_default_timezone_set('Asia/Manila');
+$timezone = new DateTimeZone('Asia/Manila');
+
+$stmt = $pdo->prepare("
+    SELECT * FROM investors_inventory 
+    ORDER BY 
+        CASE 
+            WHEN last_restocked IS NULL OR last_restocked = '' THEN 1 
+            ELSE 0 
+        END,
+        STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC,
+        id DESC
+");
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
+
+$recentlyRestocked = [];
+$olderRestocked = [];
+$neverRestocked = [];
+
+foreach ($allProducts as $product) {
+    if (empty($product['last_restocked'])) {
+        $neverRestocked[] = $product;
+    } else {
+        try {
+            $restockDate = DateTime::createFromFormat('j M Y g:i A', $product['last_restocked']);
+            if ($restockDate === false) {
+                $restockDate = new DateTime($product['last_restocked']);
+            }
+            $daysDiff = $restockDate->diff(new DateTime('now', $timezone))->days;
+
+            if ($daysDiff <= 7) {
+                $recentlyRestocked[] = $product;
+            } else {
+                $olderRestocked[] = $product;
+            }
+        } catch (Exception $e) {
+            $neverRestocked[] = $product;
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -47,7 +89,8 @@ $allProducts = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Shop | Villaruz Print Shop & General Merchandise</title>
+    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
+    <title>Shop Products | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* ========== MODERN LIGHT GRAY DASHBOARD STYLES ========== */
@@ -93,7 +136,6 @@ $allProducts = $stmt->fetchAll();
             flex-direction: column;
             border-right: 1px solid #e2e8f0;
             overflow-y: auto;
-            position: relative;
         }
 
         @media (max-width: 768px) {
@@ -143,13 +185,6 @@ $allProducts = $stmt->fetchAll();
 
         .menu-overlay.active {
             display: block;
-        }
-
-        .last_restocked {
-            font-size: 10px;
-            color: #64748b;
-            margin-top: 10px;
-            margin-bottom: 10px;
         }
 
         /* ========== BURGER BUTTON (Mobile Only) ========== */
@@ -209,6 +244,10 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
+        .side-menu {
+            position: relative;
+        }
+
         /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
@@ -241,6 +280,12 @@ $allProducts = $stmt->fetchAll();
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+
+        .welcome h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
         }
 
         .welcome h4 {
@@ -279,74 +324,6 @@ $allProducts = $stmt->fetchAll();
             padding: 20px;
             overflow-y: auto;
         }
-
-        /* ========== PRODUCT IMAGE ========== */
-        .product-image-wrapper {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 10px;
-            line-height: 0;
-        }
-
-        .product-image-clickable {
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 10px;
-            cursor: pointer;
-            display: block;
-        }
-
-
-        /* Update (edit) button — top-LEFT corner of the IMAGE */
-        .edit-btn {
-            position: absolute;
-            top: -6px;
-            left: -6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.95);
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-            z-index: 5;
-            font-size: 13px;
-        }
-
-
-        .edit-btn i {
-            pointer-events: none;
-        }
-
-        /* Trash button — top-RIGHT corner of the IMAGE */
-        .delete-btn {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.95);
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-            z-index: 5;
-            font-size: 13px;
-        }
-
-
-        .delete-btn i {
-            pointer-events: none;
-        }
-
-
 
         /* ========== SEARCH & ADD PRODUCT ========== */
         .shop-controls {
@@ -443,6 +420,12 @@ $allProducts = $stmt->fetchAll();
             font-size: 14px;
         }
 
+        .search-info {
+            font-size: 13px;
+            color: #64748b;
+            padding: 0 25px 10px 25px;
+        }
+
         /* ========== PRODUCTS GRID ========== */
         .products-grid {
             display: grid;
@@ -454,6 +437,7 @@ $allProducts = $stmt->fetchAll();
 
         .product-card {
             position: relative;
+            /* ✅ needed for absolute trash */
             background: #ffffff;
             border-radius: 5px;
             padding: 16px 12px;
@@ -480,14 +464,14 @@ $allProducts = $stmt->fetchAll();
             line-height: 1.3;
         }
 
-        /* ✅ Price + Unit aligned in a grid row */
+        /* ✅ Price + Unit on a single line, no background on unit */
         .price-unit-grid {
-            display: grid;
-            grid-template-columns: auto auto;
+            display: flex;
             align-items: baseline;
             justify-content: center;
-            column-gap: 6px;
+            gap: 6px;
             margin-bottom: 12px;
+            white-space: nowrap;
             width: 100%;
         }
 
@@ -497,6 +481,7 @@ $allProducts = $stmt->fetchAll();
             color: #3b82f6;
             line-height: 1.2;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .product-unit {
@@ -505,47 +490,10 @@ $allProducts = $stmt->fetchAll();
             font-weight: 500;
             line-height: 1.2;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        .card-qty-control {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: #f8fafc;
-            border-radius: 30px;
-            padding: 4px 8px;
-            margin-bottom: 10px;
-            width: 100%;
-            border: 1px solid #e2e8f0;
-        }
-
-        .card-qty-btn {
-            background: #ffffff;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            font-size: 16px;
-            font-weight: bold;
-            color: #3b82f6;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .card-qty-btn:hover {
-            background: #3b82f6;
-            color: #ffffff;
-        }
-
-        .card-qty-value {
-            font-size: 14px;
-            font-weight: 600;
-            min-width: 35px;
-            text-align: center;
-            color: #0f172a;
-        }
-
+        /* ✅ INFO + UPDATE aligned in one grid row */
         .card-actions-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -554,41 +502,78 @@ $allProducts = $stmt->fetchAll();
             margin-top: 4px;
         }
 
-        .card-add-btn,
-        .card-desc-btn {
+        .update-btn,
+        .desc-btn {
             border: none;
-            width: 100%;
-            padding: 9px 0;
-            border-radius: 5px;
+            border-radius: 10px;
+            padding: 8px 0;
             font-weight: 600;
             font-size: 12px;
-            color: #ffffff;
             cursor: pointer;
             transition: 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 5px;
-            margin: 0;
+            width: 100%;
+            text-decoration: none;
+            box-sizing: border-box;
         }
 
-        .card-add-btn {
+        .update-btn {
             background: #3b82f6;
+            color: white;
         }
 
-        .card-add-btn:hover {
+        .update-btn:hover:not(:disabled) {
             background: #2563eb;
-            transform: scale(0.97);
+            transform: translateY(-2px);
         }
 
-        .card-desc-btn {
+        .desc-btn {
             background: #8b5cf6;
+            color: white;
         }
 
-        .card-desc-btn:hover {
+        .desc-btn:hover {
             background: #7c3aed;
-            transform: scale(0.97);
+            transform: translateY(-2px);
         }
+
+        .update-btn:disabled,
+        .desc-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .last_restocked {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 3;
+        }
+
+
 
         /* ========== MODALS ========== */
         .desc-modal {
@@ -832,51 +817,6 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        /* ========== LOADING OVERLAY ========== */
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(4px);
-            z-index: 3000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .loading-spinner {
-            background: white;
-            padding: 30px 40px;
-            border-radius: 16px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .loading-spinner i {
-            font-size: 32px;
-            color: #3b82f6;
-            animation: spin 1s linear infinite;
-        }
-
-        .loading-spinner p {
-            margin-top: 12px;
-            font-weight: 500;
-            color: #1e293b;
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .main-content {
@@ -934,6 +874,10 @@ $allProducts = $stmt->fetchAll();
 
             .dashboard-header {
                 padding: 15px 20px;
+            }
+
+            .search-info {
+                padding: 0 15px 10px 15px;
             }
         }
 
@@ -993,6 +937,11 @@ $allProducts = $stmt->fetchAll();
             .add-product-btn i {
                 font-size: 11px;
             }
+
+            .search-info {
+                font-size: 11px;
+                padding: 0 12px 8px 12px;
+            }
         }
 
         @media (max-width: 380px) {
@@ -1049,172 +998,152 @@ $allProducts = $stmt->fetchAll();
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="welcome">
-                        <h4>Purchase Order</h4>
+                        <h4>Shop</h4>
                     </div>
                 </div>
             </div>
 
-            <div class="merchandise-section">
-                <div class="shop-controls">
-                    <div class="search-wrapper">
-                        <div class="search-input">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="liveSearchInput" placeholder="Search by product name..."
-                                autocomplete="off">
-                        </div>
-                        <button class="clear-search-btn" id="clearSearchBtn">
-                            <i class="fas fa-times"></i> Clear
-                        </button>
+            <div class="shop-controls">
+                <div class="search-wrapper">
+                    <div class="search-input">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="liveSearchInput" placeholder="Search by product name..."
+                            autocomplete="off">
                     </div>
-                    <a href="upload_products.php" class="add-product-btn" id="addProductBtn"
-                        style="text-decoration: none;">
-                        <i class="fas fa-plus-circle"></i> Add New
-                    </a>
-
-                    <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
-                        <a href="/API/download_images.php" class="add-product-btn" id="downloadImagesBtn">
-                            <i class="fas fa-download"></i> Images
-                        </a>
-                    <?php endif; ?>
+                    <button class="clear-search-btn" id="clearSearchBtn">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
                 </div>
+                <a href="upload_products.php" class="add-product-btn" id="addProductBtn">
+                    <i class="fas fa-plus-circle"></i> Add New
+                </a>
 
-                <div class="products-grid" id="productsGrid">
+                <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
+                    <a href="/API/download_images.php" class="add-product-btn" id="downloadImagesBtn">
+                        <i class="fas fa-download"></i> Images
+                    </a>
+                <?php endif; ?>
+
+            </div>
+            <div id="searchInfo" class="search-info"></div>
+
+            <div class="products-grid" id="productsGrid">
+                <?php if (empty($allProducts)): ?>
+                    <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #94a3b8;">
+                        <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                        No products found. Click "Add New Product" to get started.
+                    </div>
+                <?php else: ?>
                     <?php foreach ($allProducts as $product): ?>
                         <div class="product-card" data-id="<?php echo $product['id']; ?>"
                             data-name="<?php echo strtolower(htmlspecialchars($product['product_name'])); ?>"
-                            data-fullname="<?php echo htmlspecialchars($product['product_name']); ?>">
+                            data-fullname="<?php echo htmlspecialchars($product['product_name']); ?>"
+                            data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>"
+                            data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
+                            data-price="<?php echo number_format($product['selling_price'], 2); ?>">
+
+                            <!-- ✅ Trash button — top-right corner -->
+                            <a href="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                class="delete-btn" onclick="return confirm('Are you sure you want to delete this product?');"
+                                title="Delete product">
+                                <i class="fas fa-trash"></i>
+                            </a>
+
                             <div class="product-image-wrapper">
                                 <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
-                                    onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
-
-                                <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
-                                    class="edit-btn" title="Update product">
-                                    <i class="fas fa-pen"></i>
-                                </a>
-
-                                <a href="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
-                                    class="delete-btn"
-                                    onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this product?');"
-                                    title="Delete product">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                                    onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
+                                    style="width: 150px; height: auto;border-radius:5px;">
                             </div>
-
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
-
                             <div class="price-unit-grid">
-                                <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?>
-                                </div>
-                                <div class="product-unit">/ <?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
-                            </div>
-
-                            <div class="card-qty-control">
-                                <button class="card-qty-btn decrement-card"
-                                    data-id="<?php echo $product['id']; ?>">-</button>
-                                <span class="card-qty-value" id="qty-<?php echo $product['id']; ?>">0</span>
-                                <button class="card-qty-btn increment-card"
-                                    data-id="<?php echo $product['id']; ?>">+</button>
+                                <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>/
+                                <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                             </div>
 
                             <div class="card-actions-grid">
-                                <button class="card-add-btn add-to-cart-card" data-id="<?php echo $product['id']; ?>"
-                                    data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                    data-price="<?php echo $product['selling_price']; ?>"
-                                    data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
-                                    <i class="fas fa-shopping-cart"></i>
-                                </button>
-
-                                <button class="card-desc-btn desc-btn" data-id="<?php echo $product['id']; ?>"
-                                    data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                    data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
-                                    data-price="<?php echo number_format($product['selling_price'], 2); ?>"
-                                    data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
+                                <button class="desc-btn" data-id="<?php echo $product['id']; ?>">
                                     <i class="fas fa-info-circle"></i>
                                 </button>
+                                <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                    class="update-btn">
+                                    <i class="fas fa-pen"></i>
+                                </a>
                             </div>
+
                             <div class="last_restocked">
                                 <?php echo htmlspecialchars($product['last_restocked']); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
-                </div>
+                <?php endif; ?>
             </div>
         </main>
     </div>
 
+    <!-- Description Modal -->
     <div id="descriptionModal" class="desc-modal">
         <div class="desc-modal-content">
             <div class="desc-modal-header">
-                <h3><i class="fas fa-file-alt"></i> Product Information</h3>
+                <h3>
+                    <i class="fas fa-file-alt"></i>
+                    Product Information
+                </h3>
                 <span class="close-desc-modal">&times;</span>
             </div>
             <div class="desc-modal-body">
                 <div class="product-info-section">
                     <div class="product-detail-row">
-                        <div class="product-detail-icon"><i class="fas fa-box"></i></div>
+                        <div class="product-detail-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
                         <div class="product-detail-text">
                             <div class="product-detail-label">Product Name</div>
                             <div class="product-detail-value" id="descProductName">-</div>
                         </div>
                     </div>
                     <div class="product-detail-row">
-                        <div class="product-detail-icon"><i class="fas fa-tag"></i></div>
+                        <div class="product-detail-icon">
+                            <i class="fas fa-tag"></i>
+                        </div>
                         <div class="product-detail-text">
                             <div class="product-detail-label">Unit</div>
                             <div class="product-detail-value" id="descProductUnit">-</div>
                         </div>
                     </div>
                     <div class="product-detail-row">
-                        <div class="product-detail-icon"><i class="fas fa-coins"></i></div>
+                        <div class="product-detail-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
                         <div class="product-detail-text">
                             <div class="product-detail-label">Price</div>
                             <div class="product-detail-value" id="descProductPrice">-</div>
                         </div>
                     </div>
                 </div>
+
                 <div class="description-section">
                     <div class="description-title">
                         <i class="fas fa-align-left"></i>
                         <span>Description</span>
                     </div>
-                    <div class="description-text" id="descProductDescription">No description available.</div>
+                    <div class="description-text" id="descProductDescription">
+                        No description available.
+                    </div>
                 </div>
             </div>
             <div class="desc-modal-footer">
-                <button class="close-desc-btn"><i class="fas fa-times"></i> Close</button>
+                <button class="close-desc-btn">
+                    <i class="fas fa-check-circle"></i> Got it
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="imageModal" class="desc-modal" onclick="closeImageModal()">
-        <div class="desc-modal-content" style="max-width: 90%; background: #000; padding: 12px;"
-            onclick="event.stopPropagation()">
-            <img id="imageModalImg" src="" alt="Product Image"
-                style="width: 100%; height: auto; max-height: 80vh; object-fit: contain; border-radius: 12px;">
-            <button class="close-desc-btn" style="margin-top: 12px;" onclick="closeImageModal()">
-                <i class="fas fa-times"></i> Close
-            </button>
-        </div>
-    </div>
-
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
-            <i class="fas fa-spinner"></i>
-            <p>Processing...</p>
-        </div>
-    </div>
-
-    <?php include '../footer.php'; ?>
-
     <script>
-        const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
-        const accNum = '<?php echo htmlspecialchars($user['acc_number'] ?? ''); ?>';
-
         // ========== SIDEBAR TOGGLE (Mobile Only) ==========
         const burgerBtn = document.getElementById('burgerBtn');
-        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const sidebarWrapper = document.getElementById('sidebarWrapper');
         const menuOverlay = document.getElementById('menuOverlay');
         let isSidebarOpen = false;
@@ -1234,21 +1163,17 @@ $allProducts = $stmt->fetchAll();
         }
 
         function toggleSidebar() {
-            if (isSidebarOpen) closeSidebar();
-            else openSidebar();
+            if (isSidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
         }
 
         if (burgerBtn) {
             burgerBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 toggleSidebar();
-            });
-        }
-
-        if (sidebarCloseBtn) {
-            sidebarCloseBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                closeSidebar();
             });
         }
 
@@ -1266,31 +1191,42 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
-        function toggleDropdown(dropdownId) {
-            const dropdown = document.getElementById(dropdownId);
-            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
-            const arrow = document.getElementById(arrowId);
-            if (dropdown && arrow) {
-                dropdown.classList.toggle('show');
-                arrow.classList.toggle('rotated');
-            }
-        }
-
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
-                if (isSidebarOpen) closeSidebar();
+                if (isSidebarOpen) {
+                    closeSidebar();
+                }
                 sidebarWrapper.classList.remove('open');
                 menuOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
         });
 
+        // ========== DROPDOWN TOGGLE (Sidebar) ==========
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
+            const arrow = document.getElementById(arrowId);
+
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+            if (arrow) {
+                arrow.classList.toggle('rotated');
+            }
+        }
+
         // ========== DESCRIPTION MODAL ==========
         const descModal = document.getElementById('descriptionModal');
         const closeDescModalBtn = document.querySelector('.close-desc-modal');
         const closeDescFooterBtn = document.querySelector('.close-desc-btn');
 
-        function openDescriptionModal(productName, productUnit, productPrice, productDescription) {
+        function openDescriptionModal(productCard) {
+            const productName = productCard.getAttribute('data-fullname') || 'N/A';
+            const productUnit = productCard.getAttribute('data-unit') || 'N/A';
+            const productPrice = productCard.getAttribute('data-price') || '0';
+            const productDescription = productCard.getAttribute('data-description') || '';
+
             document.getElementById('descProductName').textContent = productName;
             document.getElementById('descProductUnit').textContent = productUnit;
             document.getElementById('descProductPrice').textContent = '₱ ' + productPrice;
@@ -1315,180 +1251,82 @@ $allProducts = $stmt->fetchAll();
         if (closeDescFooterBtn) closeDescFooterBtn.addEventListener('click', closeDescriptionModal);
 
         window.addEventListener('click', (e) => {
-            if (e.target === descModal) closeDescriptionModal();
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && descModal.style.display === 'flex') {
+            if (e.target === descModal) {
                 closeDescriptionModal();
             }
         });
 
-        // ========== IMAGE MODAL ==========
-        function openImageModal(imageSrc, productName) {
-            const modal = document.getElementById('imageModal');
-            document.getElementById('imageModalImg').src = imageSrc;
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeImageModal() {
-            document.getElementById('imageModal').style.display = 'none';
-            document.body.style.overflow = '';
-        }
-
-        // ========== TOAST ==========
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function showLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) overlay.style.display = 'flex';
-        }
-
-        function hideLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) overlay.style.display = 'none';
-        }
-
-        // ========== SEARCH ==========
+        // ========== SEARCH FUNCTIONALITY ==========
         const searchInput = document.getElementById('liveSearchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
-        const productsGrid = document.getElementById('productsGrid');
+        const searchInfo = document.getElementById('searchInfo');
+        const productCards = document.querySelectorAll('.product-card');
 
-        function filterProducts() {
+        function performLiveSearch() {
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-            const cards = productsGrid.querySelectorAll('.product-card');
+            let visibleCount = 0;
 
-            cards.forEach(card => {
+            productCards.forEach(card => {
                 const productName = card.getAttribute('data-fullname') || '';
-                const match = searchTerm === '' || productName.toLowerCase().includes(searchTerm);
-                card.style.display = match ? '' : 'none';
+                const productNameLower = productName.toLowerCase();
+
+                let searchMatch = true;
+                if (searchTerm !== '') {
+                    searchMatch = productNameLower.includes(searchTerm);
+                }
+
+                if (searchMatch) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
             });
+
+            if (searchTerm === '') {
+                searchInfo.innerHTML = `<i class="fas fa-info-circle"></i> Showing all ${visibleCount} products`;
+            } else {
+                searchInfo.innerHTML =
+                    `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
+            }
         }
 
         let searchTimeout;
         if (searchInput) {
             searchInput.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(filterProducts, 300);
+                searchTimeout = setTimeout(performLiveSearch, 300);
             });
         }
 
         if (clearSearchBtn) {
             clearSearchBtn.addEventListener('click', () => {
                 searchInput.value = '';
-                filterProducts();
+                performLiveSearch();
                 searchInput.focus();
             });
         }
 
-        // ========== ADD TO CART ==========
-        async function addToCart(productId, productName, price, unit, quantity) {
-            if (quantity <= 0) {
-                showToast('Please select quantity first (use + button to increase)', 'error');
-                return false;
-            }
+        performLiveSearch();
 
-            if (!accNum) {
-                showToast('User not authenticated', 'error');
-                return false;
-            }
-
-            showLoading();
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'add_to_cart');
-                formData.append('product_id', productId);
-                formData.append('quantity', quantity);
-                formData.append('acc_number', accNum);
-                formData.append('csrf_token', csrfToken);
-
-                const response = await fetch('../API/add_to_cart.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    const qtySpan = document.getElementById(`qty-${productId}`);
-                    if (qtySpan) qtySpan.textContent = '0';
-                    showToast(`An item(s) added to cart!`, 'success');
-                    return true;
-                } else {
-                    showToast(data.message || 'Error adding to cart', 'error');
-                    return false;
-                }
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('Network error. Please try again.', 'error');
-                return false;
-            } finally {
-                hideLoading();
-            }
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
-        // ========== QUANTITY CONTROLS ==========
-        document.querySelectorAll('.decrement-card').forEach(btn => {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                const productId = this.dataset.id;
-                const qtySpan = document.getElementById(`qty-${productId}`);
-                if (!qtySpan) return;
-                let currentQty = parseInt(qtySpan.textContent) || 0;
-                if (currentQty > 0) qtySpan.textContent = currentQty - 1;
-            });
-        });
-
-        document.querySelectorAll('.increment-card').forEach(btn => {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                const productId = this.dataset.id;
-                const qtySpan = document.getElementById(`qty-${productId}`);
-                if (!qtySpan) return;
-                let currentQty = parseInt(qtySpan.textContent) || 0;
-                qtySpan.textContent = currentQty + 1;
-            });
-        });
-
-        // ========== ADD TO CART BUTTONS ==========
-        document.querySelectorAll('.add-to-cart-card').forEach(btn => {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                const productId = this.dataset.id;
-                const productName = this.dataset.name;
-                const price = parseFloat(this.dataset.price);
-                const unit = this.dataset.unit;
-                const qtySpan = document.getElementById(`qty-${productId}`);
-                const quantity = qtySpan ? parseInt(qtySpan.textContent) : 0;
-                addToCart(productId, productName, price, unit, quantity);
-            });
-        });
-
-        // ========== DESCRIPTION BUTTONS ==========
+        // ========== DESCRIPTION BUTTON ==========
         document.querySelectorAll('.desc-btn').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                openDescriptionModal(
-                    this.dataset.name,
-                    this.dataset.unit,
-                    this.dataset.price,
-                    this.dataset.description || ''
-                );
+                const productCard = this.closest('.product-card');
+                openDescriptionModal(productCard);
             });
         });
-
-        filterProducts();
     </script>
+
+    <?php include '../footer.php'; ?>
 </body>
 
 </html>
