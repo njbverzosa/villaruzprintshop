@@ -3,14 +3,8 @@
 
 session_start();
 
-// ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
-// ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 
-// ==============================================
-// 2. CHECK LOGIN STATUS
-// ==============================================
 function isLoggedIn()
 {
     return isset($_SESSION['user_role']) &&
@@ -18,21 +12,16 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 3. GET USER DATA FROM SESSION
-// ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
 $userData = null;
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
@@ -48,7 +37,6 @@ if (!$userData) {
 
 $user = $userData;
 
-// Fetch all merchandise inventory
 $stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
@@ -84,7 +72,7 @@ $allProducts = $stmt->fetchAll();
             flex-direction: column;
         }
 
-        /* ========== SIDEBAR ========== */
+        /* ========== SIDEBAR - LEFT SIDE ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -157,7 +145,14 @@ $allProducts = $stmt->fetchAll();
             display: block;
         }
 
-        /* ========== BURGER BUTTON ========== */
+        .last_restocked {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* ========== BURGER BUTTON (Mobile Only) ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -186,7 +181,7 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON ========== */
+        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -240,8 +235,6 @@ $allProducts = $stmt->fetchAll();
             border-radius: 20px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            flex-wrap: wrap;
-            gap: 15px;
         }
 
         .header-left {
@@ -251,19 +244,128 @@ $allProducts = $stmt->fetchAll();
         }
 
         .welcome h4 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
             color: #0f172a;
         }
 
-        .welcome h4 a {
-            text-decoration: none;
-            color: #0f172a;
-            transition: color 0.3s;
+        .menu-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            flex-shrink: 0;
+            padding-right: 50px;
         }
 
-        .welcome h4 a:hover {
-            color: #f59e0b;
+        .menu-header .user-name {
+            font-weight: 700;
+            font-size: 18px;
+            color: #0f172a;
+            margin-top: 8px;
+        }
+
+        .menu-header .user-greeting {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .menu-header i {
+            font-size: 40px;
+            color: #3b82f6;
+        }
+
+        .menu-nav {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* ========== PRODUCT IMAGE ========== */
+        .product-image-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+            line-height: 0;
+        }
+
+        .product-image-clickable {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            display: block;
+        }
+
+        .product-image-clickable:hover {
+            transform: scale(1.04);
+        }
+
+        /* Update (edit) button — top-LEFT corner of the IMAGE */
+        .edit-btn {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        .edit-btn:hover {
+            background: #3b82f6;
+            color: #ffffff;
+            transform: scale(1.05);
+        }
+
+        .edit-btn i {
+            pointer-events: none;
+        }
+
+        /* Trash button — top-RIGHT corner of the IMAGE */
+        .delete-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        .delete-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+            transform: scale(1.05);
+        }
+
+        .delete-btn i {
+            pointer-events: none;
+        }
+
+        .delete-btn:hover i {
+            transform: rotate(-8deg);
         }
 
         /* ========== SEARCH & ADD PRODUCT ========== */
@@ -334,7 +436,7 @@ $allProducts = $stmt->fetchAll();
         }
 
         .add-product-btn {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(145deg, #3b82f6, #6366f1);
             border: none;
             padding: 10px 24px;
             border-radius: 30px;
@@ -347,145 +449,84 @@ $allProducts = $stmt->fetchAll();
             align-items: center;
             gap: 8px;
             white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            text-decoration: none;
         }
 
         .add-product-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
         }
 
         .add-product-btn i {
             font-size: 14px;
         }
 
-        .search-info {
-            font-size: 13px;
-            color: #64748b;
-            padding: 0 25px 10px 25px;
-        }
-
         /* ========== PRODUCTS GRID ========== */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 16px;
+            gap: 20px;
             margin-top: 10px;
             padding: 20px;
         }
 
         .product-card {
+            position: relative;
             background: #ffffff;
-            border-radius: 16px;
-            padding: 14px 10px;
+            border-radius: 5px;
+            padding: 16px 12px;
             text-align: center;
             transition: all 0.3s;
             border: 1px solid #e2e8f0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
-  
-
-        /* ============================================================
-           ✅ IMAGE WRAPPER — anchor for the edit + trash buttons
-           ============================================================ */
-        .product-image-wrapper {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 10px;
-            line-height: 0;
+        .product-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
         }
 
-        .product-image-clickable {
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 5px;
-            display: block;
-        }
-
-
-        /* ✅ Update (edit) button — top-LEFT corner of the IMAGE */
-        .edit-btn {
-            position: absolute;
-            top: -6px;
-            left: -6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.95);
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            z-index: 5;
-            font-size: 13px;
-        }
-
-
-        .edit-btn i {
-            pointer-events: none;
-        }
-
-        /* ✅ Trash button — top-RIGHT corner of the IMAGE */
-        .delete-btn {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.95);
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            z-index: 5;
-            font-size: 13px;
-        }
-
-     
-
-        .delete-btn i {
-            pointer-events: none;
-        }
-
-        /* ========== PRODUCT TEXT ========== */
         .product-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 5px;
             color: #0f172a;
             line-height: 1.3;
         }
 
-        .product-unit {
-            font-size: 11px;
-            color: #64748b;
-            margin-bottom: 8px;
-            background: #f1f5f9;
-            padding: 2px 10px;
-            border-radius: 20px;
-            display: inline-block;
+        /* ✅ Price + Unit aligned in a grid row */
+        .price-unit-grid {
+            display: grid;
+            grid-template-columns: auto auto;
+            align-items: baseline;
+            justify-content: center;
+            column-gap: 6px;
+            margin-bottom: 12px;
+            width: 100%;
         }
 
         .product-price {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 800;
             color: #3b82f6;
-            margin-bottom: 12px;
+            line-height: 1.2;
+            white-space: nowrap;
         }
 
-        /* ========== QUANTITY CONTROL ========== */
+        .product-unit {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
         .card-qty-control {
             display: flex;
             align-items: center;
@@ -525,9 +566,6 @@ $allProducts = $stmt->fetchAll();
             color: #0f172a;
         }
 
-        /* ============================================================
-           ✅ ADD + DESCRIPTION — side-by-side in a 2-column grid
-           ============================================================ */
         .card-actions-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -572,7 +610,7 @@ $allProducts = $stmt->fetchAll();
             transform: scale(0.97);
         }
 
-        /* ========== DESCRIPTION MODAL ========== */
+        /* ========== MODALS ========== */
         .desc-modal {
             display: none;
             position: fixed;
@@ -709,6 +747,7 @@ $allProducts = $stmt->fetchAll();
             border-radius: 20px;
             padding: 20px;
             border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
         }
 
         .description-title {
@@ -813,53 +852,47 @@ $allProducts = $stmt->fetchAll();
             }
         }
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
+        /* ========== LOADING OVERLAY ========== */
         .loading-overlay {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 3000;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
         }
 
         .loading-spinner {
             background: white;
-            padding: 20px;
-            border-radius: 12px;
+            padding: 30px 40px;
+            border-radius: 16px;
             text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
         .loading-spinner i {
-            font-size: 40px;
+            font-size: 32px;
             color: #3b82f6;
             animation: spin 1s linear infinite;
         }
 
+        .loading-spinner p {
+            margin-top: 12px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
         @keyframes spin {
-            0% {
+            from {
                 transform: rotate(0deg);
             }
 
-            100% {
+            to {
                 transform: rotate(360deg);
             }
         }
@@ -868,7 +901,6 @@ $allProducts = $stmt->fetchAll();
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
-                margin-left: 0 !important;
                 padding-top: 20px;
             }
 
@@ -876,27 +908,6 @@ $allProducts = $stmt->fetchAll();
                 grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
                 gap: 12px;
                 padding: 15px;
-            }
-
-            .product-image-clickable {
-                width: 130px;
-                height: 130px;
-            }
-
-            .desc-modal-content {
-                width: 95%;
-            }
-
-            .desc-modal-header h3 {
-                font-size: 18px;
-            }
-
-            .welcome h4 {
-                font-size: 14px;
-            }
-
-            .dashboard-header {
-                padding: 15px 20px;
             }
 
             .shop-controls {
@@ -907,6 +918,16 @@ $allProducts = $stmt->fetchAll();
 
             .search-wrapper {
                 gap: 8px;
+            }
+
+            .search-input input {
+                padding: 8px 12px 8px 35px;
+                font-size: 13px;
+            }
+
+            .search-input i {
+                left: 12px;
+                font-size: 13px;
             }
 
             .clear-search-btn {
@@ -922,9 +943,27 @@ $allProducts = $stmt->fetchAll();
             .add-product-btn i {
                 font-size: 12px;
             }
+
+            .desc-modal-content {
+                width: 95%;
+            }
+
+            .desc-modal-header h3 {
+                font-size: 18px;
+            }
+
+            .dashboard-header {
+                padding: 15px 20px;
+            }
         }
 
         @media (max-width: 480px) {
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 10px;
+                padding: 10px;
+            }
+
             .main-content {
                 padding: 15px;
                 padding-top: 15px;
@@ -932,22 +971,11 @@ $allProducts = $stmt->fetchAll();
 
             .dashboard-header {
                 padding: 12px 15px;
-                border-radius: 10px;
+                border-radius: 12px;
             }
 
             .welcome h4 {
-                font-size: 13px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-                gap: 10px;
-                padding: 10px;
-            }
-
-            .product-image-clickable {
-                width: 120px;
-                height: 120px;
+                font-size: 16px;
             }
 
             .shop-controls {
@@ -983,23 +1011,6 @@ $allProducts = $stmt->fetchAll();
             }
 
             .add-product-btn i {
-                font-size: 11px;
-            }
-
-            .search-info {
-                font-size: 11px;
-                padding: 0 15px 8px 15px;
-            }
-
-            .card-add-btn,
-            .card-desc-btn {
-                font-size: 11px;
-                padding: 8px 0;
-                gap: 4px;
-            }
-
-            .card-add-btn i,
-            .card-desc-btn i {
                 font-size: 11px;
             }
         }
@@ -1043,10 +1054,8 @@ $allProducts = $stmt->fetchAll();
 
 <body>
     <div class="app-wrapper">
-        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
                 <?php include 'sidebar.php'; ?>
@@ -1077,42 +1086,28 @@ $allProducts = $stmt->fetchAll();
                             <i class="fas fa-times"></i> Clear
                         </button>
                     </div>
-                    <a href="upload_products.php" class="add-product-btn" id="addProductBtn" style="text-decoration: none;">
+                    <a href="upload_products.php" class="add-product-btn" id="addProductBtn"
+                        style="text-decoration: none;">
                         <i class="fas fa-plus-circle"></i> Add New
                     </a>
-
-                    <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
-                        <a href="/API/download_images.php" class="add-product-btn" id="downloadImagesBtn" style="text-decoration: none;">
-                            <i class="fas fa-download"></i> Images
-                        </a>
-                    <?php endif; ?>
                 </div>
 
-                <!-- Products Grid -->
                 <div class="products-grid" id="productsGrid">
                     <?php foreach ($allProducts as $product): ?>
                         <div class="product-card" data-id="<?php echo $product['id']; ?>"
                             data-name="<?php echo strtolower(htmlspecialchars($product['product_name'])); ?>"
-                            data-fullname="<?php echo htmlspecialchars($product['product_name']); ?>"
-                            data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>"
-                            data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
-                            data-price="<?php echo number_format($product['selling_price'], 2); ?>">
-
-                            <!-- ✅ Image wrapper with Update (top-left) and Delete (top-right) -->
+                            data-fullname="<?php echo htmlspecialchars($product['product_name']); ?>">
                             <div class="product-image-wrapper">
                                 <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
                                     onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
 
-                                <!-- Update (edit) button — top-left -->
                                 <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
-                                    class="edit-btn"
-                                    title="Update product">
+                                    class="edit-btn" title="Update product">
                                     <i class="fas fa-pen"></i>
                                 </a>
 
-                                <!-- Delete button — top-right -->
                                 <a href="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
                                     class="delete-btn"
                                     onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this product?');"
@@ -1122,33 +1117,38 @@ $allProducts = $stmt->fetchAll();
                             </div>
 
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
-                            <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
-                            <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
 
-                            <div class="card-qty-control">
-                                <button class="card-qty-btn decrement-card" data-id="<?php echo $product['id']; ?>">-</button>
-                                <span class="card-qty-value" id="qty-<?php echo $product['id']; ?>">0</span>
-                                <button class="card-qty-btn increment-card" data-id="<?php echo $product['id']; ?>">+</button>
+                            <div class="price-unit-grid">
+                                <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
+                                <div class="product-unit">/ <?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                             </div>
 
-                            <!-- ✅ Only 2 buttons now: Add + Description -->
+                            <div class="card-qty-control">
+                                <button class="card-qty-btn decrement-card"
+                                    data-id="<?php echo $product['id']; ?>">-</button>
+                                <span class="card-qty-value" id="qty-<?php echo $product['id']; ?>">0</span>
+                                <button class="card-qty-btn increment-card"
+                                    data-id="<?php echo $product['id']; ?>">+</button>
+                            </div>
+
                             <div class="card-actions-grid">
-                                <button class="card-add-btn add-to-cart-card"
-                                    data-id="<?php echo $product['id']; ?>"
+                                <button class="card-add-btn add-to-cart-card" data-id="<?php echo $product['id']; ?>"
                                     data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     data-price="<?php echo $product['selling_price']; ?>"
                                     data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
                                     Add
                                 </button>
 
-                                <button class="card-desc-btn desc-btn"
-                                    data-id="<?php echo $product['id']; ?>"
+                                <button class="card-desc-btn desc-btn" data-id="<?php echo $product['id']; ?>"
                                     data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                                     data-price="<?php echo number_format($product['selling_price'], 2); ?>"
                                     data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
                                     Description
                                 </button>
+                            </div>
+                            <div class="last_restocked">
+                                <?php echo htmlspecialchars($product['last_restocked']); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -1157,14 +1157,10 @@ $allProducts = $stmt->fetchAll();
         </main>
     </div>
 
-    <!-- Description Modal -->
     <div id="descriptionModal" class="desc-modal">
         <div class="desc-modal-content">
             <div class="desc-modal-header">
-                <h3>
-                    <i class="fas fa-file-alt"></i>
-                    Product Information
-                </h3>
+                <h3><i class="fas fa-file-alt"></i> Product Information</h3>
                 <span class="close-desc-modal">&times;</span>
             </div>
             <div class="desc-modal-body">
@@ -1191,28 +1187,23 @@ $allProducts = $stmt->fetchAll();
                         </div>
                     </div>
                 </div>
-
                 <div class="description-section">
                     <div class="description-title">
                         <i class="fas fa-align-left"></i>
                         <span>Description</span>
                     </div>
-                    <div class="description-text" id="descProductDescription">
-                        No description available.
-                    </div>
+                    <div class="description-text" id="descProductDescription">No description available.</div>
                 </div>
             </div>
             <div class="desc-modal-footer">
-                <button class="close-desc-btn">
-                    <i class="fas fa-times"></i> Close
-                </button>
+                <button class="close-desc-btn"><i class="fas fa-times"></i> Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Image Modal (referenced by product images) -->
     <div id="imageModal" class="desc-modal" onclick="closeImageModal()">
-        <div class="desc-modal-content" style="max-width: 90%; background: #000; padding: 12px;" onclick="event.stopPropagation()">
+        <div class="desc-modal-content" style="max-width: 90%; background: #000; padding: 12px;"
+            onclick="event.stopPropagation()">
             <img id="imageModalImg" src="" alt="Product Image"
                 style="width: 100%; height: auto; max-height: 80vh; object-fit: contain; border-radius: 12px;">
             <button class="close-desc-btn" style="margin-top: 12px;" onclick="closeImageModal()">
@@ -1363,8 +1354,7 @@ $allProducts = $stmt->fetchAll();
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML =
-                `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
             document.body.appendChild(toast);
             setTimeout(() => {
                 toast.style.animation = 'slideOut 0.3s ease';
@@ -1382,32 +1372,19 @@ $allProducts = $stmt->fetchAll();
             if (overlay) overlay.style.display = 'none';
         }
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, function (m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
         // ========== SEARCH ==========
         const searchInput = document.getElementById('liveSearchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
-        const searchInfo = document.getElementById('searchInfo');
         const productsGrid = document.getElementById('productsGrid');
 
         function filterProducts() {
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const cards = productsGrid.querySelectorAll('.product-card');
-            let visibleCount = 0;
 
             cards.forEach(card => {
                 const productName = card.getAttribute('data-fullname') || '';
                 const match = searchTerm === '' || productName.toLowerCase().includes(searchTerm);
                 card.style.display = match ? '' : 'none';
-                if (match) visibleCount++;
             });
         }
 
@@ -1524,9 +1501,6 @@ $allProducts = $stmt->fetchAll();
         });
 
         filterProducts();
-
-        console.log('📱 Sidebar menu loaded - Left Side');
-        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
     </script>
 </body>
 
