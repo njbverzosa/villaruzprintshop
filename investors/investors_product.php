@@ -1039,10 +1039,10 @@ foreach ($allProducts as $product) {
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>">
 
                             <div class="product-image-wrapper">
-                                <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                                <img src="../Inv_Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
-                                    onclick="openImageModal('/Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
+                                    onclick="openImageModal('/Inv_Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
                                     style="width: 150px; height: auto;border-radius:5px;">
                             </div>
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
