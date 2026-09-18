@@ -31,13 +31,13 @@ $userRole  = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 2. FETCH USER NAME + SET TARGET TABLE + UPLOAD FOLDER (based on role)
+// 2. ROLE-BASED: TARGET TABLE + UPLOAD FOLDER
 // ==============================================
 $userName      = 'Unknown User';
 $targetTable   = '';
 $redirectUrl   = '';
-$uploadFolder  = '';       // ✅ now role-based
-$scopeByAccNum = false;    // ✅ only scope by acc_number for Investor
+$uploadFolder  = '';
+$scopeByAccNum = false;
 
 if ($userRole === 'Admin') {
     // ✅ Admin → merchandise_inventory + Products folder
@@ -48,7 +48,7 @@ if ($userRole === 'Admin') {
         $userName = $user['f_name'];
     }
     $targetTable   = 'merchandise_inventory';
-    $uploadFolder  = 'Products';                          // ✅ Admin folder
+    $uploadFolder  = 'Products';
     $redirectUrl   = '../web/all_products.php';
     $scopeByAccNum = false;
 
@@ -59,11 +59,11 @@ if ($userRole === 'Admin') {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userName  = $user['f_name'];
-        // ✅ Refresh acc_number directly from DB (don't trust session)
+        // ✅ Refresh acc_number directly from DB
         $accNumber = $user['acc_number'];
     }
     $targetTable   = 'investors_inventory';
-    $uploadFolder  = 'Inv_Products';                      // ✅ Investor folder
+    $uploadFolder  = 'Inv_Products';
     $redirectUrl   = '../investors/investors_product.php';
     $scopeByAccNum = true;
 
@@ -152,7 +152,6 @@ if ($action === 'update_product') {
     $oldProduct = $oldStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$oldProduct) {
-        // ✅ Specific message if scoped (prevents leaking that a product exists but belongs to someone else)
         $msg = $scopeByAccNum ? 'Product not found or does not belong to you' : 'Product not found';
         echo json_encode(['success' => false, 'message' => $msg]);
         exit;
@@ -171,7 +170,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 4d. RESOLVE THE UPLOAD DIRECTORY (role-based)
+    // 4d. RESOLVE THE UPLOAD DIRECTORY
     // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
@@ -196,6 +195,7 @@ if ($action === 'update_product') {
 
     // ==============================================
     // 4e. HANDLE NEW IMAGE
+    //     ✅ Filename = <product_name>.<ext>   ← NO acc_number prefix
     // ==============================================
     $imagePath        = $oldProduct['product_image'];
     $newFileWritten   = null;
@@ -243,11 +243,10 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Use acc_number as filename prefix for Investor to avoid cross-investor collisions
-        $fileBase = $scopeByAccNum ? ($accNumber . '_' . $productName) : $productName;
-        $ext       = $type;
-        $fileName  = $fileBase . '.' . $ext;
-        $destPath  = $uploadDir . $fileName;
+        // ✅ Filename = just the product name
+        $ext      = $type;
+        $fileName = $productName . '.' . $ext;
+        $destPath = $uploadDir . $fileName;
 
         if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== $fileName) {
             $oldImageToDelete = $oldProduct['product_image'];
@@ -292,10 +291,9 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Use acc_number as filename prefix for Investor
-        $fileBase = $scopeByAccNum ? ($accNumber . '_' . $productName) : $productName;
+        // ✅ Filename = just the product name
         $ext      = $sourceExt;
-        $fileName = $fileBase . '.' . $ext;
+        $fileName = $productName . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 
         if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== $fileName) {
@@ -329,7 +327,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 4f. PERFORM THE UPDATE (scoped by acc_number for Investor)
+    // 4f. PERFORM THE UPDATE
     // ==============================================
     try {
         date_default_timezone_set('Asia/Manila');
@@ -442,7 +440,7 @@ if ($action === 'update_product') {
                 'table'         => $targetTable,
                 'role'          => $userRole,
                 'acc_number'    => $scopeByAccNum ? $accNumber : null,
-                'folder'        => $uploadFolder,        // ✅ role-based folder in response
+                'folder'        => $uploadFolder,
                 'upload_dir'    => $uploadDir,
                 'last_updated'  => $formattedDate,
                 'redirect'      => $redirectUrl

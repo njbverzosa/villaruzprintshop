@@ -1,9 +1,8 @@
 <?php
 // API/add_product.php
 error_reporting(E_ALL);
-ini_set('display_errors', 0);   // ✅ never leak warnings into the JSON response
+ini_set('display_errors', 0);
 
-// ✅ Force session cookie path to be shared across the whole domain
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
@@ -33,16 +32,15 @@ $userRole  = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 2. FETCH USER NAME + SET TARGET TABLE + UPLOAD FOLDER (based on role)
+// 2. ROLE-BASED: TARGET TABLE + UPLOAD FOLDER
 // ==============================================
 $userName        = 'Unknown User';
 $targetTable     = '';
 $redirectUrl     = '';
-$uploadFolder    = '';     // ✅ now role-based
-$insertAccNumber = false;  // ✅ only insert acc_number for Investor
+$uploadFolder    = '';
+$insertAccNumber = false;
 
 if ($userRole === 'Admin') {
-    // ✅ Admin → merchandise_inventory + Products folder
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -50,27 +48,24 @@ if ($userRole === 'Admin') {
         $userName = $user['f_name'];
     }
     $targetTable     = 'merchandise_inventory';
-    $uploadFolder    = 'Products';                       // ✅ Admin folder
+    $uploadFolder    = 'Products';
     $redirectUrl     = '../web/all_products.php';
     $insertAccNumber = false;
 
 } elseif ($userRole === 'Investor') {
-    // ✅ Investor → investors_inventory + Inv_Products folder
     $stmt = $pdo->prepare("SELECT f_name, acc_number FROM investors WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
-        $userName = $user['f_name'];
-        // ✅ Always use the investor's acc_number from the DB (not from session)
+        $userName  = $user['f_name'];
         $accNumber = $user['acc_number'];
     }
     $targetTable     = 'investors_inventory';
-    $uploadFolder    = 'Inv_Products';                   // ✅ Investor folder
+    $uploadFolder    = 'Inv_Products';
     $redirectUrl     = '../investors/investors_product.php';
     $insertAccNumber = true;
 
 } else {
-    // ❌ Any other role is not allowed to add products
     echo json_encode(['success' => false, 'message' => 'Unauthorized role: ' . $userRole]);
     exit;
 }
@@ -112,18 +107,12 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 4. READ + SANITIZE PRODUCT NAME (from FORM)
+    // 4. READ + SANITIZE PRODUCT NAME
     // ==============================================
     $rawName     = $_POST['product_name'] ?? '';
     $productName = trim($rawName);
-
-    // Strip any image extension that may have been typed in
     $productName = preg_replace('/\.(jpeg|jpg|png)$/i', '', $productName);
-
-    // Collapse multiple spaces into a single space
     $productName = preg_replace('/\s+/', ' ', $productName);
-
-    // Trim
     $productName = trim($productName);
 
     if (empty($productName)) {
@@ -131,7 +120,6 @@ if ($action === 'add_product') {
         exit;
     }
 
-    // Enforce allowed characters: letters, numbers, spaces, and , . ( ) -
     if (!preg_match('/^[A-Za-z0-9\s,\.\(\)\-]+$/', $productName)) {
         echo json_encode([
             'success' => false,
@@ -141,7 +129,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 5. RESOLVE THE UPLOAD DIRECTORY (role-based)
+    // 5. RESOLVE UPLOAD DIRECTORY (role-based)
     // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
@@ -166,13 +154,18 @@ if ($action === 'add_product') {
 
     // ==============================================
     // 6. HANDLE PRODUCT IMAGE
-    //    ✅ Filename ALWAYS ends in .png
+    //    ✅ Filename = <product_name>.png   ← NO acc_number prefix
+    //    ✅ Overwrites existing file (same name replaces old)
     // ==============================================
     $imagePath = null;
 
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
     $finalExt          = 'png';
+
+    // ✅ Filename is EXACTLY the product name
+    $fileName = $productName . '.' . $finalExt;
+    $destPath = $uploadDir . $fileName;
 
     // ✅ Case: use default image
     $useDefaultImage = isset($_POST['use_default_image']) && $_POST['use_default_image'] === '1';
@@ -202,16 +195,6 @@ if ($action === 'add_product') {
         if (!in_array($mime, $allowedMime, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
-        }
-
-        $fileName = $productName . '.' . $finalExt;
-        $destPath = $uploadDir . $fileName;
-
-        $counter = 1;
-        while (file_exists($destPath)) {
-            $fileName = $productName . ' (' . $counter . ').' . $finalExt;
-            $destPath = $uploadDir . $fileName;
-            $counter++;
         }
 
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
@@ -247,16 +230,6 @@ if ($action === 'add_product') {
         if (strlen($data) > 5 * 1024 * 1024) {
             echo json_encode(['success' => false, 'message' => 'Camera image too large. Max 5MB.']);
             exit;
-        }
-
-        $fileName = $productName . '.' . $finalExt;
-        $destPath = $uploadDir . $fileName;
-
-        $counter = 1;
-        while (file_exists($destPath)) {
-            $fileName = $productName . ' (' . $counter . ').' . $finalExt;
-            $destPath = $uploadDir . $fileName;
-            $counter++;
         }
 
         if (file_put_contents($destPath, $data) === false) {
@@ -318,12 +291,11 @@ if ($action === 'add_product') {
         $productNumber = 'PRD' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
         // ==============================================
-        // 9. INSERT (with acc_number for Investor)
+        // 9. INSERT
         // ==============================================
         $pdo->beginTransaction();
 
         if ($insertAccNumber) {
-            // ✅ Investor: include acc_number
             $stmt = $pdo->prepare("
                 INSERT INTO {$targetTable}
                     (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked, acc_number)
@@ -343,7 +315,6 @@ if ($action === 'add_product') {
                 ':acc_number'     => $accNumber
             ]);
         } else {
-            // ✅ Admin: original insert (no acc_number)
             $stmt = $pdo->prepare("
                 INSERT INTO {$targetTable}
                     (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked)
@@ -368,7 +339,6 @@ if ($action === 'add_product') {
 
             $logDetails = "Added new product to {$targetTable}: {$productName} | Product #: {$productNumber} | Unit: {$unit} | Quantity: {$quantity} | Price: ₱{$sellingPrice} | Image: " . ($imagePath ?: 'None') . " | Description: " . ($description ?: 'N/A');
 
-            // ✅ Include acc_number in log for Investor
             if ($insertAccNumber) {
                 $logDetails .= " | Investor: {$accNumber}";
             }
@@ -388,7 +358,7 @@ if ($action === 'add_product') {
                 'table'          => $targetTable,
                 'role'           => $userRole,
                 'acc_number'     => $insertAccNumber ? $accNumber : null,
-                'folder'         => $uploadFolder,        // ✅ role-based folder in response
+                'folder'         => $uploadFolder,
                 'upload_dir'     => $uploadDir,
                 'redirect'       => $redirectUrl
             ]);
