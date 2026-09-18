@@ -33,27 +33,29 @@ $userRole  = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 2. FETCH USER NAME + SET TARGET TABLE (based on role)
+// 2. FETCH USER NAME + SET TARGET TABLE + UPLOAD FOLDER (based on role)
 // ==============================================
-$userName    = 'Unknown User';
-$targetTable = '';
-$redirectUrl = '';
-$insertAccNumber = false;   // ✅ only insert acc_number for Investor
+$userName        = 'Unknown User';
+$targetTable     = '';
+$redirectUrl     = '';
+$uploadFolder    = '';     // ✅ now role-based
+$insertAccNumber = false;  // ✅ only insert acc_number for Investor
 
 if ($userRole === 'Admin') {
-    // ✅ Admin → merchandise_inventory
+    // ✅ Admin → merchandise_inventory + Products folder
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userName = $user['f_name'];
     }
-    $targetTable = 'merchandise_inventory';
-    $redirectUrl = '../web/all_products.php';
+    $targetTable     = 'merchandise_inventory';
+    $uploadFolder    = 'Products';                       // ✅ Admin folder
+    $redirectUrl     = '../web/all_products.php';
     $insertAccNumber = false;
 
 } elseif ($userRole === 'Investor') {
-    // ✅ Investor → investors_inventory
+    // ✅ Investor → investors_inventory + Inv_Products folder
     $stmt = $pdo->prepare("SELECT f_name, acc_number FROM investors WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -62,8 +64,9 @@ if ($userRole === 'Admin') {
         // ✅ Always use the investor's acc_number from the DB (not from session)
         $accNumber = $user['acc_number'];
     }
-    $targetTable = 'investors_inventory';
-    $redirectUrl = '../investors/investors_product.php';
+    $targetTable     = 'investors_inventory';
+    $uploadFolder    = 'Inv_Products';                   // ✅ Investor folder
+    $redirectUrl     = '../investors/investors_product.php';
     $insertAccNumber = true;
 
 } else {
@@ -75,12 +78,7 @@ if ($userRole === 'Admin') {
 $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
-// 3. UPLOAD FOLDER (stays the same for both roles)
-// ==============================================
-$uploadFolder = 'Products';
-
-// ==============================================
-// 4. VERIFY CSRF
+// 3. VERIFY CSRF
 // ==============================================
 if (!isset($_POST['csrf_token'])) {
     echo json_encode(['success' => false, 'message' => 'CSRF token missing from request']);
@@ -114,7 +112,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 5. READ + SANITIZE PRODUCT NAME (from FORM)
+    // 4. READ + SANITIZE PRODUCT NAME (from FORM)
     // ==============================================
     $rawName     = $_POST['product_name'] ?? '';
     $productName = trim($rawName);
@@ -143,7 +141,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 6. RESOLVE THE UPLOAD DIRECTORY
+    // 5. RESOLVE THE UPLOAD DIRECTORY (role-based)
     // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
@@ -167,7 +165,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 7. HANDLE PRODUCT IMAGE
+    // 6. HANDLE PRODUCT IMAGE
     //    ✅ Filename ALWAYS ends in .png
     // ==============================================
     $imagePath = null;
@@ -275,7 +273,7 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 8. CHECK DUPLICATE PRODUCT NAME
+    // 7. CHECK DUPLICATE PRODUCT NAME
     //    ✅ Scoped per investor (or global for admin)
     // ==============================================
     if ($insertAccNumber) {
@@ -308,7 +306,7 @@ if ($action === 'add_product') {
         $last_restocked = date('j F Y g:i A');
 
         // ==============================================
-        // 9. GENERATE PRODUCT NUMBER
+        // 8. GENERATE PRODUCT NUMBER
         // ==============================================
         $stmt = $pdo->prepare("
             SELECT MAX(CAST(SUBSTRING(product_number, 4) AS UNSIGNED)) AS max_num
@@ -320,7 +318,7 @@ if ($action === 'add_product') {
         $productNumber = 'PRD' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
         // ==============================================
-        // 10. INSERT (with acc_number for Investor)
+        // 9. INSERT (with acc_number for Investor)
         // ==============================================
         $pdo->beginTransaction();
 
@@ -390,7 +388,7 @@ if ($action === 'add_product') {
                 'table'          => $targetTable,
                 'role'           => $userRole,
                 'acc_number'     => $insertAccNumber ? $accNumber : null,
-                'folder'         => $uploadFolder,
+                'folder'         => $uploadFolder,        // ✅ role-based folder in response
                 'upload_dir'     => $uploadDir,
                 'redirect'       => $redirectUrl
             ]);

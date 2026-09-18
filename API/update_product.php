@@ -31,15 +31,16 @@ $userRole  = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 2. FETCH USER NAME + SET TARGET TABLE (based on role)
+// 2. FETCH USER NAME + SET TARGET TABLE + UPLOAD FOLDER (based on role)
 // ==============================================
-$userName        = 'Unknown User';
-$targetTable     = '';
-$redirectUrl     = '';
-$scopeByAccNum   = false;   // ✅ only scope by acc_number for Investor
+$userName      = 'Unknown User';
+$targetTable   = '';
+$redirectUrl   = '';
+$uploadFolder  = '';       // ✅ now role-based
+$scopeByAccNum = false;    // ✅ only scope by acc_number for Investor
 
 if ($userRole === 'Admin') {
-    // ✅ Admin → merchandise_inventory (no acc_number scoping)
+    // ✅ Admin → merchandise_inventory + Products folder
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -47,11 +48,12 @@ if ($userRole === 'Admin') {
         $userName = $user['f_name'];
     }
     $targetTable   = 'merchandise_inventory';
+    $uploadFolder  = 'Products';                          // ✅ Admin folder
     $redirectUrl   = '../web/all_products.php';
     $scopeByAccNum = false;
 
 } elseif ($userRole === 'Investor') {
-    // ✅ Investor → investors_inventory (scoped to their acc_number)
+    // ✅ Investor → investors_inventory + Inv_Products folder
     $stmt = $pdo->prepare("SELECT f_name, acc_number FROM investors WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -61,6 +63,7 @@ if ($userRole === 'Admin') {
         $accNumber = $user['acc_number'];
     }
     $targetTable   = 'investors_inventory';
+    $uploadFolder  = 'Inv_Products';                      // ✅ Investor folder
     $redirectUrl   = '../investors/investors_product.php';
     $scopeByAccNum = true;
 
@@ -73,12 +76,7 @@ if ($userRole === 'Admin') {
 $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
-// 3. UPLOAD FOLDER (shared by both roles)
-// ==============================================
-$uploadFolder = 'Products';
-
-// ==============================================
-// 4. VERIFY CSRF
+// 3. VERIFY CSRF
 // ==============================================
 if (!isset($_POST['csrf_token'])) {
     echo json_encode(['success' => false, 'message' => 'CSRF token missing from request']);
@@ -96,7 +94,7 @@ if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
 $action = $_POST['action'] ?? '';
 
 // ==============================================
-// 5. HANDLE UPDATE PRODUCT
+// 4. HANDLE UPDATE PRODUCT
 // ==============================================
 if ($action === 'update_product') {
 
@@ -115,7 +113,7 @@ if ($action === 'update_product') {
     $replaceImage = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
 
     // ==============================================
-    // 5a. SANITIZE + VALIDATE PRODUCT NAME
+    // 4a. SANITIZE + VALIDATE PRODUCT NAME
     // ==============================================
     $productName = preg_replace('/\.(jpeg|jpg|png|webp|gif|bmp|heic|heif|avif|tiff|tif|svg)$/i', '', $productName);
     $productName = preg_replace('/\s+/', ' ', $productName);
@@ -135,7 +133,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5b. FETCH OLD PRODUCT (scoped by acc_number for Investor)
+    // 4b. FETCH OLD PRODUCT (scoped by acc_number for Investor)
     // ==============================================
     if ($scopeByAccNum) {
         $oldStmt = $pdo->prepare("
@@ -161,7 +159,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5c. MORE VALIDATION
+    // 4c. MORE VALIDATION
     // ==============================================
     if ($sellingPrice <= 0) {
         echo json_encode(['success' => false, 'message' => 'Selling price must be greater than 0']);
@@ -173,7 +171,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5d. RESOLVE THE UPLOAD DIRECTORY
+    // 4d. RESOLVE THE UPLOAD DIRECTORY (role-based)
     // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
@@ -197,7 +195,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5e. HANDLE NEW IMAGE
+    // 4e. HANDLE NEW IMAGE
     // ==============================================
     $imagePath        = $oldProduct['product_image'];
     $newFileWritten   = null;
@@ -331,7 +329,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5f. PERFORM THE UPDATE (scoped by acc_number for Investor)
+    // 4f. PERFORM THE UPDATE (scoped by acc_number for Investor)
     // ==============================================
     try {
         date_default_timezone_set('Asia/Manila');
@@ -444,7 +442,7 @@ if ($action === 'update_product') {
                 'table'         => $targetTable,
                 'role'          => $userRole,
                 'acc_number'    => $scopeByAccNum ? $accNumber : null,
-                'folder'        => $uploadFolder,
+                'folder'        => $uploadFolder,        // ✅ role-based folder in response
                 'upload_dir'    => $uploadDir,
                 'last_updated'  => $formattedDate,
                 'redirect'      => $redirectUrl
