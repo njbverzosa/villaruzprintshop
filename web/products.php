@@ -44,15 +44,24 @@ $user = $userData;
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
+// ==============================================
+// ✅ Fetch products + join to get each investor's business_name
+//    (Change the JOIN condition if your column is `investor_id` instead of `acc_number`)
+// ==============================================
 $stmt = $pdo->prepare("
-    SELECT * FROM investors_inventory 
+    SELECT 
+        ii.*,
+        inv.business_name,
+        inv.f_name AS investor_name
+    FROM investors_inventory ii
+    LEFT JOIN investors inv ON inv.acc_number = ii.acc_number
     ORDER BY 
         CASE 
-            WHEN last_restocked IS NULL OR last_restocked = '' THEN 1 
+            WHEN ii.last_restocked IS NULL OR ii.last_restocked = '' THEN 1 
             ELSE 0 
         END,
-        STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC,
-        id DESC
+        STR_TO_DATE(ii.last_restocked, '%d %M %Y %h:%i %p') DESC,
+        ii.id DESC
 ");
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
@@ -392,7 +401,6 @@ foreach ($allProducts as $product) {
             background: #cbd5e1;
         }
 
-
         .search-info {
             font-size: 13px;
             color: #64748b;
@@ -410,7 +418,6 @@ foreach ($allProducts as $product) {
 
         .product-card {
             position: relative;
-            /* ✅ needed for absolute trash */
             background: #ffffff;
             border-radius: 5px;
             padding: 16px 12px;
@@ -437,7 +444,6 @@ foreach ($allProducts as $product) {
             line-height: 1.3;
         }
 
-        /* ✅ Price + Unit on a single line, no background on unit */
         .price-unit-grid {
             display: flex;
             align-items: baseline;
@@ -466,7 +472,6 @@ foreach ($allProducts as $product) {
             flex-shrink: 0;
         }
 
-        /* ✅ INFO + UPDATE aligned in one grid row */
         .card-actions-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -523,7 +528,7 @@ foreach ($allProducts as $product) {
             font-size: 10px;
             color: #64748b;
             margin-top: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
         }
 
         .delete-btn {
@@ -546,7 +551,10 @@ foreach ($allProducts as $product) {
             z-index: 3;
         }
 
-
+        .delete-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
 
         /* ========== MODALS ========== */
         .desc-modal {
@@ -790,6 +798,22 @@ foreach ($allProducts as $product) {
             }
         }
 
+        /* ✅ Business name under last_restocked */
+        .business-name {
+            font-size: 11px;
+            color: #0f172a;
+            font-weight: 600;
+            margin-top: 2px;
+            padding: 3px 8px;
+            background: #eff6ff;
+            border-radius: 5px;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .main-content {
@@ -827,8 +851,6 @@ foreach ($allProducts as $product) {
                 padding: 8px 14px;
                 font-size: 12px;
             }
-
-           
 
             .desc-modal-content {
                 width: 95%;
@@ -894,11 +916,14 @@ foreach ($allProducts as $product) {
                 font-size: 11px;
             }
 
-          
-
             .search-info {
                 font-size: 11px;
                 padding: 0 12px 8px 12px;
+            }
+
+            .business-name {
+                font-size: 10px;
+                padding: 2px 6px;
             }
         }
 
@@ -916,8 +941,6 @@ foreach ($allProducts as $product) {
                 padding: 5px 8px;
                 font-size: 10px;
             }
-
-           
 
             .search-input input {
                 padding: 6px 10px 6px 30px;
@@ -991,7 +1014,7 @@ foreach ($allProducts as $product) {
                             </a>
 
                             <div class="product-image-wrapper">
-                                <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                                <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
                                     onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
@@ -1014,7 +1037,12 @@ foreach ($allProducts as $product) {
                             </div>
 
                             <div class="last_restocked">
-                                <?php echo htmlspecialchars($product['last_restocked']); ?>
+                                <?php echo htmlspecialchars($product['last_restocked'] ?? ''); ?>
+                            </div>
+
+                            <!-- ✅ Business name — now PER PRODUCT (joined from investors) -->
+                            <div class="business-name">
+                                <?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -1060,6 +1088,15 @@ foreach ($allProducts as $product) {
                         <div class="product-detail-text">
                             <div class="product-detail-label">Price</div>
                             <div class="product-detail-value" id="descProductPrice">-</div>
+                        </div>
+                    </div>
+                    <div class="product-detail-row">
+                        <div class="product-detail-icon">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="product-detail-text">
+                            <div class="product-detail-label">Business</div>
+                            <div class="product-detail-value" id="descBusinessName">-</div>
                         </div>
                     </div>
                 </div>
@@ -1167,10 +1204,12 @@ foreach ($allProducts as $product) {
             const productUnit = productCard.getAttribute('data-unit') || 'N/A';
             const productPrice = productCard.getAttribute('data-price') || '0';
             const productDescription = productCard.getAttribute('data-description') || '';
+            const businessName = productCard.querySelector('.business-name')?.textContent?.trim() || 'N/A';
 
             document.getElementById('descProductName').textContent = productName;
             document.getElementById('descProductUnit').textContent = productUnit;
             document.getElementById('descProductPrice').textContent = '₱ ' + productPrice;
+            document.getElementById('descBusinessName').textContent = businessName;
 
             const descElement = document.getElementById('descProductDescription');
             if (productDescription && productDescription.trim() !== '') {

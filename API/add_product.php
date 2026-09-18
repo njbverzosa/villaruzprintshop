@@ -3,6 +3,16 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 0);   // ✅ never leak warnings into the JSON response
 
+// ✅ Force session cookie path to be shared across the whole domain
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'domain'   => '',
+    'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -18,30 +28,55 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['acc_number']) || !isset($_
     exit;
 }
 
-$userId = $_SESSION['user_id'];
-$userRole = $_SESSION['user_role'];
+$userId    = $_SESSION['user_id'];
+$userRole  = $_SESSION['user_role'];
 $accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 2. FETCH USER NAME
+// 2. FETCH USER NAME + SET TARGET TABLE (based on role)
 // ==============================================
-$userName = 'Unknown User';
+$userName    = 'Unknown User';
+$targetTable = '';
+$redirectUrl = '';
+$insertAccNumber = false;   // ✅ only insert acc_number for Investor
 
 if ($userRole === 'Admin') {
+    // ✅ Admin → merchandise_inventory
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userName = $user['f_name'];
     }
+    $targetTable = 'merchandise_inventory';
+    $redirectUrl = '../web/all_products.php';
+    $insertAccNumber = false;
+
+} elseif ($userRole === 'Investor') {
+    // ✅ Investor → investors_inventory
+    $stmt = $pdo->prepare("SELECT f_name, acc_number FROM investors WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($user) {
+        $userName = $user['f_name'];
+        // ✅ Always use the investor's acc_number from the DB (not from session)
+        $accNumber = $user['acc_number'];
+    }
+    $targetTable = 'investors_inventory';
+    $redirectUrl = '../investors/investors_product.php';
+    $insertAccNumber = true;
+
+} else {
+    // ❌ Any other role is not allowed to add products
+    echo json_encode(['success' => false, 'message' => 'Unauthorized role: ' . $userRole]);
+    exit;
 }
 
 $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
-// 3. TARGET TABLE + UPLOAD FOLDER
+// 3. UPLOAD FOLDER (stays the same for both roles)
 // ==============================================
-$targetTable  = 'merchandise_inventory';
 $uploadFolder = 'Products';
 
 // ==============================================
@@ -134,19 +169,21 @@ if ($action === 'add_product') {
     // ==============================================
     // 7. HANDLE PRODUCT IMAGE
     //    ✅ Filename ALWAYS ends in .png
-    //    Allowed input types: jpeg, jpg, png (converted to .png)
     // ==============================================
     $imagePath = null;
 
-    // Accepted input formats
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
+    $finalExt          = 'png';
 
-    // ✅ Final extension is always png
-    $finalExt = 'png';
+    // ✅ Case: use default image
+    $useDefaultImage = isset($_POST['use_default_image']) && $_POST['use_default_image'] === '1';
 
+    if ($useDefaultImage) {
+        $imagePath = 'no-image.jpg';
+    }
     // ---- Case A: standard file upload ----
-    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+    elseif (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['product_image'];
 
         if ($file['size'] > 5 * 1024 * 1024) {
@@ -154,14 +191,12 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // Validate incoming extension
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG images allowed.']);
             exit;
         }
 
-        // Validate MIME type
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
@@ -171,11 +206,9 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // ✅ Filename ALWAYS ends in .png
         $fileName = $productName . '.' . $finalExt;
         $destPath = $uploadDir . $fileName;
 
-        // Avoid overwriting — append " (1)", " (2)", ... if the name exists
         $counter = 1;
         while (file_exists($destPath)) {
             $fileName = $productName . ' (' . $counter . ').' . $finalExt;
@@ -199,7 +232,7 @@ if ($action === 'add_product') {
             exit;
         }
 
-        $type = strtolower($m[1]);   // jpeg, jpg, png
+        $type = strtolower($m[1]);
         if (!in_array($type, $allowedExtensions, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
@@ -218,11 +251,9 @@ if ($action === 'add_product') {
             exit;
         }
 
-        // ✅ Filename ALWAYS ends in .png
         $fileName = $productName . '.' . $finalExt;
         $destPath = $uploadDir . $fileName;
 
-        // Avoid overwriting — append " (1)", " (2)", ... if the name exists
         $counter = 1;
         while (file_exists($destPath)) {
             $fileName = $productName . ' (' . $counter . ').' . $finalExt;
@@ -245,11 +276,27 @@ if ($action === 'add_product') {
 
     // ==============================================
     // 8. CHECK DUPLICATE PRODUCT NAME
+    //    ✅ Scoped per investor (or global for admin)
     // ==============================================
-    $checkStmt = $pdo->prepare("SELECT id FROM {$targetTable} WHERE product_name = :product_name");
-    $checkStmt->execute([':product_name' => $productName]);
+    if ($insertAccNumber) {
+        $checkStmt = $pdo->prepare("
+            SELECT id FROM {$targetTable} 
+            WHERE product_name = :product_name AND acc_number = :acc_number
+        ");
+        $checkStmt->execute([
+            ':product_name' => $productName,
+            ':acc_number'   => $accNumber
+        ]);
+    } else {
+        $checkStmt = $pdo->prepare("
+            SELECT id FROM {$targetTable} 
+            WHERE product_name = :product_name
+        ");
+        $checkStmt->execute([':product_name' => $productName]);
+    }
+
     if ($checkStmt->fetch()) {
-        if ($imagePath && file_exists($uploadDir . $imagePath)) {
+        if ($imagePath && $imagePath !== 'no-image.jpg' && file_exists($uploadDir . $imagePath)) {
             unlink($uploadDir . $imagePath);
         }
         echo json_encode(['success' => false, 'message' => 'Product already exists!']);
@@ -273,40 +320,65 @@ if ($action === 'add_product') {
         $productNumber = 'PRD' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
         // ==============================================
-        // 10. INSERT
+        // 10. INSERT (with acc_number for Investor)
         // ==============================================
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare("
-            INSERT INTO {$targetTable}
-                (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked)
-            VALUES
-                (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked)
-        ");
+        if ($insertAccNumber) {
+            // ✅ Investor: include acc_number
+            $stmt = $pdo->prepare("
+                INSERT INTO {$targetTable}
+                    (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked, acc_number)
+                VALUES
+                    (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked, :acc_number)
+            ");
 
-        $result = $stmt->execute([
-            ':product_number' => $productNumber,
-            ':product_name'   => $productName,
-            ':unit'           => $unit,
-            ':qty_on_hand'    => $quantity,
-            ':selling_price'  => $sellingPrice,
-            ':description'    => $description,
-            ':product_image'  => $imagePath,
-            ':last_restocked' => $last_restocked
-        ]);
+            $result = $stmt->execute([
+                ':product_number' => $productNumber,
+                ':product_name'   => $productName,
+                ':unit'           => $unit,
+                ':qty_on_hand'    => $quantity,
+                ':selling_price'  => $sellingPrice,
+                ':description'    => $description,
+                ':product_image'  => $imagePath,
+                ':last_restocked' => $last_restocked,
+                ':acc_number'     => $accNumber
+            ]);
+        } else {
+            // ✅ Admin: original insert (no acc_number)
+            $stmt = $pdo->prepare("
+                INSERT INTO {$targetTable}
+                    (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked)
+                VALUES
+                    (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked)
+            ");
+
+            $result = $stmt->execute([
+                ':product_number' => $productNumber,
+                ':product_name'   => $productName,
+                ':unit'           => $unit,
+                ':qty_on_hand'    => $quantity,
+                ':selling_price'  => $sellingPrice,
+                ':description'    => $description,
+                ':product_image'  => $imagePath,
+                ':last_restocked' => $last_restocked
+            ]);
+        }
 
         if ($result) {
             $productId = $pdo->lastInsertId();
 
             $logDetails = "Added new product to {$targetTable}: {$productName} | Product #: {$productNumber} | Unit: {$unit} | Quantity: {$quantity} | Price: ₱{$sellingPrice} | Image: " . ($imagePath ?: 'None') . " | Description: " . ($description ?: 'N/A');
 
+            // ✅ Include acc_number in log for Investor
+            if ($insertAccNumber) {
+                $logDetails .= " | Investor: {$accNumber}";
+            }
+
             $logStmt = $pdo->prepare("INSERT INTO logs (name, action, details, created_at) VALUES (?, ?, ?, ?)");
             $logStmt->execute([$firstName, "Added New Product", $logDetails, $last_restocked]);
 
             $pdo->commit();
-
-            // ✅ Relative URL to redirect to after success
-            $redirectUrl = '../web/all_products.php';
 
             echo json_encode([
                 'success'        => true,
@@ -316,13 +388,15 @@ if ($action === 'add_product') {
                 'product_name'   => $productName,
                 'product_image'  => $imagePath,
                 'table'          => $targetTable,
+                'role'           => $userRole,
+                'acc_number'     => $insertAccNumber ? $accNumber : null,
                 'folder'         => $uploadFolder,
                 'upload_dir'     => $uploadDir,
-                'redirect'       => $redirectUrl   // ✅ FIXED — was $redirectUrls
+                'redirect'       => $redirectUrl
             ]);
         } else {
             $pdo->rollBack();
-            if ($imagePath && file_exists($uploadDir . $imagePath)) {
+            if ($imagePath && $imagePath !== 'no-image.jpg' && file_exists($uploadDir . $imagePath)) {
                 unlink($uploadDir . $imagePath);
             }
             echo json_encode(['success' => false, 'message' => 'Failed to add product']);
@@ -331,7 +405,7 @@ if ($action === 'add_product') {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        if ($imagePath && file_exists($uploadDir . $imagePath)) {
+        if ($imagePath && $imagePath !== 'no-image.jpg' && file_exists($uploadDir . $imagePath)) {
             unlink($uploadDir . $imagePath);
         }
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);

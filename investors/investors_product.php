@@ -468,7 +468,7 @@ foreach ($allProducts as $product) {
             line-height: 1.3;
         }
 
-        /* ✅ Price + Unit on a single line, no background on unit */
+        /* ✅ Price + Unit on a single line */
         .price-unit-grid {
             display: flex;
             align-items: baseline;
@@ -554,7 +554,23 @@ foreach ($allProducts as $product) {
             font-size: 10px;
             color: #64748b;
             margin-top: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
+        }
+
+        /* ✅ Business name under last_restocked */
+        .business-name {
+            font-size: 11px;
+            color: #0f172a;
+            font-weight: 600;
+            margin-top: 2px;
+            padding: 3px 8px;
+            background: #eff6ff;
+            border-radius: 5px;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* ========== MODALS ========== */
@@ -924,6 +940,11 @@ foreach ($allProducts as $product) {
                 font-size: 11px;
                 padding: 0 12px 8px 12px;
             }
+
+            .business-name {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
         }
 
         @media (max-width: 380px) {
@@ -980,7 +1001,7 @@ foreach ($allProducts as $product) {
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="welcome">
-                        <h4>Shop</h4>
+                        <h4>Investors Shop</h4>
                     </div>
                 </div>
             </div>
@@ -997,7 +1018,7 @@ foreach ($allProducts as $product) {
                     </button>
                 </div>
                 <a href="upload_products.php" class="add-product-btn" id="addProductBtn">
-                    <i class="fas fa-plus-circle"></i> Add New Product
+                    Add Product
                 </a>
             </div>
             <div id="searchInfo" class="search-info"></div>
@@ -1017,13 +1038,12 @@ foreach ($allProducts as $product) {
                             data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>">
 
-
                             <div class="product-image-wrapper">
-                                <img src="../Inv_Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                                <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
-                                    onclick="openImageModal('../Inv_Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
-                                    style="width: 100px; height: auto; cursor: pointer;">
+                                    onclick="openImageModal('/Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
+                                    style="width: 150px; height: auto;border-radius:5px;">
                             </div>
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="price-unit-grid">
@@ -1033,16 +1053,20 @@ foreach ($allProducts as $product) {
 
                             <div class="card-actions-grid">
                                 <button class="desc-btn" data-id="<?php echo $product['id']; ?>">
-                                    <i class="fas fa-info-circle"></i> INFO
+                                    <i class="fas fa-info-circle"></i>
                                 </button>
                                 <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
                                     class="update-btn">
-                                    UPDATE
+                                    <i class="fas fa-pen"></i>
                                 </a>
                             </div>
 
                             <div class="last_restocked">
-                                <?php echo htmlspecialchars($product['last_restocked']); ?>
+                                <?php echo htmlspecialchars($product['last_restocked'] ?? ''); ?>
+                            </div>
+
+                            <div class="business-name">
+                                <?php echo htmlspecialchars($user['business_name'] ?? 'No Business Name'); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>

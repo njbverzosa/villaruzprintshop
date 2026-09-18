@@ -1,5 +1,16 @@
 <?php
 // API/update_product.php
+
+// ✅ Force session cookie path to be shared across the whole domain
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'domain'   => '',
+    'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -15,29 +26,55 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['acc_number']) || !isset($_
     exit;
 }
 
-$userId   = $_SESSION['user_id'];
-$userRole = $_SESSION['user_role'];
+$userId    = $_SESSION['user_id'];
+$userRole  = $_SESSION['user_role'];
+$accNumber = $_SESSION['acc_number'];
 
 // ==============================================
-// 2. FETCH USER NAME
+// 2. FETCH USER NAME + SET TARGET TABLE (based on role)
 // ==============================================
-$userName = 'Unknown User';
+$userName        = 'Unknown User';
+$targetTable     = '';
+$redirectUrl     = '';
+$scopeByAccNum   = false;   // ✅ only scope by acc_number for Investor
 
 if ($userRole === 'Admin') {
+    // ✅ Admin → merchandise_inventory (no acc_number scoping)
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userName = $user['f_name'];
     }
+    $targetTable   = 'merchandise_inventory';
+    $redirectUrl   = '../web/all_products.php';
+    $scopeByAccNum = false;
+
+} elseif ($userRole === 'Investor') {
+    // ✅ Investor → investors_inventory (scoped to their acc_number)
+    $stmt = $pdo->prepare("SELECT f_name, acc_number FROM investors WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($user) {
+        $userName  = $user['f_name'];
+        // ✅ Refresh acc_number directly from DB (don't trust session)
+        $accNumber = $user['acc_number'];
+    }
+    $targetTable   = 'investors_inventory';
+    $redirectUrl   = '../investors/investors_product.php';
+    $scopeByAccNum = true;
+
+} else {
+    // ❌ Any other role is not allowed to update products
+    echo json_encode(['success' => false, 'message' => 'Unauthorized role: ' . $userRole]);
+    exit;
 }
 
 $firstName = explode(' ', trim($userName))[0] ?? 'User';
 
 // ==============================================
-// 3. TARGET TABLE + UPLOAD FOLDER
+// 3. UPLOAD FOLDER (shared by both roles)
 // ==============================================
-$targetTable  = 'merchandise_inventory';
 $uploadFolder = 'Products';
 
 // ==============================================
@@ -80,13 +117,8 @@ if ($action === 'update_product') {
     // ==============================================
     // 5a. SANITIZE + VALIDATE PRODUCT NAME
     // ==============================================
-    // Strip any image extension that may have been typed in
     $productName = preg_replace('/\.(jpeg|jpg|png|webp|gif|bmp|heic|heif|avif|tiff|tif|svg)$/i', '', $productName);
-
-    // Collapse multiple spaces
     $productName = preg_replace('/\s+/', ' ', $productName);
-
-    // Trim
     $productName = trim($productName);
 
     if (empty($productName)) {
@@ -103,14 +135,28 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 5b. FETCH OLD PRODUCT
+    // 5b. FETCH OLD PRODUCT (scoped by acc_number for Investor)
     // ==============================================
-    $oldStmt = $pdo->prepare("SELECT * FROM {$targetTable} WHERE id = :id");
-    $oldStmt->execute([':id' => $productId]);
+    if ($scopeByAccNum) {
+        $oldStmt = $pdo->prepare("
+            SELECT * FROM {$targetTable} 
+            WHERE id = :id AND acc_number = :acc_number
+        ");
+        $oldStmt->execute([
+            ':id'         => $productId,
+            ':acc_number' => $accNumber
+        ]);
+    } else {
+        $oldStmt = $pdo->prepare("SELECT * FROM {$targetTable} WHERE id = :id");
+        $oldStmt->execute([':id' => $productId]);
+    }
+
     $oldProduct = $oldStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$oldProduct) {
-        echo json_encode(['success' => false, 'message' => 'Product not found']);
+        // ✅ Specific message if scoped (prevents leaking that a product exists but belongs to someone else)
+        $msg = $scopeByAccNum ? 'Product not found or does not belong to you' : 'Product not found';
+        echo json_encode(['success' => false, 'message' => $msg]);
         exit;
     }
 
@@ -152,13 +198,10 @@ if ($action === 'update_product') {
 
     // ==============================================
     // 5e. HANDLE NEW IMAGE
-    //    - New image is saved as: <product_name>.<ext>
-    //    - The OLD file is deleted from disk AFTER a successful DB update.
-    //    - If no new image is sent, image is left completely untouched.
     // ==============================================
-    $imagePath        = $oldProduct['product_image'];  // default: keep existing
-    $newFileWritten   = null;   // path of the newly written file (for rollback)
-    $oldImageToDelete = null;   // old file to delete after commit
+    $imagePath        = $oldProduct['product_image'];
+    $newFileWritten   = null;
+    $oldImageToDelete = null;
 
     $allowedSourceExt  = ['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp', 'heic', 'heif', 'avif', 'tiff', 'tif', 'svg'];
     $allowedSourceMime = [
@@ -180,12 +223,10 @@ if ($action === 'update_product') {
 
         $type = strtolower($m[1]);
 
-        // Normalize a few aliases
         if ($type === 'jpeg')     $type = 'jpg';
         if ($type === 'svg+xml')  $type = 'svg';
         if ($type === 'x-ms-bmp') $type = 'bmp';
 
-        // Block SVG by default (can carry scripts)
         if ($type === 'svg') {
             echo json_encode(['success' => false, 'message' => 'SVG images are not allowed.']);
             exit;
@@ -204,20 +245,14 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Clean filename: <product_name>.<ext> — always overwrites
+        // ✅ Use acc_number as filename prefix for Investor to avoid cross-investor collisions
+        $fileBase = $scopeByAccNum ? ($accNumber . '_' . $productName) : $productName;
         $ext       = $type;
-        $fileName  = $productName . '.' . $ext;
+        $fileName  = $fileBase . '.' . $ext;
         $destPath  = $uploadDir . $fileName;
 
-        // ✅ Delete OLD file if it has a different name
         if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== $fileName) {
             $oldImageToDelete = $oldProduct['product_image'];
-        }
-
-        // If the new file has the SAME name as the old one, we overwrite it —
-        // no need to mark it for deletion.
-        if ($oldImageToDelete === null && !empty($oldProduct['product_image']) && $oldProduct['product_image'] === $fileName) {
-            // Same name → overwrite in place (no separate delete needed)
         }
 
         if (file_put_contents($destPath, $data) === false) {
@@ -259,12 +294,12 @@ if ($action === 'update_product') {
             exit;
         }
 
-        // ✅ Clean filename: <product_name>.<ext> — always overwrites
+        // ✅ Use acc_number as filename prefix for Investor
+        $fileBase = $scopeByAccNum ? ($accNumber . '_' . $productName) : $productName;
         $ext      = $sourceExt;
-        $fileName = $productName . '.' . $ext;
+        $fileName = $fileBase . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 
-        // ✅ Mark OLD file for deletion if it has a different name
         if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== $fileName) {
             $oldImageToDelete = $oldProduct['product_image'];
         }
@@ -277,19 +312,26 @@ if ($action === 'update_product') {
         $imagePath      = $fileName;
         $newFileWritten = $fileName;
     }
-    // ---- Case C: Retake clicked but no new capture ----
-    //    → user explicitly wants to REMOVE the image
+    // ---- Case C: use default image (no-image.jpg) ----
+    elseif (isset($_POST['use_default_image']) && $_POST['use_default_image'] === '1') {
+        $imagePath = 'no-image.jpg';
+
+        if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== 'no-image.jpg') {
+            $oldImageToDelete = $oldProduct['product_image'];
+        }
+    }
+    // ---- Case D: Retake clicked but no new capture → remove image ----
     elseif ($replaceImage) {
         $imagePath        = null;
         $oldImageToDelete = !empty($oldProduct['product_image']) ? $oldProduct['product_image'] : null;
     }
-    // ---- Case D: no image change → keep existing, do nothing ----
+    // ---- Case E: no image change → keep existing ----
     else {
         $imagePath = $oldProduct['product_image'];
     }
 
     // ==============================================
-    // 5f. PERFORM THE UPDATE
+    // 5f. PERFORM THE UPDATE (scoped by acc_number for Investor)
     // ==============================================
     try {
         date_default_timezone_set('Asia/Manila');
@@ -297,28 +339,68 @@ if ($action === 'update_product') {
 
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare("
-            UPDATE {$targetTable}
-            SET product_name   = :product_name,
-                unit           = :unit,
-                qty_on_hand    = :qty_on_hand,
-                selling_price  = :selling_price,
-                description    = :description,
-                product_image  = :product_image,
-                last_restocked = :last_restocked
-            WHERE id = :id
-        ");
+        if ($scopeByAccNum) {
+            // ✅ Investor: WHERE id = ? AND acc_number = ?
+            $stmt = $pdo->prepare("
+                UPDATE {$targetTable}
+                SET product_name   = :product_name,
+                    unit           = :unit,
+                    qty_on_hand    = :qty_on_hand,
+                    selling_price  = :selling_price,
+                    description    = :description,
+                    product_image  = :product_image,
+                    last_restocked = :last_restocked
+                WHERE id = :id AND acc_number = :acc_number
+            ");
 
-        $result = $stmt->execute([
-            ':product_name'   => $productName,
-            ':unit'           => $unit,
-            ':qty_on_hand'    => $quantity,
-            ':selling_price'  => $sellingPrice,
-            ':description'    => $description,
-            ':product_image'  => $imagePath,
-            ':last_restocked' => $formattedDate,
-            ':id'             => $productId
-        ]);
+            $result = $stmt->execute([
+                ':product_name'   => $productName,
+                ':unit'           => $unit,
+                ':qty_on_hand'    => $quantity,
+                ':selling_price'  => $sellingPrice,
+                ':description'    => $description,
+                ':product_image'  => $imagePath,
+                ':last_restocked' => $formattedDate,
+                ':id'             => $productId,
+                ':acc_number'     => $accNumber
+            ]);
+        } else {
+            // ✅ Admin: original UPDATE
+            $stmt = $pdo->prepare("
+                UPDATE {$targetTable}
+                SET product_name   = :product_name,
+                    unit           = :unit,
+                    qty_on_hand    = :qty_on_hand,
+                    selling_price  = :selling_price,
+                    description    = :description,
+                    product_image  = :product_image,
+                    last_restocked = :last_restocked
+                WHERE id = :id
+            ");
+
+            $result = $stmt->execute([
+                ':product_name'   => $productName,
+                ':unit'           => $unit,
+                ':qty_on_hand'    => $quantity,
+                ':selling_price'  => $sellingPrice,
+                ':description'    => $description,
+                ':product_image'  => $imagePath,
+                ':last_restocked' => $formattedDate,
+                ':id'             => $productId
+            ]);
+        }
+
+        // ✅ Double-check: if scoped, ensure a row was actually affected
+        if ($result && $scopeByAccNum && $stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            if ($newFileWritten && $newFileWritten !== $oldProduct['product_image']) {
+                if (file_exists($uploadDir . $newFileWritten)) {
+                    @unlink($uploadDir . $newFileWritten);
+                }
+            }
+            echo json_encode(['success' => false, 'message' => 'Update failed: product does not belong to you']);
+            exit;
+        }
 
         if ($result) {
             // ---- Build change log ----
@@ -332,6 +414,11 @@ if ($action === 'update_product') {
 
             $logDetails = "Updated product in {$targetTable}: {$oldProduct['product_name']} (ID: {$productId}) | Changes: " . (empty($changes) ? "No changes" : implode(", ", $changes));
 
+            // ✅ Include acc_number in log for Investor
+            if ($scopeByAccNum) {
+                $logDetails .= " | Investor: {$accNumber}";
+            }
+
             try {
                 $logStmt = $pdo->prepare("INSERT INTO logs (name, action, details, created_at) VALUES (?, ?, ?, ?)");
                 $logStmt->execute([$firstName, "Updated Product", $logDetails, $formattedDate]);
@@ -341,18 +428,13 @@ if ($action === 'update_product') {
 
             $pdo->commit();
 
-            // ==============================================
             // ✅ POST-COMMIT: delete the OLD image file
-            //    (only if a new one was written or the image was cleared)
-            // ==============================================
-            if ($oldImageToDelete !== null) {
+            if ($oldImageToDelete !== null && $oldImageToDelete !== 'no-image.jpg') {
                 $oldPath = $uploadDir . $oldImageToDelete;
                 if (file_exists($oldPath)) {
                     @unlink($oldPath);
                 }
             }
-
-            $redirectUrl = '../web/all_products.php';
 
             echo json_encode([
                 'success'       => true,
@@ -360,6 +442,8 @@ if ($action === 'update_product') {
                 'product_id'    => $productId,
                 'product_image' => $imagePath,
                 'table'         => $targetTable,
+                'role'          => $userRole,
+                'acc_number'    => $scopeByAccNum ? $accNumber : null,
                 'folder'        => $uploadFolder,
                 'upload_dir'    => $uploadDir,
                 'last_updated'  => $formattedDate,
@@ -368,8 +452,6 @@ if ($action === 'update_product') {
         } else {
             $pdo->rollBack();
 
-            // ✅ DB failed → remove the NEW file if it has a different name than the old one.
-            //    If the names are identical, the file was overwritten in place, and we can't restore it.
             if ($newFileWritten && $newFileWritten !== $oldProduct['product_image']) {
                 if (file_exists($uploadDir . $newFileWritten)) {
                     @unlink($uploadDir . $newFileWritten);
@@ -382,7 +464,6 @@ if ($action === 'update_product') {
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
 
-        // ✅ Only remove the NEW file if it differs from the old one.
         if ($newFileWritten && $newFileWritten !== $oldProduct['product_image']) {
             if (file_exists($uploadDir . $newFileWritten)) {
                 @unlink($uploadDir . $newFileWritten);
