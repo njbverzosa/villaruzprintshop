@@ -354,19 +354,12 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
         }
 
-        .delete-btn:hover {
-            background: #ef4444;
-            color: #ffffff;
-            transform: scale(1.05);
-        }
 
         .delete-btn i {
             pointer-events: none;
         }
 
-        .delete-btn:hover i {
-            transform: rotate(-8deg);
-        }
+
 
         /* ========== SEARCH & ADD PRODUCT ========== */
         .shop-controls {

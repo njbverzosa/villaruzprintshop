@@ -574,11 +574,6 @@ foreach ($allProducts as $product) {
         }
 
 
-        .delete-btn:hover i {
-            transform: rotate(-8deg);
-        }
-
-
 
         /* ========== MODALS ========== */
         .desc-modal {
