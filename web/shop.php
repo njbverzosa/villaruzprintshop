@@ -385,17 +385,12 @@ $allProducts = $stmt->fetchAll();
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
-        .product-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-        }
+  
 
         /* ============================================================
-           ✅ IMAGE WRAPPER — anchor for the trash button
+           ✅ IMAGE WRAPPER — anchor for the edit + trash buttons
            ============================================================ */
         .product-image-wrapper {
             position: relative;
@@ -408,17 +403,37 @@ $allProducts = $stmt->fetchAll();
             width: 150px;
             height: 150px;
             object-fit: cover;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
+            border-radius: 5px;
             display: block;
         }
 
-        .product-image-clickable:hover {
-            transform: scale(1.04);
+
+        /* ✅ Update (edit) button — top-LEFT corner of the IMAGE */
+        .edit-btn {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.95);
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 13px;
         }
 
-        /* ✅ Trash button — top-right corner of the IMAGE */
+
+        .edit-btn i {
+            pointer-events: none;
+        }
+
+        /* ✅ Trash button — top-RIGHT corner of the IMAGE */
         .delete-btn {
             position: absolute;
             top: -6px;
@@ -438,6 +453,7 @@ $allProducts = $stmt->fetchAll();
             font-size: 13px;
         }
 
+     
 
         .delete-btn i {
             pointer-events: none;
@@ -975,7 +991,6 @@ $allProducts = $stmt->fetchAll();
                 padding: 0 15px 8px 15px;
             }
 
-            /* Slightly smaller buttons on tiny screens */
             .card-add-btn,
             .card-desc-btn {
                 font-size: 11px;
@@ -1083,13 +1098,21 @@ $allProducts = $stmt->fetchAll();
                             data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                             data-price="<?php echo number_format($product['selling_price'], 2); ?>">
 
-                            <!-- ✅ Image wrapper with trash at the top-right corner of the IMAGE -->
+                            <!-- ✅ Image wrapper with Update (top-left) and Delete (top-right) -->
                             <div class="product-image-wrapper">
                                 <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
                                     onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
 
+                                <!-- Update (edit) button — top-left -->
+                                <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                    class="edit-btn"
+                                    title="Update product">
+                                    <i class="fas fa-pen"></i>
+                                </a>
+
+                                <!-- Delete button — top-right -->
                                 <a href="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
                                     class="delete-btn"
                                     onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this product?');"
@@ -1108,14 +1131,14 @@ $allProducts = $stmt->fetchAll();
                                 <button class="card-qty-btn increment-card" data-id="<?php echo $product['id']; ?>">+</button>
                             </div>
 
-                            <!-- ✅ Add + Description side-by-side in a 2-column grid -->
+                            <!-- ✅ Only 2 buttons now: Add + Description -->
                             <div class="card-actions-grid">
                                 <button class="card-add-btn add-to-cart-card"
                                     data-id="<?php echo $product['id']; ?>"
                                     data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     data-price="<?php echo $product['selling_price']; ?>"
                                     data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
-                                     Add
+                                    Add
                                 </button>
 
                                 <button class="card-desc-btn desc-btn"
@@ -1124,7 +1147,7 @@ $allProducts = $stmt->fetchAll();
                                     data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                                     data-price="<?php echo number_format($product['selling_price'], 2); ?>"
                                     data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
-                                     Description
+                                    Description
                                 </button>
                             </div>
                         </div>
