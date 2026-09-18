@@ -42,6 +42,8 @@ $user = $userData;
 
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
+
+$defaultImageUrl = '../Products/no-image.jpg';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -337,6 +339,26 @@ $timezone = new DateTimeZone('Asia/Manila');
             background: #0284c7;
         }
 
+        .btn-default {
+            background: #8b5cf6;
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            margin-bottom: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-default:hover {
+            background: #7c3aed;
+        }
+
+        .btn-default.visible {
+            display: flex;
+        }
+
         .btn-submit {
             background: #333;
             width: 100%;
@@ -589,6 +611,11 @@ $timezone = new DateTimeZone('Asia/Manila');
             <button type="button" class="btn-upload" id="uploadBtn">
                 Upload Photo
             </button>
+
+            <!-- ✅ Choose Default button -->
+            <button type="button" class="btn-default" id="defaultBtn">
+                <i class="fas fa-image"></i> Choose Default
+            </button>
         </div>
 
         <!-- ============================================================
@@ -603,6 +630,7 @@ $timezone = new DateTimeZone('Asia/Manila');
                 <input type="hidden" name="csrf_token" id="csrf_token"
                     value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
                 <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
+                <input type="hidden" name="use_default_image" id="use_default_image" value="0">
 
                 <input type="file" id="productImageFile" name="product_image"
                     accept="image/jpeg,image/jpg,image/png,image/webp">
@@ -726,6 +754,7 @@ $timezone = new DateTimeZone('Asia/Manila');
         var captureBtn = document.getElementById('captureBtn');
         var retakeBtn = document.getElementById('retakeBtn');
         var uploadBtn = document.getElementById('uploadBtn');
+        var defaultBtn = document.getElementById('defaultBtn');
         var cancelUploadBtn = document.getElementById('cancelUploadBtn');
         var cameraBox = document.getElementById('cameraBox');
         var imageWrapper = document.getElementById('imageWrapper');
@@ -733,12 +762,15 @@ $timezone = new DateTimeZone('Asia/Manila');
         var productImage = document.getElementById('productImage');
         var fileInput = document.getElementById('productImageFile');
         var base64Input = document.getElementById('product_image_base64');
+        var useDefaultImageInput = document.getElementById('use_default_image');
         var saveBtn = document.getElementById('saveBtn');
 
         var successOverlay = document.getElementById('successOverlay');
         var successCard = document.getElementById('successCard');
         var successTitle = document.getElementById('successTitle');
         var successMessage = document.getElementById('successMessage');
+
+        var defaultImageUrl = '<?php echo $defaultImageUrl; ?>';
 
         var stream = null;
         var cameraActive = false;
@@ -758,6 +790,9 @@ $timezone = new DateTimeZone('Asia/Manila');
         function showUploadButton() { uploadBtn.style.display = 'block'; }
         function hideUploadButton() { uploadBtn.style.display = 'none'; }
 
+        function showDefaultButton() { defaultBtn.classList.add('visible'); }
+        function hideDefaultButton() { defaultBtn.classList.remove('visible'); }
+
         function showPlaceholder() { imagePlaceholder.classList.add('visible'); }
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
@@ -768,6 +803,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             hideFloatingCamera();
             hideFloatingCapture();
             hideUploadButton();
+            hideDefaultButton();
             showCancelButton();
             hidePlaceholder();
         }
@@ -777,6 +813,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             showFloatingCamera();
             hideFloatingCapture();
             showUploadButton();
+            showDefaultButton();
             showPlaceholder();
         }
 
@@ -785,6 +822,7 @@ $timezone = new DateTimeZone('Asia/Manila');
             hideFloatingCamera();
             showFloatingCapture();
             hideUploadButton();
+            hideDefaultButton();
             hidePlaceholder();
         }
 
@@ -835,6 +873,7 @@ $timezone = new DateTimeZone('Asia/Manila');
         retakeBtn.addEventListener('click', function () {
             base64Input.value = '';
             fileInput.value = '';
+            useDefaultImageInput.value = '0';
             startCamera();
         });
 
@@ -851,6 +890,7 @@ $timezone = new DateTimeZone('Asia/Manila');
 
             var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
             base64Input.value = dataUrl;
+            useDefaultImageInput.value = '0';
 
             capturedPhoto.src = dataUrl;
             capturedPhoto.style.display = 'block';
@@ -888,6 +928,7 @@ $timezone = new DateTimeZone('Asia/Manila');
                 var dataUrl = e.target.result;
 
                 base64Input.value = dataUrl;
+                useDefaultImageInput.value = '0';
 
                 capturedPhoto.src = dataUrl;
                 capturedPhoto.style.display = 'block';
@@ -900,9 +941,34 @@ $timezone = new DateTimeZone('Asia/Manila');
             reader.readAsDataURL(file);
         });
 
+        // ============================================================
+        // ✅ CHOOSE DEFAULT IMAGE
+        // ============================================================
+        defaultBtn.addEventListener('click', function () {
+            // Clear any captured/uploaded image data
+            base64Input.value = '';
+            fileInput.value = '';
+
+            // Signal to backend: use default image
+            useDefaultImageInput.value = '1';
+
+            // Show the default image in the preview
+            cameraBox.classList.remove('visible');
+            capturedPhoto.src = '';
+            capturedPhoto.style.display = 'none';
+            video.style.display = 'none';
+
+            productImage.src = defaultImageUrl;
+            productImage.style.display = 'block';
+            imageWrapper.style.display = 'flex';
+
+            viewHasImage();
+        });
+
         cancelUploadBtn.addEventListener('click', function () {
             base64Input.value = '';
             fileInput.value = '';
+            useDefaultImageInput.value = '0';
 
             productImage.src = '';
             productImage.style.display = 'none';
@@ -920,8 +986,10 @@ $timezone = new DateTimeZone('Asia/Manila');
         document.getElementById('productForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            if (!base64Input.value) {
-                alert('Please capture or upload a product image first.');
+            var isDefault = useDefaultImageInput.value === '1';
+
+            if (!base64Input.value && !isDefault) {
+                alert('Please capture, upload, or choose a default product image first.');
                 return;
             }
 
