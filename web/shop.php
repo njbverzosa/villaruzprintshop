@@ -294,13 +294,9 @@ $allProducts = $stmt->fetchAll();
             object-fit: cover;
             border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.3s ease;
             display: block;
         }
 
-        .product-image-clickable:hover {
-            transform: scale(1.04);
-        }
 
         /* Update (edit) button — top-LEFT corner of the IMAGE */
         .edit-btn {
@@ -312,22 +308,15 @@ $allProducts = $stmt->fetchAll();
             justify-content: center;
             width: 30px;
             height: 30px;
-            border-radius: 8px;
+            border-radius: 5px;
             background: rgba(255, 255, 255, 0.95);
             color: black;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.2s ease;
             z-index: 5;
             font-size: 13px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
         }
 
-        .edit-btn:hover {
-            background: #3b82f6;
-            color: #ffffff;
-            transform: scale(1.05);
-        }
 
         .edit-btn i {
             pointer-events: none;
@@ -343,15 +332,13 @@ $allProducts = $stmt->fetchAll();
             justify-content: center;
             width: 30px;
             height: 30px;
-            border-radius: 8px;
+            border-radius: 5px;
             background: rgba(255, 255, 255, 0.95);
             color: black;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.2s ease;
             z-index: 5;
             font-size: 13px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
         }
 
 
@@ -1129,7 +1116,7 @@ $allProducts = $stmt->fetchAll();
                                     data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     data-price="<?php echo $product['selling_price']; ?>"
                                     data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>">
-                                    Add
+                                    <i class="fas fa-shopping-cart"></i>
                                 </button>
 
                                 <button class="card-desc-btn desc-btn" data-id="<?php echo $product['id']; ?>"
@@ -1137,7 +1124,7 @@ $allProducts = $stmt->fetchAll();
                                     data-unit="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>"
                                     data-price="<?php echo number_format($product['selling_price'], 2); ?>"
                                     data-description="<?php echo htmlspecialchars($product['description'] ?? ''); ?>">
-                                    Description
+                                    <i class="fas fa-info-circle"></i>
                                 </button>
                             </div>
                             <div class="last_restocked">

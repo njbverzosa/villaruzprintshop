@@ -1058,17 +1058,17 @@ foreach ($allProducts as $product) {
                             </div>
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
                             <div class="price-unit-grid">
-                                <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>
+                                <div class="product-price">₱ <?php echo number_format($product['selling_price'], 2); ?></div>/
                                 <div class="product-unit"><?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?></div>
                             </div>
 
                             <div class="card-actions-grid">
                                 <button class="desc-btn" data-id="<?php echo $product['id']; ?>">
-                                    <i class="fas fa-info-circle"></i> INFO
+                                    <i class="fas fa-info-circle"></i>
                                 </button>
                                 <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
                                     class="update-btn">
-                                    UPDATE
+                                    <i class="fas fa-pen"></i>
                                 </a>
                             </div>
 
