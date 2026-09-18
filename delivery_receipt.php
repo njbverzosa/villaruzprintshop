@@ -463,9 +463,9 @@ if (!empty($qrCodeUrl)) {
 
         <div class="receipt" id="receipt-content">
             <div class="header">
-                <div class="shop-name">VILLARUZ PRINTSHOP & GENERAL MERCHANDISE</div>
-                <div class="shop-address">Poblacion 2411, Dasol, Pangasinan, Philippines</div>
-                <div class="tin">VAT Reg. TIN: 257-630-627-00000</div>
+                <div class="shop-name">SOPHIELISETAKATED OFFICE AND SCHOOL SUPPLIES</div>
+                <div class="shop-address">Gais-Guipe Dasol Pangasinan</div>
+                <div class="tin">VAT Reg. TIN: 487-060-298-00000</div>
             </div>
 
             <!-- <div class="header">
