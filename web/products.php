@@ -90,7 +90,7 @@ foreach ($allProducts as $product) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
-    <title>Shop Products | Villaruz Print Shop & General Merchandise</title>
+    <title>Investors Products | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* ========== MODERN LIGHT GRAY DASHBOARD STYLES ========== */
@@ -392,33 +392,6 @@ foreach ($allProducts as $product) {
             background: #cbd5e1;
         }
 
-        .add-product-btn {
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
-            border: none;
-            padding: 10px 24px;
-            border-radius: 30px;
-            color: white;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            text-decoration: none;
-        }
-
-        .add-product-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-
-        .add-product-btn i {
-            font-size: 14px;
-        }
 
         .search-info {
             font-size: 13px;
@@ -855,14 +828,7 @@ foreach ($allProducts as $product) {
                 font-size: 12px;
             }
 
-            .add-product-btn {
-                padding: 8px 16px;
-                font-size: 12px;
-            }
-
-            .add-product-btn i {
-                font-size: 12px;
-            }
+           
 
             .desc-modal-content {
                 width: 95%;
@@ -928,15 +894,7 @@ foreach ($allProducts as $product) {
                 font-size: 11px;
             }
 
-            .add-product-btn {
-                padding: 6px 12px;
-                font-size: 11px;
-                gap: 4px;
-            }
-
-            .add-product-btn i {
-                font-size: 11px;
-            }
+          
 
             .search-info {
                 font-size: 11px;
@@ -959,14 +917,7 @@ foreach ($allProducts as $product) {
                 font-size: 10px;
             }
 
-            .add-product-btn {
-                padding: 5px 10px;
-                font-size: 10px;
-            }
-
-            .add-product-btn i {
-                font-size: 10px;
-            }
+           
 
             .search-input input {
                 padding: 6px 10px 6px 30px;
@@ -1014,16 +965,6 @@ foreach ($allProducts as $product) {
                         <i class="fas fa-times"></i> Clear
                     </button>
                 </div>
-                <a href="upload_products.php" class="add-product-btn" id="addProductBtn">
-                    <i class="fas fa-plus-circle"></i> Add New
-                </a>
-
-                <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
-                    <a href="/API/download_images.php" class="add-product-btn" id="downloadImagesBtn">
-                        <i class="fas fa-download"></i> Images
-                    </a>
-                <?php endif; ?>
-
             </div>
             <div id="searchInfo" class="search-info"></div>
 

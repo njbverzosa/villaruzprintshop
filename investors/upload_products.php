@@ -1,22 +1,13 @@
 <?php
-
+//investors/upload_products.php
 session_start();
 
-// ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
-// ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 
-// ==============================================
-// STORE USER NAME IN SESSION FOR API USE
-// ==============================================
 if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
     $_SESSION['user_name'] = $userData['f_name'];
 }
 
-// ==============================================
-// 2. CHECK LOGIN STATUS
-// ==============================================
 function isLoggedIn()
 {
     return isset($_SESSION['user_role']) &&
@@ -24,38 +15,35 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 3. GET USER DATA FROM SESSION
-// ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
 $userData = null;
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+
+if ($userRole === 'Investor') {
+    $stmt = $pdo->prepare("
+        SELECT id, acc_number, f_name, email, phone_number, user_name,
+               business_name, business_permit, profile
+        FROM investors
+        WHERE id = ?
+    ");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
 $user = $userData;
 
 // ==============================================
@@ -347,7 +335,7 @@ foreach ($allProducts as $product) {
       const formData = new FormData(e.target);
 
       try {
-        const res = await fetch('../API/add_product.php', {
+        const res = await fetch('../Inv_API/add_product.php', {
           method: 'POST',
           body: formData
         });
@@ -361,7 +349,7 @@ foreach ($allProducts as $product) {
           capturedPhoto.src = '';
           capturedPhoto.style.display = 'none';
           isCaptured = false;
-          captureBtn.textContent = '📸 Capture Product';
+          captureBtn.textContent = 'Capture Product';
           captureBtn.classList.remove('retake');
           startCamera(); // restart for the next product
         } else {

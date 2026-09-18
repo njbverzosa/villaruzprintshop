@@ -1,5 +1,5 @@
 <?php
-// web/all_products.php
+// investors/investors_product.php
 
 session_start();
 
@@ -27,8 +27,14 @@ $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
 $userData = null;
+
 if ($userRole === 'Investor') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+    $stmt = $pdo->prepare("
+        SELECT id, acc_number, f_name, email, phone_number, user_name,
+               business_name, business_permit, profile
+        FROM investors
+        WHERE id = ?
+    ");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }

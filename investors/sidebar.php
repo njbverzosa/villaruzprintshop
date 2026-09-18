@@ -224,22 +224,29 @@
     ?>
 
     <!-- Shop Link - Visible to ALL -->
-    <a href="all_products.php" class="nav-item <?php echo $currentPage == 'all_products.php' ? 'shop' : ''; ?>">
+    <a href="investors_product.php" class="nav-item <?php echo $currentPage == 'investors_product.php' ? 'shop' : ''; ?>">
         <i class="fas fa-store"></i>
         <span>Shop</span>
     </a>
 
     <!-- Orders Dropdown - Visible to ALL -->
     <?php
-    $pendingActive = in_array($currentPage, ['pending_folder.php', 'pending_orders.php']);
-    $paidActive    = in_array($currentPage, ['paid_folder.php', 'paid_orders.php']);
-
-    $ordersActive  = in_array($currentPage, [
+    // ✅ Pending pages (including the _with variant)
+    $pendingActive = in_array($currentPage, [
         'pending_folder.php',
-        'paid_folder.php',
-        'pending_orders.php',
-        'paid_orders.php',
+        'pending_folder_with.php',
+        'pending_orders.php'
     ]);
+
+    // ✅ Paid pages (including the _with variant)
+    $paidActive = in_array($currentPage, [
+        'paid_folder.php',
+        'paid_folder_with.php',
+        'paid_orders.php'
+    ]);
+
+    // ✅ Orders dropdown expands if ANY of its children is active
+    $ordersActive = $pendingActive || $paidActive;
     ?>
     <div class="nav-dropdown">
         <div class="nav-dropdown-toggle" onclick="toggleDropdown('ordersDropdown')">

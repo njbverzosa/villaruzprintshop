@@ -1,5 +1,5 @@
 <?php
-//web/update_products.php
+//investors/upload_products.php
 session_start();
 
 require_once __DIR__ . '/../DB_Conn/config.php';
@@ -26,8 +26,14 @@ $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
 $userData = null;
-if ($userRole === 'Admin') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
+
+if ($userRole === 'Investor') {
+    $stmt = $pdo->prepare("
+        SELECT id, acc_number, f_name, email, phone_number, user_name,
+               business_name, business_permit, profile
+        FROM investors
+        WHERE id = ?
+    ");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -40,20 +46,12 @@ if (!$userData) {
 
 $user = $userData;
 
+
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
-// ==============================================
-// FETCH PRODUCT BY product_number (from URL)
-// ==============================================
-$productNumber = $_GET['product_number'] ?? '';
 
-if (empty($productNumber)) {
-    header('Location: all_products.php');
-    exit;
-}
-
-$stmt = $pdo->prepare("SELECT * FROM merchandise_inventory WHERE product_number = ? LIMIT 1");
+$stmt = $pdo->prepare("SELECT * FROM investors_inventory WHERE product_number = ? LIMIT 1");
 $stmt->execute([$productNumber]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -62,13 +60,6 @@ if (!$product) {
     exit;
 }
 
-// ==============================================
-// BUILD THE IMAGE URL
-// ==============================================
-$imageUrl = '';
-if (!empty($product['product_image'])) {
-    $imageUrl = '../Inv_Products/' . htmlspecialchars($product['product_image']);
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -282,7 +273,7 @@ if (!empty($product['product_image'])) {
 
             <!-- ✅ Centered existing image -->
             <div class="product-image-wrapper" id="imageWrapper">
-                <img src="<?php echo $imageUrl; ?>"
+                <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                      alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                      id="productImage"
                      onclick="openImageModal('<?php echo $imageUrl; ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
@@ -419,7 +410,7 @@ if (!empty($product['product_image'])) {
             const formData = new FormData(e.target);
 
             try {
-                const res = await fetch('../API/update_product.php', {
+                const res = await fetch('../Inv_API/update_product.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -428,7 +419,7 @@ if (!empty($product['product_image'])) {
 
                 if (data.success) {
                     alert('✅ ' + data.message);
-                    window.location.href = 'all_products.php';
+                    window.location.href = 'investors_product.php';
                 } else {
                     alert('❌ ' + data.message);
                 }

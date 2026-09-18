@@ -1,8 +1,8 @@
 <?php
 // login.php – desktop + mobile + in-app flows
 // ✅ 3 roles: Admin (admins), Investor (investors), Customer (customers)
-// ✅ Admin → web/all_products.php
-// ✅ Investor → public/shop.php
+// ✅ Admin    → web/all_products.php
+// ✅ Investor → investors/investors_product.php
 // ✅ Customer → public/shop.php
 // ✅ Biometric success shows inside the Login button
 // ✅ Biometric auto-prompt skipped on POST (password login)
@@ -104,11 +104,20 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     if ($_SESSION['user_role'] === 'Admin') {
         $redirectUrl = 'web/all_products.php';
     } elseif ($_SESSION['user_role'] === 'Investor') {
-        $redirectUrl = 'public/shop.php';
+        $redirectUrl = 'investors/investors_product.php';
     } elseif ($_SESSION['user_role'] === 'Customer') {
         $redirectUrl = 'public/shop.php';
     }
 }
+
+// ==============================================
+// TABLE MAP (shared across all branches)
+// ==============================================
+$tableMap = [
+    'Admin'    => 'admins',
+    'Investor' => 'investors',
+    'Customer' => 'customers'
+];
 
 // ==============================================
 // BIOMETRIC ENROLLED CHECK
@@ -121,7 +130,6 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
 
-    $tableMap = ['Admin' => 'admins', 'Investor' => 'investors', 'Customer' => 'customers'];
     $table = $tableMap[$userType] ?? 'customers';
 
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
@@ -137,7 +145,6 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $userId = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
 
-    $tableMap = ['Admin' => 'admins', 'Investor' => 'investors', 'Customer' => 'customers'];
     $table = $tableMap[$userType] ?? 'customers';
 
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, biometric_id, acc_number FROM $table WHERE id = ?");
@@ -169,7 +176,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         exit;
     }
 
-    $tableMap = ['Admin' => 'admins', 'Investor' => 'investors', 'Customer' => 'customers'];
     $table = $tableMap[$userType] ?? 'customers';
 
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM $table WHERE id = ?");
@@ -195,18 +201,28 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
+    // Update login_type for customers only
     if ($userType === 'Customer') {
-        $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
-        $updateTypeStmt->execute([$loginType, $user['id']]);
+        try {
+            $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
+            $updateTypeStmt->execute([$loginType, $user['id']]);
+        } catch (PDOException $e) {
+            error_log("login_type update failed: " . $e->getMessage());
+        }
     }
 
     if ($userType === 'Admin') {
-        if ($isInApp) $redirectUrl = 'web/all_products.php';
-        elseif ($isMobileBrowser) $redirectUrl = 'download_app.php';
-        else $redirectUrl = 'web/all_products.php';
+        if ($isInApp) {
+            $redirectUrl = 'web/all_products.php';
+        } elseif ($isMobileBrowser) {
+            $redirectUrl = 'download_app.php';
+        } else {
+            $redirectUrl = 'web/all_products.php';
+        }
     } elseif ($userType === 'Investor') {
-        $redirectUrl = 'public/shop.php';
+        $redirectUrl = 'investors/investors_product.php';
     } else {
+        // Customer
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
         $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
 
@@ -219,8 +235,11 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
             exit;
         }
 
-        if ($isMobileBrowser) $redirectUrl = 'download_app.php';
-        else $redirectUrl = $dashboardUrl;
+        if ($isMobileBrowser) {
+            $redirectUrl = 'download_app.php';
+        } else {
+            $redirectUrl = $dashboardUrl;
+        }
     }
 
     echo json_encode(['success' => true, 'redirect' => $redirectUrl, 'message' => '']);
@@ -232,8 +251,13 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 // ==============================================
 function getAllAdmins($pdo)
 {
-    $stmt = $pdo->query("SELECT id, acc_number, f_name FROM admins ORDER BY f_name");
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->query("SELECT id, acc_number, f_name FROM admins ORDER BY f_name");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("getAllAdmins failed: " . $e->getMessage());
+        return [];
+    }
 }
 
 function getAllInvestors($pdo)
@@ -242,14 +266,20 @@ function getAllInvestors($pdo)
         $stmt = $pdo->query("SELECT id, acc_number, f_name FROM investors ORDER BY f_name");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
+        error_log("getAllInvestors failed: " . $e->getMessage());
         return [];
     }
 }
 
 function getAllCustomers($pdo)
 {
-    $stmt = $pdo->query("SELECT id, acc_number, f_name, phone_number, email FROM customers ORDER BY f_name");
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->query("SELECT id, acc_number, f_name, phone_number, email FROM customers ORDER BY f_name");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("getAllCustomers failed: " . $e->getMessage());
+        return [];
+    }
 }
 
 // ==============================================
@@ -280,57 +310,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
     if (empty($errors)) {
         $identifier = '';
+        $user = null;
+        $userType = null;
 
+        // ---------------- ADMIN ----------------
         if ($userTypeSelected === 'Admin') {
             $stmt = $pdo->prepare("SELECT phone_number FROM admins WHERE id = ?");
             $stmt->execute([$selectedRole]);
             $info = $stmt->fetch();
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
-        } elseif ($userTypeSelected === 'Investor') {
+
+            $stmt = $pdo->prepare("
+                SELECT id, password, acc_number, phone_number, f_name, role, status, email, biometric_enrolled, biometric_id
+                FROM admins
+                WHERE id = ? AND RIGHT(phone_number, 4) = ?
+            ");
+            $stmt->execute([$selectedRole, $identifier]);
+            $user = $stmt->fetch();
+
+            if ($user) {
+                if (password_verify($password, $user['password'])) $userType = 'Admin';
+                else $errors[] = 'Invalid credentials. Please try again.';
+            } else {
+                $errors[] = 'Invalid credentials. Please try again.';
+            }
+        }
+        // ---------------- INVESTOR ----------------
+        elseif ($userTypeSelected === 'Investor') {
             $stmt = $pdo->prepare("SELECT phone_number FROM investors WHERE id = ?");
             $stmt->execute([$selectedInvestorId]);
             $info = $stmt->fetch();
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
-        } elseif ($userTypeSelected === 'Customer') {
+
+            $stmt = $pdo->prepare("
+                SELECT id, password, acc_number, phone_number, f_name, 'Investor' as role, status, email, biometric_enrolled, biometric_id
+                FROM investors
+                WHERE id = ? AND RIGHT(phone_number, 4) = ?
+            ");
+            $stmt->execute([$selectedInvestorId, $identifier]);
+            $user = $stmt->fetch();
+
+            if ($user) {
+                if (password_verify($password, $user['password'])) $userType = 'Investor';
+                else $errors[] = 'Invalid credentials. Please try again.';
+            } else {
+                $errors[] = 'Invalid credentials. Please try again.';
+            }
+        }
+        // ---------------- CUSTOMER ----------------
+        elseif ($userTypeSelected === 'Customer') {
             $stmt = $pdo->prepare("SELECT phone_number FROM customers WHERE id = ?");
             $stmt->execute([$selectedCustomerId]);
             $info = $stmt->fetch();
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
-        }
 
-        $user = null;
-        $userType = null;
-
-        if ($userTypeSelected === 'Admin') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, role, status, email, biometric_enrolled, biometric_id
-                                   FROM admins WHERE id = ? AND RIGHT(phone_number, 4) = ?");
-            $stmt->execute([$selectedRole, $identifier]);
-            $user = $stmt->fetch();
-            if ($user) {
-                if (password_verify($password, $user['password'])) $userType = 'Admin';
-                else $errors[] = 'Invalid credentials. Please try again.';
-            } else $errors[] = 'Invalid credentials. Please try again.';
-        } elseif ($userTypeSelected === 'Investor') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, phone_number, f_name, 'Investor' as role, status, email, biometric_enrolled, biometric_id
-                                   FROM investors WHERE id = ? AND RIGHT(phone_number, 4) = ?");
-            $stmt->execute([$selectedInvestorId, $identifier]);
-            $user = $stmt->fetch();
-            if ($user) {
-                if (password_verify($password, $user['password'])) $userType = 'Investor';
-                else $errors[] = 'Invalid credentials. Please try again.';
-            } else $errors[] = 'Invalid credentials. Please try again.';
-        } elseif ($userTypeSelected === 'Customer') {
-            $stmt = $pdo->prepare("SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email, biometric_enrolled, biometric_id
-                                   FROM customers WHERE id = ? AND RIGHT(phone_number, 4) = ?");
+            $stmt = $pdo->prepare("
+                SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email, biometric_enrolled, biometric_id
+                FROM customers
+                WHERE id = ? AND RIGHT(phone_number, 4) = ?
+            ");
             $stmt->execute([$selectedCustomerId, $identifier]);
             $user = $stmt->fetch();
+
             if ($user) {
-                if ($user['account'] == 1) $errors[] = 'Account locked. Please contact support.';
-                elseif (password_verify($password, $user['password'])) $userType = 'Customer';
-                else $errors[] = 'Invalid credentials. Please try again.';
-            } else $errors[] = 'Invalid credentials. Please try again.';
+                if ($user['account'] == 1) {
+                    $errors[] = 'Account locked. Please contact support.';
+                } elseif (password_verify($password, $user['password'])) {
+                    $userType = 'Customer';
+                } else {
+                    $errors[] = 'Invalid credentials. Please try again.';
+                }
+            } else {
+                $errors[] = 'Invalid credentials. Please try again.';
+            }
         }
 
+        // ---------------- LOGIN SUCCESS ----------------
         if (empty($errors) && $user && $userType) {
             date_default_timezone_set('Asia/Manila');
 
@@ -343,9 +398,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             setcookie('user_type', $userType, time() + (86400 * 365), "/");
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
+            // Update login_type for customers only
             if ($userType === 'Customer') {
-                $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
-                $updateTypeStmt->execute([$loginType, $user['id']]);
+                try {
+                    $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
+                    $updateTypeStmt->execute([$loginType, $user['id']]);
+                } catch (PDOException $e) {
+                    error_log("login_type update failed: " . $e->getMessage());
+                }
             }
 
             $loginSuccess = true;
@@ -356,10 +416,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     $_SESSION['temp_user_id'] = $user['id'];
                     $_SESSION['temp_user_type'] = $userType;
                     $redirectUrl = 'biometric.php';
-                } else $redirectUrl = $adminRedirect;
+                } else {
+                    $redirectUrl = $adminRedirect;
+                }
             } elseif ($userType === 'Investor') {
-                $redirectUrl = 'public/shop.php';
+                $redirectUrl = 'investors/investors_product.php';
             } else {
+                // Customer
                 $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
                 $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
                 $hasBiometricEnrolled = ($user['biometric_enrolled'] == 1 && !empty($user['biometric_id']));
@@ -368,8 +431,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     $_SESSION['temp_user_id'] = $user['id'];
                     $_SESSION['temp_user_type'] = $userType;
                     $redirectUrl = 'biometric.php';
-                } elseif ($isMobileBrowser) $redirectUrl = 'public/download_app.php';
-                else $redirectUrl = $dashboardUrl;
+                } elseif ($isMobileBrowser) {
+                    $redirectUrl = 'public/download_app.php';
+                } else {
+                    $redirectUrl = $dashboardUrl;
+                }
             }
 
             header('Location: ' . $redirectUrl);
@@ -493,10 +559,8 @@ if (isset($_SESSION['exit_message'])) {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            /* ✅ No overflow:hidden — keeps pill border visible */
         }
 
-        /* The sliding background pill — positioned by left/right for exact alignment */
         .user-type-toggle::before {
             content: "";
             position: absolute;
@@ -514,13 +578,11 @@ if (isset($_SESSION['exit_message'])) {
             box-sizing: border-box;
         }
 
-        /* Investor (2nd column) */
         .user-type-toggle[data-active="Investor"]::before {
             left: calc(100% / 3 + 4px);
             right: calc(100% / 3 + 4px);
         }
 
-        /* Customer (3rd column) */
         .user-type-toggle[data-active="Customer"]::before {
             left: calc(200% / 3 + 4px);
             right: 4px;
@@ -679,9 +741,6 @@ if (isset($_SESSION['exit_message'])) {
             }
         }
 
-        /* ==============================================
-           ✅ FINGERPRINT — small circle button centered under Login
-           ============================================== */
         .fingerprint-row {
             display: flex;
             justify-content: center;
@@ -727,9 +786,6 @@ if (isset($_SESSION['exit_message'])) {
             transform: none;
         }
 
-        /* ==============================================
-           ALERTS
-           ============================================== */
         .alert {
             padding: 14px 18px;
             border-radius: 10px;
@@ -1121,7 +1177,6 @@ if (isset($_SESSION['exit_message'])) {
                         Login
                     </button>
 
-                    <!-- ✅ Fingerprint button under Login -->
                     <div class="fingerprint-row">
                         <button type="button" class="btn-fingerprint" id="fingerprintBtn"
                             onclick="triggerBiometric()" title="Login with fingerprint">
@@ -1240,9 +1295,6 @@ if (isset($_SESSION['exit_message'])) {
             btn.innerHTML = 'Login';
         }
 
-        // ============================================================
-        // ✅ FINGERPRINT — trigger biometric manually
-        // ============================================================
         function triggerBiometric() {
             if (!isInApp) {
                 alert('Fingerprint login is only available inside the SofiaApp.');

@@ -837,7 +837,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <th>Phone Number</th>
                                 <th>Business Name</th>
                                 <?php if ($authorizeAccess == 0): ?>
-                                    <th>Action</th>
                                     <th>User / Pass</th>
                                 <?php endif; ?>
                             </tr>
@@ -887,25 +886,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                         <td><?php echo htmlspecialchars($customer['business_name'] ?? 'N/A'); ?></td>
                                         
                                         <?php if ($authorizeAccess == 0): ?>
-                                            <td>
-                                                <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
-                                                    <?php if ($isAccountActive): ?>
-                                                        <button class="lock-btn"
-                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                            <i class="fas fa-lock"></i>
-                                                        </button>
-                                                    <?php else: ?>
-                                                        <button class="unlock-btn"
-                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                            <i class="fas fa-unlock"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    <button class="delete-btn"
-                                                        onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
+                                           
                                             <td style="white-space: nowrap;">
                                                 <div class="password-wrapper">
                                                     <span style="color: #475569; font-weight: 500;">
