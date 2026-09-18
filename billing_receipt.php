@@ -525,9 +525,9 @@ if (!empty($qrData)) {
     <div class="bill-paper">
         
         <div class="shop-header">
-            <div class="shop-name">SOPHIELISETAKATED OFFICE AND SCHOOL SUPPLIES</div>
-            <div class="shop-address">Gais-Guipe Dasol Pangasinan</div>
-            <div class="vat-row">VAT Reg. TIN: 487-060-298-00000</div>
+            <div class="shop-name">VILLARUZ PRINTSHOP & GENERAL MERCHANDISE</div>
+            <div class="shop-address">Poblacion 2411, Dasol, Pangasinan, Philippines</div>
+            <div class="vat-row">VAT Reg. TIN: 257-630-627-00000</div>
         </div>
 
         <div class="doc-title">
@@ -584,11 +584,11 @@ if (!empty($qrData)) {
             <div class="totals-card">
                 <div class="total-row">
                     <strong>Sub Total</strong>
-                    <span class="total-amount">₱ <?php echo number_format($totalSales, 3); ?></span>
+                    <span class="total-amount">₱ <?php echo number_format($totalSales, 2); ?></span>
                 </div>
                 <div class="total-row tax-line">
                     <strong>Withholding Tax (4%)</strong>
-                    <span class="total-amount">- ₱ <?php echo number_format($withholdingTax, 3); ?></span>
+                    <span class="total-amount">- ₱ <?php echo number_format($withholdingTax, 2); ?></span>
                 </div>
                 <div class="total-row">
                     <span style="font-weight: 700; font-size: 12px;">TOTAL AMOUNT DUE</span>
