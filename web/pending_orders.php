@@ -557,30 +557,7 @@ function formatDeliveryDate($date)
             font-size: 14px;
         }
 
-        /* ✅ Share button variant */
-        .receipt-btn.share-receipt {
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
-            color: #ffffff;
-            border-color: #3b82f6;
-        }
-
-        .receipt-btn.share-receipt:hover {
-            background: linear-gradient(145deg, #2563eb, #4f46e5);
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .receipt-btn.share-receipt i {
-            color: #ffffff;
-        }
-
-        .status-share-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-share-group .status-wrapper {
+        .status-wrapper {
             position: relative;
         }
 
@@ -646,13 +623,8 @@ function formatDeliveryDate($date)
                 margin: 0;
             }
 
-            .status-share-group {
-                display: contents;
-            }
-
-            .status-share-group .receipt-btn.share-receipt,
-            .status-share-group .status-wrapper,
-            .status-share-group .status-select {
+            .status-wrapper,
+            .status-select {
                 width: 100%;
                 justify-content: center;
             }
@@ -680,10 +652,6 @@ function formatDeliveryDate($date)
             .receipt-actions {
                 grid-template-columns: 1fr;
                 gap: 8px;
-            }
-
-            .status-share-group {
-                display: contents;
             }
         }
 
@@ -1024,10 +992,10 @@ function formatDeliveryDate($date)
                             </table>
                         </div>
                         <div class="receipt-actions">
-                            <button class="receipt-btn delivery-receipt" onclick="generateReceipt('delivery')">
+                            <button class="receipt-btn delivery-receipt" onclick="copyReceiptLink('delivery')">
                                 Delivery Receipt
                             </button>
-                            <button class="receipt-btn billing-receipt" onclick="generateReceipt('billing')">
+                            <button class="receipt-btn billing-receipt" onclick="copyReceiptLink('billing')">
                                 Billing Receipt
                             </button>
                             <button class="receipt-btn download-excel" id="download-excel-btn">
@@ -1037,19 +1005,14 @@ function formatDeliveryDate($date)
                                 Edit
                             </button>
 
-                            <div class="status-share-group">
-                                <button class="receipt-btn share-receipt" id="share-receipt-btn">
-                                    <i class="fas fa-share-alt"></i> Share
-                                </button>
-                                <div class="status-wrapper">
-                                    <select class="status-select" id="status-select"
-                                        data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
-                                        <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING</option>
-                                        <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
-                                        <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>CANCELLED</option>
-                                        <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
-                                    </select>
-                                </div>
+                            <div class="status-wrapper">
+                                <select class="status-select" id="status-select"
+                                    data-delivery-number="<?= htmlspecialchars($deliveryNumber) ?>">
+                                    <option value="PENDING" <?= $currentStatus == 'PENDING' ? 'selected' : '' ?>>PENDING</option>
+                                    <option value="PAID" <?= $currentStatus == 'PAID' ? 'selected' : '' ?>>PAID</option>
+                                    <option value="CANCELLED" <?= $currentStatus == 'CANCELLED' ? 'selected' : '' ?>>CANCELLED</option>
+                                    <option value="CREDIT" <?= $currentStatus == 'CREDIT' ? 'selected' : '' ?>>CREDIT</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -1124,11 +1087,45 @@ function formatDeliveryDate($date)
         let originalData = new Map();
         let isProcessing = false;
 
-        function generateReceipt(type) {
-            if (type === 'delivery') {
-                window.location.href = '../delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
-            } else if (type === 'billing') {
-                window.location.href = '../billing_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
+        // ========== COPY RECEIPT LINK ==========
+        async function copyReceiptLink(type) {
+            const baseUrl = 'https://villaruz-print-shop-and-general-merchandise.shop/';
+            const receiptUrl = type === 'delivery'
+                ? baseUrl + 'delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber)
+                : baseUrl + 'billing_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
+
+            const receiptLabel = type === 'delivery' ? 'Delivery Receipt' : 'Billing Receipt';
+
+            try {
+                await navigator.clipboard.writeText(receiptUrl);
+                showMessageModal(
+                    '✅ LINK COPIED',
+                    `<strong>${receiptLabel}</strong> link has been copied:<br><br>` +
+                    '<code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">' +
+                    escapeHtml(receiptUrl) + '</code>',
+                    'success'
+                );
+            } catch (err) {
+                // Fallback for older browsers
+                const tempInput = document.createElement('input');
+                tempInput.value = receiptUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                tempInput.setSelectionRange(0, 99999);
+                try {
+                    document.execCommand('copy');
+                    showMessageModal(
+                        '✅ LINK COPIED',
+                        `<strong>${receiptLabel}</strong> link has been copied:<br><br>` +
+                        '<code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">' +
+                        escapeHtml(receiptUrl) + '</code>',
+                        'success'
+                    );
+                } catch (fallbackErr) {
+                    prompt('Copy this link manually:', receiptUrl);
+                } finally {
+                    document.body.removeChild(tempInput);
+                }
             }
         }
 
@@ -1244,36 +1241,6 @@ function formatDeliveryDate($date)
                 }
             }
         })();
-
-        // ========== SHARE RECEIPT ==========
-        document.getElementById('share-receipt-btn')?.addEventListener('click', async function () {
-            const receiptUrl = 'https://villaruz-print-shop-and-general-merchandise.shop/delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
-            const shareTitle = 'Delivery Receipt — ' + deliveryNumber;
-            const shareText = 'Here is the delivery receipt for ' + deliveryNumber;
-
-            if (navigator.share) {
-                try {
-                    await navigator.share({ title: shareTitle, text: shareText, url: receiptUrl });
-                    return;
-                } catch (err) {
-                    if (err.name === 'AbortError') return;
-                    console.warn('Share failed, falling back to copy:', err);
-                }
-            }
-
-            try {
-                await navigator.clipboard.writeText(receiptUrl);
-                showMessageModal(
-                    '✅ LINK COPIED',
-                    'Receipt link has been copied:<br><br>' +
-                    '<code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">' +
-                    escapeHtml(receiptUrl) + '</code>',
-                    'success'
-                );
-            } catch (err) {
-                prompt('Copy this link manually:', receiptUrl);
-            }
-        });
 
         // ========== EXCEL DOWNLOAD ==========
         document.getElementById('download-excel-btn')?.addEventListener('click', function () {
