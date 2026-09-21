@@ -41,23 +41,24 @@ $tablesToExport = [
     'contracts',
     'customers',
     'for_deliveries',
-    'location',
-    'merchandise_inventory',
-    'order_status_history',
+    'investors',
     'investors_inventory',
-    'logs'
-    
+    'investors_sales',
+    'logs',
+    'merchandise_inventory',
+    'order_status_history'
 ];
 
 // ==============================================
 // 5. GENERATE SQL DUMP
 // ==============================================
-function generateSQLDump($pdo, $tables) {
+function generateSQLDump($pdo, $tables)
+{
     $output = "-- ==============================================\n";
     $output .= "-- Database Export\n";
     $output .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
     $output .= "-- ==============================================\n\n";
-    
+
     $output .= "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n";
     $output .= "START TRANSACTION;\n";
     $output .= "SET time_zone = '+00:00';\n\n";
@@ -73,19 +74,19 @@ function generateSQLDump($pdo, $tables) {
         // Get table structure
         $stmt = $pdo->query("SHOW CREATE TABLE `$table`");
         $createTable = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if ($createTable) {
             $createSQL = $createTable['Create Table'];
-            
+
             // Remove COLLATE statements
             $createSQL = preg_replace('/ COLLATE=utf8mb4_uca1400_ai_ci/', '', $createSQL);
             $createSQL = preg_replace('/ COLLATE=utf8mb4_0900_ai_ci/', '', $createSQL);
             $createSQL = preg_replace('/ COLLATE=utf8mb4_unicode_ci/', '', $createSQL);
             $createSQL = preg_replace('/ COLLATE=utf8mb4_general_ci/', '', $createSQL);
-            
+
             // Remove CHARSET if needed (optional)
             // $createSQL = preg_replace('/ CHARACTER SET utf8mb4/', '', $createSQL);
-            
+
             $output .= "-- --------------------------------------------------------\n";
             $output .= "-- Table structure for `$table`\n";
             $output .= "-- --------------------------------------------------------\n\n";
@@ -96,15 +97,15 @@ function generateSQLDump($pdo, $tables) {
         // Get table data
         $stmt = $pdo->query("SELECT * FROM `$table`");
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         if (!empty($rows)) {
             $output .= "-- --------------------------------------------------------\n";
             $output .= "-- Data for table `$table`\n";
             $output .= "-- --------------------------------------------------------\n\n";
-            
+
             $columns = array_keys($rows[0]);
             $columnList = "`" . implode("`, `", $columns) . "`";
-            
+
             foreach ($rows as $row) {
                 $values = [];
                 foreach ($row as $value) {
@@ -145,17 +146,17 @@ if (empty($tables)) {
 // ==============================================
 try {
     $sqlDump = generateSQLDump($pdo, $tables);
-    
+
     // Send as download
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="database_export_' . date('Y-m-d') . '.sql"');
     header('Content-Length: ' . strlen($sqlDump));
     header('Cache-Control: no-cache, must-revalidate');
     header('Pragma: public');
-    
+
     echo $sqlDump;
     exit();
-    
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Export error: ' . $e->getMessage()]);
     exit();

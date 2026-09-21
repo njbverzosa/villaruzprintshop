@@ -56,7 +56,7 @@ $stmt = $pdo->query("SHOW TABLES");
 $allTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Filter to show only relevant tables
-$displayTables = ['cart', 'for_deliveries', 'merchandise_inventory', 'order_status_history', 'customers', 'admins', 'location', 'logs', 'investors_inventory', 'investors'];
+$displayTables = ['admins', 'cart', 'chat_account', 'chat_conversation', 'contracts', 'customers', 'for_deliveries', 'investors', 'investors_inventory', 'investors_sales', 'logs', 'merchandise_inventory', 'order_status_history'];
 
 // Get selected table from URL parameter
 $selectedTable = isset($_GET['table']) ? $_GET['table'] : ($displayTables[0] ?? '');
@@ -448,7 +448,7 @@ foreach ($displayTables as $table) {
             overflow-y: auto;
         }
 
-        
+
         .database-layout {
             display: flex;
             gap: 20px;

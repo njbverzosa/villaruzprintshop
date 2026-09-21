@@ -1093,11 +1093,6 @@ $allProducts = $stmt->fetchAll();
                         <i class="fas fa-plus-circle"></i> Add New
                     </a>
 
-                    <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
-                        <a href="/API/download_images.php" class="add-product-btn" id="downloadImagesBtn">
-                            <i class="fas fa-download"></i> Images
-                        </a>
-                    <?php endif; ?>
                 </div>
 
                 <div class="products-grid" id="productsGrid">

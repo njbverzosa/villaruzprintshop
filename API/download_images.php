@@ -27,43 +27,69 @@ if (!class_exists('ZipArchive')) {
 }
 
 // ==============================================
-// 3. LOCATE THE PRODUCTS FOLDER
+// 3. FOLDERS TO INCLUDE IN THE ZIP
+//    key   = folder name on disk (project root)
+//    value = folder name inside the zip
 // ==============================================
-$productsDir = realpath(__DIR__ . '/../Products');
+$foldersToZip = [
+    'Inv_Products' => 'Inv_Products',
+    'Business_Docs' => 'Business_Docs',
+    'Products'      => 'Products',
+];
 
-if ($productsDir === false || !is_dir($productsDir)) {
-    http_response_code(404);
-    exit('Products folder not found.');
+$projectRoot = realpath(__DIR__ . '/..');
+
+if ($projectRoot === false) {
+    http_response_code(500);
+    exit('Could not resolve project root.');
 }
 
-// ==============================================
-// 4. COLLECT ALL IMAGE FILES
-// ==============================================
 $allowedExtensions = ['jpg', 'jpeg', 'png'];
 
-$files = [];
-$iterator = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($productsDir, FilesystemIterator::SKIP_DOTS)
-);
+// ==============================================
+// 4. COLLECT FILES FROM EACH FOLDER
+// ==============================================
+$filesByFolder = [];   // [ zipFolderName => [absolute paths...] ]
+$totalFiles    = 0;
 
-foreach ($iterator as $file) {
-    if (!$file->isFile()) continue;
-    $ext = strtolower($file->getExtension());
-    if (in_array($ext, $allowedExtensions, true)) {
-        $files[] = $file->getPathname();
+foreach ($foldersToZip as $diskFolder => $zipFolder) {
+    $absFolder = realpath($projectRoot . DIRECTORY_SEPARATOR . $diskFolder);
+
+    if ($absFolder === false || !is_dir($absFolder)) {
+        // Folder doesn't exist — skip silently
+        continue;
+    }
+
+    $bucket = [];
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($absFolder, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($iterator as $file) {
+        if (!$file->isFile()) continue;
+        $ext = strtolower($file->getExtension());
+        if (in_array($ext, $allowedExtensions, true)) {
+            $bucket[] = $file->getPathname();
+        }
+    }
+
+    if (!empty($bucket)) {
+        $filesByFolder[$zipFolder] = $bucket;
+        $totalFiles += count($bucket);
     }
 }
 
-if (empty($files)) {
+if ($totalFiles === 0) {
     http_response_code(404);
-    exit('No images found in the Products folder.');
+    exit('No images found in any of the configured folders.');
 }
 
 // ==============================================
 // 5. CREATE A TEMPORARY ZIP
 // ==============================================
-$zipName = 'Products_' . date('Y-m-d_His') . '.zip';
-$tmpZip = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
+$zipName = 'Media_Backup_' . date('Y-m-d_His') . '.zip';
+$tmpZip  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
 
 $zip = new ZipArchive();
 if ($zip->open($tmpZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -71,17 +97,30 @@ if ($zip->open($tmpZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
     exit('Could not create ZIP file.');
 }
 
-foreach ($files as $filePath) {
-    // Use only the filename inside the zip (flat structure)
-    $localName = basename($filePath);
-    // Avoid duplicate names by appending a counter
-    $counter = 1;
-    while ($zip->locateName($localName) !== false) {
-        $info = pathinfo($filePath);
-        $localName = $info['filename'] . ' (' . $counter . ').' . ($info['extension'] ?? '');
-        $counter++;
+// Keep track of used names PER FOLDER so no file is overwritten
+foreach ($filesByFolder as $zipFolder => $paths) {
+    $usedNames = [];
+
+    foreach ($paths as $filePath) {
+        $baseName = basename($filePath);
+
+        // Deduplicate within the same zip folder
+        if (isset($usedNames[$baseName])) {
+            $info = pathinfo($filePath);
+            $counter = 1;
+            do {
+                $candidate = $info['filename'] . ' (' . $counter . ').' . ($info['extension'] ?? '');
+                $counter++;
+            } while (isset($usedNames[$candidate]));
+            $baseName = $candidate;
+        }
+
+        $usedNames[$baseName] = true;
+
+        // Preserve folder structure inside the zip
+        $localName = $zipFolder . '/' . $baseName;
+        $zip->addFile($filePath, $localName);
     }
-    $zip->addFile($filePath, $localName);
 }
 
 $zip->close();
@@ -94,7 +133,6 @@ if (!file_exists($tmpZip)) {
     exit('ZIP file was not created.');
 }
 
-// Clean any output buffering so the ZIP isn't corrupted
 if (ob_get_level()) {
     ob_end_clean();
 }
@@ -108,6 +146,5 @@ header('Expires: 0');
 
 readfile($tmpZip);
 
-// Delete temp file after sending
 @unlink($tmpZip);
 exit;

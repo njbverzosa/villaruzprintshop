@@ -260,6 +260,20 @@
         color: #3b82f6;
     }
 
+    /* ===== DOWNLOAD IMAGES (Purple) ===== */
+    .nav-dropdown-item.active_download_images {
+        background: #eff6ff;
+        color: #7c3aed;
+        border-left: 3px solid #8b5cf6;
+    }
+    .nav-dropdown-item.active_download_images:hover {
+        background: #ede9fe;
+        color: #5b21b6;
+    }
+    .nav-dropdown-item.active_download_images i {
+        color: #8b5cf6;
+    }
+
     /* ===== INVESTORS (Pink) ===== */
     .nav-dropdown-item.active_investors {
         background: #eff6ff;
@@ -347,9 +361,12 @@
     $customersActive = in_array($currentPage, ['registered_customers.php', 'chat_view.php']);
     $sourceActive    = in_array($currentPage, ['investors.php', 'investors_products.php']);
 
-    $settingsActive = in_array($currentPage, [
-        'database_manager.php'
-    ]);
+    // DB Manager dropdown becomes active when either child is the current page
+    $dbManagerActive = in_array($currentPage, ['database_manager.php']);
+    ?>
+    <?php
+    // Nothing — but the Download Images link points to the API endpoint, so it will
+    // never be the "current page". We still keep the flag for consistency.
     ?>
 
     <!-- ========== SHOP + CART ========== -->
@@ -428,13 +445,28 @@
         </div>
     </div>
 
-    <!-- ========== SYSTEM MANAGER (authorize_access == 0 only) ========== -->
+    <!-- ========== SYSTEM MANAGER / DB MANAGER DROPDOWN (authorize_access == 0 only) ========== -->
     <?php if ($authorizeAccess == 0): ?>
-        <a href="database_manager.php"
-            class="nav-item <?php echo $currentPage == 'database_manager.php' ? 'active' : ''; ?>">
-            <i class="fas fa-database"></i>
-            <span>DB Manager</span>
-        </a>
+        <div class="nav-dropdown">
+            <div class="nav-dropdown-toggle" onclick="toggleDropdown('dbManagerDropdown')">
+                <i class="fas fa-database"></i>
+                <span>DB Manager</span>
+                <i class="fas fa-chevron-down dropdown-arrow <?php echo $dbManagerActive ? 'rotated' : ''; ?>"
+                    id="dbManagerArrow"></i>
+            </div>
+            <div class="nav-dropdown-menu <?php echo $dbManagerActive ? 'show' : ''; ?>" id="dbManagerDropdown">
+                <a href="database_manager.php"
+                    class="nav-dropdown-item <?php echo $currentPage == 'database_manager.php' ? 'active_database' : ''; ?>">
+                    <i class="fas fa-database"></i>
+                    <span>Database</span>
+                </a>
+                <a href="../API/download_images.php"
+                    class="nav-dropdown-item <?php echo $currentPage == 'download_images.php' ? 'active_download_images' : ''; ?>">
+                    <i class="fas fa-download"></i>
+                    <span>Download Images</span>
+                </a>
+            </div>
+        </div>
     <?php endif; ?>
 
     <!-- ========== LOGOUT ========== -->
@@ -454,7 +486,8 @@
         const arrowMap = {
             sourceDropdown:    'sourceArrow',
             ordersDropdown:    'ordersArrow',
-            customersDropdown: 'customersArrow'
+            customersDropdown: 'customersArrow',
+            dbManagerDropdown: 'dbManagerArrow'
         };
 
         const arrowId = arrowMap[id];
