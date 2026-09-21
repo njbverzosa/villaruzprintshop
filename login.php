@@ -1,9 +1,7 @@
 <?php
 // login.php – desktop + mobile + in-app flows
 // ✅ 3 roles: Admin (admins), Investor (investors), Customer (customers)
-// ✅ Admin    → web/all_products.php
-// ✅ Investor → mobile web: download_app.php | desktop web: investors/investors_product.php | app: biometric if not enrolled
-// ✅ Customer → public/shop.php
+// ✅ Redirect logic is separated into 3 role-specific functions
 // ✅ Biometric success shows inside the Login button
 // ✅ Biometric auto-prompt skipped on POST (password login)
 
@@ -24,12 +22,8 @@ $isInApp = (strpos($userAgent, 'SofiaApp') !== false);
 
 function isMobileBrowser($userAgent)
 {
-    $mobileKeywords = [
-        'Android', 'webOS', 'iPhone', 'iPad', 'iPod', 'BlackBerry',
-        'Windows Phone', 'Opera Mini', 'IEMobile', 'Mobile'
-    ];
-    foreach ($mobileKeywords as $keyword) {
-        if (stripos($userAgent, $keyword) !== false) return true;
+    if (preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', $userAgent)) {
+        return true;
     }
     return false;
 }
@@ -91,6 +85,87 @@ $renderUpdateModal = ($isInApp && !$skipUpdate);
 $skipBiometricAutoPrompt = ($_SERVER['REQUEST_METHOD'] === 'POST');
 
 // ==============================================
+// ✅ REDIRECT LOGIC — SEPARATED PER ROLE
+// ==============================================
+
+/**
+ * ADMIN redirect rules:
+ *   app                 → web/all_products.php  (biometric.php if not enrolled)
+ *   mobile web          → download_app.php
+ *   desktop web         → web/all_products.php
+ */
+function getAdminRedirect($isInApp, $isMobileBrowser, $user)
+{
+    // Not enrolled in biometric while inside the app → enroll first
+    if ($isInApp && (($user['biometric_enrolled'] ?? 0) == 0 || empty($user['biometric_id'] ?? ''))) {
+        $_SESSION['temp_user_id']   = $user['id'];
+        $_SESSION['temp_user_type'] = 'Admin';
+        return 'biometric.php';
+    }
+
+    if ($isInApp)         return 'web/all_products.php';
+    return 'web/all_products.php';
+}
+
+/**
+ * INVESTOR redirect rules:
+ *   app                 → biometric.php if not enrolled, else investors/investors_product.php
+ *   mobile web          → investors/download_app.php
+ *   desktop web         → investors/investors_product.php
+ */
+function getInvestorRedirect($isInApp, $isMobileBrowser, $user)
+{
+    $hasBiometric = (($user['biometric_enrolled'] ?? 0) == 1 && !empty($user['biometric_id'] ?? ''));
+
+    if ($isInApp && !$hasBiometric) {
+        $_SESSION['temp_user_id']   = $user['id'];
+        $_SESSION['temp_user_type'] = 'Investor';
+        return 'biometric.php';
+    }
+
+    if ($isInApp)         return 'investors/investors_product.php';
+    if ($isMobileBrowser) return 'investors/download_app.php';
+    return 'investors/investors_product.php';
+}
+
+/**
+ * CUSTOMER redirect rules:
+ *   app                 → biometric.php if not enrolled (else shop/account-edit)
+ *   mobile web          → public/download_app.php
+ *   desktop web         → public/shop.php (or public/account-edit.php for guest)
+ */
+function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
+{
+    $isGuest      = (($user['f_name'] ?? '') === 'Guest' || empty($user['f_name'] ?? ''));
+    $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
+
+    $hasBiometric = (($user['biometric_enrolled'] ?? 0) == 1 && !empty($user['biometric_id'] ?? ''));
+
+    if ($isInApp && !$hasBiometric) {
+        $_SESSION['temp_user_id']   = $user['id'];
+        $_SESSION['temp_user_type'] = 'Customer';
+        return 'biometric.php';
+    }
+
+    if ($isInApp)         return $dashboardUrl;
+    if ($isMobileBrowser) return 'public/download_app.php';
+    return $dashboardUrl;
+}
+
+/**
+ * Master dispatcher — routes to the right role function.
+ */
+function getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user)
+{
+    switch ($userType) {
+        case 'Admin':    return getAdminRedirect($isInApp, $isMobileBrowser, $user);
+        case 'Investor': return getInvestorRedirect($isInApp, $isMobileBrowser, $user);
+        case 'Customer': return getCustomerRedirect($isInApp, $isMobileBrowser, $user);
+        default:         return 'login.php';
+    }
+}
+
+// ==============================================
 // ALREADY LOGGED IN
 // ==============================================
 $isLoggedIn = false;
@@ -101,19 +176,25 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     $isLoggedIn = true;
     $userName = $_SESSION['acc_number'] ?? 'User';
 
-    if ($_SESSION['user_role'] === 'Admin') {
-        $redirectUrl = 'web/all_products.php';
-    } elseif ($_SESSION['user_role'] === 'Investor') {
-        // Investor redirect depends on platform
-        if ($isInApp) {
-            $redirectUrl = 'biometric.php';
-        } elseif ($isMobileBrowser) {
-            $redirectUrl = 'download_app.php';
-        } else {
-            $redirectUrl = 'investors/investors_product.php';
-        }
-    } elseif ($_SESSION['user_role'] === 'Customer') {
-        $redirectUrl = 'public/shop.php';
+    // Fetch the user row for role-appropriate redirect
+    $tableMap = [
+        'Admin'    => 'admins',
+        'Investor' => 'investors',
+        'Customer' => 'customers'
+    ];
+    $table = $tableMap[$_SESSION['user_role']] ?? 'customers';
+
+    $stmt = $pdo->prepare("SELECT id, f_name, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $loggedInUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($loggedInUser) {
+        $redirectUrl = getRedirectUrl(
+            $_SESSION['user_role'],
+            $isInApp,
+            $isMobileBrowser,
+            $loggedInUser
+        );
     }
 }
 
@@ -185,7 +266,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     $table = $tableMap[$userType] ?? 'customers';
 
-    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name FROM $table WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name, biometric_id FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -218,43 +299,18 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
         }
     }
 
-    if ($userType === 'Admin') {
-        if ($isInApp) {
-            $redirectUrl = 'web/all_products.php';
-        } elseif ($isMobileBrowser) {
-            $redirectUrl = 'download_app.php';
-        } else {
-            $redirectUrl = 'web/all_products.php';
-        }
-    } elseif ($userType === 'Investor') {
-        // ✅ Investor: same three-case logic
-        if ($isInApp) {
-            $redirectUrl = 'biometric.php';
-        } elseif ($isMobileBrowser) {
-            $redirectUrl = 'download_app.php';
-        } else {
-            $redirectUrl = 'investors/investors_product.php';
-        }
-    } else {
-        // Customer
-        $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-        $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
-
-        if ($isInApp && !$appVersionMatch && !$skipUpdate) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Please update the app or click SKIP to continue.',
-                'show_update_modal' => true
-            ]);
-            exit;
-        }
-
-        if ($isMobileBrowser) {
-            $redirectUrl = 'download_app.php';
-        } else {
-            $redirectUrl = $dashboardUrl;
-        }
+    // ✅ Customer in-app with mismatched version → ask to update first
+    if ($userType === 'Customer' && $isInApp && !$appVersionMatch && !$skipUpdate) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Please update the app or click SKIP to continue.',
+            'show_update_modal' => true
+        ]);
+        exit;
     }
+
+    // ✅ Use the same role dispatcher
+    $redirectUrl = getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user);
 
     echo json_encode(['success' => true, 'redirect' => $redirectUrl, 'message' => '']);
     exit;
@@ -424,47 +480,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 
             $loginSuccess = true;
 
-            if ($userType === 'Admin') {
-                $adminRedirect = 'web/all_products.php';
-                if ($isInApp && ($user['biometric_enrolled'] == 0 || empty($user['biometric_id']))) {
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = $userType;
-                    $redirectUrl = 'biometric.php';
-                } else {
-                    $redirectUrl = $adminRedirect;
-                }
-            } elseif ($userType === 'Investor') {
-                // ✅ Investor redirect: three cases
-                $hasBiometricEnrolled = ($user['biometric_enrolled'] == 1 && !empty($user['biometric_id']));
-
-                if ($isInApp && !$hasBiometricEnrolled) {
-                    // In Sofia app but no biometric yet
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = $userType;
-                    $redirectUrl = 'biometric.php';
-                } elseif ($isMobileBrowser) {
-                    // Mobile web browser
-                    $redirectUrl = 'download_app.php';
-                } else {
-                    // Desktop web
-                    $redirectUrl = 'investors/investors_product.php';
-                }
-            } else {
-                // Customer
-                $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
-                $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
-                $hasBiometricEnrolled = ($user['biometric_enrolled'] == 1 && !empty($user['biometric_id']));
-
-                if ($isInApp && !$hasBiometricEnrolled) {
-                    $_SESSION['temp_user_id'] = $user['id'];
-                    $_SESSION['temp_user_type'] = $userType;
-                    $redirectUrl = 'biometric.php';
-                } elseif ($isMobileBrowser) {
-                    $redirectUrl = 'public/download_app.php';
-                } else {
-                    $redirectUrl = $dashboardUrl;
-                }
-            }
+            // ✅ Single dispatcher — same logic for all three roles
+            $redirectUrl = getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user);
 
             header('Location: ' . $redirectUrl);
             exit;
