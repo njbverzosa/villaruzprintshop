@@ -746,6 +746,35 @@ foreach ($allProducts as $product) {
             box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
         }
 
+        .add-product-btn {
+            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            text-decoration: none;
+        }
+
+        .add-product-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .add-product-btn i {
+            font-size: 14px;
+        }
+
+
         /* ========== TOAST ========== */
         .toast-notification {
             position: fixed;
