@@ -168,10 +168,12 @@
         color: #d97706;
         border-left: 3px solid #f59e0b;
     }
+
     .nav-dropdown-item.active_pending:hover {
         background: #fef3c7;
         color: #92400e;
     }
+
     .nav-dropdown-item.active_pending i {
         color: #f59e0b;
     }
@@ -182,10 +184,12 @@
         color: #059669;
         border-left: 3px solid #10b981;
     }
+
     .nav-dropdown-item.active_paid:hover {
         background: #d1fae5;
         color: #065f46;
     }
+
     .nav-dropdown-item.active_paid i {
         color: #10b981;
     }
@@ -196,10 +200,12 @@
         color: #dc2626;
         border-left: 3px solid #ef4444;
     }
+
     .nav-dropdown-item.active_credit:hover {
         background: #fee2e2;
         color: #991b1b;
     }
+
     .nav-dropdown-item.active_credit i {
         color: #ef4444;
     }
@@ -210,10 +216,12 @@
         color: #2563eb;
         border-left: 3px solid #3b82f6;
     }
+
     .nav-dropdown-item.active_shop_po:hover {
         background: #dbeafe;
         color: #1e40af;
     }
+
     .nav-dropdown-item.active_shop_po i {
         color: #3b82f6;
     }
@@ -224,10 +232,12 @@
         color: #d97706;
         border-left: 3px solid #f59e0b;
     }
+
     .nav-dropdown-item.active_cart_po:hover {
         background: #fef3c7;
         color: #92400e;
     }
+
     .nav-dropdown-item.active_cart_po i {
         color: #f59e0b;
     }
@@ -238,10 +248,12 @@
         color: #0d9488;
         border-left: 3px solid #14b8a6;
     }
+
     .nav-dropdown-item.active_customers:hover {
         background: #ccfbf1;
         color: #0f766e;
     }
+
     .nav-dropdown-item.active_customers i {
         color: #14b8a6;
     }
@@ -252,10 +264,12 @@
         color: #2563eb;
         border-left: 3px solid #3b82f6;
     }
+
     .nav-dropdown-item.active_database:hover {
         background: #dbeafe;
         color: #1e40af;
     }
+
     .nav-dropdown-item.active_database i {
         color: #3b82f6;
     }
@@ -266,10 +280,12 @@
         color: #7c3aed;
         border-left: 3px solid #8b5cf6;
     }
+
     .nav-dropdown-item.active_download_images:hover {
         background: #ede9fe;
         color: #5b21b6;
     }
+
     .nav-dropdown-item.active_download_images i {
         color: #8b5cf6;
     }
@@ -280,10 +296,12 @@
         color: #db2777;
         border-left: 3px solid #ec4899;
     }
+
     .nav-dropdown-item.active_investors:hover {
         background: #fce7f3;
         color: #9d174d;
     }
+
     .nav-dropdown-item.active_investors i {
         color: #ec4899;
     }
@@ -294,10 +312,12 @@
         color: #4f46e5;
         border-left: 3px solid #6366f1;
     }
+
     .nav-dropdown-item.active_products_source:hover {
         background: #e0e7ff;
         color: #3730a3;
     }
+
     .nav-dropdown-item.active_products_source i {
         color: #6366f1;
     }
@@ -352,14 +372,14 @@
     // ==========================================
     // ACTIVE FLAGS
     // ==========================================
-    $pendingActive  = in_array($currentPage, ['pending_folder.php', 'pending_folder_with.php', 'pending_orders.php']);
-    $paidActive     = in_array($currentPage, ['paid_folder.php', 'paid_folder_with.php', 'paid_orders.php']);
-    $creditActive   = in_array($currentPage, ['credit_folder.php', 'credit_folder_with.php', 'credit_orders.php']);
+    $pendingActive = in_array($currentPage, ['pending_folder.php', 'pending_folder_with.php', 'pending_orders.php']);
+    $paidActive = in_array($currentPage, ['paid_folder.php', 'paid_folder_with.php', 'paid_orders.php']);
+    $creditActive = in_array($currentPage, ['credit_folder.php', 'credit_folder_with.php', 'credit_orders.php']);
 
     $ordersActive = $pendingActive || $paidActive || $creditActive;
 
     $customersActive = in_array($currentPage, ['registered_customers.php', 'chat_view.php']);
-    $sourceActive    = in_array($currentPage, ['investors.php', 'investors_products.php']);
+    $sourceActive = in_array($currentPage, ['investors.php', 'investors_products.php']);
 
     // DB Manager dropdown becomes active when either child is the current page
     $dbManagerActive = in_array($currentPage, ['database_manager.php']);
@@ -455,16 +475,25 @@
                     id="dbManagerArrow"></i>
             </div>
             <div class="nav-dropdown-menu <?php echo $dbManagerActive ? 'show' : ''; ?>" id="dbManagerDropdown">
+
                 <a href="database_manager.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'database_manager.php' ? 'active_database' : ''; ?>">
-                    <i class="fas fa-database"></i>
+                    <i class="fas fa-table"></i>
                     <span>Database</span>
                 </a>
+
                 <a href="../API/download_images.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'download_images.php' ? 'active_download_images' : ''; ?>">
-                    <i class="fas fa-download"></i>
+                    <i class="fas fa-images"></i>
                     <span>Download Images</span>
                 </a>
+
+                <a href="../API/export_all_tables.php"
+                    class="nav-dropdown-item <?php echo $currentPage == 'download_database.php' ? 'active_download_database' : ''; ?>">
+                    <i class="fas fa-file-export"></i>
+                    <span>Download Database</span>
+                </a>
+
             </div>
         </div>
     <?php endif; ?>
@@ -484,8 +513,8 @@
         menu.classList.toggle('show');
 
         const arrowMap = {
-            sourceDropdown:    'sourceArrow',
-            ordersDropdown:    'ordersArrow',
+            sourceDropdown: 'sourceArrow',
+            ordersDropdown: 'ordersArrow',
             customersDropdown: 'customersArrow',
             dbManagerDropdown: 'dbManagerArrow'
         };

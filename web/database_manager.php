@@ -18,7 +18,6 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
@@ -32,7 +31,6 @@ $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
 $userData = null;
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
@@ -46,30 +44,36 @@ if (!$userData) {
     exit;
 }
 
-// ==============================================
-// 4. USE $userData INSTEAD OF $user
-// ==============================================
 $user = $userData;
 
-// Get all tables in the database
-$stmt = $pdo->query("SHOW TABLES");
-$allTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+// ==============================================
+// 4. DISPLAY TABLES + COUNTS
+// ==============================================
+$displayTables = [
+    'admins', 'cart', 'chat_account', 'chat_conversation', 'contracts',
+    'customers', 'for_deliveries', 'investors', 'investors_inventory',
+    'investors_sales', 'logs', 'merchandise_inventory', 'order_status_history'
+];
 
-// Filter to show only relevant tables
-$displayTables = ['admins', 'cart', 'chat_account', 'chat_conversation', 'contracts', 'customers', 'for_deliveries', 'investors', 'investors_inventory', 'investors_sales', 'logs', 'merchandise_inventory', 'order_status_history'];
-
-// Get selected table from URL parameter
 $selectedTable = isset($_GET['table']) ? $_GET['table'] : ($displayTables[0] ?? '');
 $tableData = [];
 $tableColumns = [];
 $tableCount = 0;
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 
-// Handle AJAX requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+// ==============================================
+// 5. HANDLE AJAX REQUESTS
+// ==============================================
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+    && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest'
+) {
     header('Content-Type: application/json');
 
-    if (isset($_POST['action']) && $_POST['action'] === 'update_cell') {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'update_cell') {
         $tableName = $_POST['table_name'];
         $rowId = intval($_POST['row_id']);
         $column = $_POST['column'];
@@ -91,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         exit();
     }
 
-    if (isset($_POST['action']) && $_POST['action'] === 'add_row') {
+    if ($action === 'add_row') {
         $tableName = $_POST['table_name'];
 
         try {
@@ -103,25 +107,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             $columns = $pdo->query("DESCRIBE `$tableName`")->fetchAll(PDO::FETCH_ASSOC);
             $insertColumns = [];
             $insertValues = [];
+            $params = [];
 
             foreach ($columns as $column) {
                 $field = $column['Field'];
-                if ($field !== 'id') {
-                    $insertColumns[] = "`$field`";
-                    $insertValues[] = ":{$field}";
-                }
+                if ($field === 'id') continue;
+                $insertColumns[] = "`$field`";
+                $insertValues[]  = ":{$field}";
+                $params[":{$field}"] = null;
             }
 
             $sql = "INSERT INTO `$tableName` (" . implode(', ', $insertColumns) . ") VALUES (" . implode(', ', $insertValues) . ")";
             $stmt = $pdo->prepare($sql);
-
-            $params = [];
-            foreach ($columns as $column) {
-                $field = $column['Field'];
-                if ($field !== 'id') {
-                    $params[":{$field}"] = null;
-                }
-            }
             $stmt->execute($params);
             $newId = $pdo->lastInsertId();
 
@@ -129,14 +126,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             $stmt->execute([$newId]);
             $newRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            echo json_encode(['success' => true, 'message' => 'New row added successfully', 'row' => $newRow, 'row_id' => $newId]);
+            echo json_encode([
+                'success' => true,
+                'message' => 'New row added successfully',
+                'row' => $newRow,
+                'row_id' => $newId
+            ]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit();
     }
 
-    if (isset($_POST['action']) && $_POST['action'] === 'delete_row') {
+    if ($action === 'delete_row') {
         $tableName = $_POST['table_name'];
         $rowId = intval($_POST['row_id']);
 
@@ -157,19 +159,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     }
 }
 
+// ==============================================
+// 6. LOAD SELECTED TABLE DATA
+// ==============================================
 if ($selectedTable && in_array($selectedTable, $displayTables)) {
     $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
     $stmt->execute([$selectedTable]);
+
     if ($stmt->rowCount() > 0) {
-        $columns = $pdo->query("DESCRIBE `$selectedTable`")->fetchAll(PDO::FETCH_ASSOC);
-        $tableColumns = $columns;
+        $tableColumns = $pdo->query("DESCRIBE `$selectedTable`")->fetchAll(PDO::FETCH_ASSOC);
 
         if (!empty($searchTerm)) {
             $searchConditions = [];
-            foreach ($columns as $column) {
+            foreach ($tableColumns as $column) {
                 $field = $column['Field'];
                 $type = $column['Type'];
-                if (strpos($type, 'varchar') !== false || strpos($type, 'text') !== false || strpos($type, 'char') !== false) {
+                if (
+                    strpos($type, 'varchar') !== false ||
+                    strpos($type, 'text') !== false ||
+                    strpos($type, 'char') !== false
+                ) {
                     $searchConditions[] = "`$field` LIKE :search";
                 }
             }
@@ -190,10 +199,14 @@ if ($selectedTable && in_array($selectedTable, $displayTables)) {
     }
 }
 
+// ==============================================
+// 7. TABLE COUNTS FOR SIDEBAR
+// ==============================================
 $tableCounts = [];
 foreach ($displayTables as $table) {
     $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
     $stmt->execute([$table]);
+
     if ($stmt->rowCount() > 0) {
         $count = $pdo->query("SELECT COUNT(*) as count FROM `$table`")->fetch(PDO::FETCH_ASSOC);
         $tableCounts[$table] = $count['count'];
@@ -234,7 +247,7 @@ foreach ($displayTables as $table) {
             height: 100vh;
         }
 
-        /* ========== SIDEBAR - LEFT SIDE ========== */
+        /* ========== SIDEBAR ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -258,7 +271,6 @@ foreach ($displayTables as $table) {
             position: relative;
         }
 
-        /* Mobile: sidebar hidden by default */
         @media (max-width: 768px) {
             .sidebar-wrapper {
                 transform: translateX(-100%);
@@ -269,7 +281,6 @@ foreach ($displayTables as $table) {
             }
         }
 
-        /* Desktop: sidebar always visible */
         @media (min-width: 769px) {
             .sidebar-wrapper {
                 transform: translateX(0) !important;
@@ -293,7 +304,6 @@ foreach ($displayTables as $table) {
             }
         }
 
-        /* Mobile overlay */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -310,7 +320,6 @@ foreach ($displayTables as $table) {
             display: block;
         }
 
-        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -339,7 +348,6 @@ foreach ($displayTables as $table) {
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -367,6 +375,7 @@ foreach ($displayTables as $table) {
             }
         }
 
+        /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1;
             padding: 30px;
@@ -404,51 +413,13 @@ foreach ($displayTables as $table) {
             gap: 15px;
         }
 
-        .welcome h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
         .welcome h4 {
             font-size: 15px;
             font-weight: 600;
             color: #0f172a;
         }
 
-
-        .menu-header {
-            padding: 25px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            background: #f8fafc;
-            flex-shrink: 0;
-            padding-right: 50px;
-        }
-
-        .menu-header .user-name {
-            font-weight: 700;
-            font-size: 18px;
-            color: #0f172a;
-            margin-top: 8px;
-        }
-
-        .menu-header .user-greeting {
-            font-size: 13px;
-            color: #64748b;
-        }
-
-        .menu-header i {
-            font-size: 40px;
-            color: #3b82f6;
-        }
-
-        .menu-nav {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-
+        /* ========== DATABASE LAYOUT ========== */
         .database-layout {
             display: flex;
             gap: 20px;
@@ -642,12 +613,6 @@ foreach ($displayTables as $table) {
             background: #cbd5e1;
         }
 
-        .table-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
         .btn-sm {
             padding: 6px 12px;
             font-size: 12px;
@@ -655,18 +620,6 @@ foreach ($displayTables as $table) {
             cursor: pointer;
             transition: all 0.2s;
             border: none;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #e2e8f0;
-            color: #475569;
-        }
-
-        .btn-outline:hover {
-            background: #f1f5f9;
-            border-color: #3b82f6;
-            color: #3b82f6;
         }
 
         .btn-primary {
@@ -679,17 +632,6 @@ foreach ($displayTables as $table) {
             background: #2563eb;
         }
 
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-            border: none;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        /* TABLE WRAPPER - ONLY THIS IS SCROLLABLE */
         .table-wrapper {
             flex: 1;
             overflow: auto;
@@ -948,16 +890,6 @@ foreach ($displayTables as $table) {
                 font-size: 16px;
             }
 
-            .table-actions {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .table-actions .btn-sm {
-                width: 100%;
-                text-align: center;
-            }
-
             .search-box {
                 width: 100%;
             }
@@ -1007,22 +939,17 @@ foreach ($displayTables as $table) {
 
 <body>
     <div class="app-wrapper">
-        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <?php
-                include 'sidebar.php';
-                ?>
+                <?php include 'sidebar.php'; ?>
             </div>
         </div>
 
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="header-left">
-                    <!-- Burger Button (Mobile Only) -->
                     <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
@@ -1045,8 +972,7 @@ foreach ($displayTables as $table) {
                     <ul class="table-list">
                         <?php foreach ($displayTables as $table): ?>
                             <li class="<?php echo $selectedTable === $table ? 'active' : ''; ?>">
-                                <a
-                                    href="?table=<?php echo urlencode($table); ?><?php echo !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : ''; ?>">
+                                <a href="?table=<?php echo urlencode($table); ?><?php echo !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : ''; ?>">
                                     <span class="table-name">
                                         <i class="fas fa-table"></i>
                                         <?php echo htmlspecialchars($table); ?>
@@ -1072,8 +998,7 @@ foreach ($displayTables as $table) {
                         </div>
                         <div class="search-box">
                             <form method="GET" style="display: flex; gap: 8px; align-items: center;">
-                                <input type="hidden" name="table"
-                                    value="<?php echo htmlspecialchars($selectedTable); ?>">
+                                <input type="hidden" name="table" value="<?php echo htmlspecialchars($selectedTable); ?>">
                                 <input type="text" name="search" placeholder="Search records..."
                                     value="<?php echo htmlspecialchars($searchTerm); ?>">
                                 <button type="submit"><i class="fas fa-search"></i></button>
@@ -1085,20 +1010,8 @@ foreach ($displayTables as $table) {
                                 <?php endif; ?>
                             </form>
                         </div>
-                        <div class="table-actions">
-                            <button class="btn-sm btn-primary" onclick="addNewRow()">
-                                <i class="fas fa-plus"></i> Add Row
-                            </button>
-                            <button class="btn-sm btn-outline" onclick="copyTableData()">
-                                <i class="fas fa-copy"></i> Copy
-                            </button>
-                            <button class="btn-sm btn-outline" onclick="exportToCSV()">
-                                <i class="fas fa-file-csv"></i> Export CSV
-                            </button>
-                        </div>
                     </div>
 
-                    <!-- TABLE WRAPPER - ONLY THIS IS SCROLLABLE -->
                     <div class="table-wrapper" id="tableWrapper">
                         <?php if (empty($tableData)): ?>
                             <div class="empty-state">
@@ -1216,11 +1129,9 @@ foreach ($displayTables as $table) {
             menuOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
-                    // Don't close if it's a dropdown toggle
                     if (!this.closest('.nav-dropdown-toggle')) {
                         closeSidebar();
                     }
@@ -1243,7 +1154,6 @@ foreach ($displayTables as $table) {
         // ========== BURGER VISIBILITY ON RESIZE ==========
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
-                // Desktop: close sidebar if open and hide overlay
                 if (isSidebarOpen) {
                     closeSidebar();
                 }
@@ -1253,11 +1163,11 @@ foreach ($displayTables as $table) {
             }
         });
 
-        // ========== EXISTING FUNCTIONS ==========
+        // ========== PAGE DATA ==========
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const currentTable = '<?php echo $selectedTable; ?>';
 
-        // Toast notification
+        // ========== TOAST ==========
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
@@ -1269,7 +1179,7 @@ foreach ($displayTables as $table) {
             }, 3000);
         }
 
-        // Add new row
+        // ========== ADD ROW ==========
         async function addNewRow() {
             showToast('Adding new row...', 'success');
 
@@ -1281,9 +1191,7 @@ foreach ($displayTables as $table) {
 
                 const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: formData
                 });
 
@@ -1291,9 +1199,7 @@ foreach ($displayTables as $table) {
 
                 if (data.success) {
                     showToast('New row added successfully!', 'success');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast(data.message || 'Error adding row', 'error');
                 }
@@ -1303,7 +1209,7 @@ foreach ($displayTables as $table) {
             }
         }
 
-        // Delete row
+        // ========== DELETE ROW ==========
         async function deleteRow(rowId) {
             if (!confirm('Are you sure you want to delete this row? This action cannot be undone!')) {
                 return;
@@ -1318,9 +1224,7 @@ foreach ($displayTables as $table) {
 
                 const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: formData
                 });
 
@@ -1328,9 +1232,7 @@ foreach ($displayTables as $table) {
 
                 if (data.success) {
                     showToast('Row deleted successfully!', 'success');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast(data.message || 'Error deleting row', 'error');
                 }
@@ -1340,7 +1242,7 @@ foreach ($displayTables as $table) {
             }
         }
 
-        // Make cell editable on double click
+        // ========== EDIT CELL ==========
         function makeEditable(element, field, rowId) {
             const cell = element.parentElement;
             const currentValue = element.innerText;
@@ -1400,7 +1302,6 @@ foreach ($displayTables as $table) {
             }
 
             const goBtn = cell.querySelector('.btn-go');
-            const originalBtnText = goBtn.innerHTML;
             goBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             goBtn.disabled = true;
 
@@ -1415,16 +1316,17 @@ foreach ($displayTables as $table) {
 
                 const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: formData
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    const displayValue = newValue === '' ? '<span style="color: #94a3b8; font-style: italic;">NULL</span>' : escapeHtml(newValue);
+                    const displayValue = newValue === ''
+                        ? '<span style="color: #94a3b8; font-style: italic;">NULL</span>'
+                        : escapeHtml(newValue);
+
                     const newElement = document.createElement('div');
                     newElement.className = 'cell-value';
                     newElement.setAttribute('ondblclick', `makeEditable(this, '${field}', ${rowId})`);
@@ -1455,67 +1357,7 @@ foreach ($displayTables as $table) {
             return div.innerHTML;
         }
 
-        function copyTableData() {
-            const table = document.getElementById('dataTable');
-            if (!table) {
-                alert('No data to copy');
-                return;
-            }
-
-            let copyText = '';
-            const rows = table.querySelectorAll('tr');
-
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('th, td');
-                const rowText = Array.from(cells).map(cell => {
-                    const value = cell.querySelector('.cell-value')?.innerText || cell.innerText;
-                    return value.trim();
-                }).join('\t');
-                copyText += rowText + '\n';
-            });
-
-            navigator.clipboard.writeText(copyText).then(() => {
-                alert('Table data copied to clipboard!');
-            }).catch(() => {
-                alert('Failed to copy data');
-            });
-        }
-
-        function exportToCSV() {
-            const table = document.getElementById('dataTable');
-            if (!table) {
-                alert('No data to export');
-                return;
-            }
-
-            let csv = [];
-            const rows = table.querySelectorAll('tr');
-
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('th, td');
-                const rowData = Array.from(cells).map(cell => {
-                    let text = cell.querySelector('.cell-value')?.innerText || cell.innerText;
-                    text = text.trim();
-                    if (text.includes(',') || text.includes('"') || text.includes('\n')) {
-                        text = '"' + text.replace(/"/g, '""') + '"';
-                    }
-                    return text;
-                });
-                csv.push(rowData.join(','));
-            });
-
-            const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '<?php echo $selectedTable; ?>_export.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        // Download all tables as SQL
+        // ========== DOWNLOAD ALL TABLES AS SQL ==========
         function downloadAllTables() {
             showToast('Preparing download...', 'success');
 
