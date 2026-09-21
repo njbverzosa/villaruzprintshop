@@ -353,6 +353,21 @@ $allProducts = $stmt->fetchAll();
             pointer-events: none;
         }
 
+        /* ✅ Business name under last_restocked */
+        .business-name {
+            font-size: 11px;
+            color: #0f172a;
+            font-weight: 600;
+            margin-top: 2px;
+            padding: 3px 8px;
+            background: #eff6ff;
+            border-radius: 5px;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
 
         /* ========== SEARCH & ADD PRODUCT ========== */
@@ -1144,8 +1159,9 @@ $allProducts = $stmt->fetchAll();
                             <div class="last_restocked">
                                 <?php echo htmlspecialchars($product['last_restocked']); ?>
                             </div>
-                            <div class="business_name">
-                                <?php echo htmlspecialchars($product['business_name']); ?>
+                            <!-- ✅ Business name — now PER PRODUCT (joined from investors) -->
+                            <div class="business-name">
+                                <?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
