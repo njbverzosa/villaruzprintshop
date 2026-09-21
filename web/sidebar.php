@@ -488,8 +488,7 @@
                     <span>Download Images</span>
                 </a>
 
-                <a href="../API/export_all_tables.php"
-                    class="nav-dropdown-item <?php echo $currentPage == 'download_database.php' ? 'active_download_database' : ''; ?>">
+                <a href="#" onclick="downloadFullDatabase(event)" class="nav-dropdown-item">
                     <i class="fas fa-file-export"></i>
                     <span>Download Database</span>
                 </a>
@@ -506,6 +505,26 @@
 </div>
 
 <script>
+    function downloadFullDatabase(e) {
+        if (e) e.preventDefault();
+
+        const csrfToken = '<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>';
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '../API/export_all_tables.php';
+        form.style.display = 'none';
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
     function toggleDropdown(id) {
         const menu = document.getElementById(id);
         if (!menu) return;
