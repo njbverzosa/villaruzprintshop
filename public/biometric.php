@@ -1,63 +1,97 @@
 <?php
-// biometric.php – Biometric enrollment page
+// public/biometric.php – Biometric enrollment page (Customer only)
 
 session_start();
-require_once __DIR__ . '/DB_Conn/config.php';
+require_once __DIR__ . '/../DB_Conn/config.php';
 
-// Check if user is logged in (via temp session or actual session)
-if (!isset($_SESSION['temp_user_id']) || !isset($_SESSION['temp_user_type'])) {
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
-        header('Location: login.php');
-        exit;
-    } else {
-        $userId = $_SESSION['user_id'];
-        $userType = $_SESSION['user_role'];
-        $isExistingUser = true;
-    }
-} else {
-    $userId = $_SESSION['temp_user_id'];
+// ==============================================
+// Resolve user (temp session or real session)
+// ==============================================
+if (isset($_SESSION['temp_user_id']) && isset($_SESSION['temp_user_type'])) {
+    $userId   = $_SESSION['temp_user_id'];
     $userType = $_SESSION['temp_user_type'];
     $isExistingUser = false;
-}
-
-// Determine redirect URL based on user type
-if ($userType === 'Admin') {
-    $redirectUrl = 'web/all_products.php';
+} elseif (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
+    $userId   = $_SESSION['user_id'];
+    $userType = $_SESSION['user_role'];
+    $isExistingUser = true;
 } else {
-    $redirectUrl = 'public/shop.php';
+    header('Location: ../login.php');
+    exit;
 }
 
-// Handle biometric registration
+// ==============================================
+// ✅ This page is Customer-only. Send other roles to their own page.
+// ==============================================
+if ($userType !== 'Customer') {
+    if ($userType === 'Admin') {
+        header('Location: ../web/biometric.php');
+        exit;
+    }
+    if ($userType === 'Investor') {
+        header('Location: ../investors/biometric.php');
+        exit;
+    }
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
+}
+
+// ==============================================
+// Load current row
+// ==============================================
+$stmt = $pdo->prepare("SELECT id, acc_number, f_name, biometric_enrolled, biometric_id FROM customers WHERE id = ?");
+$stmt->execute([$userId]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$user) {
+    session_destroy();
+    header('Location: ../login.php');
+    exit;
+}
+
+$accNumber = $user['acc_number'];
+$isGuest   = (($user['f_name'] ?? '') === 'Guest' || empty($user['f_name'] ?? ''));
+
+// ==============================================
+// Handle POST (enroll or skip)
+// ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $biometric_id = trim($_POST['biometric_id'] ?? '');
+    $biometric_id   = trim($_POST['biometric_id'] ?? '');
     $biometric_type = trim($_POST['biometric_type'] ?? 'FINGERPRINT');
 
+    $redirectUrl = $isGuest ? '../public/account-edit.php' : '../public/shop.php';
+
     if (empty($biometric_id)) {
-        // ✅ SKIP: User chose to skip biometric registration
-        unset($_SESSION['temp_user_id']);
-        unset($_SESSION['temp_user_type']);
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['user_role'] = $userType;
-
-        header('Location: ' . $redirectUrl);
-        exit;
-    } else {
-        // ✅ Save biometric to database
-        $table = ($userType === 'Admin') ? 'admins' : 'customers';
-        $stmt = $pdo->prepare("UPDATE $table SET biometric_id = ?, biometric_enrolled = 1 WHERE id = ?");
-        $stmt->execute([$biometric_id, $userId]);
-
-        setcookie('user_id', $userId, time() + (86400 * 365), "/");
-        setcookie('user_type', $userType, time() + (86400 * 365), "/");
-
-        unset($_SESSION['temp_user_id']);
-        unset($_SESSION['temp_user_type']);
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['user_role'] = $userType;
+        // ✅ SKIP — restore session, redirect
+        unset($_SESSION['temp_user_id'], $_SESSION['temp_user_type']);
+        $_SESSION['user_id']    = $userId;
+        $_SESSION['user_role']  = $userType;
+        $_SESSION['acc_number'] = $accNumber;
 
         header('Location: ' . $redirectUrl);
         exit;
     }
+
+    if (strlen($biometric_id) > 255) {
+        die('Invalid biometric id.');
+    }
+
+    // ✅ Save biometric on customers table
+    $stmt = $pdo->prepare("UPDATE customers SET biometric_id = ?, biometric_enrolled = 1 WHERE id = ?");
+    $stmt->execute([$biometric_id, $userId]);
+
+    setcookie('user_id', $userId, time() + (86400 * 365), "/");
+    setcookie('user_type', $userType, time() + (86400 * 365), "/");
+    setcookie('biometric_enrolled', 1, time() + (86400 * 365), "/");
+
+    unset($_SESSION['temp_user_id'], $_SESSION['temp_user_type']);
+    $_SESSION['user_id']    = $userId;
+    $_SESSION['user_role']  = $userType;
+    $_SESSION['acc_number'] = $accNumber;
+
+    header('Location: ' . $redirectUrl);
+    exit;
 }
 ?>
 <!DOCTYPE html>

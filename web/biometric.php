@@ -1,5 +1,5 @@
 <?php
-// investors/biometric.php – Biometric enrollment page (Investor only)
+// web/biometric.php – Biometric enrollment page (Admin only)
 
 session_start();
 require_once __DIR__ . '/../DB_Conn/config.php';
@@ -21,11 +21,11 @@ if (isset($_SESSION['temp_user_id']) && isset($_SESSION['temp_user_type'])) {
 }
 
 // ==============================================
-// ✅ This page is Investor-only. Send other roles to their own page.
+// ✅ This page is Admin-only. Send other roles to their own page.
 // ==============================================
-if ($userType !== 'Investor') {
-    if ($userType === 'Admin') {
-        header('Location: ../web/biometric.php');
+if ($userType !== 'Admin') {
+    if ($userType === 'Investor') {
+        header('Location: ../investors/biometric.php');
         exit;
     }
     if ($userType === 'Customer') {
@@ -40,7 +40,7 @@ if ($userType !== 'Investor') {
 // ==============================================
 // Load current row
 // ==============================================
-$stmt = $pdo->prepare("SELECT id, acc_number, f_name, biometric_enrolled, biometric_id FROM investors WHERE id = ?");
+$stmt = $pdo->prepare("SELECT id, acc_number, f_name, biometric_enrolled, biometric_id FROM admins WHERE id = ?");
 $stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $biometric_id   = trim($_POST['biometric_id'] ?? '');
     $biometric_type = trim($_POST['biometric_type'] ?? 'FINGERPRINT');
 
-    $redirectUrl = '../investors/investors_product.php';
+    $redirectUrl = '../web/all_products.php';
 
     if (empty($biometric_id)) {
         // ✅ SKIP — restore session, redirect
@@ -72,12 +72,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // ✅ Basic validation
     if (strlen($biometric_id) > 255) {
         die('Invalid biometric id.');
     }
 
-    // ✅ Save biometric on investors table
-    $stmt = $pdo->prepare("UPDATE investors SET biometric_id = ?, biometric_enrolled = 1 WHERE id = ?");
+    // ✅ Save biometric on admins table
+    $stmt = $pdo->prepare("UPDATE admins SET biometric_id = ?, biometric_enrolled = 1 WHERE id = ?");
     $stmt->execute([$biometric_id, $userId]);
 
     setcookie('user_id', $userId, time() + (86400 * 365), "/");
@@ -122,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-height: 100vh;
         }
 
-        /* Header — only SKIP on the right */
         .page-header {
             padding: 1rem 1.5rem;
             display: flex;
@@ -130,7 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             justify-content: flex-end;
         }
 
-        /* SKIP link (top-right) */
         .skip-top {
             font-size: 0.9rem;
             font-weight: 600;
@@ -155,7 +154,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             outline-offset: 2px;
         }
 
-        /* Main content */
         .container {
             flex: 1;
             width: 100%;
@@ -174,7 +172,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
         }
 
-        /* Lock emoji BELOW header, larger */
         .icon {
             font-size: 140px;
             line-height: 1;
@@ -195,13 +192,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 8px;
         }
 
-        /* "Note:" paragraph */
         .content p.note {
             margin-top: 20px;
             margin-bottom: 190px;
         }
 
-        /* ✅ Button group — centers the fingerprint button */
         .btn-group {
             margin-top: 120px;
             display: flex;
@@ -239,7 +234,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
-        /* Fingerprint icon inside the button */
         .btn-primary i {
             font-size: 28px;
             line-height: 1;
@@ -316,16 +310,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
 
-    <!-- Header — only SKIP on the right -->
     <header class="page-header">
         <button type="button" class="skip-top" id="skipBtn">SKIP</button>
     </header>
 
-    <!-- Main content with lock below header -->
     <div class="container">
         <div class="content">
-
-            <!-- Lock emoji below header, larger -->
             <div class="icon">🔐</div>
 
             <h2>Secure Your Account</h2>
@@ -334,13 +324,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Register your fingerprint, PIN, or pattern for faster login next time.
             </p>
 
-            <!-- "Note:" as its own paragraph with CSS margin -->
             <p class="note">
                 <strong>Note:</strong> Your biometric data stays on your device.
             </p>
 
             <div class="btn-group">
-                <!-- Only the fingerprint icon -->
                 <button class="btn btn-primary" id="biometricBtn" aria-label="Register biometric">
                     <i class="fas fa-fingerprint"></i>
                 </button>

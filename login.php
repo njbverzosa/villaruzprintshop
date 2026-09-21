@@ -1,9 +1,10 @@
 <?php
 // login.php – desktop + mobile + in-app flows
-// ✅ 3 roles: Admin (admins), Investor (investors), Customer (customers)
-// ✅ Redirect logic is separated into 3 role-specific functions
-// ✅ Biometric success shows inside the Login button
-// ✅ Biometric auto-prompt skipped on POST (password login)
+// ✅ 3 roles with per-role biometric pages:
+//      Admin    → web/biometric.php
+//      Investor → investors/biometric.php
+//      Customer → public/biometric.php
+// ✅ Biometric gate fires only when biometric_enrolled = 0 for that acc_number
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -85,42 +86,59 @@ $renderUpdateModal = ($isInApp && !$skipUpdate);
 $skipBiometricAutoPrompt = ($_SERVER['REQUEST_METHOD'] === 'POST');
 
 // ==============================================
+// ✅ PER-ROLE BIOMETRIC PAGE MAP
+// ==============================================
+$biometricPageMap = [
+    'Admin'    => 'web/biometric.php',
+    'Investor' => 'investors/biometric.php',
+    'Customer' => 'public/biometric.php',
+];
+
+// ==============================================
 // ✅ REDIRECT LOGIC — SEPARATED PER ROLE
 // ==============================================
 
 /**
  * ADMIN redirect rules:
- *   app                 → web/all_products.php  (biometric.php if not enrolled)
- *   mobile web          → download_app.php
- *   desktop web         → web/all_products.php
+ *   app + not enrolled    → web/biometric.php
+ *   app + enrolled        → web/all_products.php
+ *   mobile web            → download_app.php (root-level)
+ *   desktop web           → web/all_products.php
  */
 function getAdminRedirect($isInApp, $isMobileBrowser, $user)
 {
-    // Not enrolled in biometric while inside the app → enroll first
-    if ($isInApp && (($user['biometric_enrolled'] ?? 0) == 0 || empty($user['biometric_id'] ?? ''))) {
+    global $biometricPageMap;
+
+    $hasBiometric = (($user['biometric_enrolled'] ?? 0) == 1 && !empty($user['biometric_id'] ?? ''));
+
+    if ($isInApp && !$hasBiometric) {
         $_SESSION['temp_user_id']   = $user['id'];
         $_SESSION['temp_user_type'] = 'Admin';
-        return 'biometric.php';
+        return $biometricPageMap['Admin'];
     }
 
     if ($isInApp)         return 'web/all_products.php';
+    if ($isMobileBrowser) return 'download_app.php';
     return 'web/all_products.php';
 }
 
 /**
  * INVESTOR redirect rules:
- *   app                 → biometric.php if not enrolled, else investors/investors_product.php
- *   mobile web          → investors/download_app.php
- *   desktop web         → investors/investors_product.php
+ *   app + not enrolled    → investors/biometric.php
+ *   app + enrolled        → investors/investors_product.php
+ *   mobile web            → investors/download_app.php
+ *   desktop web           → investors/investors_product.php
  */
 function getInvestorRedirect($isInApp, $isMobileBrowser, $user)
 {
+    global $biometricPageMap;
+
     $hasBiometric = (($user['biometric_enrolled'] ?? 0) == 1 && !empty($user['biometric_id'] ?? ''));
 
     if ($isInApp && !$hasBiometric) {
         $_SESSION['temp_user_id']   = $user['id'];
         $_SESSION['temp_user_type'] = 'Investor';
-        return 'biometric.php';
+        return $biometricPageMap['Investor'];
     }
 
     if ($isInApp)         return 'investors/investors_product.php';
@@ -130,12 +148,15 @@ function getInvestorRedirect($isInApp, $isMobileBrowser, $user)
 
 /**
  * CUSTOMER redirect rules:
- *   app                 → biometric.php if not enrolled (else shop/account-edit)
- *   mobile web          → public/download_app.php
- *   desktop web         → public/shop.php (or public/account-edit.php for guest)
+ *   app + not enrolled    → public/biometric.php
+ *   app + enrolled        → public/shop.php (or public/account-edit.php for guest)
+ *   mobile web            → public/download_app.php
+ *   desktop web           → public/shop.php (or public/account-edit.php for guest)
  */
 function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
 {
+    global $biometricPageMap;
+
     $isGuest      = (($user['f_name'] ?? '') === 'Guest' || empty($user['f_name'] ?? ''));
     $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
 
@@ -144,7 +165,7 @@ function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
     if ($isInApp && !$hasBiometric) {
         $_SESSION['temp_user_id']   = $user['id'];
         $_SESSION['temp_user_type'] = 'Customer';
-        return 'biometric.php';
+        return $biometricPageMap['Customer'];
     }
 
     if ($isInApp)         return $dashboardUrl;
@@ -166,6 +187,15 @@ function getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user)
 }
 
 // ==============================================
+// TABLE MAP (shared)
+// ==============================================
+$tableMap = [
+    'Admin'    => 'admins',
+    'Investor' => 'investors',
+    'Customer' => 'customers'
+];
+
+// ==============================================
 // ALREADY LOGGED IN
 // ==============================================
 $isLoggedIn = false;
@@ -176,12 +206,6 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     $isLoggedIn = true;
     $userName = $_SESSION['acc_number'] ?? 'User';
 
-    // Fetch the user row for role-appropriate redirect
-    $tableMap = [
-        'Admin'    => 'admins',
-        'Investor' => 'investors',
-        'Customer' => 'customers'
-    ];
     $table = $tableMap[$_SESSION['user_role']] ?? 'customers';
 
     $stmt = $pdo->prepare("SELECT id, f_name, biometric_enrolled, biometric_id FROM $table WHERE id = ?");
@@ -199,16 +223,7 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
 }
 
 // ==============================================
-// TABLE MAP (shared across all branches)
-// ==============================================
-$tableMap = [
-    'Admin'    => 'admins',
-    'Investor' => 'investors',
-    'Customer' => 'customers'
-];
-
-// ==============================================
-// BIOMETRIC ENROLLED CHECK
+// BIOMETRIC ENROLLED CHECK (for JS bridge)
 // ==============================================
 $hasBiometric = false;
 $biometricUserId = null;
