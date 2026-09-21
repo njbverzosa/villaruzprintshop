@@ -770,15 +770,7 @@ foreach ($allSales as $sale) {
                     </div>
                 </div>
 
-                <!-- Monthly Summary Folder -->
-                <div class="folder-item" onclick="showSummaryModal()">
-                    <div class="folder-icon">
-                        <i class="fas fa-chart-pie"></i>
-                    </div>
-                    <div class="folder-name">
-                        Monthly Summary
-                    </div>
-                </div>
+               
             </div>
         </main>
     </div>
