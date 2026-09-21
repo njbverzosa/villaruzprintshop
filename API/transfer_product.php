@@ -106,7 +106,7 @@ function productNumberExists(PDO $pdo, string $table, string $productNumber): bo
 // ==============================================
 $targetTable  = 'merchandise_inventory';
 $uploadFolder = 'Products';
-$redirectUrl  = '../web/all_products.php';
+$redirectUrl  = '../web/shop.php';
 
 // ==============================================
 // ACTION: add_product (unchanged)

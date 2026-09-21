@@ -46,7 +46,7 @@ $timezone = new DateTimeZone('Asia/Manila');
 $productNumber = $_GET['product_number'] ?? '';
 
 if (empty($productNumber)) {
-    header('Location: all_products.php');
+    header('Location: shop.php');
     exit;
 }
 
@@ -55,7 +55,7 @@ $stmt->execute([$productNumber]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
-    header('Location: all_products.php');
+    header('Location: shop.php');
     exit;
 }
 
