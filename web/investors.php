@@ -854,7 +854,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                     <tr data-id="<?php echo $customer['id']; ?>">
                                         <td>
                                             <?php if ($permitExists): ?>
-                                                <img src="../Business_Docs/<?php echo htmlspecialchars($customer['product_image'] ?? ''); ?>"
+                                                <img src="../Business_Docs/<?php echo htmlspecialchars($customer['business_permit'] ?? ''); ?>"
                                                     alt="Permit of <?php echo htmlspecialchars($customer['f_name'] ?? 'Customer'); ?>"
                                                     class="profile-thumb"
                                                     onclick="openLandmarkModal('../Business_Docs/<?php echo htmlspecialchars($businessPermit); ?>', '<?php echo htmlspecialchars($customer['f_name'] ?? 'Customer'); ?> - Business Permit')"
