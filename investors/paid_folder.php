@@ -697,7 +697,7 @@ foreach ($availableYears as $year) {
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="welcome">
-                        <h4><i class="fas fa-folder-open"></i> Paid Folders <i class="fas fa-chevron-right"></i></h4>
+                        <h4><i class="fas fa-folder-open"></i> Sales of Months <i class="fas fa-chevron-right"></i></h4>
                     </div>
                 </div>
             </div>

@@ -235,7 +235,7 @@
         <div class="nav-dropdown-menu <?php echo $ordersActive ? 'show' : ''; ?>" id="ordersDropdown">
             <a href="paid_folder.php" class="nav-dropdown-item <?php echo $paidActive ? 'active_paid' : ''; ?>">
                 <i class="fas fa-check-circle"></i>
-                <span>Paid</span>
+                <span>Sales</span>
             </a>
         </div>
     </div>
