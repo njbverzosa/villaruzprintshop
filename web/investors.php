@@ -848,20 +848,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                         style="text-align: center; padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($customers as $customer):
-                                    $isAccountActive = isset($customer['status']) && $customer['status'] == 1;
-                                ?>
+                                <?php foreach ($customers as $customer): ?>
                                     <tr data-id="<?php echo $customer['id']; ?>">
                                         <td>
-                                            <?php if ($permitExists): ?>
-                                                <img src="../Business_Docs/<?php echo htmlspecialchars($customer['business_permit'] ?? ''); ?>"
-                                                    alt="Permit of <?php echo htmlspecialchars($customer['f_name'] ?? 'Customer'); ?>"
-                                                    class="profile-thumb"
-                                                    onclick="openLandmarkModal('../Business_Docs/<?php echo htmlspecialchars($businessPermit); ?>', '<?php echo htmlspecialchars($customer['f_name'] ?? 'Customer'); ?> - Business Permit')"
-                                                    title="Click to zoom">
-                                            <?php else: ?>
-                                                <span class="no-photo">No permit</span>
-                                            <?php endif; ?>
+                                            <img src="https://villaruz-print-shop-and-general-merchandise.shop/Business_Docs/<?php echo htmlspecialchars($customer['business_permit']); ?>"
+                                                alt="Permit of <?php echo htmlspecialchars($customer['f_name'] ?? 'Customer'); ?>"
+                                                class="profile-thumb"
+                                                onclick="openLandmarkModal('../Business_Docs/<?php echo htmlspecialchars($customer['business_permit'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($customer['f_name'] ?? 'Customer', ENT_QUOTES); ?> - Business Permit')"
+                                                title="Click to zoom">
                                         </td>
                                         <td><?php echo htmlspecialchars($customer['f_name'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($customer['user_name'] ?? ''); ?></td>
@@ -870,16 +864,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                             <?php echo htmlspecialchars($customer['phone_number'] ?? ''); ?>
                                             <?php if (!empty($customer['phone_number'])): ?>
                                                 <button class="copy-btn copy-btn-phone"
-                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($customer['phone_number']); ?>', 'Phone number')"
+                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($customer['phone_number'], ENT_QUOTES); ?>', 'Phone number')"
                                                     title="Copy phone number">
                                                     <i class="fas fa-copy"></i>
                                                 </button>
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo htmlspecialchars($customer['business_name'] ?? 'N/A'); ?></td>
-                                        
+
                                         <?php if ($authorizeAccess == 0): ?>
-                                           
                                             <td style="white-space: nowrap;">
                                                 <div class="password-wrapper">
                                                     <span style="color: #475569; font-weight: 500;">
