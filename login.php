@@ -2,7 +2,7 @@
 // login.php – desktop + mobile + in-app flows
 // ✅ 3 roles: Admin (admins), Investor (investors), Customer (customers)
 // ✅ Admin    → web/all_products.php
-// ✅ Investor → investors/investors_product.php
+// ✅ Investor → mobile web: download_app.php | desktop web: investors/investors_product.php | app: biometric if not enrolled
 // ✅ Customer → public/shop.php
 // ✅ Biometric success shows inside the Login button
 // ✅ Biometric auto-prompt skipped on POST (password login)
@@ -104,7 +104,14 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     if ($_SESSION['user_role'] === 'Admin') {
         $redirectUrl = 'web/all_products.php';
     } elseif ($_SESSION['user_role'] === 'Investor') {
-        $redirectUrl = 'investors/investors_product.php';
+        // Investor redirect depends on platform
+        if ($isInApp) {
+            $redirectUrl = 'biometric.php';
+        } elseif ($isMobileBrowser) {
+            $redirectUrl = 'download_app.php';
+        } else {
+            $redirectUrl = 'investors/investors_product.php';
+        }
     } elseif ($_SESSION['user_role'] === 'Customer') {
         $redirectUrl = 'public/shop.php';
     }
@@ -220,7 +227,14 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
             $redirectUrl = 'web/all_products.php';
         }
     } elseif ($userType === 'Investor') {
-        $redirectUrl = 'investors/investors_product.php';
+        // ✅ Investor: same three-case logic
+        if ($isInApp) {
+            $redirectUrl = 'biometric.php';
+        } elseif ($isMobileBrowser) {
+            $redirectUrl = 'download_app.php';
+        } else {
+            $redirectUrl = 'investors/investors_product.php';
+        }
     } else {
         // Customer
         $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
@@ -420,7 +434,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                     $redirectUrl = $adminRedirect;
                 }
             } elseif ($userType === 'Investor') {
-                $redirectUrl = 'investors/investors_product.php';
+                // ✅ Investor redirect: three cases
+                $hasBiometricEnrolled = ($user['biometric_enrolled'] == 1 && !empty($user['biometric_id']));
+
+                if ($isInApp && !$hasBiometricEnrolled) {
+                    // In Sofia app but no biometric yet
+                    $_SESSION['temp_user_id'] = $user['id'];
+                    $_SESSION['temp_user_type'] = $userType;
+                    $redirectUrl = 'biometric.php';
+                } elseif ($isMobileBrowser) {
+                    // Mobile web browser
+                    $redirectUrl = 'download_app.php';
+                } else {
+                    // Desktop web
+                    $redirectUrl = 'investors/investors_product.php';
+                }
             } else {
                 // Customer
                 $isGuest = ($user['f_name'] === 'Guest' || empty($user['f_name']));
