@@ -981,6 +981,13 @@ foreach ($allProducts as $product) {
                     <button class="clear-search-btn" id="clearSearchBtn">
                         <i class="fas fa-times"></i> Clear
                     </button>
+
+                    <?php if ((int) ($user['authorize_access'] ?? -1) === 0): ?>
+                        <a href="/API/investors_products.php" class="add-product-btn" id="downloadImagesBtn">
+                            <i class="fas fa-download"></i> Images
+                        </a>
+                    <?php endif; ?>
+
                 </div>
             </div>
             <div id="searchInfo" class="search-info"></div>

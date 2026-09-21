@@ -286,7 +286,7 @@ if ($action === 'add_product') {
 
 // ==============================================
 // ACTION: update_product
-//   → INSERT into merchandise_inventory (admin price)
+//   → INSERT into merchandise_inventory (admin price + business_name)
 //   → INSERT into investors_sales (investor's original price)
 // ==============================================
 if ($action === 'update_product') {
@@ -302,6 +302,9 @@ if ($action === 'update_product') {
     $replaceImage  = $_POST['replace_image'] ?? '0';
 
     $productName = sanitizeProductName($_POST['product_name'] ?? '');
+
+    // ✅ Business name from the form (auto-filled from investors table)
+    $businessName = trim($_POST['business_name'] ?? '');
 
     if ($sourceProductId <= 0) {
         echo json_encode(['success' => false, 'message' => 'Missing source product ID.']);
@@ -324,7 +327,7 @@ if ($action === 'update_product') {
         exit;
     }
 
-    // ----- Fetch source investor product (for acc_number + original price) -----
+    // ----- Fetch source investor product -----
     $src = $pdo->prepare("SELECT * FROM investors_inventory WHERE id = ? LIMIT 1");
     $src->execute([$sourceProductId]);
     $source = $src->fetch(PDO::FETCH_ASSOC);
@@ -334,11 +337,21 @@ if ($action === 'update_product') {
         exit;
     }
 
-    $investorAccNumber = $source['acc_number'];          // who owns it
-    $investorPrice     = (float) $source['selling_price']; // original price from investor
+    $investorAccNumber = $source['acc_number'];
+    $investorPrice     = (float) $source['selling_price'];
     $investorUnit      = $source['unit'] ?? $unit;
 
-    // ----- Duplicate name check in merchandise_inventory -----
+    // ✅ If the form didn't send a business_name, fall back to the investors table
+    if ($businessName === '') {
+        $bizStmt = $pdo->prepare("SELECT business_name FROM investors WHERE acc_number = ? LIMIT 1");
+        $bizStmt->execute([$investorAccNumber]);
+        $bizRow = $bizStmt->fetch(PDO::FETCH_ASSOC);
+        if ($bizRow) {
+            $businessName = $bizRow['business_name'] ?? '';
+        }
+    }
+
+    // ----- Duplicate name check -----
     $dup = $pdo->prepare("SELECT id FROM {$targetTable} WHERE product_name = :product_name");
     $dup->execute([':product_name' => $productName]);
     if ($dup->fetch()) {
@@ -415,7 +428,6 @@ if ($action === 'update_product') {
         $imagePath = null;
     }
     elseif ($replaceImage === '0') {
-        // Carry the image over from investors_inventory → Products
         if (!empty($source['product_image'])) {
             $oldName = $source['product_image'];
             $oldFile = dirname(__DIR__) . '/Inv_Products/' . $oldName;
@@ -441,25 +453,26 @@ if ($action === 'update_product') {
 
     // ----- Date/time -----
     date_default_timezone_set('Asia/Manila');
-    $last_restocked   = date('j F Y g:i A');
-    $dateTimeSold     = date('j F Y g:i A');   // matches your varchar column style
+    $last_restocked = date('j F Y g:i A');
+    $dateTimeSold   = date('j F Y g:i A');
 
     try {
         $pdo->beginTransaction();
 
         // ============================
-        // INSERT 1 → merchandise_inventory (admin's price)
+        // INSERT 1 → merchandise_inventory (admin price + business_name)
         // ============================
         $stmt = $pdo->prepare("
             INSERT INTO {$targetTable}
-                (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked)
+                (product_number, product_name, business_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked)
             VALUES
-                (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked)
+                (:product_number, :product_name, :business_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked)
         ");
 
         $stmt->execute([
             ':product_number' => $productNumber,
             ':product_name'   => $productName,
+            ':business_name'  => $businessName,
             ':unit'           => $unit,
             ':qty_on_hand'    => $quantity,
             ':selling_price'  => $sellingPrice,
@@ -471,9 +484,8 @@ if ($action === 'update_product') {
         $newId = $pdo->lastInsertId();
 
         // ============================
-        // INSERT 2 → investors_sales (investor's original price)
+        // INSERT 2 → investors_sales
         // ============================
-        // order_id: use the new merchandise_inventory id as the "order" reference
         $orderId = $newId;
 
         $salesStmt = $pdo->prepare("
@@ -493,14 +505,14 @@ if ($action === 'update_product') {
             ':status'          => 'PAID',
             ':pieces'          => $quantity,
             ':unit'            => $investorUnit,
-            ':total_amount'    => $totalAmount = number_format($investorTotalAmount, 2, '.', ''),
+            ':total_amount'    => number_format($investorTotalAmount, 2, '.', ''),
             ':date_time_sold'  => $dateTimeSold
         ]);
 
         // ============================
         // LOG
         // ============================
-        $logDetails = "Transferred product to {$targetTable}: {$productName} | Product #: {$productNumber} | Unit: {$unit} | Qty: {$quantity} | Admin Price: ₱{$sellingPrice} | Investor Price: ₱{$investorPrice} | Investor Total: ₱{$investorTotalAmount} | Investor: {$investorAccNumber} | Image: " . ($imagePath ?: 'None');
+        $logDetails = "Transferred product to {$targetTable}: {$productName} | Business: {$businessName} | Product #: {$productNumber} | Unit: {$unit} | Qty: {$quantity} | Admin Price: ₱{$sellingPrice} | Investor Price: ₱{$investorPrice} | Investor Total: ₱{$investorTotalAmount} | Investor: {$investorAccNumber} | Image: " . ($imagePath ?: 'None');
 
         $logStmt = $pdo->prepare("INSERT INTO logs (name, action, details, created_at) VALUES (?, ?, ?, ?)");
         $logStmt->execute([$firstName, "Transferred Product", $logDetails, $last_restocked]);
@@ -508,18 +520,19 @@ if ($action === 'update_product') {
         $pdo->commit();
 
         echo json_encode([
-            'success'          => true,
-            'message'          => 'Product transferred and sale recorded',
-            'product_id'       => $newId,
-            'product_number'   => $productNumber,
-            'product_name'     => $productName,
-            'product_image'    => $imagePath,
-            'table'            => $targetTable,
-            'folder'           => $uploadFolder,
-            'investor_price'   => number_format($investorPrice, 2, '.', ''),
-            'investor_total'   => number_format($investorTotalAmount, 2, '.', ''),
-            'investor_acc'     => $investorAccNumber,
-            'redirect'         => $redirectUrl
+            'success'        => true,
+            'message'        => 'Product transferred and sale recorded',
+            'product_id'     => $newId,
+            'product_number' => $productNumber,
+            'product_name'   => $productName,
+            'business_name'  => $businessName,
+            'product_image'  => $imagePath,
+            'table'          => $targetTable,
+            'folder'         => $uploadFolder,
+            'investor_price' => number_format($investorPrice, 2, '.', ''),
+            'investor_total' => number_format($investorTotalAmount, 2, '.', ''),
+            'investor_acc'   => $investorAccNumber,
+            'redirect'       => $redirectUrl
         ]);
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();

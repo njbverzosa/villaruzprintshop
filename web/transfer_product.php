@@ -59,6 +59,21 @@ if (!$product) {
     exit;
 }
 
+// ==============================================
+// ✅ Fetch business_name from investors using product's acc_number
+// ==============================================
+$businessName = '';
+if (!empty($product['acc_number'])) {
+    $stmtBiz = $pdo->prepare("SELECT business_name FROM investors WHERE acc_number = ? LIMIT 1");
+    $stmtBiz->execute([$product['acc_number']]);
+    $investorRow = $stmtBiz->fetch(PDO::FETCH_ASSOC);
+
+    if ($investorRow) {
+        $businessName = $investorRow['business_name'] ?? '';
+    }
+}
+
+
 $imageUrl = '';
 $imageExists = false;
 
@@ -77,7 +92,11 @@ if (!empty($product['product_image'])) {
     <title>Transfer Product — <?php echo htmlspecialchars($product['product_name']); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: Arial, sans-serif;
@@ -95,7 +114,10 @@ if (!empty($product['product_image'])) {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        h2 { margin-bottom: 5px; color: #333; }
+        h2 {
+            margin-bottom: 5px;
+            color: #333;
+        }
 
         .product-number {
             font-size: 13px;
@@ -111,7 +133,9 @@ if (!empty($product['product_image'])) {
             font-size: 14px;
         }
 
-        input[type="text"], input[type="number"], textarea {
+        input[type="text"],
+        input[type="number"],
+        textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -120,7 +144,10 @@ if (!empty($product['product_image'])) {
             font-size: 14px;
         }
 
-        textarea { resize: vertical; min-height: 70px; }
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
 
         .image-stage {
             position: relative;
@@ -156,16 +183,21 @@ if (!empty($product['product_image'])) {
             display: none;
         }
 
-        .camera-box.visible { display: block; }
+        .camera-box.visible {
+            display: block;
+        }
 
-        .camera-box video, .camera-box img {
+        .camera-box video,
+        .camera-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        #capturedPhoto { display: none; }
+        #capturedPhoto {
+            display: none;
+        }
 
         .image-placeholder {
             display: none;
@@ -182,8 +214,14 @@ if (!empty($product['product_image'])) {
             font-size: 13px;
         }
 
-        .image-placeholder.visible { display: flex; }
-        .image-placeholder i { font-size: 36px; color: #cbd5e1; }
+        .image-placeholder.visible {
+            display: flex;
+        }
+
+        .image-placeholder i {
+            font-size: 36px;
+            color: #cbd5e1;
+        }
 
         .cancel-x-btn {
             position: absolute;
@@ -208,9 +246,19 @@ if (!empty($product['product_image'])) {
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        .cancel-x-btn.visible { display: inline-flex; }
-        .cancel-x-btn:hover { background: #ef4444; color: #ffffff; }
-        .cancel-x-btn i { font-size: 13px; pointer-events: none; }
+        .cancel-x-btn.visible {
+            display: inline-flex;
+        }
+
+        .cancel-x-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .cancel-x-btn i {
+            font-size: 13px;
+            pointer-events: none;
+        }
 
         .btn-floating {
             position: fixed;
@@ -231,9 +279,17 @@ if (!empty($product['product_image'])) {
             font-family: inherit;
         }
 
-        .btn-floating.visible { display: inline-flex; }
-        .btn-floating:active { transform: translateX(-50%) scale(0.96); }
-        .btn-floating i { pointer-events: none; }
+        .btn-floating.visible {
+            display: inline-flex;
+        }
+
+        .btn-floating:active {
+            transform: translateX(-50%) scale(0.96);
+        }
+
+        .btn-floating i {
+            pointer-events: none;
+        }
 
         .btn-floating-camera {
             background: blue;
@@ -275,7 +331,9 @@ if (!empty($product['product_image'])) {
             display: none;
         }
 
-        .btn-upload:hover { background: #0284c7; }
+        .btn-upload:hover {
+            background: #0284c7;
+        }
 
         .btn-submit {
             background: #333;
@@ -290,11 +348,18 @@ if (!empty($product['product_image'])) {
             cursor: not-allowed;
         }
 
-        button:hover { opacity: 0.9; }
+        button:hover {
+            opacity: 0.9;
+        }
 
-        .divider { border-top: 1px solid #eee; margin: 10px 0 20px 0; }
+        .divider {
+            border-top: 1px solid #eee;
+            margin: 10px 0 20px 0;
+        }
 
-        #productImageFile { display: none; }
+        #productImageFile {
+            display: none;
+        }
 
         /* ============================================================
            ✅ SUCCESS MODAL — loader → check
@@ -448,25 +513,43 @@ if (!empty($product['product_image'])) {
 
         /* ---- Animations ---- */
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(12px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes drawCircle {
-            to { stroke-dashoffset: 0; }
+            to {
+                stroke-dashoffset: 0;
+            }
         }
 
         @keyframes drawCheck {
-            to { stroke-dashoffset: 0; }
+            to {
+                stroke-dashoffset: 0;
+            }
         }
     </style>
 </head>
@@ -479,7 +562,8 @@ if (!empty($product['product_image'])) {
         <form id="productForm" enctype="multipart/form-data">
             <input type="hidden" name="action" value="update_product">
             <input type="hidden" name="product_id" value="<?php echo (int) $product['id']; ?>">
-            <input type="hidden" name="product_number" value="<?php echo htmlspecialchars($product['product_number']); ?>">
+            <input type="hidden" name="product_number"
+                value="<?php echo htmlspecialchars($product['product_number']); ?>">
             <input type="hidden" name="csrf_token" id="csrf_token"
                 value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
@@ -494,10 +578,8 @@ if (!empty($product['product_image'])) {
                 </button>
 
                 <div class="product-image-wrapper" id="imageWrapper">
-                    <img src="<?php echo $imageUrl; ?>"
-                        alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                        id="productImage"
-                        style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
+                    <img src="<?php echo $imageUrl; ?>" alt="<?php echo htmlspecialchars($product['product_name']); ?>"
+                        id="productImage" style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
                 </div>
 
                 <div class="image-placeholder" id="imagePlaceholder">
@@ -517,6 +599,10 @@ if (!empty($product['product_image'])) {
 
             <div class="divider"></div>
 
+            <label for="business_name">Business Name</label>
+            <input type="text" id="business_name" name="business_name"
+                value="<?php echo htmlspecialchars($businessName); ?>" required>
+
             <label for="product_name">Product Name</label>
             <input type="text" id="product_name" name="product_name"
                 value="<?php echo htmlspecialchars($product['product_name']); ?>" required>
@@ -534,7 +620,8 @@ if (!empty($product['product_image'])) {
                 value="<?php echo number_format($product['selling_price'], 2, '.', ''); ?>" required>
 
             <label for="description">Product Description</label>
-            <textarea id="description" name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
+            <textarea id="description"
+                name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
 
             <button type="submit" class="btn-submit" id="saveBtn">Save Changes</button>
         </form>
@@ -589,8 +676,8 @@ if (!empty($product['product_image'])) {
         const saveBtn = document.getElementById('saveBtn');
 
         const successOverlay = document.getElementById('successOverlay');
-        const successCard    = document.getElementById('successCard');
-        const successTitle   = document.getElementById('successTitle');
+        const successCard = document.getElementById('successCard');
+        const successTitle = document.getElementById('successTitle');
         const successMessage = document.getElementById('successMessage');
 
         const originalImageSrc = '<?php echo $imageUrl; ?>';
