@@ -726,7 +726,7 @@ foreach ($allSales as $sale) {
                     </button>
                     <div class="welcome">
                         <h4>
-                            <a href="paid_folder.php"><i class="fas fa-folder-open"></i> Sales of the month <i
+                            <a href="paid_folder.php"><i class="fas fa-folder-open"></i> Sales of Months <i
                                     class="fas fa-chevron-right"></i></a>
                             <?php if ($selectedMonth): ?>
                                 <i class="fas fa-folder-open"></i>

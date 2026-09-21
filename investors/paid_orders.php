@@ -558,7 +558,7 @@ $dateLabel    = $selectedDay . ' ' . $selectedMonth;
                     </button>
                     <div class="welcome">
                         <h4>
-                            <a href="paid_folder.php"><i class="fas fa-folder-open"></i> Paid Folders <i
+                            <a href="paid_folder.php"><i class="fas fa-folder-open"></i> Sales of Months <i
                                     class="fas fa-chevron-right"></i></a>
                             <a href="paid_folder_with.php?month=<?= urlencode($selectedMonth) ?>">
                                 <i class="fas fa-folder-open"></i> <?= htmlspecialchars($selectedMonth) ?>
