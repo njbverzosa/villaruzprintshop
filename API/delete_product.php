@@ -29,7 +29,7 @@ $userId   = $_SESSION['user_id'];
 
 if ($userRole !== 'Admin') {
     $_SESSION['error'] = 'You do not have permission to delete products.';
-    header('Location: ../web/all_products.php');
+    header('Location: ../web/shop.php');
     exit;
 }
 
