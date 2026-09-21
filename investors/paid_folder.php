@@ -707,7 +707,7 @@ foreach ($availableYears as $year) {
                     <?php foreach ($deliveriesByMonth as $monthName => $data): ?>
                         <div class="folder-item" onclick="viewMonth('<?= htmlspecialchars($monthName, ENT_QUOTES) ?>')">
                             <div class="folder-icon"><i class="fas fa-folder"></i></div>
-                            <div class="folder-name"> Sales of  <?= htmlspecialchars($monthName) ?></div>
+                            <div class="folder-name"> <?= htmlspecialchars($monthName) ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
