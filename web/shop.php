@@ -299,7 +299,7 @@ $allProducts = $stmt->fetchAll();
             width: 150px;
             height: 150px;
             object-fit: cover;
-            border-radius: 10px;
+            border-radius: 5px;
             cursor: pointer;
             display: block;
         }
@@ -308,8 +308,8 @@ $allProducts = $stmt->fetchAll();
         /* Update (edit) button — top-LEFT corner of the IMAGE */
         .edit-btn {
             position: absolute;
-            top: -6px;
-            left: -6px;
+            top: -5px;
+            left: -5px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -332,8 +332,8 @@ $allProducts = $stmt->fetchAll();
         /* Trash button — top-RIGHT corner of the IMAGE */
         .delete-btn {
             position: absolute;
-            top: -6px;
-            right: -6px;
+            top: -5px;
+            right: -5px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -531,7 +531,7 @@ $allProducts = $stmt->fetchAll();
             justify-content: center;
             gap: 8px;
             background: #f8fafc;
-            border-radius: 30px;
+            border-radius: 5px;
             padding: 4px 8px;
             margin-bottom: 10px;
             width: 100%;
