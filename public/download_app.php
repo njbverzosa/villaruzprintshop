@@ -361,7 +361,7 @@ include 'app_version.php';
             <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
             <div class='app-title'>Sofia</div>
 
-            <div class='app-recommended'>Mobile browser access is no longer available. Please download the SofiaApp app.
+            <div class='app-recommended'>Mobile browser access is no longer available. Please download the Sofia app.
             </div>
         </div>
 
@@ -370,7 +370,7 @@ include 'app_version.php';
 
             <div class='info-block'>
                 <div class='info-label'>Update Notice</div>
-                A new version of the <strong>Sofia App</strong> is now available. Update or download the latest release
+                A new version of the <strong>Sofia</strong> is now available. Update or download the latest release
                 for improved performance, a hassle-free application process, and password-free login using your device
                 security. Access your account and orders anytime, anywhere — in just one touch.
             </div>
