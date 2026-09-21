@@ -21,12 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     /* 2. Collect inputs */
-    $f_name = trim($_POST['f_name'] ?? '');
+    $f_name        = trim($_POST['f_name'] ?? '');
     $business_name = trim($_POST['business_name'] ?? '');
-    $phone_number = trim($_POST['phone_number'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $phone_number  = trim($_POST['phone_number'] ?? '');
+    $password      = $_POST['password'] ?? '';
 
-    /* 3. Validate */
+    /* 3. Validate text inputs */
     if ($f_name === '')
         $errors[] = 'Full name is required.';
     if ($business_name === '')
@@ -42,36 +42,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Password is required.';
     }
 
-    /* 4. File upload */
+    /* 4. File upload validation */
     $file = $_FILES['business_permit'] ?? null;
 
     if (!$file || $file['error'] === UPLOAD_ERR_NO_FILE) {
         $errors[] = 'Business permit photo is required.';
     } elseif ($file['error'] !== UPLOAD_ERR_OK) {
-        $errors[] = 'File upload failed (code ' . $file['error'] . ').';
+        $uploadErrors = [
+            UPLOAD_ERR_INI_SIZE   => 'File exceeds upload_max_filesize in php.ini.',
+            UPLOAD_ERR_FORM_SIZE  => 'File exceeds MAX_FILE_SIZE in the form.',
+            UPLOAD_ERR_PARTIAL    => 'File was only partially uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+            UPLOAD_ERR_EXTENSION  => 'Upload stopped by a PHP extension.',
+        ];
+        $errors[] = $uploadErrors[$file['error']] ?? 'File upload failed (code ' . $file['error'] . ').';
     } else {
         if ($file['size'] > 5 * 1024 * 1024) {
             $errors[] = 'File is too large. Max 5MB.';
         }
 
-        $allowedMime = ['image/png', 'image/jpeg', 'image/jpg'];
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowedExt = ['png', 'jpg', 'jpeg'];
 
-        if (!in_array($mime, $allowedMime, true)) {
+        if (!in_array($ext, $allowedExt, true)) {
             $errors[] = 'Only PNG, JPG, or JPEG images are allowed.';
+        }
+
+        if (empty($errors)) {
+            if (!extension_loaded('fileinfo')) {
+                $errors[] = 'Server misconfiguration: fileinfo extension is not enabled.';
+            } else {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime  = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+
+                $allowedMime = ['image/png', 'image/jpeg', 'image/pjpeg'];
+
+                if (!in_array($mime, $allowedMime, true)) {
+                    $errors[] = 'Invalid image type detected (' . htmlspecialchars($mime) . '). Only PNG, JPG, or JPEG images are allowed.';
+                }
+            }
         }
     }
 
     /* 5. Account number + username */
     $acc_number = null;
-    $user_name = '';
+    $user_name  = '';
     if (empty($errors)) {
-        $digits = preg_replace('/\D/', '', $phone_number);
+        $digits     = preg_replace('/\D/', '', $phone_number);
         $acc_number = substr($digits, -4);
 
-        // First word of f_name → user_name
         $nameParts = preg_split('/\s+/', $f_name);
         $user_name = $nameParts[0] ?? '';
     }
@@ -84,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mkdir($uploadDir, 0755, true);
         }
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $fileName = $acc_number . '_' . time() . '.' . $ext;
         $destPath = $uploadDir . $fileName;
 
@@ -95,12 +116,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    /* 7. Insert into admins + hash password */
+    /* 7. Insert into investors + hash password */
     if (empty($errors)) {
         date_default_timezone_set('Asia/Manila');
-        $registeredAt = date('d F Y');
-        $profile = 'profile.jpg';
-        $authorizeAccess = 3; 
+        $registeredAt    = date('d F Y');
+        $profile         = 'profile.jpg';
+        $authorizeAccess = 3;
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
@@ -118,17 +139,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $f_name,
                 $user_name,
                 $phone_number,
-                $hashedPassword,    // ✅ hashed password
-                $password,          // plain text for admin reference (optional)
-                $authorizeAccess,   // 3 → Investor
+                $hashedPassword,
+                $password,
+                $authorizeAccess,
                 $profile,
                 $business_name,
                 $permitPath
             ]);
 
-            // ✅ Redirect to login.php after success
-            header('Location: login.php');
-            exit;
+            // ✅ Mark success — do NOT redirect here.
+            // We'll show the success message, then redirect with JS.
+            $success = true;
 
         } catch (PDOException $e) {
             $errors[] = 'Database insert failed: ' . $e->getMessage();
@@ -455,8 +476,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php if ($success): ?>
             <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i>
-                <div><strong>Registration successful!</strong><br>You can now log in.</div>
+                <div>
+                    <strong>Registration successful!</strong><br>
+                    You can now use our app. Redirecting in <span id="countdown">10</span>s…
+                </div>
             </div>
         <?php elseif (!empty($errors)): ?>
             <div class="alert alert-error">
@@ -565,6 +588,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
     </script>
+
+    <?php if ($success): ?>
+    <script>
+        /* Hide the form fields so the success message stands out */
+        document.querySelectorAll('.reg-card .section-label').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.reg-card .form-grid').forEach(el => el.style.display = 'none');
+        document.querySelector('.reg-card .btn-submit').style.display = 'none';
+
+        /* Scroll to top so the alert is visible */
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        /* Countdown + redirect (10 seconds, 1 tick per second) */
+        let seconds = 10;
+        const el = document.getElementById('countdown');
+        const timer = setInterval(() => {
+            seconds--;
+            if (el) el.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(timer);
+                window.location.href = 'welcome.php';
+            }
+        }, 1000);
+
+        /* Fallback meta refresh for browsers without JS — matches the 10s countdown */
+        const meta = document.createElement('meta');
+        meta.httpEquiv = 'refresh';
+        meta.content = '10;url=welcome.php';
+        document.head.appendChild(meta);
+    </script>
+    <?php endif; ?>
 
 </body>
 

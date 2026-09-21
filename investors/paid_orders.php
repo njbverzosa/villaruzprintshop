@@ -47,71 +47,54 @@ if (!$userData) {
 
 $user = $userData;
 
+// ==============================================
+// SELECTED DAY + MONTH FROM URL
+// ==============================================
+$selectedDay   = isset($_GET['day'])   ? trim($_GET['day'])   : '';
+$selectedMonth = isset($_GET['month']) ? trim($_GET['month']) : '';
 
-// Get delivery_number from URL
-$selectedDeliveryNumber = isset($_GET['delivery_number']) ? $_GET['delivery_number'] : '';
-
-if (empty($selectedDeliveryNumber)) {
+if ($selectedDay === '' || $selectedMonth === '') {
     echo '<div class="empty-state">
             <i class="fas fa-exclamation-triangle"></i>
-            <p>No delivery number selected. Please go back and try again.</p>
-            <a href="pending_folder.php" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f59e0b; color: white; text-decoration: none; border-radius: 8px;">Go Back</a>
+            <p>No day/month selected. Please go back and try again.</p>
+            <a href="paid_folder.php" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f59e0b; color: white; text-decoration: none; border-radius: 8px;">Go Back</a>
           </div>';
     exit;
 }
 
-// First, check if delivery number exists in for_deliveries
-$stmt = $pdo->prepare("SELECT * FROM for_deliveries WHERE delivery_number = ?");
-$stmt->execute([$selectedDeliveryNumber]);
-$deliveryInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+// ==============================================
+// FETCH ALL PAID SALES FOR THIS INVESTOR
+// ==============================================
+$stmt = $pdo->prepare("
+    SELECT *
+    FROM investors_sales
+    WHERE status = 'PAID'
+      AND acc_number = :acc_number
+      AND SUBSTRING_INDEX(date_time_sold, ' ', 1) = :day
+      AND SUBSTRING_INDEX(SUBSTRING_INDEX(date_time_sold, ' ', 2), ' ', -1) = :month
+    ORDER BY id DESC
+");
+$stmt->execute([
+    ':acc_number' => $accNumber,
+    ':day'        => $selectedDay,
+    ':month'      => $selectedMonth,
+]);
+$orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (!$deliveryInfo) {
-    echo '<div class="empty-state">
-            <i class="fas fa-search"></i>
-            <p>Delivery #' . htmlspecialchars($selectedDeliveryNumber) . ' not found in deliveries.</p>
-            <a href="pending_folder.php" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f59e0b; color: white; text-decoration: none; border-radius: 8px;">Go Back</a>
-          </div>';
-    exit;
-}
-
-// Fetch order items from order_status_history for this delivery number
-$stmt = $pdo->prepare("SELECT * FROM order_status_history WHERE delivery_number = ?");
-$stmt->execute([$selectedDeliveryNumber]);
-$orderItems = $stmt->fetchAll();
-
-// Debug: Check if table has data but different column name
-if (empty($orderItems)) {
-    // Try to get the first row to see column names
-    $stmt = $pdo->query("SELECT * FROM order_status_history LIMIT 1");
-    $columns = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($columns) {
-        $availableColumns = array_keys($columns);
-        // Check if there's a similar column name
-        $possibleColumns = ['delivery_num', 'delivery_id', 'order_number', 'order_id'];
-        foreach ($possibleColumns as $col) {
-            if (in_array($col, $availableColumns)) {
-                // Try with the found column name
-                $stmt = $pdo->prepare("SELECT * FROM order_status_history WHERE $col = ?");
-                $stmt->execute([$selectedDeliveryNumber]);
-                $orderItems = $stmt->fetchAll();
-                if (!empty($orderItems)) {
-                    break;
-                }
-            }
-        }
-    }
-}
-
-$customerName = $deliveryInfo['ordered_by'] ?? '';
-$monthYear = $deliveryInfo['delivery_m_y'] ?? '';
-$deliveryNumber = $deliveryInfo['delivery_number'] ?? '';
-
-// Calculate total amount
+// Totals
 $totalAmount = 0;
 foreach ($orderItems as $item) {
     $totalAmount += floatval($item['total_amount'] ?? 0);
 }
+
+$totalPieces = 0;
+foreach ($orderItems as $item) {
+    $totalPieces += intval($item['pieces'] ?? 0);
+}
+
+// Header info
+$customerName = $user['f_name'] ?? ($user['user_name'] ?? 'Customer');
+$dateLabel    = $selectedDay . ' ' . $selectedMonth;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,7 +102,7 @@ foreach ($orderItems as $item) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Paid Orders | <?= htmlspecialchars($selectedDeliveryNumber) ?> | Villaruz Print Shop</title>
+    <title>Paid Orders | <?= htmlspecialchars($dateLabel) ?> | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -143,7 +126,7 @@ foreach ($orderItems as $item) {
             flex-direction: column;
         }
 
-        /* ========== SIDEBAR - LEFT SIDE ========== */
+        /* ========== SIDEBAR ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -167,7 +150,6 @@ foreach ($orderItems as $item) {
             position: relative;
         }
 
-        /* Mobile: sidebar hidden by default */
         @media (max-width: 768px) {
             .sidebar-wrapper {
                 transform: translateX(-100%);
@@ -178,7 +160,6 @@ foreach ($orderItems as $item) {
             }
         }
 
-        /* Desktop: sidebar always visible */
         @media (min-width: 769px) {
             .sidebar-wrapper {
                 transform: translateX(0) !important;
@@ -202,7 +183,6 @@ foreach ($orderItems as $item) {
             }
         }
 
-        /* Mobile overlay */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -219,7 +199,6 @@ foreach ($orderItems as $item) {
             display: block;
         }
 
-        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -248,7 +227,6 @@ foreach ($orderItems as $item) {
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -359,8 +337,6 @@ foreach ($orderItems as $item) {
             overflow-y: auto;
         }
 
-        
-
         .orders-container {
             background: #ffffff;
             border-radius: 5px;
@@ -412,16 +388,42 @@ foreach ($orderItems as $item) {
             }
         }
 
+        /* ========== TABLE ========== */
+        .orders-table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
         .orders-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
-        .orders-table tr {
+        .orders-table thead th {
+            background: #f8fafc;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .orders-table thead th:nth-child(1) { width: 40%; }
+        .orders-table thead th:nth-child(2) { width: 12%; }
+        .orders-table thead th:nth-child(3) { width: 12%; }
+        .orders-table thead th:nth-child(4) { width: 16%; }
+        .orders-table thead th:nth-child(5) { width: 20%; }
+
+        .orders-table tbody tr {
             border-bottom: 1px solid #f1f5f9;
         }
 
-        .orders-table tr:last-child {
+        .orders-table tbody tr:last-child {
             border-bottom: none;
         }
 
@@ -429,13 +431,11 @@ foreach ($orderItems as $item) {
             padding: 12px 15px;
             color: #1e293b;
             font-size: 13px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
-        .orders-table td:first-child {
-            font-weight: 500;
-        }
-
-        .orders-table tr:hover {
+        .orders-table tbody tr:hover {
             background: #f8fafc;
         }
 
@@ -445,93 +445,17 @@ foreach ($orderItems as $item) {
         }
 
         .total-row td {
-            border-top: 1px solid #e2e8f0;
+            border-top: 2px solid #e2e8f0;
             padding: 12px 15px;
+            font-weight: 600;
         }
 
-        .receipt-actions {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            padding: 20px;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            flex-wrap: wrap;
-        }
-
-        @media (max-width: 768px) {
-            .receipt-actions {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-                padding: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .receipt-actions {
-                padding: 12px;
-                gap: 8px;
-            }
-        }
-
-        .receipt-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px 24px;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s;
-            cursor: pointer;
-            border: none;
-            font-size: 14px;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        @media (max-width: 768px) {
-            .receipt-btn {
-                width: 100%;
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .receipt-btn {
-                padding: 8px 12px;
-                font-size: 12px;
-                min-width: unset;
-            }
-
-            .receipt-btn i {
-                font-size: 14px;
-            }
-        }
-
-        .receipt-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .delivery-receipt {
-            background: #3b82f6;
-        }
-
-        .delivery-receipt:hover {
-            background: #2563eb;
-        }
-
-        .billing-receipt {
-            background: #10b981;
-        }
-
-        .billing-receipt:hover {
-            background: #059669;
+        .total-row .total-label {
+            text-align: right;
+            text-transform: uppercase;
+            font-size: 12px;
+            color: #475569;
+            letter-spacing: 0.5px;
         }
 
         .empty-state {
@@ -562,6 +486,11 @@ foreach ($orderItems as $item) {
             .orders-table td {
                 padding: 8px 10px;
                 font-size: 11px;
+            }
+
+            .orders-table thead th {
+                padding: 8px 10px;
+                font-size: 10px;
             }
 
             .delivery-header {
@@ -598,8 +527,9 @@ foreach ($orderItems as $item) {
                 font-size: 10px;
             }
 
-            .orders-table td:first-child {
-                font-size: 10px;
+            .orders-table thead th {
+                padding: 6px 8px;
+                font-size: 9px;
             }
 
             .total-row td {
@@ -612,22 +542,17 @@ foreach ($orderItems as $item) {
 
 <body>
     <div class="app-wrapper">
-        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <?php
-                include 'sidebar.php';
-                ?>
+                <?php include 'sidebar.php'; ?>
             </div>
         </div>
 
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="header-left">
-                    <!-- Burger Button (Mobile Only) -->
                     <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
@@ -635,13 +560,11 @@ foreach ($orderItems as $item) {
                         <h4>
                             <a href="paid_folder.php"><i class="fas fa-folder-open"></i> Paid Folders <i
                                     class="fas fa-chevron-right"></i></a>
-                            <?php if ($monthYear): ?>
-                                <a href="paid_folder_with.php?month=<?= urlencode($monthYear) ?>">
-                                    <i class="fas fa-folder-open"></i> <?= htmlspecialchars($monthYear) ?>
-                                </a>
-                            <?php endif; ?>
+                            <a href="paid_folder_with.php?month=<?= urlencode($selectedMonth) ?>">
+                                <i class="fas fa-folder-open"></i> <?= htmlspecialchars($selectedMonth) ?>
+                            </a>
                             <i class="fas fa-chevron-right"></i>
-                            <i class="fas fa-folder-open"></i> <?= htmlspecialchars($deliveryNumber) ?>
+                            <i class="fas fa-folder-open"></i> <?= htmlspecialchars($dateLabel) ?>
                         </h4>
                     </div>
                 </div>
@@ -650,41 +573,48 @@ foreach ($orderItems as $item) {
             <?php if (empty($orderItems)): ?>
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
-                    <p>No order items found for this delivery.</p>
+                    <p>No paid orders found for <?= htmlspecialchars($dateLabel) ?>.</p>
                 </div>
             <?php else: ?>
                 <div class="orders-container">
                     <div class="delivery-group">
                         <div class="delivery-header">
-                            <div class="customer-info">
-                                <i class="fas fa-user"></i> Customer: <?= htmlspecialchars($customerName) ?>
+                            <div>
+                                <i class="fas fa-calendar-day"></i> <?= htmlspecialchars($dateLabel) ?>
                             </div>
                         </div>
                         <div class="orders-table-container">
                             <table class="orders-table">
-                                <?php foreach ($orderItems as $item): ?>
+                                <thead>
                                     <tr>
-                                        <td><?= htmlspecialchars($item['product_name'] ?? 'N/A') ?></td>
-                                        <td><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
-                                        <td><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
-                                        <td>₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?></td>
+                                        <th>Product</th>
+                                        <th>Pieces</th>
+                                        <th>Unit</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
                                     </tr>
-                                <?php endforeach; ?>
-                                <tr class="total-row">
-                                    <td colspan="3" style="text-align: right; font-weight: 600;">TOTAL:</td>
-                                    <td style="font-weight: 600;">₱ <?= number_format($totalAmount, 2) ?></td>
-                                </tr>
-                            </table>
-                        </div>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($orderItems as $item): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($item['product_name'] ?? 'N/A') ?></td>
+                                            <td><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
+                                            <td><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
+                                            <td>₱ <?= number_format(floatval($item['selling_price'] ?? 0), 2) ?></td>
+                                            <td>₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
 
-                        <!-- Receipt Icons -->
-                        <div class="receipt-actions">
-                            <button class="receipt-btn delivery-receipt" onclick="generateReceipt('delivery')">
-                                <i class="fas fa-truck"></i> Delivery Receipt
-                            </button>
-                            <button class="receipt-btn billing-receipt" onclick="generateReceipt('billing')">
-                                <i class="fas fa-file-invoice-dollar"></i> Billing Receipt
-                            </button>
+                                    <!-- TOTAL ROW: 5 cells to match the 5 columns -->
+                                    <tr class="total-row">
+                                        <td class="total-label">TOTAL:</td>
+                                        <td><?= $totalPieces ?></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>₱ <?= number_format($totalAmount, 2) ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -692,9 +622,7 @@ foreach ($orderItems as $item) {
         </main>
     </div>
 
-    <?php
-    include '../footer.php';
-    ?>
+    <?php include '../footer.php'; ?>
 
     <script>
         // ========== SIDEBAR TOGGLE (Mobile Only) ==========
@@ -719,11 +647,8 @@ foreach ($orderItems as $item) {
         }
 
         function toggleSidebar() {
-            if (isSidebarOpen) {
-                closeSidebar();
-            } else {
-                openSidebar();
-            }
+            if (isSidebarOpen) closeSidebar();
+            else openSidebar();
         }
 
         if (burgerBtn) {
@@ -744,11 +669,9 @@ foreach ($orderItems as $item) {
             menuOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
-                    // Don't close if it's a dropdown toggle
                     if (!this.closest('.nav-dropdown-toggle')) {
                         closeSidebar();
                     }
@@ -756,7 +679,6 @@ foreach ($orderItems as $item) {
             });
         });
 
-        // ========== DROPDOWN TOGGLE ==========
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
             const arrowId = dropdownId.replace('Dropdown', 'Arrow');
@@ -768,36 +690,14 @@ foreach ($orderItems as $item) {
             }
         }
 
-        // ========== BURGER VISIBILITY ON RESIZE ==========
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
-                // Desktop: close sidebar if open and hide overlay
-                if (isSidebarOpen) {
-                    closeSidebar();
-                }
+                if (isSidebarOpen) closeSidebar();
                 sidebarWrapper.classList.remove('open');
                 menuOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
         });
-
-        // ========== EXISTING FUNCTIONS ==========
-        function generateReceipt(type) {
-            const deliveryNumber = '<?= htmlspecialchars($selectedDeliveryNumber) ?>';
-            const customerName = '<?= htmlspecialchars($customerName) ?>';
-            const monthYear = '<?= htmlspecialchars($monthYear) ?>';
-            const totalAmount = '<?= number_format($totalAmount, 2) ?>';
-
-            // Get order items data
-            const orderItems = <?= json_encode($orderItems) ?>;
-
-            // Store data in sessionStorage or pass via URL
-            if (type === 'delivery') {
-                window.location.href = '../delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
-            } else if (type === 'billing') {
-                window.location.href = '../billing_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
-            }
-        }
 
         console.log('📱 Sidebar menu loaded - Left Side');
         console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');

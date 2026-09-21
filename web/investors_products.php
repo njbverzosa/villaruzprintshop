@@ -483,7 +483,7 @@ foreach ($allProducts as $product) {
         .update-btn,
         .desc-btn {
             border: none;
-            border-radius: 10px;
+            border-radius: 5px;
             padding: 8px 0;
             font-weight: 600;
             font-size: 12px;
@@ -1024,9 +1024,9 @@ foreach ($allProducts as $product) {
                                 <button class="desc-btn" data-id="<?php echo $product['id']; ?>">
                                     <i class="fas fa-info-circle"></i>
                                 </button>
-                                <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                <a href="transfer_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
                                     class="update-btn">
-                                    <i class="fas fa-pen"></i>
+                                    <i class="fas fa-circle-plus"></i>
                                 </a>
                             </div>
 

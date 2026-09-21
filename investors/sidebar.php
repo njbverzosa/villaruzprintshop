@@ -145,22 +145,6 @@
         font-weight: 500;
     }
 
-    /* ===== PENDING (Orange) ===== */
-    .nav-dropdown-item.active_pending {
-        background: #eff6ff;
-        color: #d97706;
-        border-left: 3px solid #f59e0b;
-    }
-
-    .nav-dropdown-item.active_pending:hover {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
-    .nav-dropdown-item.active_pending i {
-        color: #f59e0b;
-    }
-
     /* ===== PAID (Green) ===== */
     .nav-dropdown-item.active_paid {
         background: #eff6ff;
@@ -231,13 +215,6 @@
 
     <!-- Orders Dropdown - Visible to ALL -->
     <?php
-    // ✅ Pending pages (including the _with variant)
-    $pendingActive = in_array($currentPage, [
-        'pending_folder.php',
-        'pending_folder_with.php',
-        'pending_orders.php'
-    ]);
-
     // ✅ Paid pages (including the _with variant)
     $paidActive = in_array($currentPage, [
         'paid_folder.php',
@@ -246,7 +223,7 @@
     ]);
 
     // ✅ Orders dropdown expands if ANY of its children is active
-    $ordersActive = $pendingActive || $paidActive;
+    $ordersActive = $paidActive;
     ?>
     <div class="nav-dropdown">
         <div class="nav-dropdown-toggle" onclick="toggleDropdown('ordersDropdown')">
@@ -256,11 +233,6 @@
                 id="ordersArrow"></i>
         </div>
         <div class="nav-dropdown-menu <?php echo $ordersActive ? 'show' : ''; ?>" id="ordersDropdown">
-            <a href="pending_folder.php"
-                class="nav-dropdown-item <?php echo $pendingActive ? 'active_pending' : ''; ?>">
-                <i class="fas fa-clock"></i>
-                <span>Pending</span>
-            </a>
             <a href="paid_folder.php" class="nav-dropdown-item <?php echo $paidActive ? 'active_paid' : ''; ?>">
                 <i class="fas fa-check-circle"></i>
                 <span>Paid</span>

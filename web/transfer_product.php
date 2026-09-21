@@ -1,15 +1,5 @@
 <?php
-// investors/upload_products.php
-
-// ✅ Force session cookie to be shared across the whole domain
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
+//web/transfer_product.php
 session_start();
 
 require_once __DIR__ . '/../DB_Conn/config.php';
@@ -36,14 +26,8 @@ $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
 $userData = null;
-
-if ($userRole === 'Investor') {
-    $stmt = $pdo->prepare("
-        SELECT id, acc_number, f_name, email, phone_number, user_name,
-               business_name, business_permit, profile
-        FROM investors
-        WHERE id = ?
-    ");
+if ($userRole === 'Admin') {
+    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -59,9 +43,29 @@ $user = $userData;
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
-// ✅ Ensure CSRF token exists
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+$productNumber = $_GET['product_number'] ?? '';
+
+if (empty($productNumber)) {
+    header('Location: all_products.php');
+    exit;
+}
+
+$stmt = $pdo->prepare("SELECT * FROM investors_inventory WHERE product_number = ? LIMIT 1");
+$stmt->execute([$productNumber]);
+$product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$product) {
+    header('Location: all_products.php');
+    exit;
+}
+
+$imageUrl = '';
+$imageExists = false;
+
+if (!empty($product['product_image'])) {
+    $imageUrl = '../Inv_Products/' . htmlspecialchars($product['product_image']);
+    $absoluteImagePath = dirname(__DIR__) . '/Inv_Products/' . $product['product_image'];
+    $imageExists = file_exists($absoluteImagePath);
 }
 ?>
 <!DOCTYPE html>
@@ -70,14 +74,10 @@ if (empty($_SESSION['csrf_token'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Product — Villaruz Print Shop</title>
+    <title>Transfer Product — <?php echo htmlspecialchars($product['product_name']); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: Arial, sans-serif;
@@ -87,46 +87,17 @@ if (empty($_SESSION['csrf_token'])) {
         }
 
         .container {
-            display: flex;
-            gap: 20px;
-            max-width: 900px;
+            max-width: 500px;
             margin: 0 auto;
             background: white;
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            align-items: stretch;
         }
 
-        .image-column {
-            flex: 0 0 50%;
-            display: flex;
-            flex-direction: column;
-            min-height: 500px;
-        }
+        h2 { margin-bottom: 5px; color: #333; }
 
-        .form-column {
-            flex: 1;
-            min-width: 0;
-        }
-
-        @media (max-width: 700px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .image-column {
-                flex: 1 1 auto;
-                min-height: 350px;
-            }
-        }
-
-        h2 {
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .subtitle {
+        .product-number {
             font-size: 13px;
             color: #777;
             margin-bottom: 20px;
@@ -140,9 +111,7 @@ if (empty($_SESSION['csrf_token'])) {
             font-size: 14px;
         }
 
-        input[type="text"],
-        input[type="number"],
-        textarea {
+        input[type="text"], input[type="number"], textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -151,35 +120,13 @@ if (empty($_SESSION['csrf_token'])) {
             font-size: 14px;
         }
 
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-            background: #fff;
-            font-family: inherit;
-            cursor: pointer;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
+        textarea { resize: vertical; min-height: 70px; }
 
         .image-stage {
             position: relative;
-            flex: 1;
-            width: 100%;
-            min-height: 400px;
-            background: #f8fafc;
-            border: 2px dashed #cbd5e1;
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 260px;
+            max-width: 100%;
+            margin: 0 auto 12px auto;
         }
 
         .product-image-wrapper {
@@ -187,68 +134,61 @@ if (empty($_SESSION['csrf_token'])) {
             justify-content: center;
             align-items: center;
             width: 100%;
-            height: 100%;
         }
 
         .product-image-wrapper img {
+            max-width: 260px;
             width: 100%;
-            height: 100%;
-            object-fit: contain;
+            height: auto;
             border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            object-fit: cover;
             display: block;
-            background: #f8fafc;
         }
 
         .camera-box {
-            position: absolute;
-            inset: 0;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
             background: #000;
+            border-radius: 10px;
             overflow: hidden;
             display: none;
         }
 
-        .camera-box.visible {
-            display: block;
-        }
+        .camera-box.visible { display: block; }
 
-        .camera-box video,
-        .camera-box img {
+        .camera-box video, .camera-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        #capturedPhoto {
-            display: none;
-        }
+        #capturedPhoto { display: none; }
 
         .image-placeholder {
             display: none;
-            position: absolute;
-            inset: 0;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
             align-items: center;
             justify-content: center;
             flex-direction: column;
             gap: 8px;
             color: #94a3b8;
             font-size: 13px;
-            background: #f8fafc;
         }
 
-        .image-placeholder.visible {
-            display: flex;
-        }
-
-        .image-placeholder i {
-            font-size: 48px;
-            color: #cbd5e1;
-        }
+        .image-placeholder.visible { display: flex; }
+        .image-placeholder i { font-size: 36px; color: #cbd5e1; }
 
         .cancel-x-btn {
             position: absolute;
-            top: 8px;
-            right: 8px;
+            top: -3px;
+            right: -3px;
             display: none;
             align-items: center;
             justify-content: center;
@@ -268,19 +208,9 @@ if (empty($_SESSION['csrf_token'])) {
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        .cancel-x-btn.visible {
-            display: inline-flex;
-        }
-
-        .cancel-x-btn:hover {
-            background: #ef4444;
-            color: #ffffff;
-        }
-
-        .cancel-x-btn i {
-            font-size: 13px;
-            pointer-events: none;
-        }
+        .cancel-x-btn.visible { display: inline-flex; }
+        .cancel-x-btn:hover { background: #ef4444; color: #ffffff; }
+        .cancel-x-btn i { font-size: 13px; pointer-events: none; }
 
         .btn-floating {
             position: fixed;
@@ -301,17 +231,9 @@ if (empty($_SESSION['csrf_token'])) {
             font-family: inherit;
         }
 
-        .btn-floating.visible {
-            display: inline-flex;
-        }
-
-        .btn-floating:active {
-            transform: translateX(-50%) scale(0.96);
-        }
-
-        .btn-floating i {
-            pointer-events: none;
-        }
+        .btn-floating.visible { display: inline-flex; }
+        .btn-floating:active { transform: translateX(-50%) scale(0.96); }
+        .btn-floating i { pointer-events: none; }
 
         .btn-floating-camera {
             background: blue;
@@ -349,14 +271,11 @@ if (empty($_SESSION['csrf_token'])) {
             width: 100%;
             padding: 12px;
             font-size: 15px;
-            margin-top: 10px;
             margin-bottom: 8px;
             display: none;
         }
 
-        .btn-upload:hover {
-            background: #0284c7;
-        }
+        .btn-upload:hover { background: #0284c7; }
 
         .btn-submit {
             background: #333;
@@ -371,19 +290,11 @@ if (empty($_SESSION['csrf_token'])) {
             cursor: not-allowed;
         }
 
-        button:hover {
-            opacity: 0.9;
-        }
+        button:hover { opacity: 0.9; }
 
-        #productImageFile {
-            display: none;
-        }
+        .divider { border-top: 1px solid #eee; margin: 10px 0 20px 0; }
 
-        @media (max-width: 700px) {
-            .image-stage {
-                min-height: 300px;
-            }
-        }
+        #productImageFile { display: none; }
 
         /* ============================================================
            ✅ SUCCESS MODAL — loader → check
@@ -427,6 +338,7 @@ if (empty($_SESSION['csrf_token'])) {
             justify-content: center;
         }
 
+        /* -------- Spinner -------- */
         .success-spinner {
             width: 80px;
             height: 80px;
@@ -438,6 +350,7 @@ if (empty($_SESSION['csrf_token'])) {
             transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
+        /* -------- Checkmark SVG (hidden initially) -------- */
         .success-check {
             position: absolute;
             top: 0;
@@ -455,6 +368,7 @@ if (empty($_SESSION['csrf_token'])) {
             display: block;
         }
 
+        /* Circle */
         .success-check circle {
             fill: none;
             stroke: #10b981;
@@ -463,6 +377,7 @@ if (empty($_SESSION['csrf_token'])) {
             stroke-dashoffset: 166;
         }
 
+        /* Tick */
         .success-check path {
             fill: none;
             stroke: #10b981;
@@ -473,6 +388,7 @@ if (empty($_SESSION['csrf_token'])) {
             stroke-dashoffset: 48;
         }
 
+        /* ---- State: loading ---- */
         .success-card.loading .success-spinner {
             opacity: 1;
             transform: scale(1);
@@ -483,6 +399,7 @@ if (empty($_SESSION['csrf_token'])) {
             transform: scale(0.8);
         }
 
+        /* ---- State: done ---- */
         .success-card.done .success-spinner {
             opacity: 0;
             transform: scale(0.6);
@@ -493,6 +410,7 @@ if (empty($_SESSION['csrf_token'])) {
             transform: scale(1);
         }
 
+        /* Trigger the SVG drawing animation when in "done" state */
         .success-card.done .success-check circle {
             animation: drawCircle 0.5s ease-out forwards;
         }
@@ -528,63 +446,58 @@ if (empty($_SESSION['csrf_token'])) {
             opacity: 1;
         }
 
+        /* ---- Animations ---- */
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
 
         @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(12px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+            from { opacity: 0; transform: scale(0.9) translateY(12px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         @keyframes drawCircle {
-            to {
-                stroke-dashoffset: 0;
-            }
+            to { stroke-dashoffset: 0; }
         }
 
         @keyframes drawCheck {
-            to {
-                stroke-dashoffset: 0;
-            }
+            to { stroke-dashoffset: 0; }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
+        <h2>Add to Shop</h2>
+        <div class="product-number">Product #: <?php echo htmlspecialchars($product['product_number']); ?></div>
 
-        <!-- ============================================================
-             LEFT COLUMN — IMAGE
-             ============================================================ -->
-        <div class="image-column">
+        <form id="productForm" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="update_product">
+            <input type="hidden" name="product_id" value="<?php echo (int) $product['id']; ?>">
+            <input type="hidden" name="product_number" value="<?php echo htmlspecialchars($product['product_number']); ?>">
+            <input type="hidden" name="csrf_token" id="csrf_token"
+                value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
+            <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
+            <input type="hidden" name="replace_image" id="replace_image" value="0">
+
+            <!-- File input (hidden — used only via JS) -->
+            <input type="file" id="productImageFile" accept="image/jpeg,image/jpg,image/png,image/webp">
+
             <div class="image-stage" id="imageStage">
-
                 <button type="button" class="cancel-x-btn" id="cancelUploadBtn" title="Remove image">
                     <i class="fas fa-trash"></i>
                 </button>
 
-                <div class="product-image-wrapper" id="imageWrapper" style="display:none;">
-                    <img src="" alt="Product" id="productImage">
+                <div class="product-image-wrapper" id="imageWrapper">
+                    <img src="<?php echo $imageUrl; ?>"
+                        alt="<?php echo htmlspecialchars($product['product_name']); ?>"
+                        id="productImage"
+                        style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
                 </div>
 
                 <div class="image-placeholder" id="imagePlaceholder">
@@ -601,92 +514,30 @@ if (empty($_SESSION['csrf_token'])) {
             <button type="button" class="btn-upload" id="uploadBtn">
                 Upload Photo
             </button>
-        </div>
 
-        <!-- ============================================================
-             RIGHT COLUMN — FORM
-             ============================================================ -->
-        <div class="form-column">
-            <h2>Add Product</h2>
-            <div class="subtitle">Fill in the product details below</div>
+            <div class="divider"></div>
 
-            <form id="productForm" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="add_product">
-                <input type="hidden" name="csrf_token" id="csrf_token"
-                    value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
-                <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
+            <label for="product_name">Product Name</label>
+            <input type="text" id="product_name" name="product_name"
+                value="<?php echo htmlspecialchars($product['product_name']); ?>" required>
 
-                <input type="file" id="productImageFile" name="product_image"
-                    accept="image/jpeg,image/jpg,image/png,image/webp">
+            <label for="unit">Unit</label>
+            <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..."
+                value="<?php echo htmlspecialchars($product['unit'] ?? 'Pcs'); ?>" required>
 
-                <label for="product_name">Product Name</label>
-                <input type="text" id="product_name" name="product_name" required>
+            <label for="quantity">Product Quantity</label>
+            <input type="number" id="quantity" name="quantity" min="0"
+                value="<?php echo (int) $product['qty_on_hand']; ?>" required>
 
-                <label for="unit">Unit</label>
-                <select name="unit" id="unit">
-                    <option value="pcs">Pcs</option>
-                    <option value="piece">Piece</option>
-                    <option value="pieces">Pieces</option>
-                    <option value="unit">Unit</option>
-                    <option value="set">Set</option>
-                    <option value="pair">Pair</option>
-                    <option value="dozen">Dozen</option>
-                    <option value="box">Box</option>
-                    <option value="carton">Carton</option>
-                    <option value="case">Case</option>
-                    <option value="crate">Crate</option>
-                    <option value="pack">Pack</option>
-                    <option value="packet">Packet</option>
-                    <option value="sachet">Sachet</option>
-                    <option value="pouch">Pouch</option>
-                    <option value="bag">Bag</option>
-                    <option value="sack">Sack</option>
-                    <option value="bundle">Bundle</option>
-                    <option value="ream">Ream</option>
-                    <option value="roll">Roll</option>
-                    <option value="rolls">Rolls</option>
-                    <option value="pad">Pad</option>
-                    <option value="pads">Pads</option>
-                    <option value="sheet">Sheet</option>
-                    <option value="sheets">Sheets</option>
-                    <option value="bottle">Bottle</option>
-                    <option value="can">Can</option>
-                    <option value="tin">Tin</option>
-                    <option value="jar">Jar</option>
-                    <option value="tube">Tube</option>
-                    <option value="drum">Drum</option>
-                    <option value="barrel">Barrel</option>
-                    <option value="gallon">Gallon</option>
-                    <option value="liter">Liter</option>
-                    <option value="ml">Milliliter (mL)</option>
-                    <option value="gram">Gram (g)</option>
-                    <option value="kg">Kilogram (kg)</option>
-                    <option value="ton">Ton</option>
-                    <option value="lb">Pound (lb)</option>
-                    <option value="oz">Ounce (oz)</option>
-                    <option value="meter">Meter (m)</option>
-                    <option value="cm">Centimeter (cm)</option>
-                    <option value="ft">Foot (ft)</option>
-                    <option value="in">Inch (in)</option>
-                    <option value="yard">Yard</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                    <option value="month">Month</option>
-                    <option value="session">Session</option>
-                </select>
+            <label for="selling_price">Selling Price (₱)</label>
+            <input type="number" id="selling_price" name="selling_price" step="0.01" min="0.01"
+                value="<?php echo number_format($product['selling_price'], 2, '.', ''); ?>" required>
 
-                <label for="quantity">Product Quantity</label>
-                <input type="number" id="quantity" name="quantity" min="0" required>
+            <label for="description">Product Description</label>
+            <textarea id="description" name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
 
-                <label for="selling_price">Selling Price (₱)</label>
-                <input type="number" id="selling_price" name="selling_price" step="0.01" min="0.01" required>
-
-                <label for="description">Product Description</label>
-                <textarea id="description" name="description"></textarea>
-
-                <button type="submit" class="btn-submit" id="saveBtn">Save Product</button>
-            </form>
-        </div>
+            <button type="submit" class="btn-submit" id="saveBtn">Save Changes</button>
+        </form>
     </div>
 
     <button type="button" class="btn-floating btn-floating-camera" id="retakeBtn" title="Take a photo">
@@ -698,12 +549,16 @@ if (empty($_SESSION['csrf_token'])) {
     </button>
 
     <!-- ============================================================
-         ✅ SUCCESS MODAL
+         ✅ SUCCESS MODAL — loader then check
          ============================================================ -->
     <div class="success-overlay" id="successOverlay">
         <div class="success-card loading" id="successCard">
             <div class="success-icon-wrap">
+
+                <!-- Spinner (shown first) -->
                 <div class="success-spinner"></div>
+
+                <!-- Green check (fades in after) -->
                 <div class="success-check">
                     <svg viewBox="0 0 52 52">
                         <circle cx="26" cy="26" r="24" />
@@ -712,34 +567,41 @@ if (empty($_SESSION['csrf_token'])) {
                 </div>
             </div>
 
-            <div class="success-title" id="successTitle">Saving Product…</div>
-            <div class="success-message" id="successMessage">Please wait while we process your upload.</div>
+            <div class="success-title" id="successTitle">Saving Changes…</div>
+            <div class="success-message" id="successMessage">Please wait while we update the product.</div>
         </div>
     </div>
 
     <script>
-        var video = document.getElementById('camera');
-        var capturedPhoto = document.getElementById('capturedPhoto');
-        var captureBtn = document.getElementById('captureBtn');
-        var retakeBtn = document.getElementById('retakeBtn');
-        var uploadBtn = document.getElementById('uploadBtn');
-        var cancelUploadBtn = document.getElementById('cancelUploadBtn');
-        var cameraBox = document.getElementById('cameraBox');
-        var imageWrapper = document.getElementById('imageWrapper');
-        var imagePlaceholder = document.getElementById('imagePlaceholder');
-        var productImage = document.getElementById('productImage');
-        var fileInput = document.getElementById('productImageFile');
-        var base64Input = document.getElementById('product_image_base64');
-        var saveBtn = document.getElementById('saveBtn');
+        const video = document.getElementById('camera');
+        const capturedPhoto = document.getElementById('capturedPhoto');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const cancelUploadBtn = document.getElementById('cancelUploadBtn');
+        const cameraBox = document.getElementById('cameraBox');
+        const imageWrapper = document.getElementById('imageWrapper');
+        const imagePlaceholder = document.getElementById('imagePlaceholder');
+        const productImage = document.getElementById('productImage');
+        const fileInput = document.getElementById('productImageFile');
+        const base64Input = document.getElementById('product_image_base64');
+        const replaceImageInput = document.getElementById('replace_image');
+        const saveBtn = document.getElementById('saveBtn');
 
-        var successOverlay = document.getElementById('successOverlay');
-        var successCard = document.getElementById('successCard');
-        var successTitle = document.getElementById('successTitle');
-        var successMessage = document.getElementById('successMessage');
+        const successOverlay = document.getElementById('successOverlay');
+        const successCard    = document.getElementById('successCard');
+        const successTitle   = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
 
-        var stream = null;
-        var cameraActive = false;
+        const originalImageSrc = '<?php echo $imageUrl; ?>';
+        const originalImageExists = <?php echo $imageUrl ? 'true' : 'false'; ?>;
 
+        let stream = null;
+        let cameraActive = false;
+
+        // ============================================================
+        // SHOW / HIDE helpers
+        // ============================================================
         function showCancelButton() { cancelUploadBtn.classList.add('visible'); }
         function hideCancelButton() { cancelUploadBtn.classList.remove('visible'); }
 
@@ -755,6 +617,9 @@ if (empty($_SESSION['csrf_token'])) {
         function showPlaceholder() { imagePlaceholder.classList.add('visible'); }
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
+        // ============================================================
+        // VIEW STATES
+        // ============================================================
         function viewHasImage() {
             hideFloatingCamera();
             hideFloatingCapture();
@@ -779,6 +644,9 @@ if (empty($_SESSION['csrf_token'])) {
             hidePlaceholder();
         }
 
+        // ============================================================
+        // START BACK CAMERA
+        // ============================================================
         async function startCamera() {
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -807,38 +675,40 @@ if (empty($_SESSION['csrf_token'])) {
             } catch (err) {
                 console.error('Camera error:', err);
                 alert('Camera not available: ' + (err.message || err.name || 'Unknown error'));
-                viewNoImage();
+                if (originalImageExists) viewHasImage(); else viewNoImage();
             }
         }
 
         function stopCamera() {
             if (stream) {
-                stream.getTracks().forEach(function (t) { t.stop(); });
+                stream.getTracks().forEach(t => t.stop());
                 stream = null;
             }
             cameraActive = false;
             cameraBox.classList.remove('visible');
         }
 
-        retakeBtn.addEventListener('click', function () {
+        retakeBtn.addEventListener('click', () => {
             base64Input.value = '';
             fileInput.value = '';
+            replaceImageInput.value = '1';
             startCamera();
         });
 
-        captureBtn.addEventListener('click', function () {
+        captureBtn.addEventListener('click', () => {
             if (!stream) {
                 alert('Camera is not ready yet.');
                 return;
             }
 
-            var canvas = document.createElement('canvas');
+            const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
 
-            var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
             base64Input.value = dataUrl;
+            replaceImageInput.value = '1';
 
             capturedPhoto.src = dataUrl;
             capturedPhoto.style.display = 'block';
@@ -846,36 +716,39 @@ if (empty($_SESSION['csrf_token'])) {
 
             stopCamera();
             cameraBox.classList.add('visible');
-
             viewHasImage();
         });
 
-        uploadBtn.addEventListener('click', function () {
+        // ============================================================
+        // UPLOAD PHOTO
+        // ============================================================
+        uploadBtn.addEventListener('click', () => {
             fileInput.click();
         });
 
         fileInput.addEventListener('change', function () {
-            var file = fileInput.files[0];
+            const file = this.files[0];
             if (!file) return;
 
-            var allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (allowed.indexOf(file.type) === -1) {
+            const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowed.includes(file.type)) {
                 alert('Please choose a JPG, PNG, or WebP image.');
-                fileInput.value = '';
+                this.value = '';
                 return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
                 alert('Image is too large. Max 5MB.');
-                fileInput.value = '';
+                this.value = '';
                 return;
             }
 
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                var dataUrl = e.target.result;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
 
                 base64Input.value = dataUrl;
+                replaceImageInput.value = '1';
 
                 capturedPhoto.src = dataUrl;
                 capturedPhoto.style.display = 'block';
@@ -885,12 +758,19 @@ if (empty($_SESSION['csrf_token'])) {
                 imageWrapper.style.display = 'none';
                 viewHasImage();
             };
+            reader.onerror = () => {
+                alert('Failed to read the image file. Please try another.');
+            };
             reader.readAsDataURL(file);
         });
 
-        cancelUploadBtn.addEventListener('click', function () {
+        // ============================================================
+        // TRASH BUTTON
+        // ============================================================
+        cancelUploadBtn.addEventListener('click', () => {
             base64Input.value = '';
             fileInput.value = '';
+            replaceImageInput.value = '2';
 
             productImage.src = '';
             productImage.style.display = 'none';
@@ -905,39 +785,38 @@ if (empty($_SESSION['csrf_token'])) {
         // ============================================================
         // FORM SUBMIT
         // ============================================================
-        document.getElementById('productForm').addEventListener('submit', async function (e) {
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!base64Input.value) {
-                alert('Please capture or upload a product image first.');
+            const hasNewImage = base64Input.value !== '';
+            const isDeleting = replaceImageInput.value === '2';
+
+            if (!hasNewImage && !originalImageExists && !isDeleting) {
+                alert('Please capture or upload a product image.');
                 return;
             }
 
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
 
-            var formData = new FormData(e.target);
-            formData.delete('product_image');
-
-            console.log('CSRF token in form:', formData.get('csrf_token'));
+            const formData = new FormData(e.target);
 
             try {
-                var res = await fetch('../API/add_product.php', {
+                const res = await fetch('../API/transfer_product.php', {
                     method: 'POST',
-                    body: formData,
-                    credentials: 'same-origin'
+                    body: formData
                 });
 
-                var text = await res.text();
+                const text = await res.text();
                 console.log('HTTP status:', res.status);
                 console.log('Raw response:', text);
 
-                var data;
+                let data;
                 try {
                     data = JSON.parse(text);
                 } catch (jsonErr) {
                     saveBtn.disabled = false;
-                    saveBtn.textContent = 'Save Product';
+                    saveBtn.textContent = 'Save Changes';
                     alert(
                         'Server did not return JSON.\n\n' +
                         'HTTP status: ' + res.status + '\n\n' +
@@ -947,38 +826,47 @@ if (empty($_SESSION['csrf_token'])) {
                 }
 
                 if (data.success) {
+                    // ✅ Loader → check → redirect
                     showSuccessLoaderThenCheck(
                         data.redirect,
-                        'Upload Successful!',
-                        'Your new product has been added.'
+                        'Update Successful!',
+                        'Your product changes have been saved.'
                     );
                 } else {
                     saveBtn.disabled = false;
-                    saveBtn.textContent = 'Save Product';
+                    saveBtn.textContent = 'Save Changes';
                     alert(data.message);
                 }
             } catch (err) {
                 saveBtn.disabled = false;
-                saveBtn.textContent = 'Save Product';
+                saveBtn.textContent = 'Save Changes';
                 alert('Request failed: ' + err.message);
             }
         });
 
+        // ============================================================
+        // SUCCESS MODAL — loader → check → redirect
+        // ============================================================
         function showSuccessLoaderThenCheck(redirectUrl, doneTitle, doneMessage) {
+            // Reset to loading state
             successCard.classList.remove('done');
             successCard.classList.add('loading');
-            successTitle.textContent = 'Saving Product…';
-            successMessage.textContent = 'Please wait while we process your upload.';
+            successTitle.textContent = 'Saving Changes…';
+            successMessage.textContent = 'Please wait while we update the product.';
 
+            // Show the overlay
             successOverlay.classList.add('visible');
 
+            // Phase 1: spinner runs for 1 second
             setTimeout(function () {
+                // Phase 2: switch to green check
                 successCard.classList.remove('loading');
                 successCard.classList.add('done');
 
-                successTitle.textContent = doneTitle || 'Upload Successful!';
-                successMessage.textContent = doneMessage || 'Your new product has been added.';
+                successTitle.textContent = doneTitle || 'Update Successful!';
+                successMessage.textContent = doneMessage || 'Your product changes have been saved.';
 
+                // Phase 3: after the check draws, redirect
                 setTimeout(function () {
                     if (redirectUrl) {
                         window.location.href = redirectUrl;
@@ -987,8 +875,12 @@ if (empty($_SESSION['csrf_token'])) {
             }, 1000);
         }
 
-        window.addEventListener('load', function () {
-            viewNoImage();
+        // ============================================================
+        // ON PAGE LOAD
+        // ============================================================
+        window.addEventListener('load', () => {
+            if (originalImageExists) viewHasImage();
+            else viewNoImage();
         });
     </script>
 </body>

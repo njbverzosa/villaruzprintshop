@@ -1,5 +1,5 @@
 <?php
-// web/paid_folder.php
+// investors/paid_folder.php
 
 session_start();
 
@@ -47,87 +47,98 @@ if (!$userData) {
 
 $user = $userData;
 
-
-
-// Fetch distinct delivery_y_m values from for_deliveries table where status is PAID
-$stmt = $pdo->prepare("SELECT delivery_m_y FROM for_deliveries WHERE delivery_m_y IS NOT NULL AND status = 'PAID' ORDER BY id DESC");
-$stmt->execute();
+// ==============================================
+// FETCH DISTINCT MONTH FROM investors_sales.date_time_sold
+// Scoped by acc_number
+// ==============================================
+$stmt = $pdo->prepare("
+    SELECT DISTINCT
+        SUBSTRING_INDEX(
+            SUBSTRING_INDEX(date_time_sold, ' ', 2),
+            ' ',
+            -1
+        ) AS month_only
+    FROM investors_sales
+    WHERE status = 'PAID'
+      AND acc_number = :acc_number
+      AND date_time_sold IS NOT NULL
+      AND date_time_sold != ''
+    ORDER BY date_time_sold DESC
+");
+$stmt->execute([':acc_number' => $accNumber]);
 $distinctMonths = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-// Prepare the deliveries by month array
+// Build the folder array keyed by month name
 $deliveriesByMonth = [];
 
-foreach ($distinctMonths as $monthYear) {
-    $parts = explode(' ', $monthYear);
-    $monthOnly = $parts[0] ?? $monthYear;
-    $yearOnly = $parts[1] ?? '';
+foreach ($distinctMonths as $monthOnly) {
+    if (empty($monthOnly)) continue;
 
-    $deliveriesByMonth[$monthYear] = [
+    $deliveriesByMonth[$monthOnly] = [
         'deliveries' => [],
-        'customers' => [],
-        'month' => $monthOnly,
-        'year' => $yearOnly,
-        'raw_value' => $monthYear
+        'customers'  => [],
+        'month'      => $monthOnly,
+        'raw_value'  => $monthOnly,
     ];
 }
 
 // ==============================================
 // FETCH SALES DATA FOR MONTHLY REPORT
+// Scoped by acc_number
 // ==============================================
-
-// Get all available years from paid deliveries
 $stmt = $pdo->prepare("
-    SELECT DISTINCT 
-        CASE 
-            WHEN delivery_m_y LIKE '%2028' THEN '2028'
-            WHEN delivery_m_y LIKE '%2027' THEN '2027'
-            WHEN delivery_m_y LIKE '%2026' THEN '2026'
-            WHEN delivery_m_y LIKE '%2025' THEN '2025'
-            WHEN delivery_m_y LIKE '%2024' THEN '2024'
-            ELSE SUBSTRING(delivery_m_y, -4)
-        END as year
-    FROM for_deliveries 
-    WHERE status = 'PAID' AND delivery_m_y IS NOT NULL
+    SELECT DISTINCT
+        CASE
+            WHEN date_time_sold LIKE '%2028%' THEN '2028'
+            WHEN date_time_sold LIKE '%2027%' THEN '2027'
+            WHEN date_time_sold LIKE '%2026%' THEN '2026'
+            WHEN date_time_sold LIKE '%2025%' THEN '2025'
+            WHEN date_time_sold LIKE '%2024%' THEN '2024'
+            ELSE SUBSTRING_INDEX(SUBSTRING_INDEX(date_time_sold, ' ', 4), ' ', -1)
+        END AS year
+    FROM investors_sales
+    WHERE status = 'PAID'
+      AND acc_number = :acc_number
+      AND date_time_sold IS NOT NULL
+      AND date_time_sold != ''
     ORDER BY year DESC
 ");
-$stmt->execute();
+$stmt->execute([':acc_number' => $accNumber]);
 $availableYears = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Get sales data grouped by month for each year
 $salesData = [];
 foreach ($availableYears as $year) {
     $stmt = $pdo->prepare("
-        SELECT 
-            delivery_m_y,
-            SUM(total_amount) as monthly_sales
-        FROM (
-            SELECT 
-                fd.delivery_m_y,
-                osh.total_amount
-            FROM for_deliveries fd
-            JOIN order_status_history osh ON fd.delivery_number = osh.delivery_number
-            WHERE fd.status = 'PAID' 
-                AND fd.delivery_m_y LIKE :year_pattern
-        ) as sales
-        GROUP BY delivery_m_y
-        ORDER BY 
-            CASE 
-                WHEN delivery_m_y LIKE 'January%' THEN 1
-                WHEN delivery_m_y LIKE 'February%' THEN 2
-                WHEN delivery_m_y LIKE 'March%' THEN 3
-                WHEN delivery_m_y LIKE 'April%' THEN 4
-                WHEN delivery_m_y LIKE 'May%' THEN 5
-                WHEN delivery_m_y LIKE 'June%' THEN 6
-                WHEN delivery_m_y LIKE 'July%' THEN 7
-                WHEN delivery_m_y LIKE 'August%' THEN 8
-                WHEN delivery_m_y LIKE 'September%' THEN 9
-                WHEN delivery_m_y LIKE 'October%' THEN 10
-                WHEN delivery_m_y LIKE 'November%' THEN 11
-                WHEN delivery_m_y LIKE 'December%' THEN 12
+        SELECT
+            SUBSTRING_INDEX(SUBSTRING_INDEX(date_time_sold, ' ', 2), ' ', -1) AS month_name,
+            SUM(total_amount) AS monthly_sales
+        FROM investors_sales
+        WHERE status = 'PAID'
+          AND acc_number = :acc_number
+          AND date_time_sold LIKE :year_pattern
+        GROUP BY month_name
+        ORDER BY
+            CASE month_name
+                WHEN 'January'   THEN 1
+                WHEN 'February'  THEN 2
+                WHEN 'March'     THEN 3
+                WHEN 'April'     THEN 4
+                WHEN 'May'       THEN 5
+                WHEN 'June'      THEN 6
+                WHEN 'July'      THEN 7
+                WHEN 'August'    THEN 8
+                WHEN 'September' THEN 9
+                WHEN 'October'   THEN 10
+                WHEN 'November'  THEN 11
+                WHEN 'December'  THEN 12
                 ELSE 13
             END
     ");
-    $stmt->execute([':year_pattern' => "%$year"]);
+    $stmt->execute([
+        ':year_pattern' => "%$year%",
+        ':acc_number'   => $accNumber,
+    ]);
     $salesData[$year] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
@@ -185,7 +196,6 @@ foreach ($availableYears as $year) {
             position: relative;
         }
 
-        /* Mobile: sidebar hidden by default */
         @media (max-width: 768px) {
             .sidebar-wrapper {
                 transform: translateX(-100%);
@@ -196,7 +206,6 @@ foreach ($availableYears as $year) {
             }
         }
 
-        /* Desktop: sidebar always visible */
         @media (min-width: 769px) {
             .sidebar-wrapper {
                 transform: translateX(0) !important;
@@ -220,7 +229,6 @@ foreach ($availableYears as $year) {
             }
         }
 
-        /* Mobile overlay */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -237,7 +245,6 @@ foreach ($availableYears as $year) {
             display: block;
         }
 
-        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -266,7 +273,6 @@ foreach ($availableYears as $year) {
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -364,8 +370,6 @@ foreach ($availableYears as $year) {
             padding: 20px;
             overflow-y: auto;
         }
-
-        
 
         .folders-grid {
             display: grid;
@@ -519,7 +523,6 @@ foreach ($availableYears as $year) {
             border-color: #3a6ea5;
         }
 
-        /* Simple list format: Jan. | 20,000 */
         .sales-list {
             width: 100%;
         }
@@ -679,22 +682,17 @@ foreach ($availableYears as $year) {
 
 <body>
     <div class="app-wrapper">
-        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <?php
-                include 'sidebar.php';
-                ?>
+                <?php include 'sidebar.php'; ?>
             </div>
         </div>
 
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="header-left">
-                    <!-- Burger Button (Mobile Only) -->
                     <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
@@ -706,14 +704,15 @@ foreach ($availableYears as $year) {
 
             <div class="folders-grid">
                 <?php if (!empty($deliveriesByMonth)): ?>
-                    <?php foreach ($deliveriesByMonth as $monthYear => $data): ?>
-                        <div class="folder-item" onclick="viewMonth('<?= htmlspecialchars($monthYear) ?>')">
+                    <?php foreach ($deliveriesByMonth as $monthName => $data): ?>
+                        <div class="folder-item" onclick="viewMonth('<?= htmlspecialchars($monthName, ENT_QUOTES) ?>')">
                             <div class="folder-icon"><i class="fas fa-folder"></i></div>
-                            <div class="folder-name"><?= htmlspecialchars($monthYear) ?></div>
+                            <div class="folder-name"><?= htmlspecialchars($monthName) ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
-                <!-- Simple Sales Report Card -->
+
+                <!-- Sales Report Card -->
                 <div class="folder-item" onclick="openSalesModal()">
                     <div class="folder-icon">
                         <i class="fas fa-chart-bar"></i>
@@ -724,7 +723,7 @@ foreach ($availableYears as $year) {
         </main>
     </div>
 
-    <!-- SIMPLE MODAL: Monthly Sales in format "Jan. | 20,000" -->
+    <!-- SIMPLE MODAL: Monthly Sales -->
     <div id="salesModal" class="sales-modal-overlay">
         <div class="sales-modal">
             <div class="sales-modal-header">
@@ -752,9 +751,7 @@ foreach ($availableYears as $year) {
         </div>
     </div>
 
-    <?php
-    include '../footer.php';
-    ?>
+    <?php include '../footer.php'; ?>
 
     <script>
         // ========== SIDEBAR TOGGLE (Mobile Only) ==========
@@ -779,11 +776,8 @@ foreach ($availableYears as $year) {
         }
 
         function toggleSidebar() {
-            if (isSidebarOpen) {
-                closeSidebar();
-            } else {
-                openSidebar();
-            }
+            if (isSidebarOpen) closeSidebar();
+            else openSidebar();
         }
 
         if (burgerBtn) {
@@ -804,11 +798,9 @@ foreach ($availableYears as $year) {
             menuOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
-                    // Don't close if it's a dropdown toggle
                     if (!this.closest('.nav-dropdown-toggle')) {
                         closeSidebar();
                     }
@@ -816,7 +808,6 @@ foreach ($availableYears as $year) {
             });
         });
 
-        // ========== DROPDOWN TOGGLE ==========
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
             const arrowId = dropdownId.replace('Dropdown', 'Arrow');
@@ -828,31 +819,25 @@ foreach ($availableYears as $year) {
             }
         }
 
-        // ========== BURGER VISIBILITY ON RESIZE ==========
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
-                // Desktop: close sidebar if open and hide overlay
-                if (isSidebarOpen) {
-                    closeSidebar();
-                }
+                if (isSidebarOpen) closeSidebar();
                 sidebarWrapper.classList.remove('open');
                 menuOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
         });
 
-        // ========== EXISTING FUNCTIONS ==========
-        // PHP data passed to JavaScript
+        // ========== DATA FROM PHP ==========
         const salesData = <?php echo json_encode($salesData); ?>;
         const availableYears = <?php echo json_encode($availableYears); ?>;
+        const currentAccNumber = '<?= htmlspecialchars($accNumber, ENT_QUOTES) ?>';
         let currentSelectedYear = availableYears.length > 0 ? availableYears[0] : null;
 
-        // Format number with commas
         function formatNumber(amount) {
             return parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Get short month name with dot (Jan., Feb., Mar., etc.)
         function getShortMonthWithDot(fullMonth) {
             const months = {
                 'January': 'Jan.', 'February': 'Feb.', 'March': 'Mar.', 'April': 'Apr.',
@@ -862,7 +847,6 @@ foreach ($availableYears as $year) {
             return months[fullMonth] || fullMonth.substring(0, 3) + '.';
         }
 
-        // Render the sales list in format: Jan. | 20,000
         function renderSalesList(year) {
             const container = document.getElementById('salesListContainer');
             if (!container) return;
@@ -874,10 +858,9 @@ foreach ($availableYears as $year) {
                 'July', 'August', 'September', 'October', 'November', 'December'
             ];
 
-            // Create map of month -> sales
             const salesMap = {};
             yearData.forEach(item => {
-                const monthName = item.delivery_m_y.split(' ')[0];
+                const monthName = item.month_name;
                 salesMap[monthName] = parseFloat(item.monthly_sales) || 0;
             });
 
@@ -891,11 +874,11 @@ foreach ($availableYears as $year) {
                 const shortMonth = getShortMonthWithDot(fullMonth);
 
                 listHtml += `
-                <div class="sales-row">
-                    <span class="month-name">${shortMonth}</span>
-                    <span class="amount-value">${formatNumber(amount)}</span>
-                </div>
-            `;
+                    <div class="sales-row">
+                        <span class="month-name">${shortMonth}</span>
+                        <span class="amount-value">${formatNumber(amount)}</span>
+                    </div>
+                `;
             }
 
             listHtml += `
@@ -903,13 +886,11 @@ foreach ($availableYears as $year) {
                     <span class="total-label">TOTAL (${year})</span>
                     <span class="total-amount">${formatNumber(totalSales)}</span>
                 </div>
-            </div>
-        `;
+            </div>`;
 
             container.innerHTML = listHtml;
         }
 
-        // Modal functions
         const salesModal = document.getElementById('salesModal');
 
         function openSalesModal() {
@@ -922,11 +903,10 @@ foreach ($availableYears as $year) {
                 renderSalesList(currentSelectedYear);
             } else {
                 document.getElementById('salesListContainer').innerHTML = `
-                <div class="no-data-simple">
-                    <i class="fas fa-chart-simple"></i>
-                    <p>No sales data available.</p>
-                </div>
-            `;
+                    <div class="no-data-simple">
+                        <i class="fas fa-chart-simple"></i>
+                        <p>No sales data available.</p>
+                    </div>`;
             }
             updateActiveYearButton(currentSelectedYear);
         }
@@ -938,11 +918,8 @@ foreach ($availableYears as $year) {
         function updateActiveYearButton(year) {
             document.querySelectorAll('#yearSelectorSimple .year-btn-simple').forEach(btn => {
                 const btnYear = btn.getAttribute('data-year');
-                if (btnYear == year) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
+                if (btnYear == year) btn.classList.add('active');
+                else btn.classList.remove('active');
             });
         }
 
@@ -952,7 +929,6 @@ foreach ($availableYears as $year) {
             updateActiveYearButton(year);
         }
 
-        // Bind year buttons
         function bindYearButtons() {
             const btns = document.querySelectorAll('#yearSelectorSimple .year-btn-simple');
             btns.forEach(btn => {
@@ -966,25 +942,23 @@ foreach ($availableYears as $year) {
             if (year) switchYear(year);
         }
 
-        // Close modal when clicking outside
         if (salesModal) {
             salesModal.addEventListener('click', function (e) {
                 if (e.target === salesModal) closeSalesModal();
             });
         }
 
-        // Close on Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && salesModal && salesModal.style.display === 'flex') {
                 closeSalesModal();
             }
         });
 
-        function viewMonth(monthYear) {
-            window.location.href = 'paid_folder_with.php?month=' + encodeURIComponent(monthYear);
+        function viewMonth(monthName) {
+            window.location.href = 'paid_folder_with.php?month=' + encodeURIComponent(monthName) +
+                '&acc_number=' + encodeURIComponent(currentAccNumber);
         }
 
-        // Initialize on DOM ready
         document.addEventListener('DOMContentLoaded', function () {
             bindYearButtons();
             if (currentSelectedYear) {
@@ -995,11 +969,10 @@ foreach ($availableYears as $year) {
                 const container = document.getElementById('salesListContainer');
                 if (container) {
                     container.innerHTML = `
-                    <div class="no-data-simple">
-                        <i class="fas fa-folder-open"></i>
-                        <p>No paid sales data available.</p>
-                    </div>
-                `;
+                        <div class="no-data-simple">
+                            <i class="fas fa-folder-open"></i>
+                            <p>No paid sales data available.</p>
+                        </div>`;
                 }
             }
         });

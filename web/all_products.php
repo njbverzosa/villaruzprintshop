@@ -1050,7 +1050,7 @@ foreach ($allProducts as $product) {
                             </a>
 
                             <div class="product-image-wrapper">
-                                <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                                <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
                                     onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')"
