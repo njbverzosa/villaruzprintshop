@@ -1,5 +1,5 @@
 <?php
-//public/download_app.php
+//investors/download_app.php
 session_start();
 
 require_once __DIR__ . '/../DB_Conn/config.php';

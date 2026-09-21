@@ -850,18 +850,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
                                     $isAccountActive = isset($customer['status']) && $customer['status'] == 1;
-
-                                    // Business permit
-                                    $businessPermit = $customer['business_permit'] ?? '';
-                                    $hasPermit = !empty($businessPermit);
-                                    $permitPath = $hasPermit ? '../Business_Docs/' . $businessPermit : '';
-                                    $permitAbsolutePath = $hasPermit ? __DIR__ . '/../Business_Docs/' . $businessPermit : '';
-                                    $permitExists = $hasPermit && file_exists($permitAbsolutePath);
                                 ?>
                                     <tr data-id="<?php echo $customer['id']; ?>">
                                         <td>
                                             <?php if ($permitExists): ?>
-                                                <img src="../Business_Docs/<?php echo htmlspecialchars($businessPermit); ?>"
+                                                <img src="../Business_Docs/<?php echo htmlspecialchars($customer['product_image'] ?? ''); ?>"
                                                     alt="Permit of <?php echo htmlspecialchars($customer['f_name'] ?? 'Customer'); ?>"
                                                     class="profile-thumb"
                                                     onclick="openLandmarkModal('../Business_Docs/<?php echo htmlspecialchars($businessPermit); ?>', '<?php echo htmlspecialchars($customer['f_name'] ?? 'Customer'); ?> - Business Permit')"
