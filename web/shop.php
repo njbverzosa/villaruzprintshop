@@ -355,10 +355,13 @@ $allProducts = $stmt->fetchAll();
 
         /* ✅ Business name under last_restocked */
         .business-name {
-            font-size: 15px;
-            color: black;
+            font-size: 11px;
+            color: #0f172a;
+            font-weight: 600;
             margin-top: 2px;
             padding: 3px 8px;
+            background: #eff6ff;
+            border-radius: 5px;
             display: inline-block;
             max-width: 100%;
             overflow: hidden;
