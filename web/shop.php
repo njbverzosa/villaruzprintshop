@@ -159,6 +159,7 @@ $allProducts = $stmt->fetchAll();
             margin-bottom: 10px;
             font-weight: bold;
         }
+
         /* ========== BURGER BUTTON (Mobile Only) ========== */
         .burger-btn {
             background: none;
@@ -304,7 +305,6 @@ $allProducts = $stmt->fetchAll();
             display: block;
         }
 
-
         /* Update (edit) button — top-LEFT corner of the IMAGE */
         .edit-btn {
             position: absolute;
@@ -323,7 +323,6 @@ $allProducts = $stmt->fetchAll();
             z-index: 5;
             font-size: 13px;
         }
-
 
         .edit-btn i {
             pointer-events: none;
@@ -348,7 +347,6 @@ $allProducts = $stmt->fetchAll();
             font-size: 13px;
         }
 
-
         .delete-btn i {
             pointer-events: none;
         }
@@ -368,7 +366,6 @@ $allProducts = $stmt->fetchAll();
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-
 
         /* ========== SEARCH & ADD PRODUCT ========== */
         .shop-controls {
@@ -488,17 +485,20 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
-
-
+        /* ✅ Product title — JS will adjust font-size based on name length */
         .product-title {
             font-size: 15px;
             font-weight: 700;
             margin-bottom: 5px;
             color: #0f172a;
             line-height: 1.3;
+            width: 100%;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
         }
 
-        /* ✅ Price + Unit aligned in a grid row */
+        /* ✅ Price + Unit aligned in a grid row — JS adjusts font-size */
         .price-unit-grid {
             display: grid;
             grid-template-columns: auto auto;
@@ -507,6 +507,7 @@ $allProducts = $stmt->fetchAll();
             column-gap: 6px;
             margin-bottom: 12px;
             width: 100%;
+            min-width: 0;
         }
 
         .product-price {
@@ -515,6 +516,9 @@ $allProducts = $stmt->fetchAll();
             color: #3b82f6;
             line-height: 1.2;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
         .product-unit {
@@ -523,6 +527,9 @@ $allProducts = $stmt->fetchAll();
             font-weight: 500;
             line-height: 1.2;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
         .card-qty-control {
@@ -1152,7 +1159,7 @@ $allProducts = $stmt->fetchAll();
                             </div>
                             <!-- ✅ Business name — now PER PRODUCT (joined from investors) -->
                             <div class="business-name">
-                               <?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
+                                <?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -1502,6 +1509,76 @@ $allProducts = $stmt->fetchAll();
                     this.dataset.description || ''
                 );
             });
+        });
+
+        // ============================================================
+        // ✅ AUTO-SHRINK LONG PRODUCT NAMES + PRICES
+        // ============================================================
+        function adjustProductTextSizes() {
+            document.querySelectorAll('.product-card').forEach(card => {
+                const title = card.querySelector('.product-title');
+                const price = card.querySelector('.product-price');
+                const unit  = card.querySelector('.product-unit');
+
+                if (!title) return;
+
+                const nameLen = (card.dataset.fullname || title.textContent || '').trim().length;
+
+                // Reset first
+                title.style.fontSize = '';
+                if (price) price.style.fontSize = '';
+                if (unit)  unit.style.fontSize  = '';
+
+                // Tiered shrinking based on character count
+                let titleSize = 15;   // default
+                let priceSize = 16;
+                let unitSize  = 12;
+
+                if (nameLen > 10 && nameLen <= 16) {
+                    titleSize = 14;
+                    priceSize = 15;
+                    unitSize  = 12;
+                } else if (nameLen > 16 && nameLen <= 22) {
+                    titleSize = 13;
+                    priceSize = 14;
+                    unitSize  = 11;
+                } else if (nameLen > 22 && nameLen <= 30) {
+                    titleSize = 12;
+                    priceSize = 13;
+                    unitSize  = 11;
+                } else if (nameLen > 30 && nameLen <= 40) {
+                    titleSize = 11;
+                    priceSize = 12;
+                    unitSize  = 10;
+                } else if (nameLen > 40) {
+                    titleSize = 10;
+                    priceSize = 11;
+                    unitSize  = 10;
+                }
+
+                title.style.fontSize = titleSize + 'px';
+                if (price) price.style.fontSize = priceSize + 'px';
+                if (unit)  unit.style.fontSize  = unitSize  + 'px';
+            });
+        }
+
+        // Run on page load
+        adjustProductTextSizes();
+
+        // Re-run when the search filter changes
+        if (typeof filterProducts === 'function') {
+            const _originalFilter = filterProducts;
+            filterProducts = function () {
+                _originalFilter();
+                adjustProductTextSizes();
+            };
+        }
+
+        // Re-run on window resize (responsive)
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(adjustProductTextSizes, 150);
         });
 
         filterProducts();
