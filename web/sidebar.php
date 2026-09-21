@@ -470,7 +470,7 @@
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle" onclick="toggleDropdown('dbManagerDropdown')">
                 <i class="fas fa-database"></i>
-                <span>DB Manager</span>
+                <span>System Manager</span>
                 <i class="fas fa-chevron-down dropdown-arrow <?php echo $dbManagerActive ? 'rotated' : ''; ?>"
                     id="dbManagerArrow"></i>
             </div>
