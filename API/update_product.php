@@ -49,7 +49,7 @@ if ($userRole === 'Admin') {
     }
     $targetTable   = 'merchandise_inventory';
     $uploadFolder  = 'Products';
-    $redirectUrl   = '../web/all_products.php';
+    $redirectUrl   = '../web/shop.php';
     $scopeByAccNum = false;
 
 } elseif ($userRole === 'Investor') {

@@ -101,9 +101,9 @@ $biometricPageMap = [
 /**
  * ADMIN redirect rules:
  *   app + not enrolled    → web/biometric.php
- *   app + enrolled        → web/all_products.php
+ *   app + enrolled        → web/shop.php
  *   mobile web            → download_app.php (root-level)
- *   desktop web           → web/all_products.php
+ *   desktop web           → web/shop.php
  */
 function getAdminRedirect($isInApp, $isMobileBrowser, $user)
 {
@@ -117,9 +117,9 @@ function getAdminRedirect($isInApp, $isMobileBrowser, $user)
         return $biometricPageMap['Admin'];
     }
 
-    if ($isInApp)         return 'web/all_products.php';
-    if ($isMobileBrowser) return 'web/all_products.php';
-    return 'web/all_products.php';
+    if ($isInApp)         return 'web/shop.php';
+    if ($isMobileBrowser) return 'web/shop.php';
+    return 'web/shop.php';
 }
 
 /**
