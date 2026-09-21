@@ -561,10 +561,10 @@ $dateLabel    = $selectedDay . ' ' . $selectedMonth;
                             <a href="paid_folder.php"><i class="fas fa-folder-open"></i> Sales of Months <i
                                     class="fas fa-chevron-right"></i></a>
                             <a href="paid_folder_with.php?month=<?= urlencode($selectedMonth) ?>">
-                                <i class="fas fa-folder-open"></i> <?= htmlspecialchars($selectedMonth) ?>
+                                <i class="fas fa-folder-open"></i> Sales of  <?= htmlspecialchars($selectedMonth) ?>
                             </a>
                             <i class="fas fa-chevron-right"></i>
-                            <i class="fas fa-folder-open"></i> <?= htmlspecialchars($dateLabel) ?>
+                            <i class="fas fa-folder-open"></i> Sales of  <?= htmlspecialchars($dateLabel) ?>
                         </h4>
                     </div>
                 </div>
