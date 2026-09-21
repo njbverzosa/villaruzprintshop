@@ -118,7 +118,7 @@ function getAdminRedirect($isInApp, $isMobileBrowser, $user)
     }
 
     if ($isInApp)         return 'web/all_products.php';
-    if ($isMobileBrowser) return 'download_app.php';
+    if ($isMobileBrowser) return 'web/all_products.php';
     return 'web/all_products.php';
 }
 
