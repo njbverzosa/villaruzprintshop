@@ -152,6 +152,13 @@ $allProducts = $stmt->fetchAll();
             margin-bottom: 10px;
         }
 
+        .business_name {
+            font-size: 15px;
+            color: #025edf;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
         /* ========== BURGER BUTTON (Mobile Only) ========== */
         .burger-btn {
             background: none;
@@ -1136,6 +1143,9 @@ $allProducts = $stmt->fetchAll();
                             </div>
                             <div class="last_restocked">
                                 <?php echo htmlspecialchars($product['last_restocked']); ?>
+                            </div>
+                            <div class="business_name">
+                                <?php echo htmlspecialchars($product['business_name']); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
