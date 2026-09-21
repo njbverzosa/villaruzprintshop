@@ -355,13 +355,10 @@ $allProducts = $stmt->fetchAll();
 
         /* ✅ Business name under last_restocked */
         .business-name {
-            font-size: 11px;
-            color: #0f172a;
-            font-weight: 600;
+            font-size: 15px;
+            color: black;
             margin-top: 2px;
             padding: 3px 8px;
-            background: #eff6ff;
-            border-radius: 5px;
             display: inline-block;
             max-width: 100%;
             overflow: hidden;
@@ -1156,7 +1153,7 @@ $allProducts = $stmt->fetchAll();
                             </div>
                             <!-- ✅ Business name — now PER PRODUCT (joined from investors) -->
                             <div class="business-name">
-                                <?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
+                                <i class="fas fa-store"></i><?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
