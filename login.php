@@ -1190,7 +1190,7 @@ if (isset($_SESSION['exit_message'])) {
                 </form>
                 <div class="auth-footer">
                     Download the <a
-                        href="https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk">SofiaApp</a>
+                        href="https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia.apk">Sofia</a>
                     App
                 </div>
             </div>

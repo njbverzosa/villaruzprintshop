@@ -294,7 +294,7 @@ include 'app_version.php';
         <div class='app-header'>
             <a href="closed" class="skip-link">Close</a>
             <div class='app-icon'><img src="logo/ic_launcher.png" alt="Sofia App Logo"></div>
-            <div class='app-title'>SofiaApp</div>
+            <div class='app-title'>Sofia</div>
 
             <div class='app-recommended'>Mobile browser access is no longer available. Please download the SofiaApp app.
             </div>
@@ -341,9 +341,9 @@ include 'app_version.php';
             </ul>
 
             <div class='action-buttons'>
-                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
+                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia.apk'
                     class='btn btn-primary'>Download Sofia App</a>
-                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk'
+                <a href='https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia.apk'
                     class='btn btn-outline'>Re-Install App</a>
             </div>
 
