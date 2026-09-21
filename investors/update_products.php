@@ -69,8 +69,8 @@ $imageUrl = '';
 $imageExists = false;
 
 if (!empty($product['product_image'])) {
-    $imageUrl = '../Products/' . htmlspecialchars($product['product_image']);
-    $absoluteImagePath = dirname(__DIR__) . '/Products/' . $product['product_image'];
+    $imageUrl = '../Inv_Products/' . htmlspecialchars($product['product_image']);
+    $absoluteImagePath = dirname(__DIR__) . '/Inv_Products/' . $product['product_image'];
     $imageExists = file_exists($absoluteImagePath);
 }
 ?>
