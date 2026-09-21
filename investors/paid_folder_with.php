@@ -729,7 +729,7 @@ foreach ($allSales as $sale) {
                             <a href="paid_folder.php"><i class="fas fa-folder-open"></i> Sales of Months <i
                                     class="fas fa-chevron-right"></i></a>
                             <?php if ($selectedMonth): ?>
-                                <i class="fas fa-folder-open"></i>
+                                <i class="fas fa-folder-open"></i> Sales of 
                                 <?= htmlspecialchars($selectedMonth) ?>
                             <?php endif; ?>
                         </h4>
