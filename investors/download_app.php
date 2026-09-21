@@ -2,15 +2,12 @@
 //public/download_app.php
 session_start();
 
-// ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
-// ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
-include __DIR__ . '/../app_version.php';
 
-// ==============================================
-// 2. CHECK LOGIN STATUS
-// ==============================================
+if (isset($userData['f_name']) && !isset($_SESSION['user_name'])) {
+    $_SESSION['user_name'] = $userData['f_name'];
+}
+
 function isLoggedIn()
 {
     return isset($_SESSION['user_role']) &&
@@ -18,24 +15,25 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
     exit;
 }
 
-// ==============================================
-// 3. GET USER DATA FROM SESSION
-// ==============================================
 $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database - ADDED vip column
 $userData = null;
-if ($userRole === 'Customer') {
-    $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, vip FROM customers WHERE id = ?");
+
+if ($userRole === 'Investor') {
+    $stmt = $pdo->prepare("
+        SELECT id, acc_number, f_name, email, phone_number, user_name,
+               business_name, business_permit, profile
+        FROM investors
+        WHERE id = ?
+    ");
     $stmt->execute([$userId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -46,22 +44,7 @@ if (!$userData) {
     exit;
 }
 
-// ==============================================
-// 4. UPDATE ONLINE TIME AFTER USER IS DEFINED
-// ==============================================
-date_default_timezone_set('Asia/Manila');
-$currentTime = date('M j, g:i A'); // e.g., Aug 31, 2:30 PM
-
-if ($userRole === 'Customer') {
-    $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-    $updateStmt->execute([$currentTime, $userData['id']]);
-}
-
 $user = $userData;
-
-$updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?");
-$updateStmt->execute([$currentTime, $user['id']]);
-
 
 include 'app_version.php';
 
