@@ -1085,6 +1085,17 @@ foreach ($displayTables as $table) {
                                 <?php endif; ?>
                             </form>
                         </div>
+                        <div class="table-actions">
+                            <button class="btn-sm btn-primary" onclick="addNewRow()">
+                                <i class="fas fa-plus"></i> Add Row
+                            </button>
+                            <button class="btn-sm btn-outline" onclick="copyTableData()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                            <button class="btn-sm btn-outline" onclick="exportToCSV()">
+                                <i class="fas fa-file-csv"></i> Export CSV
+                            </button>
+                        </div>
                     </div>
 
                     <!-- TABLE WRAPPER - ONLY THIS IS SCROLLABLE -->
