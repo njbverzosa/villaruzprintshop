@@ -488,11 +488,7 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
-        .product-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-        }
+
 
         .product-title {
             font-size: 15px;
@@ -1156,7 +1152,7 @@ $allProducts = $stmt->fetchAll();
                             </div>
                             <!-- ✅ Business name — now PER PRODUCT (joined from investors) -->
                             <div class="business-name">
-                                <i class="fas fa-store"></i><?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
+                               <?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
