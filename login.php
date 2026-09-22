@@ -31,7 +31,6 @@ function isMobileBrowser($userAgent)
 
 $isMobileBrowser = isMobileBrowser($userAgent) && !$isInApp;
 
-// ==============================================
 // ✅ VERSION MATCH (in-app only)
 // ==============================================
 $installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version'] ?? '');
