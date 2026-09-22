@@ -1,12 +1,10 @@
 <?php
 // login.php – desktop + mobile + in-app flows
-// ✅ Role access rules:
-//      Admin    → desktop web ✅ | mobile web ✅ | app ✅
-//      Investor → desktop web ✅ | mobile web ➡️ download | app ✅
-//      Customer → desktop web ✅ | mobile web ➡️ download | app ✅
+// ✅ 3 roles with per-role biometric pages:
+//      Admin    → web/biometric.php
+//      Investor → investors/biometric.php
+//      Customer → public/biometric.php
 // ✅ Biometric gate fires only when biometric_enrolled = 0 for that acc_number
-// ✅ online_time stored as VARCHAR → "Sep 22, 3:42 PM"
-// ✅ login_type updated for ALL roles → 'web' | 'app'
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -34,14 +32,6 @@ function isMobileBrowser($userAgent)
 $isMobileBrowser = isMobileBrowser($userAgent) && !$isInApp;
 
 // ==============================================
-// ✅ LOGIN TYPE RESOLVER
-//   app                → 'app'   (in-app WebView)
-//   desktop browser    → 'web'
-//   mobile browser     → 'web'   (still web)
-// ==============================================
-$loginType = $isInApp ? 'app' : 'web';
-
-// ==============================================
 // ✅ VERSION MATCH (in-app only)
 // ==============================================
 $installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version'] ?? '');
@@ -58,6 +48,8 @@ if ($isInApp) {
 } else {
     $appVersionMatch = false;
 }
+
+$loginType = $isInApp ? 'app' : 'web';
 
 $needsUpdate = version_compare(
     preg_replace('/[^0-9.]/', '', $latestVersion),
@@ -103,69 +95,6 @@ $biometricPageMap = [
 ];
 
 // ==============================================
-// ✅ TABLE MAP (shared)
-// ==============================================
-$tableMap = [
-    'Admin'    => 'admins',
-    'Investor' => 'investors',
-    'Customer' => 'customers'
-];
-
-// ==============================================
-// ✅ ONLINE TIME + LOGIN TYPE HELPERS
-// ==============================================
-/**
- * Update online_time for the given user.
- * Column is VARCHAR(32) — stores "Sep 22, 3:42 PM" directly.
- */
-function updateOnlineTime($pdo, $userType, $userId)
-{
-    global $tableMap;
-
-    $table = $tableMap[$userType] ?? null;
-    if (!$table) {
-        error_log("updateOnlineTime: unknown user type '{$userType}'");
-        return;
-    }
-
-    date_default_timezone_set('Asia/Manila');
-    $formatted = date('M j, g:i A');   // → "Sep 22, 3:42 PM"
-
-    try {
-        $stmt = $pdo->prepare("UPDATE `$table` SET online_time = ? WHERE id = ?");
-        $stmt->execute([$formatted, $userId]);
-    } catch (PDOException $e) {
-        error_log("updateOnlineTime failed for {$userType} #{$userId}: " . $e->getMessage());
-    }
-}
-
-/**
- * Update login_type for the given user.
- * Value is 'app' if in-app WebView, 'web' otherwise (desktop OR mobile browser).
- * Works for ALL roles.
- */
-function updateLoginType($pdo, $userType, $userId, $loginType)
-{
-    global $tableMap;
-
-    $table = $tableMap[$userType] ?? null;
-    if (!$table) {
-        error_log("updateLoginType: unknown user type '{$userType}'");
-        return;
-    }
-
-    // Safety: only allow known values
-    $loginType = ($loginType === 'app') ? 'app' : 'web';
-
-    try {
-        $stmt = $pdo->prepare("UPDATE `$table` SET login_type = ? WHERE id = ?");
-        $stmt->execute([$loginType, $userId]);
-    } catch (PDOException $e) {
-        error_log("updateLoginType failed for {$userType} #{$userId}: " . $e->getMessage());
-    }
-}
-
-// ==============================================
 // ✅ REDIRECT LOGIC — SEPARATED PER ROLE
 // ==============================================
 
@@ -173,7 +102,7 @@ function updateLoginType($pdo, $userType, $userId, $loginType)
  * ADMIN redirect rules:
  *   app + not enrolled    → web/biometric.php
  *   app + enrolled        → web/shop.php
- *   mobile web            → web/shop.php   (admin allowed on mobile browser)
+ *   mobile web            → download_app.php (root-level)
  *   desktop web           → web/shop.php
  */
 function getAdminRedirect($isInApp, $isMobileBrowser, $user)
@@ -188,7 +117,8 @@ function getAdminRedirect($isInApp, $isMobileBrowser, $user)
         return $biometricPageMap['Admin'];
     }
 
-    // Admin can use desktop web AND mobile web AND app
+    if ($isInApp)         return 'web/shop.php';
+    if ($isMobileBrowser) return 'web/shop.php';
     return 'web/shop.php';
 }
 
@@ -255,6 +185,15 @@ function getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user)
         default:         return 'login.php';
     }
 }
+
+// ==============================================
+// TABLE MAP (shared)
+// ==============================================
+$tableMap = [
+    'Admin'    => 'admins',
+    'Investor' => 'investors',
+    'Customer' => 'customers'
+];
 
 // ==============================================
 // ALREADY LOGGED IN
@@ -365,11 +304,15 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-    // ✅ Update online_time for biometric logins (all roles)
-    updateOnlineTime($pdo, $userType, $user['id']);
-
-    // ✅ Update login_type for biometric logins (all roles)
-    updateLoginType($pdo, $userType, $user['id'], $loginType);
+    // Update login_type for customers only
+    if ($userType === 'Customer') {
+        try {
+            $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
+            $updateTypeStmt->execute([$loginType, $user['id']]);
+        } catch (PDOException $e) {
+            error_log("login_type update failed: " . $e->getMessage());
+        }
+    }
 
     // ✅ Customer in-app with mismatched version → ask to update first
     if ($userType === 'Customer' && $isInApp && !$appVersionMatch && !$skipUpdate) {
@@ -540,11 +483,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             setcookie('user_type', $userType, time() + (86400 * 365), "/");
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-            // ✅ Update online_time for password logins (all roles)
-            updateOnlineTime($pdo, $userType, $user['id']);
-
-            // ✅ Update login_type for password logins (all roles)
-            updateLoginType($pdo, $userType, $user['id'], $loginType);
+            // Update login_type for customers only
+            if ($userType === 'Customer') {
+                try {
+                    $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
+                    $updateTypeStmt->execute([$loginType, $user['id']]);
+                } catch (PDOException $e) {
+                    error_log("login_type update failed: " . $e->getMessage());
+                }
+            }
 
             $loginSuccess = true;
 
