@@ -303,16 +303,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-    // Update login_type for customers only
-    if ($userType === 'Customer') {
-        try {
-            $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
-            $updateTypeStmt->execute([$loginType, $user['id']]);
-        } catch (PDOException $e) {
-            error_log("login_type update failed: " . $e->getMessage());
-        }
-    }
-
     // ✅ Customer in-app with mismatched version → ask to update first
     if ($userType === 'Customer' && $isInApp && !$appVersionMatch && !$skipUpdate) {
         echo json_encode([
@@ -405,7 +395,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
 
             $stmt = $pdo->prepare("
-                SELECT id, password, acc_number, phone_number, f_name, role, status, email, biometric_enrolled, biometric_id
+                SELECT id, password, acc_number, phone_number, f_name, role, email, biometric_enrolled, biometric_id
                 FROM admins
                 WHERE id = ? AND RIGHT(phone_number, 4) = ?
             ");
@@ -427,7 +417,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
 
             $stmt = $pdo->prepare("
-                SELECT id, password, acc_number, phone_number, f_name, 'Investor' as role, status, email, biometric_enrolled, biometric_id
+                SELECT id, password, acc_number, phone_number, f_name, 'Investor' as role, email, biometric_enrolled, biometric_id
                 FROM investors
                 WHERE id = ? AND RIGHT(phone_number, 4) = ?
             ");
@@ -449,7 +439,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
 
             $stmt = $pdo->prepare("
-                SELECT id, password, acc_number, account, phone_number, f_name, 'Customer' as role, status, email, biometric_enrolled, biometric_id
+                SELECT id, password, acc_number, phone_number, f_name, 'Customer' as role, email, biometric_enrolled, biometric_id
                 FROM customers
                 WHERE id = ? AND RIGHT(phone_number, 4) = ?
             ");
@@ -482,15 +472,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             setcookie('user_type', $userType, time() + (86400 * 365), "/");
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-            // Update login_type for customers only
-            if ($userType === 'Customer') {
-                try {
-                    $updateTypeStmt = $pdo->prepare("UPDATE customers SET login_type = ? WHERE id = ?");
-                    $updateTypeStmt->execute([$loginType, $user['id']]);
-                } catch (PDOException $e) {
-                    error_log("login_type update failed: " . $e->getMessage());
-                }
-            }
 
             $loginSuccess = true;
 
