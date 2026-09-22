@@ -19,7 +19,7 @@ include __DIR__ . '/app_version.php';
 // ✅ DETECT PLATFORM
 // ==============================================
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$isInApp = (strpos($userAgent, 'SofiaApp') !== false);
+$isInApp = (stripos($userAgent, 'SofiaApp') !== false); // ✅ FIX: case-insensitive
 
 function isMobileBrowser($userAgent)
 {
@@ -31,13 +31,14 @@ function isMobileBrowser($userAgent)
 
 $isMobileBrowser = isMobileBrowser($userAgent) && !$isInApp;
 
+// ==============================================
 // ✅ VERSION MATCH (in-app only)
 // ==============================================
 $installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version'] ?? '');
 
 if ($isInApp) {
     $installedNorm = preg_replace('/[^0-9.]/', '', $installedVersion);
-    $latestNorm = preg_replace('/[^0-9.]/', '', $latestVersion);
+    $latestNorm    = preg_replace('/[^0-9.]/', '', $latestVersion);
 
     if (!empty($installedNorm) && $installedNorm !== 'unknown') {
         $appVersionMatch = version_compare($installedNorm, $latestNorm, '==');
@@ -64,8 +65,8 @@ $reminded = ($remindedVersion === $latestVersion);
 // ==============================================
 if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
     setcookie('use_old_app', '1', [
-        'expires' => time() + 86400,
-        'path' => '/',
+        'expires'  => time() + 86400,
+        'path'     => '/',
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -97,13 +98,6 @@ $biometricPageMap = [
 // ✅ REDIRECT LOGIC — SEPARATED PER ROLE
 // ==============================================
 
-/**
- * ADMIN redirect rules:
- *   app + not enrolled    → web/biometric.php
- *   app + enrolled        → web/shop.php
- *   mobile web            → download_app.php (root-level)
- *   desktop web           → web/shop.php
- */
 function getAdminRedirect($isInApp, $isMobileBrowser, $user)
 {
     global $biometricPageMap;
@@ -121,13 +115,6 @@ function getAdminRedirect($isInApp, $isMobileBrowser, $user)
     return 'web/shop.php';
 }
 
-/**
- * INVESTOR redirect rules:
- *   app + not enrolled    → investors/biometric.php
- *   app + enrolled        → investors/investors_product.php
- *   mobile web            → investors/download_app.php
- *   desktop web           → investors/investors_product.php
- */
 function getInvestorRedirect($isInApp, $isMobileBrowser, $user)
 {
     global $biometricPageMap;
@@ -145,18 +132,14 @@ function getInvestorRedirect($isInApp, $isMobileBrowser, $user)
     return 'investors/investors_product.php';
 }
 
-/**
- * CUSTOMER redirect rules:
- *   app + not enrolled    → public/biometric.php
- *   app + enrolled        → public/shop.php (or public/account-edit.php for guest)
- *   mobile web            → public/download_app.php
- *   desktop web           → public/shop.php (or public/account-edit.php for guest)
- */
 function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
 {
     global $biometricPageMap;
 
-    $isGuest      = (($user['f_name'] ?? '') === 'Guest' || empty($user['f_name'] ?? ''));
+    // ✅ FIX: only treat as guest if f_name is literally "Guest" (not empty)
+    // (empty f_name was sending logged-in customers to account-edit.php incorrectly)
+    $fName = $user['f_name'] ?? '';
+    $isGuest = (strcasecmp(trim($fName), 'Guest') === 0);
     $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
 
     $hasBiometric = (($user['biometric_enrolled'] ?? 0) == 1 && !empty($user['biometric_id'] ?? ''));
@@ -172,9 +155,6 @@ function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
     return $dashboardUrl;
 }
 
-/**
- * Master dispatcher — routes to the right role function.
- */
 function getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user)
 {
     switch ($userType) {
@@ -197,13 +177,13 @@ $tableMap = [
 // ==============================================
 // ALREADY LOGGED IN
 // ==============================================
-$isLoggedIn = false;
+$isLoggedIn  = false;
 $redirectUrl = '';
-$userName = '';
+$userName    = '';
 
 if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
     $isLoggedIn = true;
-    $userName = $_SESSION['acc_number'] ?? 'User';
+    $userName   = $_SESSION['acc_number'] ?? 'User';
 
     $table = $tableMap[$_SESSION['user_role']] ?? 'customers';
 
@@ -224,12 +204,12 @@ if (isset($_SESSION['user_role']) && isset($_SESSION['user_id'])) {
 // ==============================================
 // BIOMETRIC ENROLLED CHECK (for JS bridge)
 // ==============================================
-$hasBiometric = false;
-$biometricUserId = null;
+$hasBiometric      = false;
+$biometricUserId   = null;
 $biometricUserType = null;
 
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
-    $userId = $_SESSION['user_id'];
+    $userId   = $_SESSION['user_id'];
     $userType = $_SESSION['user_role'];
 
     $table = $tableMap[$userType] ?? 'customers';
@@ -239,12 +219,12 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $user = $stmt->fetch();
 
     if ($user && $user['biometric_enrolled'] == 1) {
-        $hasBiometric = true;
-        $biometricUserId = $userId;
+        $hasBiometric      = true;
+        $biometricUserId   = $userId;
         $biometricUserType = $userType;
     }
 } elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['user_type'])) {
-    $userId = $_COOKIE['user_id'];
+    $userId   = $_COOKIE['user_id'];
     $userType = $_COOKIE['user_type'];
 
     $table = $tableMap[$userType] ?? 'customers';
@@ -254,12 +234,12 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     $user = $stmt->fetch();
 
     if ($user && $user['biometric_enrolled'] == 1) {
-        $hasBiometric = true;
-        $biometricUserId = $userId;
+        $hasBiometric      = true;
+        $biometricUserId   = $userId;
         $biometricUserType = $userType;
 
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['user_role'] = $userType;
+        $_SESSION['user_id']    = $userId;
+        $_SESSION['user_role']  = $userType;
         $_SESSION['acc_number'] = $user['acc_number'] ?? 'User';
     }
 }
@@ -270,7 +250,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
 if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     header('Content-Type: application/json');
 
-    $userId = $_POST['user_id'] ?? null;
+    $userId   = $_POST['user_id']   ?? null;
     $userType = $_POST['user_type'] ?? null;
 
     if (!$userId || !$userType) {
@@ -280,6 +260,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     $table = $tableMap[$userType] ?? 'customers';
 
+    // ✅ FIX: also select f_name so redirect logic works
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name, biometric_id FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -295,26 +276,24 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     }
 
     session_regenerate_id(true);
-    $_SESSION['user_id'] = $user['id'];
-    $_SESSION['user_role'] = $userType;
+    $_SESSION['user_id']    = $user['id'];
+    $_SESSION['user_role']  = $userType;
     $_SESSION['acc_number'] = $user['acc_number'];
 
-    setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-    setcookie('user_type', $userType, time() + (86400 * 365), "/");
+    setcookie('user_id',            $user['id'],                 time() + (86400 * 365), "/");
+    setcookie('user_type',          $userType,                   time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
-
 
     // ✅ Customer in-app with mismatched version → ask to update first
     if ($userType === 'Customer' && $isInApp && !$appVersionMatch && !$skipUpdate) {
         echo json_encode([
-            'success' => false,
-            'message' => 'Please update the app or click SKIP to continue.',
+            'success'           => false,
+            'message'           => 'Please update the app or click SKIP to continue.',
             'show_update_modal' => true
         ]);
         exit;
     }
 
-    // ✅ Use the same role dispatcher
     $redirectUrl = getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user);
 
     echo json_encode(['success' => true, 'redirect' => $redirectUrl, 'message' => '']);
@@ -360,33 +339,33 @@ function getAllCustomers($pdo)
 // ==============================================
 // REGULAR LOGIN
 // ==============================================
-$errors = [];
-$loginSuccess = false;
-$userTypeSelected = 'Admin';
-$selectedRole = '';
-$selectedInvestorId = '';
-$selectedCustomerId = '';
+$errors              = [];
+$loginSuccess        = false;
+$userTypeSelected    = 'Admin';
+$selectedRole        = '';
+$selectedInvestorId  = '';
+$selectedCustomerId  = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) {
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         die('Invalid CSRF token');
     }
 
-    $userTypeSelected = trim($_POST['user_type'] ?? 'Admin');
-    $selectedRole = trim($_POST['role'] ?? '');
-    $selectedInvestorId = trim($_POST['investor'] ?? '');
-    $selectedCustomerId = trim($_POST['customer'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $userTypeSelected   = trim($_POST['user_type'] ?? 'Admin');
+    $selectedRole       = trim($_POST['role']      ?? '');
+    $selectedInvestorId = trim($_POST['investor']  ?? '');
+    $selectedCustomerId = trim($_POST['customer']  ?? '');
+    $password           = $_POST['password'] ?? '';
 
-    if (empty($password)) $errors[] = 'Password cannot be empty.';
-    if ($userTypeSelected === 'Admin' && empty($selectedRole)) $errors[] = 'Please select an admin account.';
-    if ($userTypeSelected === 'Investor' && empty($selectedInvestorId)) $errors[] = 'Please select an investor account.';
-    if ($userTypeSelected === 'Customer' && empty($selectedCustomerId)) $errors[] = 'Please select a customer account.';
+    if (empty($password))                                                            $errors[] = 'Password cannot be empty.';
+    if ($userTypeSelected === 'Admin'    && empty($selectedRole))                    $errors[] = 'Please select an admin account.';
+    if ($userTypeSelected === 'Investor' && empty($selectedInvestorId))              $errors[] = 'Please select an investor account.';
+    if ($userTypeSelected === 'Customer' && empty($selectedCustomerId))              $errors[] = 'Please select a customer account.';
 
     if (empty($errors)) {
         $identifier = '';
-        $user = null;
-        $userType = null;
+        $user       = null;
+        $userType   = null;
 
         // ---------------- ADMIN ----------------
         if ($userTypeSelected === 'Admin') {
@@ -439,8 +418,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $info = $stmt->fetch();
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
 
+            // ✅ FIX: added `account` to the SELECT list (was missing → $user['account'] undefined)
             $stmt = $pdo->prepare("
-                SELECT id, password, acc_number, phone_number, f_name, 'Customer' as role, email, biometric_enrolled, biometric_id
+                SELECT id, password, acc_number, phone_number, f_name, 'Customer' as role,
+                       email, account, biometric_enrolled, biometric_id
                 FROM customers
                 WHERE id = ? AND RIGHT(phone_number, 4) = ?
             ");
@@ -448,7 +429,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $user = $stmt->fetch();
 
             if ($user) {
-                if ($user['account'] == 1) {
+                // ✅ FIX: guard with isset in case the column name differs in your DB
+                if (isset($user['account']) && $user['account'] == 1) {
                     $errors[] = 'Account locked. Please contact support.';
                 } elseif (password_verify($password, $user['password'])) {
                     $userType = 'Customer';
@@ -465,18 +447,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             date_default_timezone_set('Asia/Manila');
 
             session_regenerate_id(true);
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_role'] = $userType;
+            $_SESSION['user_id']    = $user['id'];
+            $_SESSION['user_role']  = $userType;
             $_SESSION['acc_number'] = $user['acc_number'];
 
-            setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-            setcookie('user_type', $userType, time() + (86400 * 365), "/");
-            setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
-
+            setcookie('user_id',            $user['id'],                       time() + (86400 * 365), "/");
+            setcookie('user_type',          $userType,                         time() + (86400 * 365), "/");
+            setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0,  time() + (86400 * 365), "/");
 
             $loginSuccess = true;
 
-            // ✅ Single dispatcher — same logic for all three roles
             $redirectUrl = getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user);
 
             header('Location: ' . $redirectUrl);
@@ -488,7 +468,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
 // ==============================================
 // GET DATA FOR DROPDOWNS
 // ==============================================
-$existingAdmins = getAllAdmins($pdo);
+$existingAdmins    = getAllAdmins($pdo);
 $existingInvestors = getAllInvestors($pdo);
 $existingCustomers = getAllCustomers($pdo);
 
