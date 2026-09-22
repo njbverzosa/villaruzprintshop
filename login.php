@@ -2,7 +2,7 @@
 // login.php – desktop + mobile + in-app flows
 // ✅ 3 roles with per-role biometric pages:
 //      Admin    → web/biometric.php
-//      Investor → investors/biometric.php
+//      Investor → investors/biometric.php  (⚠️ GATE DISABLED — see getInvestorRedirect)
 //      Customer → public/biometric.php
 // ✅ Biometric gate fires only when biometric_enrolled = 0 for that acc_number
 // ✅ Updates online_time on every successful login (all roles)
@@ -196,22 +196,24 @@ function getAdminRedirect($isInApp, $isMobileBrowser, $user)
 
 /**
  * INVESTOR redirect rules:
- *   app + not enrolled    → investors/biometric.php
- *   app + enrolled        → investors/investors_product.php
+ *   app                   → investors/investors_product.php   (biometric gate DISABLED)
  *   mobile web            → investors/download_app.php
  *   desktop web           → investors/investors_product.php
+ *
+ * ⚠️ If you want to re-enable the biometric gate for investors,
+ *    uncomment the block below.
  */
 function getInvestorRedirect($isInApp, $isMobileBrowser, $user)
 {
     global $biometricPageMap;
 
-    $hasBiometric = (($user['biometric_enrolled'] ?? 0) == 1 && !empty($user['biometric_id'] ?? ''));
-
-    if ($isInApp && !$hasBiometric) {
-        $_SESSION['temp_user_id']   = $user['id'];
-        $_SESSION['temp_user_type'] = 'Investor';
-        return $biometricPageMap['Investor'];
-    }
+    // ---- Biometric gate (disabled — investors skip it) ----
+    // $hasBiometric = (($user['biometric_enrolled'] ?? 0) == 1 && !empty($user['biometric_id'] ?? ''));
+    // if ($isInApp && !$hasBiometric) {
+    //     $_SESSION['temp_user_id']   = $user['id'];
+    //     $_SESSION['temp_user_type'] = 'Investor';
+    //     return $biometricPageMap['Investor'];
+    // }
 
     if ($isInApp)         return 'investors/investors_product.php';
     if ($isMobileBrowser) return 'investors/download_app.php';
