@@ -303,6 +303,7 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('user_type', $userType, time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
+
     // ✅ Customer in-app with mismatched version → ask to update first
     if ($userType === 'Customer' && $isInApp && !$appVersionMatch && !$skipUpdate) {
         echo json_encode([
