@@ -5,6 +5,7 @@
 //      Investor → investors/biometric.php
 //      Customer → public/biometric.php
 // ✅ Biometric gate fires only when biometric_enrolled = 0 for that acc_number
+// ✅ Records online_time ("Sep 3, 3:58 PM") + login_type ("web"/"app") on every login
 
 // Set session lifetime
 $sessionLifetime = 604800;
@@ -95,6 +96,40 @@ $biometricPageMap = [
 ];
 
 // ==============================================
+// TABLE MAP (shared)
+// ==============================================
+$tableMap = [
+    'Admin'    => 'admins',
+    'Investor' => 'investors',
+    'Customer' => 'customers'
+];
+
+// ==============================================
+// ✅ UPDATE ONLINE TIME + LOGIN TYPE
+// ==============================================
+function updateLoginMeta($pdo, $userType, $userId, $loginType)
+{
+    $tableMap = [
+        'Admin'    => 'admins',
+        'Investor' => 'investors',
+        'Customer' => 'customers',
+    ];
+
+    $table = $tableMap[$userType] ?? null;
+    if (!$table) return;
+
+    date_default_timezone_set('Asia/Manila');
+    $onlineTime = date('M j, g:i A'); // e.g. Sep 3, 3:58 PM
+
+    try {
+        $stmt = $pdo->prepare("UPDATE $table SET online_time = ?, login_type = ? WHERE id = ?");
+        $stmt->execute([$onlineTime, $loginType, $userId]);
+    } catch (PDOException $e) {
+        error_log("updateLoginMeta failed: " . $e->getMessage());
+    }
+}
+
+// ==============================================
 // ✅ REDIRECT LOGIC — SEPARATED PER ROLE
 // ==============================================
 
@@ -164,15 +199,6 @@ function getRedirectUrl($userType, $isInApp, $isMobileBrowser, $user)
         default:         return 'login.php';
     }
 }
-
-// ==============================================
-// TABLE MAP (shared)
-// ==============================================
-$tableMap = [
-    'Admin'    => 'admins',
-    'Investor' => 'investors',
-    'Customer' => 'customers'
-];
 
 // ==============================================
 // ALREADY LOGGED IN
@@ -283,6 +309,9 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('user_id',            $user['id'],                 time() + (86400 * 365), "/");
     setcookie('user_type',          $userType,                   time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
+
+    // ✅ NEW: record online_time + login_type
+    updateLoginMeta($pdo, $userType, $user['id'], $loginType);
 
     // ✅ Customer in-app with mismatched version → ask to update first
     if ($userType === 'Customer' && $isInApp && !$appVersionMatch && !$skipUpdate) {
@@ -454,6 +483,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             setcookie('user_id',            $user['id'],                       time() + (86400 * 365), "/");
             setcookie('user_type',          $userType,                         time() + (86400 * 365), "/");
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0,  time() + (86400 * 365), "/");
+
+            // ✅ NEW: record online_time + login_type
+            updateLoginMeta($pdo, $userType, $user['id'], $loginType);
 
             $loginSuccess = true;
 
