@@ -404,11 +404,6 @@
                 id="sourceArrow"></i>
         </div>
         <div class="nav-dropdown-menu <?php echo $sourceActive ? 'show' : ''; ?>" id="sourceDropdown">
-            <a href="investors.php"
-                class="nav-dropdown-item <?php echo $currentPage == 'investors.php' ? 'active_investors' : ''; ?>">
-                <i class="fas fa-hand-holding-usd"></i>
-                <span>Investors</span>
-            </a>
             <a href="investors_products.php"
                 class="nav-dropdown-item <?php echo $currentPage == 'investors_products.php' ? 'active_products_source' : ''; ?>">
                 <i class="fas fa-boxes"></i>
