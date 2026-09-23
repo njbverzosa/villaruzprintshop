@@ -578,8 +578,6 @@ if (isset($_SESSION['exit_message'])) {
             height: 100px;
             object-fit: contain;
             display: block;
-            border-radius: 22px;
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
         }
 
         .version-badge {
@@ -587,10 +585,7 @@ if (isset($_SESSION['exit_message'])) {
             font-weight: 600;
             color: #64748b;
             padding: 3px 12px;
-            border-radius: 20px;
             letter-spacing: 0.02em;
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
         }
 
         .auth-card {
