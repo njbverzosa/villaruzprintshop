@@ -3,7 +3,7 @@
 session_start();
 
 // ==============================================
-// 1. FIX PATHS - config.php is in DB_Conn folder at root level
+// 1. FIX PATHS
 // ==============================================
 require_once __DIR__ . '/../DB_Conn/config.php';
 
@@ -24,7 +24,6 @@ function isLoggedIn()
         isset($_SESSION['acc_number']);
 }
 
-// Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
     header('Location: ../login.php');
@@ -38,7 +37,6 @@ $userRole = $_SESSION['user_role'];
 $userId = $_SESSION['user_id'];
 $accNumber = $_SESSION['acc_number'];
 
-// Fetch user details from database
 $userData = null;
 if ($userRole === 'Admin') {
     $stmt = $pdo->prepare("SELECT id, acc_number, f_name, email, phone_number, role, user_name, authorize_access FROM admins WHERE id = ?");
@@ -47,16 +45,16 @@ if ($userRole === 'Admin') {
 }
 
 if (!$userData) {
-    // User not found in database, logout
     session_destroy();
     header('Location: ../login.php');
     exit;
 }
 
 // ==============================================
-// 4. USE $userData INSTEAD OF $user
+// 4. USER + AUTHORIZE ACCESS
 // ==============================================
 $user = $userData;
+$authorizeAccess = $userData['authorize_access'] ?? 0;
 
 // ==============================================
 // 5. SET TIMEZONE
@@ -64,10 +62,33 @@ $user = $userData;
 date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
-// Fetch all customers from customers table
+// ==============================================
+// 6. FETCH ALL 3 DATASETS
+// ==============================================
+$stmt = $pdo->prepare("SELECT * FROM admins WHERE authorize_access IN (1, 2) ORDER BY id DESC");
+$stmt->execute();
+$admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->prepare("SELECT * FROM investors ORDER BY id DESC");
+$stmt->execute();
+$investors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 $stmt = $pdo->prepare("SELECT * FROM customers ORDER BY id DESC");
 $stmt->execute();
-$customers = $stmt->fetchAll();
+$customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ==============================================
+// HELPER: Normalize image path from DB
+// ==============================================
+function normalizeImagePath($path)
+{
+    $path = trim($path ?? '');
+    if ($path === '')
+        return '';
+    $path = ltrim($path, '/');
+    $path = preg_replace('#^(\.\./)+#', '', $path);
+    return $path;
+}
 
 // ==============================================
 // FUNCTION TO GET UNREAD MESSAGE COUNT
@@ -126,7 +147,6 @@ function getOnlineStatus($onlineTime)
     }
 }
 
-// Get current page for sidebar
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
@@ -136,8 +156,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
-    <meta http-equiv="refresh" content="10">
-    <title>Registered Customers | Villaruz Print Shop & General Merchandise</title>
+    <title>Registered Users | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -161,7 +180,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             flex-direction: column;
         }
 
-        /* ========== SIDEBAR - LEFT SIDE ========== */
+        /* ========== SIDEBAR ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -185,7 +204,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             position: relative;
         }
 
-        /* Mobile: sidebar hidden by default */
         @media (max-width: 768px) {
             .sidebar-wrapper {
                 transform: translateX(-100%);
@@ -196,7 +214,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         }
 
-        /* Desktop: sidebar always visible */
         @media (min-width: 769px) {
             .sidebar-wrapper {
                 transform: translateX(0) !important;
@@ -220,7 +237,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         }
 
-        /* Mobile overlay */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -237,7 +253,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             display: block;
         }
 
-        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -266,7 +281,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -327,12 +341,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             gap: 15px;
         }
 
-        .welcome h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
         .welcome h4 {
             font-size: 15px;
             font-weight: 600;
@@ -370,6 +378,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             overflow-y: auto;
         }
 
+        /* ========== SECTION / TABLE ========== */
         .merchandise-section {
             background: #ffffff;
             border-radius: 10px;
@@ -379,25 +388,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        .section-header {
-            padding: 20px 25px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .section-header h5 {
-            font-size: 22px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #0f172a;
-        }
-
         .inventory-table {
             width: 100%;
             border-collapse: collapse;
@@ -405,6 +395,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             white-space: nowrap;
         }
 
+        /* ✅ Headers + data both centered */
         .inventory-table th,
         .inventory-table td {
             padding: 15px 12px;
@@ -428,100 +419,30 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             background: #f8fafc;
         }
 
-        .delete-btn {
-            background: #ef4444;
-            border: none;
-            border-radius: 20px;
-            padding: 6px 16px;
-            color: #ffffff;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 12px;
-        }
-
-        .delete-btn:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-        }
-
-        .lock-btn {
-            background: #f59e0b;
-            border: none;
-            border-radius: 20px;
-            padding: 6px 16px;
-            color: #ffffff;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 12px;
-            margin-right: 4px;
-        }
-
-        .lock-btn:hover {
-            background: #d97706;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-        }
-
-        .unlock-btn {
-            background: #10b981;
-            border: none;
-            border-radius: 20px;
-            padding: 6px 16px;
-            color: #ffffff;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 12px;
-            margin-right: 4px;
-        }
-
-        .unlock-btn:hover {
-            background: #059669;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
         /* Status Indicators */
         .status-online {
             color: #10b981;
-            font-size: 24px;
+            font-size: 20px;
             text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
             animation: pulse-green 2s infinite;
         }
 
         .status-away {
             color: #f59e0b;
-            font-size: 24px;
+            font-size: 20px;
             animation: pulse-away 1.5s infinite;
         }
 
         .status-offline {
             color: #94a3b8;
-            font-size: 20px;
+            font-size: 18px;
             opacity: 0.5;
         }
 
         .status-text {
             font-size: 11px;
             font-weight: 500;
-            display: block;
-            margin-top: 2px;
+            margin-left: 6px;
         }
 
         .status-text.online {
@@ -564,24 +485,18 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         }
 
-        .status-header {
-            text-align: center;
-            font-size: 11px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        /* Used / Login Type icons */
+        .used-icon {
+            font-size: 20px;
+            vertical-align: middle;
         }
 
-        .status-cell {
-            text-align: center;
-            min-width: 50px;
+        .used-icon.desktop {
+            color: #3b82f6;
         }
 
-        .status-dot-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .used-icon.mobile {
+            color: #10b981;
         }
 
         /* Email Status Dot */
@@ -710,7 +625,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             color: #059669;
         }
 
-        /* Chat Icon with Badge */
+        /* Chat Icon */
         .chat-icon-wrapper {
             position: relative;
             display: inline-block;
@@ -718,7 +633,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
         .chat-icon {
             cursor: pointer;
-            text-align: center;
             color: #3b82f6;
             transition: all 0.3s;
             display: inline-block;
@@ -822,17 +736,20 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         }
 
-        /* Landmark Photo Styles */
-        .landmark-thumb {
+        /* Image Thumbnails */
+        .landmark-thumb,
+        .permit-thumb {
             width: 60px;
             height: 60px;
             object-fit: cover;
             cursor: pointer;
             border-radius: 5px;
             transition: transform 0.2s;
+            border: 1px solid #e2e8f0;
         }
 
-        .landmark-thumb:hover {
+        .landmark-thumb:hover,
+        .permit-thumb:hover {
             transform: scale(1.05);
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         }
@@ -840,6 +757,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         .no-photo {
             color: #999;
             font-style: italic;
+            font-size: 12px;
         }
 
         /* Modal */
@@ -884,7 +802,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             position: fixed;
             top: 20px;
             right: 35px;
-            color: #f1f1f1;
             font-size: 40px;
             font-weight: bold;
             transition: 0.3s;
@@ -968,18 +885,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 font-size: 12px;
             }
 
-            .action-buttons {
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .lock-btn,
-            .unlock-btn,
-            .delete-btn {
-                font-size: 10px;
-                padding: 4px 10px;
-            }
-
             .email-status-dot {
                 width: 10px;
                 height: 10px;
@@ -1029,7 +934,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 font-size: 10px;
             }
 
-            .landmark-thumb {
+            .landmark-thumb,
+            .permit-thumb {
                 width: 40px;
                 height: 40px;
             }
@@ -1047,13 +953,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             .copy-btn {
                 font-size: 10px;
                 padding: 2px 3px;
-            }
-
-            .lock-btn,
-            .unlock-btn,
-            .delete-btn {
-                font-size: 9px;
-                padding: 3px 6px;
             }
 
             .chat-icon {
@@ -1092,28 +991,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 font-size: 9px;
             }
 
-            .landmark-modal-close {
-                width: 36px;
-                height: 36px;
-                font-size: 28px;
-                top: 10px;
-                right: 15px;
-            }
-
-            .landmark-modal-caption {
-                font-size: 14px;
-                bottom: 20px;
-                padding: 8px 15px;
-            }
-
-            .zoom-controls {
-                bottom: 70px;
-                gap: 8px;
-            }
-
-            .zoom-controls button {
-                padding: 6px 12px;
-                font-size: 12px;
+            .used-icon {
+                font-size: 16px;
             }
         }
     </style>
@@ -1121,102 +1000,300 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 <body>
     <div class="app-wrapper">
-        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <?php
-                include 'sidebar.php';
-                ?>
+                <?php include 'sidebar.php'; ?>
             </div>
         </div>
 
         <main class="main-content">
             <div class="dashboard-header">
                 <div class="header-left">
-                    <!-- Burger Button (Mobile Only) -->
                     <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="welcome">
-                        <h4>Customers</h4>
+                        <h4>Registered Users</h4>
                     </div>
                 </div>
             </div>
 
+            <!-- ============================================== -->
+            <!-- TABLE 1: ADMINS -->
+            <!-- ============================================== -->
             <div class="merchandise-section">
                 <div style="overflow-x: auto;">
-                    <table class="inventory-table" id="customersTable">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th>Full Name</th>
+                                <th>Status</th>
+                                <th>Used</th>
+                                <th style="text-align: center;">User / Pass</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($admins)): ?>
+                                <tr>
+                                    <td colspan="4" style="padding: 40px;">No admins found</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($admins as $admin):
+                                    $onlineStatus = getOnlineStatus($admin['online_time'] ?? '');
+                                    ?>
+                                    <tr data-id="<?php echo $admin['id']; ?>" data-role="Admin">
+                                        <td><?php echo htmlspecialchars($admin['f_name'] ?? 'N/A'); ?></td>
+                                        <td>
+                                            <?php if ($onlineStatus['status'] === 'online'): ?>
+                                                <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
+                                                <span class="status-text online">Active</span>
+                                            <?php elseif ($onlineStatus['status'] === 'away'): ?>
+                                                <i class="fas fa-clock status-away"
+                                                    title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
+                                            <?php else: ?>
+                                                <i class="fas fa-clock status-offline"
+                                                    title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php $loginType = $admin['login_type'] ?? 'web'; ?>
+                                            <?php if ($loginType === 'app'): ?>
+                                                <i class="fas fa-mobile-alt used-icon mobile" title="App"></i>
+                                            <?php else: ?>
+                                                <i class="fas fa-desktop used-icon desktop" title="Web"></i>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="white-space: nowrap;text-align: center;">
+                                            <div class="password-wrapper">
+                                                <span style="color: #475569; font-weight: 500;">
+                                                    <?php echo htmlspecialchars($admin['acc_number']); ?>
+                                                </span>
+                                                <span style="color: #94a3b8;">/</span>
+                                                <span class="password-text" id="pass_admin_<?php echo $admin['id']; ?>"
+                                                    style="display: none;">
+                                                    <?php echo htmlspecialchars($admin['text_pass'] ?? ''); ?>
+                                                </span>
+                                                <span class="password-placeholder"
+                                                    id="placeholder_admin_<?php echo $admin['id']; ?>">
+                                                    ••••••••
+                                                </span>
+                                                <button class="copy-btn copy-btn-eye"
+                                                    onclick="togglePassword('admin_<?php echo $admin['id']; ?>')"
+                                                    title="Show/Hide password">
+                                                    <i class="fas fa-eye" id="eye_admin_<?php echo $admin['id']; ?>"></i>
+                                                </button>
+                                                <button class="copy-btn copy-btn-copy"
+                                                    onclick="copyPassword('<?php echo addslashes($admin['text_pass'] ?? ''); ?>')"
+                                                    title="Copy password">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- TABLE 2: INVESTORS -->
+            <!-- ============================================== -->
+            <div class="merchandise-section">
+                <div style="overflow-x: auto;">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th>Business Permit</th>
+                                <th>Full Name</th>
+                                <th>Status</th>
+                                <th>Used</th>
+                                <th>Chat</th>
+                                <th>Phone Number</th>
+                                <th>User / Pass</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($investors)): ?>
+                                <tr>
+                                    <td colspan="7" style="padding: 40px;">No investors found</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($investors as $investor):
+                                    $onlineStatus = getOnlineStatus($investor['online_time'] ?? '');
+                                    $unreadCount = getUnreadCount($pdo, $investor['acc_number']);
+
+                                    $permitPhoto = normalizeImagePath($investor['business_permit'] ?? '');
+                                    $investorName = htmlspecialchars($investor['f_name'] ?? 'Investor');
+                                    ?>
+                                    <tr data-id="<?php echo $investor['id']; ?>" data-role="Investor">
+                                        <td>
+                                            <?php if ($permitPhoto !== ''): ?>
+                                                <img src="../Business_Docs/<?php echo htmlspecialchars($permitPhoto); ?>"
+                                                    alt="Business permit of <?php echo $investorName; ?>" class="permit-thumb"
+                                                    onclick="openPermitModal('../Business_Docs/<?php echo htmlspecialchars($permitPhoto); ?>', '<?php echo $investorName; ?>')"
+                                                    title="Click to zoom"
+                                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                                <span class="no-photo" style="display:none;">No permit</span>
+                                            <?php else: ?>
+                                                <span class="no-photo">No permit</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($investor['f_name'] ?? 'N/A'); ?></td>
+                                        <td>
+                                            <?php if ($onlineStatus['status'] === 'online'): ?>
+                                                <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
+                                                <span class="status-text online">Active</span>
+                                            <?php elseif ($onlineStatus['status'] === 'away'): ?>
+                                                <i class="fas fa-clock status-away"
+                                                    title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
+                                            <?php else: ?>
+                                                <i class="fas fa-clock status-offline"
+                                                    title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php $loginType = $investor['login_type'] ?? 'web'; ?>
+                                            <?php if ($loginType === 'app'): ?>
+                                                <i class="fas fa-mobile-alt used-icon mobile" title="App"></i>
+                                            <?php else: ?>
+                                                <i class="fas fa-desktop used-icon desktop" title="Web"></i>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div class="chat-icon-wrapper">
+                                                <span class="chat-icon"
+                                                    onclick="window.location.href='chat_view.php?acc=<?php echo urlencode($investor['acc_number']); ?>'"
+                                                    data-acc="<?php echo htmlspecialchars($investor['acc_number']); ?>">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </span>
+                                                <?php if ($unreadCount > 0): ?>
+                                                    <span class="badge-unread" id="badge_investor_<?php echo $investor['id']; ?>">
+                                                        <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge-unread hidden"
+                                                        id="badge_investor_<?php echo $investor['id']; ?>"></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <?php echo htmlspecialchars($investor['phone_number'] ?? 'N/A'); ?>
+                                            <?php if (!empty($investor['phone_number'])): ?>
+                                                <button class="copy-btn copy-btn-phone"
+                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($investor['phone_number']); ?>', 'Phone number')"
+                                                    title="Copy phone number">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="white-space: nowrap;">
+                                            <div class="password-wrapper">
+                                                <span style="color: #475569; font-weight: 500;">
+                                                    <?php echo htmlspecialchars($investor['acc_number']); ?>
+                                                </span>
+                                                <span style="color: #94a3b8;">/</span>
+                                                <span class="password-text" id="pass_investor_<?php echo $investor['id']; ?>"
+                                                    style="display: none;">
+                                                    <?php echo htmlspecialchars($investor['text_pass'] ?? ''); ?>
+                                                </span>
+                                                <span class="password-placeholder"
+                                                    id="placeholder_investor_<?php echo $investor['id']; ?>">
+                                                    ••••••••
+                                                </span>
+                                                <button class="copy-btn copy-btn-eye"
+                                                    onclick="togglePassword('investor_<?php echo $investor['id']; ?>')"
+                                                    title="Show/Hide password">
+                                                    <i class="fas fa-eye" id="eye_investor_<?php echo $investor['id']; ?>"></i>
+                                                </button>
+                                                <button class="copy-btn copy-btn-copy"
+                                                    onclick="copyPassword('<?php echo addslashes($investor['text_pass'] ?? ''); ?>')"
+                                                    title="Copy password">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- TABLE 3: CUSTOMERS -->
+            <!-- ============================================== -->
+            <div class="merchandise-section">
+                <div style="overflow-x: auto;">
+                    <table class="inventory-table">
                         <thead>
                             <tr>
                                 <th>Landmark</th>
                                 <th>Full Name</th>
-                                <th class="status-header">Status</th>
-                                <th class="status-header">Used</th>
+                                <th>Status</th>
+                                <th>Used</th>
                                 <th>Chat</th>
                                 <th>Phone Number</th>
                                 <th>Email</th>
-                                <?php if ($authorizeAccess == 0): ?>
-                                    <th>Action</th>
-                                    <th>User / Pass</th>
-                                <?php endif; ?>
+                                <th>User / Pass</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="<?php echo $authorizeAccess == 0 ? '8' : '6'; ?>"
-                                        style="text-align: center; padding: 40px;">No customers found</td>
+                                    <td colspan="8" style="padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
                                     $onlineStatus = getOnlineStatus($customer['online_time'] ?? '');
-                                    $isAccountActive = isset($customer['account']) && $customer['account'] == 1;
                                     $isEmailActive = isset($customer['active_email']) && $customer['active_email'] == 1;
                                     $unreadCount = getUnreadCount($pdo, $customer['acc_number']);
+
+                                    $landmarkPhoto = normalizeImagePath($customer['landmark_photo'] ?? '');
+                                    $customerName = htmlspecialchars($customer['f_name'] ?? 'Customer');
                                     ?>
-                                    <tr data-id="<?php echo $customer['id']; ?>">
+                                    <tr data-id="<?php echo $customer['id']; ?>" data-role="Customer">
                                         <td>
-                                            <?php
-                                            $landmarkPhoto = $customer['landmark_photo'] ?? '';
-                                            $customerName = htmlspecialchars($customer['f_name'] ?? 'Customer');
-                                            if (!empty($landmarkPhoto) && file_exists(__DIR__ . '/../' . $landmarkPhoto)):
-                                                ?>
-                                                <img src="../<?php echo htmlspecialchars($landmarkPhoto); ?>"
+                                            <?php if ($landmarkPhoto !== ''): ?>
+                                                <img src="../Landmark/<?php echo htmlspecialchars($landmarkPhoto); ?>"
                                                     alt="Landmark photo of <?php echo $customerName; ?>" class="landmark-thumb"
-                                                    onclick="openLandmarkModal('../<?php echo htmlspecialchars($landmarkPhoto); ?>', '<?php echo $customerName; ?>')"
-                                                    title="Click to zoom">
+                                                    onclick="openLandmarkModal('../Landmark/<?php echo htmlspecialchars($landmarkPhoto); ?>', '<?php echo $customerName; ?>')"
+                                                    title="Click to zoom"
+                                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                                <span class="no-photo" style="display:none;">No photo</span>
                                             <?php else: ?>
                                                 <span class="no-photo">No photo</span>
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo htmlspecialchars($customer['f_name'] ?? 'N/A'); ?></td>
-                                        <td class="status-cell">
-                                            <div class="status-dot-wrapper">
-                                                <?php if ($onlineStatus['status'] === 'online'): ?>
-                                                    <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
-                                                    <span class="status-text online">Active</span>
-                                                <?php elseif ($onlineStatus['status'] === 'away'): ?>
-                                                    <i class="fas fa-clock status-away"
-                                                        title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
-                                                    <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
-                                                <?php else: ?>
-                                                    <i class="fas fa-clock status-offline"
-                                                        title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
-                                                    <span
-                                                        class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
-                                                <?php endif; ?>
-                                            </div>
+                                        <td>
+                                            <?php if ($onlineStatus['status'] === 'online'): ?>
+                                                <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
+                                                <span class="status-text online">Active</span>
+                                            <?php elseif ($onlineStatus['status'] === 'away'): ?>
+                                                <i class="fas fa-clock status-away"
+                                                    title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
+                                            <?php else: ?>
+                                                <i class="fas fa-clock status-offline"
+                                                    title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
+                                                <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
-                                            <?php
-                                            $loginType = $customer['login_type'] ?? 'web';
-                                            if ($loginType === 'app'): ?>
-                                                <i class="fab fa-android" style="color: #3DDC84; font-size: 18px;" title="App"></i>
+                                            <?php $loginType = $customer['login_type'] ?? 'web'; ?>
+                                            <?php if ($loginType === 'app'): ?>
+                                                <i class="fas fa-mobile-alt used-icon mobile" title="App"></i>
                                             <?php else: ?>
-                                                <i class="fas fa-globe" style="color: #3b82f6; font-size: 18px;" title="Web"></i>
+                                                <i class="fas fa-desktop used-icon desktop" title="Web"></i>
                                             <?php endif; ?>
                                         </td>
                                         <td>
@@ -1227,12 +1304,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                     <i class="fas fa-paper-plane"></i>
                                                 </span>
                                                 <?php if ($unreadCount > 0): ?>
-                                                    <span class="badge-unread" id="badge_<?php echo $customer['id']; ?>">
+                                                    <span class="badge-unread" id="badge_customer_<?php echo $customer['id']; ?>">
                                                         <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
                                                     </span>
                                                 <?php else: ?>
                                                     <span class="badge-unread hidden"
-                                                        id="badge_<?php echo $customer['id']; ?>"></span>
+                                                        id="badge_customer_<?php echo $customer['id']; ?>"></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -1257,57 +1334,35 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                             <?php endif; ?>
                                             <span
                                                 class="email-status-dot <?php echo $isEmailActive ? 'dot-active' : 'dot-inactive'; ?>"
-                                                id="dot_<?php echo $customer['id']; ?>"
                                                 title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
                                             </span>
                                         </td>
-                                        <?php if ($authorizeAccess == 0): ?>
-                                            <td>
-                                                <div class="action-buttons" id="action_<?php echo $customer['id']; ?>">
-                                                    <?php if ($isAccountActive): ?>
-                                                        <button class="lock-btn"
-                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'lock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                            <i class="fas fa-lock"></i>
-                                                        </button>
-                                                    <?php else: ?>
-                                                        <button class="unlock-btn"
-                                                            onclick="toggleAccountStatus(<?php echo $customer['id']; ?>, 'unlock', '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                            <i class="fas fa-unlock"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    <button class="delete-btn"
-                                                        onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['f_name'] ?? 'Customer'); ?>')">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td style="white-space: nowrap;">
-                                                <div class="password-wrapper">
-                                                    <span style="color: #475569; font-weight: 500;">
-                                                        <?php echo htmlspecialchars($customer['acc_number']); ?>
-                                                    </span>
-                                                    <span style="color: #94a3b8;">/</span>
-                                                    <span class="password-text" id="pass_<?php echo $customer['id']; ?>"
-                                                        style="display: none;">
-                                                        <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
-                                                    </span>
-                                                    <span class="password-placeholder"
-                                                        id="placeholder_<?php echo $customer['id']; ?>">
-                                                        ••••••••
-                                                    </span>
-                                                    <button class="copy-btn copy-btn-eye"
-                                                        onclick="togglePassword(<?php echo $customer['id']; ?>, '<?php echo addslashes($customer['text_pass'] ?? ''); ?>')"
-                                                        title="Show/Hide password">
-                                                        <i class="fas fa-eye" id="eye_<?php echo $customer['id']; ?>"></i>
-                                                    </button>
-                                                    <button class="copy-btn copy-btn-copy"
-                                                        onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>', <?php echo $customer['id']; ?>)"
-                                                        title="Copy password">
-                                                        <i class="fas fa-copy"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        <?php endif; ?>
+                                        <td style="white-space: nowrap;">
+                                            <div class="password-wrapper">
+                                                <span style="color: #475569; font-weight: 500;">
+                                                    <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                                </span>
+                                                <span style="color: #94a3b8;">/</span>
+                                                <span class="password-text" id="pass_customer_<?php echo $customer['id']; ?>"
+                                                    style="display: none;">
+                                                    <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
+                                                </span>
+                                                <span class="password-placeholder"
+                                                    id="placeholder_customer_<?php echo $customer['id']; ?>">
+                                                    ••••••••
+                                                </span>
+                                                <button class="copy-btn copy-btn-eye"
+                                                    onclick="togglePassword('customer_<?php echo $customer['id']; ?>')"
+                                                    title="Show/Hide password">
+                                                    <i class="fas fa-eye" id="eye_customer_<?php echo $customer['id']; ?>"></i>
+                                                </button>
+                                                <button class="copy-btn copy-btn-copy"
+                                                    onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>')"
+                                                    title="Copy password">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -1318,11 +1373,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         </main>
     </div>
 
-    <!-- Landmark Modal -->
+    <!-- Image Modal -->
     <div id="landmarkModal" class="landmark-modal">
         <button class="landmark-modal-close" onclick="closeLandmarkModal()">&times;</button>
         <div class="landmark-modal-content">
-            <img id="landmarkModalImage" class="landmark-modal-image" src="" alt="Landmark photo">
+            <img id="landmarkModalImage" class="landmark-modal-image" src="" alt="Image">
         </div>
         <div id="landmarkModalCaption" class="landmark-modal-caption"></div>
         <div class="zoom-controls">
@@ -1335,7 +1390,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <?php include '../footer.php'; ?>
 
     <script>
-        // ========== SIDEBAR TOGGLE (Mobile Only) ==========
+        // ========== SIDEBAR TOGGLE ==========
         const burgerBtn = document.getElementById('burgerBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const sidebarWrapper = document.getElementById('sidebarWrapper');
@@ -1357,11 +1412,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         function toggleSidebar() {
-            if (isSidebarOpen) {
-                closeSidebar();
-            } else {
-                openSidebar();
-            }
+            if (isSidebarOpen) closeSidebar();
+            else openSidebar();
         }
 
         if (burgerBtn) {
@@ -1382,11 +1434,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             menuOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
-                    // Don't close if it's a dropdown toggle
                     if (!this.closest('.nav-dropdown-toggle')) {
                         closeSidebar();
                     }
@@ -1394,35 +1444,18 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             });
         });
 
-        // ========== DROPDOWN TOGGLE ==========
-        function toggleDropdown(dropdownId) {
-            const dropdown = document.getElementById(dropdownId);
-            const arrowId = dropdownId.replace('Dropdown', 'Arrow');
-            const arrow = document.getElementById(arrowId);
-
-            if (dropdown && arrow) {
-                dropdown.classList.toggle('show');
-                arrow.classList.toggle('rotated');
-            }
-        }
-
-        // ========== BURGER VISIBILITY ON RESIZE ==========
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
-                // Desktop: close sidebar if open and hide overlay
-                if (isSidebarOpen) {
-                    closeSidebar();
-                }
+                if (isSidebarOpen) closeSidebar();
                 sidebarWrapper.classList.remove('open');
                 menuOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
         });
 
-        // ========== EXISTING FUNCTIONS ==========
+        // ========== HELPERS ==========
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?php echo $_SESSION['csrf_token']; ?>';
 
-        // ========== TOAST ==========
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
@@ -1435,13 +1468,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }, 3000);
         }
 
-        // ========== COPY TO CLIPBOARD ==========
         function copyToClipboard(text, label) {
             if (!text || text === 'N/A' || text === '') {
                 showToast('Nothing to copy', 'warning');
                 return;
             }
-
             navigator.clipboard.writeText(text).then(() => {
                 showToast(`${label} copied to clipboard!`, 'success');
             }).catch(() => {
@@ -1459,11 +1490,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             });
         }
 
-        // ========== TOGGLE PASSWORD VISIBILITY ==========
-        function togglePassword(customerId, password) {
-            const passwordText = document.getElementById('pass_' + customerId);
-            const placeholder = document.getElementById('placeholder_' + customerId);
-            const eyeIcon = document.getElementById('eye_' + customerId);
+        function togglePassword(key) {
+            const passwordText = document.getElementById('pass_' + key);
+            const placeholder = document.getElementById('placeholder_' + key);
+            const eyeIcon = document.getElementById('eye_' + key);
+            if (!passwordText || !placeholder || !eyeIcon) return;
 
             if (passwordText.style.display === 'none' || passwordText.style.display === '') {
                 passwordText.style.display = 'inline';
@@ -1476,13 +1507,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         }
 
-        // ========== COPY PASSWORD ==========
-        function copyPassword(password, customerId) {
+        function copyPassword(password) {
             if (!password) {
                 showToast('No password to copy', 'warning');
                 return;
             }
-
             navigator.clipboard.writeText(password).then(() => {
                 showToast('Password copied to clipboard!', 'success');
             }).catch(() => {
@@ -1500,122 +1529,27 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             });
         }
 
-        // ========== TOGGLE ACCOUNT STATUS ==========
-        async function toggleAccountStatus(customerId, action, customerName) {
-            const confirmMessage = action === 'lock'
-                ? `⚠️ Are you sure you want to LOCK "${customerName}"'s account?`
-                : `⚠️ Are you sure you want to UNLOCK "${customerName}"'s account?`;
-
-            if (!confirm(confirmMessage)) return;
-
-            const row = document.querySelector(`tr[data-id="${customerId}"]`);
-            const actionBtn = row.querySelector(action === 'lock' ? '.lock-btn' : '.unlock-btn');
-            const originalText = actionBtn.innerHTML;
-            actionBtn.disabled = true;
-            actionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'toggle_account_status');
-                formData.append('customer_id', customerId);
-                formData.append('status_action', action);
-                formData.append('csrf_token', csrfToken);
-
-                const response = await fetch('../API/customer_actions.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(data.message, 'success');
-
-                    const actionContainer = document.getElementById('action_' + customerId);
-
-                    if (action === 'lock') {
-                        actionContainer.innerHTML = `
-                            <button class="unlock-btn" onclick="toggleAccountStatus(${customerId}, 'unlock', '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-unlock"></i>
-                            </button>
-                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
-                    } else {
-                        actionContainer.innerHTML = `
-                            <button class="lock-btn" onclick="toggleAccountStatus(${customerId}, 'lock', '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-lock"></i>
-                            </button>
-                            <button class="delete-btn" onclick="deleteCustomer(${customerId}, '${customerName.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
-                    }
-                } else {
-                    showToast(data.message || 'Failed to update account status', 'error');
-                    actionBtn.disabled = false;
-                    actionBtn.innerHTML = originalText;
-                }
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('Network error. Please try again.', 'error');
-                actionBtn.disabled = false;
-                actionBtn.innerHTML = originalText;
-            }
-        }
-
-        // ========== DELETE CUSTOMER ==========
-        async function deleteCustomer(customerId, customerName) {
-            const confirmed = confirm(`⚠️ Are you sure you want to delete "${customerName}"? This action cannot be undone!`);
-            if (!confirmed) return;
-
-            const row = document.querySelector(`tr[data-id="${customerId}"]`);
-            const deleteBtn = row.querySelector('.delete-btn');
-            const originalText = deleteBtn.innerHTML;
-            deleteBtn.disabled = true;
-            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'delete_customer');
-                formData.append('customer_id', customerId);
-                formData.append('csrf_token', csrfToken);
-
-                const response = await fetch('../API/customer_actions.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    row.remove();
-                } else {
-                    showToast(data.message || 'Failed to delete customer', 'error');
-                    deleteBtn.disabled = false;
-                    deleteBtn.innerHTML = originalText;
-                }
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('Network error. Please try again.', 'error');
-                deleteBtn.disabled = false;
-                deleteBtn.innerHTML = originalText;
-            }
-        }
-
-        // ========== LANDMARK MODAL ZOOM FUNCTIONALITY ==========
+        // ========== IMAGE MODAL ==========
         let currentZoom = 1;
         const zoomStep = 0.25;
         const maxZoom = 5;
         const minZoom = 1;
 
-        function openLandmarkModal(imageSrc, customerName) {
+        function openLandmarkModal(imageSrc, name) {
+            openImageModal(imageSrc, name + "'s Landmark Photo");
+        }
+
+        function openPermitModal(imageSrc, name) {
+            openImageModal(imageSrc, name + "'s Business Permit");
+        }
+
+        function openImageModal(imageSrc, captionText) {
             const modal = document.getElementById('landmarkModal');
             const modalImage = document.getElementById('landmarkModalImage');
             const caption = document.getElementById('landmarkModalCaption');
 
             modalImage.src = imageSrc;
-            caption.textContent = customerName + "'s Landmark Photo";
+            caption.textContent = captionText;
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
 
@@ -1632,15 +1566,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         function handleKeyPress(e) {
-            if (e.key === 'Escape') {
-                closeLandmarkModal();
-            } else if (e.key === '+' || e.key === '=') {
-                zoomIn();
-            } else if (e.key === '-') {
-                zoomOut();
-            } else if (e.key === '0') {
-                resetZoom();
-            }
+            if (e.key === 'Escape') closeLandmarkModal();
+            else if (e.key === '+' || e.key === '=') zoomIn();
+            else if (e.key === '-') zoomOut();
+            else if (e.key === '0') resetZoom();
         }
 
         function zoomIn() {
@@ -1669,27 +1598,19 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         document.getElementById('landmarkModal').addEventListener('click', function (e) {
-            if (e.target === this) {
-                closeLandmarkModal();
-            }
+            if (e.target === this) closeLandmarkModal();
         });
 
         document.getElementById('landmarkModalImage').addEventListener('click', function (e) {
             e.stopPropagation();
-            if (currentZoom === 1) {
-                zoomIn();
-            } else {
-                resetZoom();
-            }
+            if (currentZoom === 1) zoomIn();
+            else resetZoom();
         });
 
         document.getElementById('landmarkModalImage').addEventListener('wheel', function (e) {
             e.preventDefault();
-            if (e.deltaY < 0) {
-                zoomIn();
-            } else {
-                zoomOut();
-            }
+            if (e.deltaY < 0) zoomIn();
+            else zoomOut();
         });
 
         window.addEventListener('resize', function () {
@@ -1698,57 +1619,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         });
 
-        // ========== UPDATE UNREAD BADGES ==========
-        function updateUnreadBadges() {
-            const wrappers = document.querySelectorAll('.chat-icon-wrapper');
-
-            wrappers.forEach(wrapper => {
-                const icon = wrapper.querySelector('.chat-icon');
-                if (!icon) return;
-
-                const accNumber = icon.getAttribute('data-acc');
-                if (!accNumber) return;
-
-                const badge = wrapper.querySelector('.badge-unread');
-                if (!badge) return;
-
-                const row = icon.closest('tr');
-                if (!row) return;
-                const customerId = row.getAttribute('data-id');
-                if (!customerId) return;
-
-                const formData = new FormData();
-                formData.append('action', 'get_unread_count');
-                formData.append('customer_acc', accNumber);
-                formData.append('csrf_token', csrfToken);
-
-                fetch('../Customer_API/chat.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const count = data.unread_count || 0;
-                            if (count > 0) {
-                                badge.textContent = count > 9 ? '9+' : count;
-                                badge.classList.remove('hidden');
-                            } else {
-                                badge.classList.add('hidden');
-                            }
-                        }
-                    })
-                    .catch(error => console.error('Error updating badge:', error));
-            });
-        }
-
-        setInterval(updateUnreadBadges, 30000);
-
-        console.log('📱 Sidebar menu loaded - Left Side');
-        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
-        console.log('👥 Registered Customers page loaded');
-        console.log('🔐 Password hidden by default - click eye to show');
-        console.log('🔑 authorize_access: <?php echo $authorizeAccess; ?>');
+        console.log('📱 Sidebar loaded | 3 Tables: Admins | Investors | Customers');
     </script>
 </body>
 

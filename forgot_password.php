@@ -13,13 +13,17 @@ function sendResetOTP($email, $otp)
     $mail->Port = 587;
     $mail->SMTPAuth = true;
     $mail->SMTPSecure = 'tls';
-    $mail->Username = 'villaruzprintshop@gmail.com';
-    $mail->Password = 'ydyu zfbg onec qmmu';
-    $mail->setFrom('villaruzprintshop@gmail.com', 'Villaruz Print Shop');
+    $mail->Username = 'villaruzsofiaapp@gmail.com';
+    $mail->Password = 'lewu ykhi nttm xlvw';
+    $mail->setFrom('villaruzsofiaapp@gmail.com', 'Sofia');
     $mail->addAddress($email);
 
+    // ✅ Strip the @domain part — show only the username
+    $emailParts = explode('@', $email);
+    $emailSafe = htmlspecialchars($emailParts[0], ENT_QUOTES, 'UTF-8');
+
     $mail->isHTML(true);
-    $mail->Subject = "Password Reset Request - Villaruz Print Shop";
+    $mail->Subject = "Villaruz Print Shop & Gen. MDSE. - Password Reset";
     $mail->Body = "
     <!DOCTYPE html>
     <html lang='en'>
@@ -29,7 +33,7 @@ function sendResetOTP($email, $otp)
         <title>Password Reset</title>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-            
+
             body {
                 font-family: 'Poppins', Arial, sans-serif;
                 margin: 0;
@@ -37,7 +41,7 @@ function sendResetOTP($email, $otp)
                 background-color: #f8fafc;
                 color: #334155;
             }
-            
+
             .email-container {
                 max-width: 600px;
                 margin: 20px auto;
@@ -47,24 +51,35 @@ function sendResetOTP($email, $otp)
                 overflow: hidden;
                 border: 1px solid #e2e8f0;
             }
-            
+
             .email-body {
                 padding: 30px;
                 line-height: 1.6;
             }
-            
-            .email-body h5 {
-                font-size: 18px;
-                color: #1e40af;
-                margin-top: 0;
-                font-weight: 600;
-            }
-            
+
             .email-body p {
                 margin: 15px 0;
                 font-size: 16px;
             }
-            
+
+            .greeting {
+                margin: 15px 0;
+                font-size: 16px;
+            }
+
+            .user-email {
+                text-decoration: none !important;
+                color: #334155 !important;
+                font-weight: 600;
+            }
+
+            .user-email a {
+                text-decoration: none !important;
+                color: #334155 !important;
+                pointer-events: none;
+                cursor: default;
+            }
+
             .otp-container {
                 background: #f1f5f9;
                 border-radius: 8px;
@@ -72,7 +87,7 @@ function sendResetOTP($email, $otp)
                 text-align: center;
                 margin: 25px 0;
             }
-            
+
             .otp-code {
                 font-size: 32px;
                 font-weight: 700;
@@ -80,7 +95,7 @@ function sendResetOTP($email, $otp)
                 color: #1e40af;
                 margin: 10px 0;
             }
-            
+
             .action-button {
                 display: inline-block;
                 background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
@@ -95,13 +110,13 @@ function sendResetOTP($email, $otp)
                 cursor: pointer;
                 box-shadow: 0 4px 6px rgba(29, 78, 216, 0.15);
             }
-            
+
             .divider {
                 height: 1px;
                 background: linear-gradient(to right, transparent, #cbd5e1, transparent);
                 margin: 25px 0;
             }
-            
+
             .footer {
                 text-align: center;
                 background: #f1f5f9;
@@ -110,41 +125,57 @@ function sendResetOTP($email, $otp)
                 color: #64748b;
                 border-top: 1px solid #e2e8f0;
             }
+
+            .email-logo-wrap {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+
+            .email-logo {
+                display: block;
+                margin: 0 auto;
+                width: 120px;
+                max-width: 120px;
+                height: auto;
+            }
         </style>
     </head>
     <body>
         <div class='email-container'>
             <div class='email-body'>
-                <h5>Password Reset Request</h5>
-                
-                <p>Hello <strong>$email</strong>,</p>
-                
-                <p>We received a request to reset your password for your Villaruz Print Shop account. Use the OTP code below to reset your password:</p>
-                
+
+            <div style='text-align: center; margin-bottom: 20px;'>
+                <img src='https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png' alt='Sofia Logo' width='120' style='display: block; margin: 0 auto; max-width: 120px; height: auto;'>
+            </div>
+
+                <p class='greeting'>Good Day! <span class='user-email'>$emailSafe</span>,</p><br><br>
+
+                <p>We received a request to reset your password for your Sofia account. Use the OTP code below to reset your password:</p>
+
                 <div class='otp-container'>
                     <p style=\"margin: 0; font-weight: 500; color: #334155;\">Your Password Reset Code</p>
                     <div class='otp-code'>$otp</div>
                  </div>
-                
+
                 <p>If you did not request a password reset, please ignore this email or contact our support team.</p>
-                
+
                 <div class='divider'></div>
-                
+
                 <p><strong>🔒 Security Tips:</strong></p>
                 <ul style=\"margin: 10px 0 15px 20px; font-size: 14px;\">
                     <li>Never share your OTP code with anyone</li>
                     <li>After resetting, please login with your new password</li>
                 </ul>
-                
-                <p>Thank you for being a valued customer!</p>
+
+                <p>Thank you for trusting Sofia — we're happy to have you with us!</p>
             </div>
-            
+
             <div class='footer'>
                 <p style='font-size: 12px; margin-top: 10px;'>
-                    This email is computer generated. Do not reply | Villaruz Print Shop & General Merchandise
+                    This email is computer generated. Do not reply | Villaruz Print Shop & Gen. MDSE.
                 </p>
                 <p style='font-size: 11px; color: #94a3b8;'>
-                    📧 Need help? Email us at villaruzprintshop@gmail.com
+                    📧 Need help? Email us at villaruzsofiaapp@gmail.com
                 </p>
             </div>
         </div>
@@ -197,7 +228,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($emailSent) {
                 // Store email in session for change_password page
                 $_SESSION['reset_email'] = $email;
-                $_SESSION['success'] = 'A password reset code has been sent to your email address.';
                 header('Location: change_password.php');
                 exit;
             } else {
@@ -216,7 +246,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Forgot Password - Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -225,83 +258,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 0;
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
         }
 
         body {
-            background: #f1f5f9;
+            background: #ffffff;
             color: #1e293b;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        nav {
+        /* ========== APP CONTAINER — full-screen shell ========== */
+        .app-shell {
+            flex: 1;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 5%;
+            flex-direction: column;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
             background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
-        .logo img {
-            width: 100px;
-            height: auto;
-            object-fit: contain;
+        /* ========== HEADER (App-style) ========== */
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 24px 0 24px;
         }
 
-        .nav-link {
-            color: #64748b;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
-        }
-
-        .nav-link:hover {
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #f1f5f9;
             color: #3b82f6;
+            text-decoration: none;
+            font-size: 16px;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
         }
 
+        .back-btn:hover {
+            background: #e2e8f0;
+            transform: scale(1.05);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+        }
+
+        .app-header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 0.3px;
+        }
+
+        /* ========== CONTENT — pushed higher ========== */
         .auth-container {
             flex: 1;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 50px 20px;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 10px 24px 40px 24px;
         }
 
         .auth-card {
-            background: #ffffff;
-            border-radius: 28px;
-            padding: 40px;
             width: 100%;
-            max-width: 480px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
+        }
+
+        .auth-logo {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            margin-bottom: 24px;
+        }
+
+        .auth-logo img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
         }
 
         .auth-title {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 800;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-align: center;
             color: #0f172a;
+            line-height: 1.2;
         }
 
         .auth-title span {
             background: linear-gradient(145deg, #3b82f6, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .auth-sub {
             text-align: center;
             color: #64748b;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
             font-size: 14px;
+            line-height: 1.5;
+            padding: 0 10px;
         }
 
         .form-group {
@@ -309,28 +383,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .form-group label {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 6px;
             margin-bottom: 8px;
             font-weight: 600;
             color: #475569;
             font-size: 14px;
         }
 
+        .form-group label i {
+            color: #3b82f6;
+            font-size: 13px;
+        }
+
         .form-group input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 16px 18px;
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            border: 1.5px solid #e2e8f0;
             border-radius: 14px;
             color: #1e293b;
-            font-size: 15px;
+            font-size: 16px;
             outline: none;
-            transition: 0.3s;
+            transition: 0.25s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
         }
 
         .form-group input:focus {
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
             background: #ffffff;
         }
 
@@ -338,47 +425,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             width: 100%;
             background: linear-gradient(145deg, #3b82f6, #6366f1);
             border: none;
-            padding: 14px;
-            border-radius: 40px;
+            padding: 16px;
+            border-radius: 5px;
             font-weight: 700;
             font-size: 16px;
             color: white;
             cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
+            transition: 0.25s ease;
+            margin-top: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
         }
 
         .auth-footer {
             text-align: center;
-            margin-top: 25px;
+            margin-top: 28px;
             color: #64748b;
             font-size: 14px;
+            line-height: 1.5;
         }
 
         .auth-footer a {
             color: #3b82f6;
             text-decoration: none;
             font-weight: 600;
+            transition: color 0.2s;
         }
 
-        footer {
-            background: #ffffff;
-            padding: 20px 5%;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-            color: #94a3b8;
+        .auth-footer a:hover {
+            color: #2563eb;
+            text-decoration: underline;
         }
 
         .alert {
-            padding: 12px 16px;
+            padding: 14px 16px;
             border-radius: 14px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             font-size: 14px;
+            line-height: 1.5;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .alert i {
+            font-size: 16px;
+            margin-top: 2px;
+            flex-shrink: 0;
         }
 
         .alert-error {
@@ -393,64 +501,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #bbf7d0;
         }
 
-        @media (max-width: 500px) {
-            .auth-card {
-                padding: 30px 25px;
+        /* ========== DESKTOP VIEW ========== */
+        @media (min-width: 600px) {
+            body {
+                background: #f1f5f9;
+                padding-top: 0;
+                padding-bottom: 0;
             }
 
-            .logo img {
-                width: 75px;
+            .app-shell {
+                min-height: auto;
+                margin: 40px auto;
+                border-radius: 24px;
+                box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e2e8f0;
+                overflow: hidden;
+            }
+
+            .auth-container {
+                padding: 10px 40px 50px 40px;
+            }
+
+            .app-header {
+                padding: 24px 30px 0 30px;
+            }
+        }
+
+        /* ========== SMALL PHONES ========== */
+        @media (max-width: 380px) {
+            .auth-title {
+                font-size: 24px;
+            }
+
+            .auth-container {
+                padding: 8px 18px 30px 18px;
+            }
+
+            .auth-logo img {
+                width: 84px;
+                height: 84px;
+            }
+
+            .app-header {
+                padding: 16px 18px 0 18px;
+            }
+        }
+
+        /* ========== SHORT SCREENS (landscape phones) ========== */
+        @media (max-height: 700px) {
+            .auth-logo {
+                margin-top: 0;
+                margin-bottom: 16px;
+            }
+
+            .auth-logo img {
+                width: 80px;
+                height: 80px;
+            }
+
+            .auth-sub {
+                margin-bottom: 20px;
+            }
+
+            .auth-container {
+                padding: 8px 24px 24px 24px;
             }
         }
     </style>
 </head>
 
 <body>
-    <nav>
-        <div class="logo">
-            <img src="logo/logo.jpeg" alt="Villaruz Print Shop Logo">
+    <div class="app-shell">
+
+        <!-- App-style header with back button + app name -->
+        <div class="app-header">
+            <a href="login.php" class="back-btn" aria-label="Back to home">
+                <i class="fas fa-arrow-left"></i>
+            </a>
         </div>
-        <div>
-            <a href="index.php" class="nav-link">Home</a>
+
+        <div class="auth-container">
+            <div class="auth-card">
+
+                <div class="auth-logo">
+                    <img src="logo/ic_launcher.png" alt="Villaruz Print Shop Logo">
+                </div>
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            <?php foreach ($errors as $error): ?>
+                                <?php echo htmlspecialchars($error); ?><br>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" action="" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+
+                    <div class="form-group">
+                        <input type="email" name="email" placeholder="Enter your registered email"
+                            value="<?php echo htmlspecialchars($email); ?>" required>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Request Code
+                    </button>
+                </form>
+
+            </div>
         </div>
-    </nav>
 
-    <div class="auth-container">
-        <div class="auth-card">
-            <h2 class="auth-title">Forgot <span>Password</span></h2>
-            <p class="auth-sub">Enter your email to receive reset code</p>
-
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error">
-                    <?php foreach ($errors as $error): ?>
-                        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?><br>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-
-            <form method="POST" action="" autocomplete="off">
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-
-                <div class="form-group">
-                    <label><i class="fas fa-envelope"></i> Email Address</label>
-                    <input type="email" name="email" placeholder="Enter your registered email"
-                        value="<?php echo htmlspecialchars($email); ?>" required>
-                </div>
-
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-paper-plane"></i> Send Reset Code
-                </button>
-
-                <div class="auth-footer">
-                    Remember your password? <a href="login.php">Back to Login</a>
-                </div>
-            </form>
-        </div>
     </div>
-
-    <footer>
-        <p>© 2026 Villaruz Print Shop & General Merchandise. All rights reserved.</p>
-    </footer>
 </body>
 
 </html>

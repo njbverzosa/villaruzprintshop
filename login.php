@@ -20,7 +20,7 @@ include __DIR__ . '/app_version.php';
 // ✅ DETECT PLATFORM
 // ==============================================
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$isInApp = (stripos($userAgent, 'SofiaApp') !== false); // ✅ FIX: case-insensitive
+$isInApp = (stripos($userAgent, 'SofiaApp') !== false);
 
 function isMobileBrowser($userAgent)
 {
@@ -119,7 +119,7 @@ function updateLoginMeta($pdo, $userType, $userId, $loginType)
     if (!$table) return;
 
     date_default_timezone_set('Asia/Manila');
-    $onlineTime = date('M j, g:i A'); // e.g. Sep 3, 3:58 PM
+    $onlineTime = date('M j, g:i A');
 
     try {
         $stmt = $pdo->prepare("UPDATE $table SET online_time = ?, login_type = ? WHERE id = ?");
@@ -171,8 +171,6 @@ function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
 {
     global $biometricPageMap;
 
-    // ✅ FIX: only treat as guest if f_name is literally "Guest" (not empty)
-    // (empty f_name was sending logged-in customers to account-edit.php incorrectly)
     $fName = $user['f_name'] ?? '';
     $isGuest = (strcasecmp(trim($fName), 'Guest') === 0);
     $dashboardUrl = $isGuest ? 'public/account-edit.php' : 'public/shop.php';
@@ -286,7 +284,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     $table = $tableMap[$userType] ?? 'customers';
 
-    // ✅ FIX: also select f_name so redirect logic works
     $stmt = $pdo->prepare("SELECT id, biometric_enrolled, acc_number, f_name, biometric_id FROM $table WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -310,10 +307,8 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('user_type',          $userType,                   time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-    // ✅ NEW: record online_time + login_type
     updateLoginMeta($pdo, $userType, $user['id'], $loginType);
 
-    // ✅ Customer in-app with mismatched version → ask to update first
     if ($userType === 'Customer' && $isInApp && !$appVersionMatch && !$skipUpdate) {
         echo json_encode([
             'success'           => false,
@@ -447,7 +442,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $info = $stmt->fetch();
             if ($info) $identifier = substr(preg_replace('/[^0-9]/', '', $info['phone_number']), -4);
 
-            // ✅ FIX: added `account` to the SELECT list (was missing → $user['account'] undefined)
             $stmt = $pdo->prepare("
                 SELECT id, password, acc_number, phone_number, f_name, 'Customer' as role,
                        email, account, biometric_enrolled, biometric_id
@@ -458,7 +452,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $user = $stmt->fetch();
 
             if ($user) {
-                // ✅ FIX: guard with isset in case the column name differs in your DB
                 if (isset($user['account']) && $user['account'] == 1) {
                     $errors[] = 'Account locked. Please contact support.';
                 } elseif (password_verify($password, $user['password'])) {
@@ -484,7 +477,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             setcookie('user_type',          $userType,                         time() + (86400 * 365), "/");
             setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0,  time() + (86400 * 365), "/");
 
-            // ✅ NEW: record online_time + login_type
             updateLoginMeta($pdo, $userType, $user['id'], $loginType);
 
             $loginSuccess = true;
@@ -519,7 +511,10 @@ if (isset($_SESSION['exit_message'])) {
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Login | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -528,19 +523,44 @@ if (isset($_SESSION['exit_message'])) {
             padding: 0;
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         html,
         body {
             height: 100%;
+            overflow-x: hidden;
         }
 
         body {
-            background: #f1f5f9;
+            background: #ffffff;
             color: #1e293b;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* ========== APP SHELL ========== */
+        .app-shell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        /* ========== CONTENT (balanced, vertically centered) ========== */
+        .auth-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;    /* ✅ CENTER vertically */
+            padding: 20px 24px 30px 24px;
         }
 
         .logo {
@@ -549,54 +569,39 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             align-items: center;
             text-align: center;
-            margin-bottom: 20px;
-            gap: 6px;
+            margin-bottom: 24px;
+            gap: 8px;
         }
 
         .logo img {
             width: 100px;
-            height: auto;
+            height: 100px;
             object-fit: contain;
             display: block;
+            border-radius: 22px;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
         }
 
         .version-badge {
             font-size: 12px;
             font-weight: 600;
             color: #64748b;
-            padding: 2px 10px;
+            padding: 3px 12px;
             border-radius: 20px;
             letter-spacing: 0.02em;
-        }
-
-        .auth-container {
-            flex: 1;
-            width: 100%;
-            min-height: 100vh;
-            min-height: 100dvh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 30px 20px;
             background: #f1f5f9;
+            border: 1px solid #e2e8f0;
         }
 
         .auth-card {
-            background: #ffffff;
-            border-radius: 5px;
-            padding: 30px;
             width: 100%;
-            max-width: 450px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
-            margin: 0 auto;
         }
 
         .auth-sub {
             text-align: center;
             color: #64748b;
-            margin-bottom: 20px;
-            font-size: 18px;
+            margin-bottom: 18px;
+            font-size: 15px;
         }
 
         /* ==============================================
@@ -607,10 +612,10 @@ if (isset($_SESSION['exit_message'])) {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 0;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             padding: 4px;
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            border: 1.5px solid #e2e8f0;
             border-radius: 12px;
         }
 
@@ -646,7 +651,7 @@ if (isset($_SESSION['exit_message'])) {
             z-index: 1;
             background: transparent;
             border: none;
-            padding: 10px 6px;
+            padding: 11px 6px;
             border-radius: 9px;
             font-weight: 600;
             font-size: 13px;
@@ -669,36 +674,57 @@ if (isset($_SESSION['exit_message'])) {
            FORM
            ============================================== */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .form-group label {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 6px;
             margin-bottom: 8px;
             font-weight: 600;
             color: #475569;
             font-size: 14px;
         }
 
+        .form-group label i {
+            color: #3b82f6;
+            font-size: 13px;
+        }
+
         .form-group select,
         .form-group input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 15px 18px;
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            border: 1.5px solid #e2e8f0;
             border-radius: 14px;
             color: #1e293b;
-            font-size: 15px;
+            font-size: 16px;
             outline: none;
-            transition: 0.3s;
+            transition: 0.25s ease;
             font-family: 'Poppins', sans-serif;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 18px;
+            padding-right: 44px;
         }
 
         .form-group select:focus,
         .form-group input:focus {
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
             background: #ffffff;
+        }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
         }
 
         .password-wrapper {
@@ -709,12 +735,12 @@ if (isset($_SESSION['exit_message'])) {
 
         .password-wrapper input {
             flex: 1;
-            padding-right: 45px;
+            padding-right: 48px;
         }
 
         .password-wrapper i {
             position: absolute;
-            right: 15px;
+            right: 16px;
             cursor: pointer;
             color: #94a3b8;
             transition: color 0.3s;
@@ -727,7 +753,7 @@ if (isset($_SESSION['exit_message'])) {
 
         .forgot-password-link {
             text-align: right;
-            margin-top: 6px;
+            margin-top: 8px;
             font-size: 13px;
         }
 
@@ -747,24 +773,32 @@ if (isset($_SESSION['exit_message'])) {
             width: 100%;
             background: linear-gradient(145deg, #3b82f6, #6366f1);
             border: none;
-            padding: 14px;
-            border-radius: 5px;
+            padding: 16px;
+            border-radius: 40px;
             font-weight: 700;
             font-size: 16px;
             color: white;
             cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
+            transition: 0.25s ease;
+            margin-top: 8px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             font-family: 'Poppins', sans-serif;
+            -webkit-appearance: none;
+            appearance: none;
+            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
         }
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
         }
 
         .btn-primary:disabled {
@@ -797,18 +831,18 @@ if (isset($_SESSION['exit_message'])) {
         .fingerprint-row {
             display: flex;
             justify-content: center;
-            margin-top: 16px;
+            margin-top: 18px;
         }
 
         .btn-fingerprint {
-            width: 56px;
-            height: 56px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: #ffffff;
             border: 2px solid #e2e8f0;
             color: #3b82f6;
             cursor: pointer;
-            transition: 0.3s;
+            transition: 0.25s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -817,7 +851,7 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .btn-fingerprint i {
-            font-size: 24px;
+            font-size: 26px;
             color: #3b82f6;
             transition: color 0.3s;
         }
@@ -826,7 +860,7 @@ if (isset($_SESSION['exit_message'])) {
             border-color: #3b82f6;
             background: #eff6ff;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
         }
 
         .btn-fingerprint:hover i {
@@ -840,13 +874,15 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .alert {
-            padding: 14px 18px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            margin-bottom: 16px;
             font-size: 14px;
             display: flex;
             gap: 10px;
+            align-items: flex-start;
             animation: slideDown 0.5s ease;
+            line-height: 1.5;
         }
 
         .alert-error {
@@ -862,7 +898,9 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .alert i {
-            font-size: 18px;
+            font-size: 16px;
+            margin-top: 2px;
+            flex-shrink: 0;
         }
 
         @keyframes slideDown {
@@ -900,15 +938,26 @@ if (isset($_SESSION['exit_message'])) {
 
         .auth-footer {
             text-align: center;
-            margin-top: 25px;
+            margin-top: 18px;
             color: #64748b;
             font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .auth-footer + .auth-footer {
+            margin-top: 6px;
         }
 
         .auth-footer a {
             color: #3b82f6;
             text-decoration: none;
             font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .auth-footer a:hover {
+            color: #2563eb;
+            text-decoration: underline;
         }
 
         /* ==============================================
@@ -1087,20 +1136,40 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         /* ==============================================
-           RESPONSIVE
+           DESKTOP VIEW
            ============================================== */
-        @media (max-width: 500px) {
-            .auth-container {
-                padding: 20px 16px;
+        @media (min-width: 600px) {
+            body {
+                background: #f1f5f9;
+                padding-top: 0;
+                padding-bottom: 0;
             }
 
-            .auth-card {
-                padding: 30px 22px;
-                max-width: 100%;
+            .app-shell {
+                min-height: auto;
+                margin: 40px auto;
+                border-radius: 24px;
+                box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e2e8f0;
+                overflow: hidden;
+            }
+
+            .auth-container {
+                padding: 30px 40px 40px 40px;
+            }
+        }
+
+        /* ==============================================
+           SMALL PHONES
+           ============================================== */
+        @media (max-width: 380px) {
+            .auth-container {
+                padding: 16px 18px 24px 18px;
             }
 
             .logo img {
-                width: 75px;
+                width: 84px;
+                height: 84px;
             }
 
             .user-type-toggle button {
@@ -1110,147 +1179,188 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             .user-type-toggle button i {
-                font-size: 13px;
+                font-size: 12px;
+            }
+        }
+
+        /* ==============================================
+           SHORT SCREENS
+           ============================================== */
+        @media (max-height: 700px) {
+            .auth-container {
+                padding: 12px 24px 20px 24px;
+                justify-content: flex-start;
             }
 
-            .forgot-password-link {
-                font-size: 12px;
+            .logo {
+                margin-bottom: 14px;
+            }
+
+            .logo img {
+                width: 76px;
+                height: 76px;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .form-group select,
+            .form-group input {
+                padding: 13px 16px;
+            }
+
+            .btn-primary {
+                padding: 14px;
+            }
+
+            .fingerprint-row {
+                margin-top: 14px;
             }
 
             .btn-fingerprint {
-                width: 50px;
-                height: 50px;
+                width: 52px;
+                height: 52px;
             }
 
             .btn-fingerprint i {
                 font-size: 22px;
+            }
+
+            .auth-footer {
+                margin-top: 12px;
             }
         }
     </style>
 </head>
 
 <body>
+    <div class="app-shell">
+        <div class="auth-container">
+            <div class="auth-card">
 
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="logo">
-                <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png"
-                    alt="Villaruz Print Shop Logo">
-                <span class="version-badge">V<?php echo $latestVersion; ?></span>
-            </div>
-
-            <?php if (!empty($offlineMessage)): ?>
-                <div class="alert alert-info">
-                    <i class="fas fa-sign-out-alt"></i> <?php echo htmlspecialchars($offlineMessage); ?>
+                <div class="logo">
+                    <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png"
+                        alt="Villaruz Print Shop Logo">
+                    <span class="version-badge">V<?php echo $latestVersion; ?></span>
                 </div>
-            <?php endif; ?>
 
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error">
-                    <?php foreach ($errors as $error): ?>
-                        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?><br>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-
-            <div id="passwordSection">
-                <form method="POST" action="" id="loginForm">
-                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-
-                    <div class="user-type-toggle" id="userTypeToggle" data-active="<?php echo $userTypeSelected; ?>">
-                        <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>"
-                            data-role="Admin" onclick="switchUserType('Admin')">
-                            <i class="fas fa-user-tie"></i> Admin
-                        </button>
-                        <button type="button" class="<?php echo $userTypeSelected === 'Investor' ? 'active' : ''; ?>"
-                            data-role="Investor" onclick="switchUserType('Investor')">
-                            <i class="fas fa-chart-line"></i> Investor
-                        </button>
-                        <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>"
-                            data-role="Customer" onclick="switchUserType('Customer')">
-                            <i class="fas fa-user"></i> Customer
-                        </button>
+                <?php if (!empty($offlineMessage)): ?>
+                    <div class="alert alert-info">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <div><?php echo htmlspecialchars($offlineMessage); ?></div>
                     </div>
+                <?php endif; ?>
 
-                    <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
-                    <input type="hidden" name="installed_version" id="installedVersionInput" value="">
-
-                    <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
-                        id="adminSelectGroup">
-                        <label><i class="fas fa-users"></i> Select Account</label>
-                        <select name="role" id="adminSelect">
-                            <option value="">-- Select your account --</option>
-                            <?php foreach ($existingAdmins as $admin): ?>
-                                <option value="<?php echo $admin['id']; ?>" <?php echo ($selectedRole == $admin['id'] && $userTypeSelected === 'Admin') ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($admin['acc_number']); ?>
-                                </option>
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            <?php foreach ($errors as $error): ?>
+                                <?php echo htmlspecialchars($error); ?><br>
                             <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="form-group select-group <?php echo $userTypeSelected === 'Investor' ? 'visible' : ''; ?>"
-                        id="investorSelectGroup">
-                        <label><i class="fas fa-chart-line"></i> Select Account</label>
-                        <select name="investor" id="investorSelect">
-                            <option value="">-- Select your account --</option>
-                            <?php foreach ($existingInvestors as $investor): ?>
-                                <option value="<?php echo $investor['id']; ?>" <?php echo ($selectedInvestorId == $investor['id'] && $userTypeSelected === 'Investor') ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($investor['acc_number']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
-                        id="customerSelectGroup">
-                        <label><i class="fas fa-users"></i> Select Account</label>
-                        <select name="customer" id="customerSelect">
-                            <option value="">-- Select your account --</option>
-                            <?php foreach ($existingCustomers as $customer): ?>
-                                <option value="<?php echo $customer['id']; ?>" <?php echo ($selectedCustomerId == $customer['id'] && $userTypeSelected === 'Customer') ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($customer['acc_number']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fas fa-lock"></i> Password</label>
-                        <div class="password-wrapper">
-                            <input type="password" name="password" id="password" placeholder="Enter your password"
-                                required>
-                            <i class="fas fa-eye-slash" id="togglePassword"></i>
-                        </div>
-                        <div class="forgot-password-link">
-                            <a href="forgot_password.php"><i class="fas fa-key"></i> Forgot password?</a>
                         </div>
                     </div>
+                <?php endif; ?>
 
-                    <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
-                        Login
-                    </button>
+                <div id="passwordSection">
+                    <form method="POST" action="" id="loginForm">
+                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
-                    <div class="fingerprint-row">
-                        <button type="button" class="btn-fingerprint" id="fingerprintBtn"
-                            onclick="triggerBiometric()" title="Login with fingerprint">
-                            <i class="fas fa-fingerprint"></i>
+                        <div class="user-type-toggle" id="userTypeToggle" data-active="<?php echo $userTypeSelected; ?>">
+                            <button type="button" class="<?php echo $userTypeSelected === 'Admin' ? 'active' : ''; ?>"
+                                data-role="Admin" onclick="switchUserType('Admin')">
+                                <i class="fas fa-user-tie"></i> Admin
+                            </button>
+                            <button type="button" class="<?php echo $userTypeSelected === 'Investor' ? 'active' : ''; ?>"
+                                data-role="Investor" onclick="switchUserType('Investor')">
+                                <i class="fas fa-chart-line"></i> Investor
+                            </button>
+                            <button type="button" class="<?php echo $userTypeSelected === 'Customer' ? 'active' : ''; ?>"
+                                data-role="Customer" onclick="switchUserType('Customer')">
+                                <i class="fas fa-user"></i> Customer
+                            </button>
+                        </div>
+
+                        <input type="hidden" name="user_type" id="userTypeInput" value="<?php echo $userTypeSelected; ?>">
+                        <input type="hidden" name="installed_version" id="installedVersionInput" value="">
+
+                        <div class="form-group select-group <?php echo $userTypeSelected === 'Admin' ? 'visible' : ''; ?>"
+                            id="adminSelectGroup">
+                            <label><i class="fas fa-users"></i> Select Account</label>
+                            <select name="role" id="adminSelect">
+                                <option value="">-- Select your account --</option>
+                                <?php foreach ($existingAdmins as $admin): ?>
+                                    <option value="<?php echo $admin['id']; ?>" <?php echo ($selectedRole == $admin['id'] && $userTypeSelected === 'Admin') ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($admin['acc_number']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group select-group <?php echo $userTypeSelected === 'Investor' ? 'visible' : ''; ?>"
+                            id="investorSelectGroup">
+                            <label><i class="fas fa-chart-line"></i> Select Account</label>
+                            <select name="investor" id="investorSelect">
+                                <option value="">-- Select your account --</option>
+                                <?php foreach ($existingInvestors as $investor): ?>
+                                    <option value="<?php echo $investor['id']; ?>" <?php echo ($selectedInvestorId == $investor['id'] && $userTypeSelected === 'Investor') ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($investor['acc_number']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group select-group <?php echo $userTypeSelected === 'Customer' ? 'visible' : ''; ?>"
+                            id="customerSelectGroup">
+                            <label><i class="fas fa-users"></i> Select Account</label>
+                            <select name="customer" id="customerSelect">
+                                <option value="">-- Select your account --</option>
+                                <?php foreach ($existingCustomers as $customer): ?>
+                                    <option value="<?php echo $customer['id']; ?>" <?php echo ($selectedCustomerId == $customer['id'] && $userTypeSelected === 'Customer') ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-lock"></i> Password</label>
+                            <div class="password-wrapper">
+                                <input type="password" name="password" id="password" placeholder="Enter your password"
+                                    required>
+                                <i class="fas fa-eye-slash" id="togglePassword"></i>
+                            </div>
+                            <div class="forgot-password-link">
+                                <a href="forgot_password.php"> Forgot password?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="loginBtn" <?php echo $loginSuccess ? 'disabled' : ''; ?>>
+                            Login
                         </button>
-                    </div>
 
+                        <div class="fingerprint-row">
+                            <button type="button" class="btn-fingerprint" id="fingerprintBtn"
+                                onclick="triggerBiometric()" title="Login with fingerprint">
+                                <i class="fas fa-fingerprint"></i>
+                            </button>
+                        </div>
+
+                        <div class="auth-footer">
+                            Don't have an account? <a href="registration.php">Register</a>
+                        </div>
+                    </form>
                     <div class="auth-footer">
-                        Don't have an account? <a href="registration.php">Sign Up</a>
+                        Download the <a
+                            href="https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia.apk">Sofia</a>
+                        app
                     </div>
-                </form>
-                <div class="auth-footer">
-                    Download the <a
-                        href="https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia.apk">Sofia</a>
-                    App
                 </div>
-            </div>
 
+            </div>
         </div>
     </div>
-
 
     <?php if ($renderUpdateModal): ?>
         <div class="update-overlay" id="updateOverlay">

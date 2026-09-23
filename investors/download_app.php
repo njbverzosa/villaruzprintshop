@@ -46,7 +46,7 @@ if (!$userData) {
 
 $user = $userData;
 
-include 'app_version.php';
+include '../app_version.php';
 
 ?>
 <!DOCTYPE html>

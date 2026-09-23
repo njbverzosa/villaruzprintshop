@@ -63,7 +63,7 @@ $updateStmt = $pdo->prepare("UPDATE customers SET online_time = ? WHERE id = ?")
 $updateStmt->execute([$currentTime, $user['id']]);
 
 
-include 'app_version.php';
+include '../app_version.php';
 
 ?>
 <!DOCTYPE html>
