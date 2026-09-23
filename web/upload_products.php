@@ -315,6 +315,46 @@ $defaultImageUrl = '../Products/no-image.jpg';
             pointer-events: none;
         }
 
+        /* ---- TORCH BUTTON ---- */
+        .btn-torch {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-torch.visible {
+            display: flex;
+        }
+
+        .btn-torch:active {
+            transform: scale(0.92);
+        }
+
+        .btn-torch.torch-on {
+            background: #f59e0b;
+            color: #000;
+            border-color: #fbbf24;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.9);
+        }
+
+        .btn-torch i {
+            pointer-events: none;
+        }
+
         button {
             padding: 10px 15px;
             border: none;
@@ -418,7 +458,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Container for both loader and check */
         .success-icon-wrap {
             width: 100px;
             height: 100px;
@@ -429,7 +468,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             justify-content: center;
         }
 
-        /* -------- Spinner -------- */
         .success-spinner {
             width: 80px;
             height: 80px;
@@ -441,7 +479,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
-        /* -------- Checkmark SVG (hidden initially) -------- */
         .success-check {
             position: absolute;
             top: 0;
@@ -459,7 +496,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             display: block;
         }
 
-        /* Circle */
         .success-check circle {
             fill: none;
             stroke: #10b981;
@@ -468,7 +504,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             stroke-dashoffset: 166;
         }
 
-        /* Tick */
         .success-check path {
             fill: none;
             stroke: #10b981;
@@ -479,7 +514,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             stroke-dashoffset: 48;
         }
 
-        /* ---- State: loading ---- */
         .success-card.loading .success-spinner {
             opacity: 1;
             transform: scale(1);
@@ -490,7 +524,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             transform: scale(0.8);
         }
 
-        /* ---- State: done ---- */
         .success-card.done .success-spinner {
             opacity: 0;
             transform: scale(0.6);
@@ -501,7 +534,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             transform: scale(1);
         }
 
-        /* Trigger the SVG drawing animation when in "done" state */
         .success-card.done .success-check circle {
             animation: drawCircle 0.5s ease-out forwards;
         }
@@ -537,45 +569,26 @@ $defaultImageUrl = '../Products/no-image.jpg';
             opacity: 1;
         }
 
-        /* ---- Animations ---- */
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(12px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+            from { opacity: 0; transform: scale(0.9) translateY(12px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         @keyframes drawCircle {
-            to {
-                stroke-dashoffset: 0;
-            }
+            to { stroke-dashoffset: 0; }
         }
 
         @keyframes drawCheck {
-            to {
-                stroke-dashoffset: 0;
-            }
+            to { stroke-dashoffset: 0; }
         }
     </style>
 </head>
@@ -605,6 +618,10 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 <div class="camera-box" id="cameraBox">
                     <video id="camera" autoplay playsinline muted></video>
                     <img id="capturedPhoto" alt="Captured product">
+                    <!-- TORCH BUTTON -->
+                    <button type="button" class="btn-torch" id="torchBtn" title="Toggle flashlight">
+                        <i class="fas fa-lightbulb"></i>
+                    </button>
                 </div>
             </div>
 
@@ -612,7 +629,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 Upload Photo
             </button>
 
-            <!-- ✅ Choose Default button -->
             <button type="button" class="btn-default" id="defaultBtn">
                 <i class="fas fa-image"></i> Choose Default
             </button>
@@ -640,7 +656,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
 
                 <label for="unit">Unit</label>
                 <select name="unit" id="unit">
-                    <!-- Count / Pieces -->
                     <option value="pcs">Pcs</option>
                     <option value="piece">Piece</option>
                     <option value="pieces">Pieces</option>
@@ -648,8 +663,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
                     <option value="set">Set</option>
                     <option value="pair">Pair</option>
                     <option value="dozen">Dozen</option>
-
-                    <!-- Containers / Packaging -->
                     <option value="box">Box</option>
                     <option value="carton">Carton</option>
                     <option value="case">Case</option>
@@ -668,8 +681,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
                     <option value="pads">Pads</option>
                     <option value="sheet">Sheet</option>
                     <option value="sheets">Sheets</option>
-
-                    <!-- Liquids / Volumes -->
                     <option value="bottle">Bottle</option>
                     <option value="can">Can</option>
                     <option value="tin">Tin</option>
@@ -681,22 +692,16 @@ $defaultImageUrl = '../Products/no-image.jpg';
                     <option value="gallon">Gallon</option>
                     <option value="liter">Liter</option>
                     <option value="ml">Milliliter (mL)</option>
-
-                    <!-- Weight -->
                     <option value="gram">Gram (g)</option>
                     <option value="kg">Kilogram (kg)</option>
                     <option value="ton">Ton</option>
                     <option value="lb">Pound (lb)</option>
                     <option value="oz">Ounce (oz)</option>
-
-                    <!-- Length -->
                     <option value="meter">Meter (m)</option>
                     <option value="cm">Centimeter (cm)</option>
                     <option value="ft">Foot (ft)</option>
                     <option value="in">Inch (in)</option>
                     <option value="yard">Yard</option>
-
-                    <!-- Time / Service -->
                     <option value="hour">Hour</option>
                     <option value="day">Day</option>
                     <option value="month">Month</option>
@@ -730,11 +735,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
     <div class="success-overlay" id="successOverlay">
         <div class="success-card loading" id="successCard">
             <div class="success-icon-wrap">
-
-                <!-- Spinner (shown first) -->
                 <div class="success-spinner"></div>
-
-                <!-- Green check (fades in after) -->
                 <div class="success-check">
                     <svg viewBox="0 0 52 52">
                         <circle cx="26" cy="26" r="24" />
@@ -742,7 +743,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
                     </svg>
                 </div>
             </div>
-
             <div class="success-title" id="successTitle">Saving Product…</div>
             <div class="success-message" id="successMessage">Please wait while we process your upload.</div>
         </div>
@@ -764,6 +764,11 @@ $defaultImageUrl = '../Products/no-image.jpg';
         var base64Input = document.getElementById('product_image_base64');
         var useDefaultImageInput = document.getElementById('use_default_image');
         var saveBtn = document.getElementById('saveBtn');
+
+        // TORCH
+        var torchBtn = document.getElementById('torchBtn');
+        var torchOn = false;
+        var torchTrack = null;
 
         var successOverlay = document.getElementById('successOverlay');
         var successCard = document.getElementById('successCard');
@@ -796,6 +801,26 @@ $defaultImageUrl = '../Products/no-image.jpg';
         function showPlaceholder() { imagePlaceholder.classList.add('visible'); }
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
+        // TORCH visibility
+        function showTorchButton() {
+            // Only show if we have a video track with torch capability (or try anyway)
+            if (torchTrack && typeof torchTrack.getCapabilities === 'function') {
+                var caps = torchTrack.getCapabilities();
+                if (caps.torch) {
+                    torchBtn.classList.add('visible');
+                    return;
+                }
+            }
+            // Fallback: show button anyway for devices that may support it
+            torchBtn.classList.add('visible');
+        }
+        function hideTorchButton() {
+            torchBtn.classList.remove('visible');
+            // Reset torch state
+            torchOn = false;
+            torchBtn.classList.remove('torch-on');
+        }
+
         // ============================================================
         // VIEW STATES
         // ============================================================
@@ -806,6 +831,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
             hideDefaultButton();
             showCancelButton();
             hidePlaceholder();
+            hideTorchButton();
         }
 
         function viewNoImage() {
@@ -815,6 +841,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
             showUploadButton();
             showDefaultButton();
             showPlaceholder();
+            hideTorchButton();
         }
 
         function viewCameraActive() {
@@ -824,7 +851,41 @@ $defaultImageUrl = '../Products/no-image.jpg';
             hideUploadButton();
             hideDefaultButton();
             hidePlaceholder();
+            // Torch button is shown only if a torch track exists
+            if (torchTrack) {
+                showTorchButton();
+            }
         }
+
+        // ============================================================
+        // TORCH TOGGLE
+        // ============================================================
+        async function toggleTorch() {
+            if (!torchTrack) {
+                alert('Torch not available on this device/camera.');
+                return;
+            }
+
+            try {
+                torchOn = !torchOn;
+                await torchTrack.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                });
+                if (torchOn) {
+                    torchBtn.classList.add('torch-on');
+                } else {
+                    torchBtn.classList.remove('torch-on');
+                }
+            } catch (err) {
+                console.error('Torch error:', err);
+                // Revert state if failed
+                torchOn = !torchOn;
+                alert('Could not toggle torch: ' + (err.message || err.name));
+                torchBtn.classList.remove('torch-on');
+            }
+        }
+
+        torchBtn.addEventListener('click', toggleTorch);
 
         // ============================================================
         // START BACK CAMERA
@@ -852,6 +913,12 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 cameraBox.classList.add('visible');
                 imageWrapper.style.display = 'none';
 
+                // Get the video track for torch
+                torchTrack = stream.getVideoTracks()[0] || null;
+                // Reset torch state
+                torchOn = false;
+                torchBtn.classList.remove('torch-on');
+
                 viewCameraActive();
                 cameraActive = true;
             } catch (err) {
@@ -866,6 +933,12 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 stream.getTracks().forEach(function (t) { t.stop(); });
                 stream = null;
             }
+            // Reset torch
+            torchTrack = null;
+            torchOn = false;
+            torchBtn.classList.remove('torch-on');
+            hideTorchButton();
+
             cameraActive = false;
             cameraBox.classList.remove('visible');
         }
@@ -945,14 +1018,10 @@ $defaultImageUrl = '../Products/no-image.jpg';
         // ✅ CHOOSE DEFAULT IMAGE
         // ============================================================
         defaultBtn.addEventListener('click', function () {
-            // Clear any captured/uploaded image data
             base64Input.value = '';
             fileInput.value = '';
-
-            // Signal to backend: use default image
             useDefaultImageInput.value = '1';
 
-            // Show the default image in the preview
             cameraBox.classList.remove('visible');
             capturedPhoto.src = '';
             capturedPhoto.style.display = 'none';
@@ -1024,7 +1093,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 }
 
                 if (data.success) {
-                    // ✅ Show loader → check → redirect
                     showSuccessLoaderThenCheck(
                         data.redirect,
                         'Upload Successful!',
@@ -1046,25 +1114,20 @@ $defaultImageUrl = '../Products/no-image.jpg';
         // SUCCESS MODAL — loader → check → redirect
         // ============================================================
         function showSuccessLoaderThenCheck(redirectUrl, doneTitle, doneMessage) {
-            // Reset to loading state
             successCard.classList.remove('done');
             successCard.classList.add('loading');
             successTitle.textContent = 'Saving Product…';
             successMessage.textContent = 'Please wait while we process your upload.';
 
-            // Show the overlay
             successOverlay.classList.add('visible');
 
-            // Phase 1: spinner runs for 1 second
             setTimeout(function () {
-                // Phase 2: switch to green check
                 successCard.classList.remove('loading');
                 successCard.classList.add('done');
 
                 successTitle.textContent = doneTitle || 'Upload Successful!';
                 successMessage.textContent = doneMessage || 'Your new product has been added.';
 
-                // Phase 3: after the check draws, redirect
                 setTimeout(function () {
                     if (redirectUrl) {
                         window.location.href = redirectUrl;

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BIR Form 2307 – Certificate of Creditable Tax Withheld at Source</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #000;
+    background: #c8c8c8;
+    padding: 20px 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .page {
+    width: 820px;
+    background: #fff;
+    padding: 14px 16px 22px 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+
+  /* ---------- TOP HEADER ---------- */
+  .top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  .bir-use { font-size: 9px; line-height: 1.3; width: 150px; }
+  .bir-use .bir-bcs { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+  .bir-use .use-only { font-style: italic; text-decoration: underline; text-underline-offset: 2px; }
+
+  .centered-agency {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+  }
+  .agency-logo { height: 48px; width: auto; flex-shrink: 0; }
+  .agency-lines { font-size: 9.5px; line-height: 1.5; text-align: left; }
+
+  .barcode-area {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .barcode { display: flex; align-items: flex-end; gap: 1px; height: 34px; }
+  .barcode span { display: block; width: 2px; background: #000; }
+  .barcode span.thin { width: 1px; }
+  .barcode span.thick { width: 3px; }
+  .barcode span.space { width: 2px; background: transparent; }
+  .barcode-label { font-size: 7.5px; font-weight: 700; letter-spacing: 0.5px; margin-top: 2px; }
+
+  /* ---------- TITLE BLOCK ---------- */
+  .title-block {
+    display: flex;
+    align-items: stretch;
+    border: 2px solid #000;
+    min-height: 56px;
+  }
+  .form-no-box {
+    width: 175px;
+    border-right: 2px solid #000;
+    padding: 3px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .form-no-box .bir-label { font-size: 8px; font-weight: 700; }
+  .form-no-box .big-no { font-size: 30px; font-weight: 700; line-height: 1; margin: 2px 0 0 0; }
+  .form-no-box .date-line { font-size: 8px; font-style: italic; margin-top: 2px; }
+
+  .main-title {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+  }
+  .main-title h1 { font-size: 16px; font-weight: 700; text-align: center; line-height: 1.2; }
+  .title-right-spacer { width: 175px; }
+
+  .instruction {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 0 3px 0;
+    border-bottom: 2px solid #000;
+  }
+
+  /* ---------- GRID TABLES ---------- */
+  table.form-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  table.form-grid td {
+    border: 1px solid #000;
+    padding: 2px 4px;
+    font-size: 9.5px;
+    vertical-align: middle;
+    height: 20px;
+    line-height: 1.25;
+  }
+  table.form-grid td.tall   { height: 24px; }
+  table.form-grid td.taller { height: 28px; }
+  table.form-grid td.center { text-align: center; }
+  table.form-grid td.right  { text-align: right;  }
+  table.form-grid td.bold   { font-weight: 700; }
+
+  table.form-grid td.section-band {
+    font-weight: 700;
+    font-size: 9.5px;
+    text-align: center;
+    background: #e0e0e0;
+    height: 17px;
+    vertical-align: middle;
+  }
+
+  td.value {
+    font-weight: 700;
+    font-size: 10px;
+    vertical-align: middle;
+    padding-left: 6px;
+  }
+
+  td.date-format-label {
+    font-size: 8.5px;
+    white-space: nowrap;
+    text-align: center;
+    padding: 0 2px;
+  }
+
+  /* ---------- TIN BOXES ---------- */
+  .tin-cell { display: flex; align-items: center; gap: 0; height: 100%; }
+  .tin-cell .box {
+    border: 1px solid #000;
+    width: 26px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    background: #fff;
+  }
+  .tin-cell .dash {
+    width: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 10px;
+  }
+
+  /* ---------- DATE CELLS ---------- */
+  .date-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    height: 100%;
+  }
+  .date-cell .box {
+    border: 1px solid #000;
+    width: 18px;
+    height: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    background: #fff;
+  }
+  .date-cell .slash {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #000;
+    line-height: 1;
+  }
+
+  /* ---------- ZIP CODE CELL (now bordered) ---------- */
+  .zip-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    height: 100%;
+  }
+  .zip-cell .zip-label {
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .zip-cell .zip-box {
+    border: 1px solid #000;
+    width: 22px;
+    height: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    background: #fff;
+  }
+
+  /* ---------- PART III ---------- */
+  table.part3 {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  table.part3 th,
+  table.part3 td {
+    border: 1px solid #000;
+    padding: 2px 3px;
+    font-size: 9px;
+    height: 18px;
+    vertical-align: middle;
+    text-align: center;
+  }
+  table.part3 th {
+    font-weight: 700;
+    background: #e0e0e0;
+    height: 28px;
+    font-size: 8.5px;
+    line-height: 1.2;
+  }
+  table.part3 th.sub { font-size: 8px; height: 18px; background: #e0e0e0; }
+  table.part3 td.blank { height: 18px; }
+  table.part3 td.num { text-align: right; padding-right: 6px; }
+  table.part3 td.label {
+    text-align: left;
+    padding-left: 6px;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+  table.part3 td.band {
+    font-weight: 700;
+    background: #e0e0e0;
+    font-size: 9px;
+    height: 17px;
+    text-align: left;
+    padding-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* ---------- DECLARATION ---------- */
+  .declaration {
+    border: 2px solid #000;
+    border-top: none;
+    padding: 5px 6px;
+    font-size: 8.5px;
+    line-height: 1.45;
+    text-align: justify;
+    vertical-align: middle;
+  }
+
+  /* ---------- SIGNATURE ---------- */
+  table.signature-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  table.signature-table td {
+    border: 1px solid #000;
+    padding: 2px 4px;
+    font-size: 9px;
+    height: 18px;
+    vertical-align: middle;
+  }
+  table.signature-table td.tall-sig { height: 34px; }
+  table.signature-table td.center   { text-align: center; }
+
+  .small-note { font-size: 8px; font-style: italic; padding: 2px 0; }
+  .conforme-label {
+    text-align: center;
+    font-weight: 700;
+    font-size: 9.5px;
+    margin: 4px 0 2px 0;
+  }
+
+  .bottom-right-box { display: flex; justify-content: flex-end; margin-top: 6px; }
+  .bottom-right-box .tiny-box { border: 1px solid #000; width: 55px; height: 26px; }
+
+  /* =========================================================
+     PRINT RULES — one page
+     ========================================================= */
+  @page {
+    size: A4 portrait;
+    margin: 8mm 8mm 6mm 8mm;
+  }
+
+  @media print {
+    html, body {
+      background: #fff !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100%;
+      height: auto;
+      font-size: 8.5px;
+    }
+
+    .page {
+      width: 107% !important;
+      max-width: 107% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      background: #fff !important;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+      transform: scale(0.93);
+      transform-origin: top left;
+    }
+
+    table, tr, td, th, div, img {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .top-header { margin-bottom: 3px; }
+    .agency-logo { height: 40px; }
+    .agency-lines { font-size: 8.5px; line-height: 1.35; }
+    .barcode { height: 26px; }
+    .barcode-label { font-size: 7px; }
+
+    .title-block { min-height: 46px; }
+    .form-no-box { padding: 2px 5px; }
+    .form-no-box .big-no { font-size: 24px; }
+    .main-title h1 { font-size: 14px; }
+
+    table.form-grid td {
+      font-size: 8.5px;
+      height: 16px;
+      padding: 1px 3px;
+      line-height: 1.15;
+    }
+    table.form-grid td.tall   { height: 19px; }
+    table.form-grid td.taller { height: 22px; }
+    table.form-grid td.section-band { font-size: 8.5px; height: 14px; }
+    td.date-format-label { font-size: 7.5px; }
+
+    .tin-cell .box { width: 22px; height: 13px; font-size: 8.5px; }
+    .tin-cell .dash { width: 6px; font-size: 8.5px; }
+    .date-cell .box { width: 15px; height: 12px; font-size: 8px; }
+    .date-cell .slash { width: 8px; font-size: 9px; }
+
+    .zip-cell .zip-label { font-size: 8px; }
+    .zip-cell .zip-box { width: 18px; height: 12px; font-size: 8px; }
+
+    table.part3 th { height: 22px; font-size: 7.5px; }
+    table.part3 th.sub { height: 14px; font-size: 7px; }
+    table.part3 td {
+      height: 14px;
+      font-size: 8px;
+      padding: 1px 3px;
+    }
+    table.part3 td.blank { height: 14px; }
+
+    .declaration { font-size: 7.5px; padding: 4px 5px; line-height: 1.35; }
+
+    table.signature-table td {
+      font-size: 8px;
+      height: 14px;
+      padding: 1px 3px;
+    }
+    table.signature-table td.tall-sig { height: 26px; }
+
+    .conforme-label { font-size: 8.5px; margin: 2px 0 1px 0; }
+    .small-note { font-size: 7px; }
+
+    .bottom-right-box { margin-top: 4px; }
+    .bottom-right-box .tiny-box { width: 45px; height: 20px; }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ===== TOP HEADER ===== -->
+  <div class="top-header">
+    <div class="bir-use">
+      <div><span class="bir-bcs">For BIR</span> BCS/</div>
+      <div><span class="use-only">Use Only</span> Item:</div>
+    </div>
+
+    <div class="centered-agency">
+      <img src="logo/bir.png" alt="BIR Logo" class="agency-logo">
+      <div class="agency-lines">
+        <div>Republic of the Philippines</div>
+        <div>Department of Finance</div>
+        <div>Bureau of Internal Revenue</div>
+      </div>
+    </div>
+
+    <div class="barcode-area">
+      <div class="barcode">
+        <span class="thick"></span><span class="thin"></span><span></span><span class="thick"></span>
+        <span class="thin"></span><span></span><span class="thick"></span><span></span>
+        <span class="thin"></span><span class="thick"></span><span></span><span></span>
+        <span class="thick"></span><span class="thin"></span><span></span><span class="thick"></span>
+        <span class="thin"></span><span></span><span class="thick"></span><span></span>
+        <span class="thick"></span><span class="thin"></span><span></span><span class="thick"></span>
+      </div>
+      <div class="barcode-label">2307 01/18ENC S</div>
+    </div>
+  </div>
+
+  <!-- ===== TITLE ===== -->
+  <div class="title-block">
+    <div class="form-no-box">
+      <div class="bir-label">BIR Form No.</div>
+      <div class="big-no">2307</div>
+      <div class="date-line">January 2018 (ENCS)</div>
+    </div>
+    <div class="main-title">
+      <h1>Certificate of Creditable Tax<br>Withheld at Source</h1>
+    </div>
+    <div class="title-right-spacer"><img src="logo/bar code.jpg" alt="BIR Logo" class="agency-logo"></div>
+  </div>
+
+  <div class="instruction">
+    Fill in all applicable spaces. Mark all appropriate boxes with an "X".
+  </div>
+
+  <!-- ===== ROW 1: FOR THE PERIOD ===== -->
+  <table class="form-grid">
+    <colgroup>
+      <col style="width:3%">
+      <col style="width:11%">
+      <col style="width:7%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:13%">
+      <col style="width:5%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:3%">
+      <col style="width:13%">
+      <col style="width:2%">
+    </colgroup>
+    <tr>
+      <td class="center bold">1</td>
+      <td>For the Period</td>
+      <td class="right">From</td>
+      <td colspan="8" class="center">
+        <div class="date-cell">
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+        </div>
+      </td>
+      <td class="date-format-label">(MM/DD/YYYY)</td>
+      <td class="right">To</td>
+      <td colspan="8" class="center">
+        <div class="date-cell">
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+        </div>
+      </td>
+      <td class="date-format-label">(MM/DD/YYYY)</td>
+      <td></td>
+    </tr>
+  </table>
+
+  <!-- ===== PART I ===== -->
+  <table class="form-grid">
+    <colgroup><col style="width:3%"><col style="width:22%"><col style="width:75%"></colgroup>
+    <tr><td colspan="3" class="section-band">Part I – Payee Information</td></tr>
+
+    <!-- 2 TIN -->
+    <tr>
+      <td class="center bold">2</td>
+      <td>Taxpayer Identification Number (TIN)</td>
+      <td>
+        <div class="tin-cell">
+          <span class="box"></span><span class="box"></span><span class="box"></span>
+          <span class="dash">-</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span>
+          <span class="dash">-</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span>
+          <span class="dash">-</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span>
+          <span class="box"></span><span class="box"></span>
+        </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="center bold">3</td>
+      <td colspan="2">Payee's Name <span style="font-style:italic; font-weight:400;">(Last Name, First Name, Middle Name for Individual OR Registered Name for Non-Individual)</span></td>
+    </tr>
+    <tr><td class="taller value" colspan="3"></td></tr>
+
+    <!-- 4 Registered Address WITH ZIP Code -->
+    <tr>
+      <td class="center bold">4</td>
+      <td>Registered Address</td>
+      <td>
+        <div class="zip-cell">
+          <span class="zip-label">4A&nbsp;&nbsp;ZIP Code</span>
+          <span class="zip-box"></span><span class="zip-box"></span><span class="zip-box"></span><span class="zip-box"></span>
+        </div>
+      </td>
+    </tr>
+    <tr><td class="taller value" colspan="3"></td></tr>
+
+    <tr>
+      <td class="center bold">5</td>
+      <td colspan="2">Foreign Address, if applicable</td>
+    </tr>
+    <tr><td class="taller" colspan="3"></td></tr>
+  </table>
+
+  <!-- ===== PART II ===== -->
+  <table class="form-grid">
+    <colgroup><col style="width:3%"><col style="width:22%"><col style="width:75%"></colgroup>
+    <tr><td colspan="3" class="section-band">Part II – Payor Information</td></tr>
+
+    <!-- 6 TIN -->
+    <tr>
+      <td class="center bold">6</td>
+      <td>Taxpayer Identification Number (TIN)</td>
+      <td>
+        <div class="tin-cell">
+          <span class="box">6</span><span class="box">1</span><span class="box">5</span>
+          <span class="dash">-</span>
+          <span class="box">3</span><span class="box">0</span><span class="box">3</span>
+          <span class="dash">-</span>
+          <span class="box">0</span><span class="box">6</span><span class="box">4</span>
+          <span class="dash">-</span>
+          <span class="box">0</span><span class="box">0</span><span class="box">0</span>
+          <span class="box">0</span><span class="box">0</span>
+        </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="center bold">7</td>
+      <td colspan="2">Payor's Name <span style="font-style:italic; font-weight:400;">(Last Name, First Name, Middle Name for Individual OR Registered Name for Non-Individual)</span></td>
+    </tr>
+    <tr><td class="taller value" colspan="3">KGO ENTERPRISES INC.</td></tr>
+
+    <!-- 8 Registered Address WITH ZIP Code -->
+    <tr>
+      <td class="center bold">8</td>
+      <td>Registered Address</td>
+      <td>
+        <div class="zip-cell">
+          <span class="zip-label">8A&nbsp;&nbsp;ZIP Code</span>
+          <span class="zip-box"></span><span class="zip-box"></span><span class="zip-box"></span><span class="zip-box"></span>
+        </div>
+      </td>
+    </tr>
+    <tr><td class="taller value" colspan="3">GH OFFICE DEPOT BUILDING COUNTRYSIDE BYPASS ROAD MA-A TALOMO DISTRICT DAVAO CITY</td></tr>
+  </table>
+
+  <!-- ===== PART III ===== -->
+  <div style="font-weight:700; font-size:9.5px; text-align:center; border:1px solid #000; border-top:none; padding:2px 0; background:#e0e0e0;">
+    Part III – Details of Monthly Income Payments and Taxes Withheld
+  </div>
+
+  <table class="part3">
+    <colgroup>
+      <col style="width:22%"><col style="width:7%">
+      <col style="width:11%"><col style="width:11%"><col style="width:11%">
+      <col style="width:12%"><col style="width:12%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th rowspan="2">Income Payments Subject to Expanded Withholding Tax</th>
+        <th rowspan="2">ATC</th>
+        <th colspan="4">AMOUNT OF INCOME PAYMENTS</th>
+        <th rowspan="2">Tax Withheld for the Quarter</th>
+      </tr>
+      <tr>
+        <th class="sub">1st Month of the Quarter</th>
+        <th class="sub">2nd Month of the Quarter</th>
+        <th class="sub">3rd Month of the Quarter</th>
+        <th class="sub">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="label">GOODS</td>
+        <td>WC- 158</td>
+        <td></td><td></td><td></td>
+        <td class="num">393,783.75</td>
+        <td class="num">3,937.84</td>
+      </tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr>
+        <td class="label">Total</td>
+        <td></td><td></td><td></td><td></td><td></td>
+        <td class="num">3,937.84</td>
+      </tr>
+      <tr><td colspan="7" class="band">Money Payments Subject to Withholding of Business Tax (Government &amp; Private)</td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr>
+        <td class="label">Total</td>
+        <td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===== DECLARATION ===== -->
+  <div class="declaration">
+    We declare under the penalties of perjury that this certificate has been made in good faith, verified by us, and to the best of our knowledge and belief, is true and correct, pursuant to the provisions of the National Internal Revenue Code, as amended, and the regulations issued under authority thereof. Further, we give our consent to the processing of our information as contemplated under the "Data Privacy Act of 2012 (R.A. No. 10173) for legitimate and lawful purposes.
+  </div>
+
+  <!-- ===== SIGNATURE (PAYOR) ===== -->
+  <table class="signature-table">
+    <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
+    <tr>
+      <td colspan="3" class="center" style="height:30px; font-weight:700; font-size:13px;">HANNAH JAYNE O. GO-YAP</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="center bold" style="height:16px; font-size:9px;">Signature over Printed Name of Payor/Payor's Authorized Representative/Tax Agent</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="center" style="font-size:8.5px; font-style:italic; height:14px;">(Indicate Title/Designation and TIN)</td>
+    </tr>
+    <tr>
+      <td style="font-size:8.5px;">Tax Agent Accreditation No./<br>Attorney's Roll No. (if applicable)</td>
+      <td class="center" style="font-size:8.5px;">Date of Issue<br>(MM/DD/YYYY)</td>
+      <td class="center" style="font-size:8.5px;">Date of Expiry<br>(MM/DD/YYYY)</td>
+    </tr>
+    <tr>
+      <td style="height:20px;"></td>
+      <td style="height:20px;">
+        <div class="date-cell">
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+        </div>
+      </td>
+      <td style="height:20px;">
+        <div class="date-cell">
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ===== CONFORME ===== -->
+  <div class="conforme-label">CONFORME:</div>
+
+  <table class="signature-table">
+    <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
+    <tr><td colspan="3" class="tall-sig" style="height:30px;"></td></tr>
+    <tr>
+      <td colspan="3" class="center bold" style="height:16px; font-size:9px;">Signature over Printed Name of Payee/Payee's Authorized Representative/Tax Agent</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="center" style="font-size:8.5px; font-style:italic; height:14px;">(Indicate Title/Designation and TIN)</td>
+    </tr>
+    <tr>
+      <td style="font-size:8.5px;">Tax Agent Accreditation No./<br>Attorney's Roll No. (if applicable)</td>
+      <td class="center" style="font-size:8.5px;">Date of Issue<br>(MM/DD/YYYY)</td>
+      <td class="center" style="font-size:8.5px;">Date of Expiry<br>(MM/DD/YYYY)</td>
+    </tr>
+    <tr>
+      <td style="height:20px;"></td>
+      <td style="height:20px;">
+        <div class="date-cell">
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+        </div>
+      </td>
+      <td style="height:20px;">
+        <div class="date-cell">
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span>
+          <span class="slash">/</span>
+          <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="bottom-right-box"><div class="tiny-box"></div></div>
+
+  <div class="small-note">*NOTE: The BIR Data Privacy is in the BIR website (www.bir.gov.ph)</div>
+
+</div>
+
+</body>
+</html>
