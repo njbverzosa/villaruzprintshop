@@ -384,10 +384,6 @@
     // DB Manager dropdown becomes active when either child is the current page
     $dbManagerActive = in_array($currentPage, ['database_manager.php']);
     ?>
-    <?php
-    // Nothing — but the Download Images link points to the API endpoint, so it will
-    // never be the "current page". We still keep the flag for consistency.
-    ?>
 
     <!-- ========== SHOP + CART ========== -->
     <a href="shop.php" class="nav-item <?php echo $currentPage == 'shop.php' ? 'active' : ''; ?>">
@@ -448,22 +444,24 @@
         </div>
     </div>
 
-    <!-- ========== CUSTOMERS DROPDOWN ========== -->
-    <div class="nav-dropdown">
-        <div class="nav-dropdown-toggle" onclick="toggleDropdown('customersDropdown')">
-            <i class="fas fa-user-friends"></i>
-            <span>Customers</span>
-            <i class="fas fa-chevron-down dropdown-arrow <?php echo $customersActive ? 'rotated' : ''; ?>"
-                id="customersArrow"></i>
+    <!-- ========== CUSTOMERS DROPDOWN (authorize_access == 0 only) ========== -->
+    <?php if ($authorizeAccess == 0): ?>
+        <div class="nav-dropdown">
+            <div class="nav-dropdown-toggle" onclick="toggleDropdown('customersDropdown')">
+                <i class="fas fa-user-friends"></i>
+                <span>Customers</span>
+                <i class="fas fa-chevron-down dropdown-arrow <?php echo $customersActive ? 'rotated' : ''; ?>"
+                    id="customersArrow"></i>
+            </div>
+            <div class="nav-dropdown-menu <?php echo $customersActive ? 'show' : ''; ?>" id="customersDropdown">
+                <a href="registered_customers.php"
+                    class="nav-dropdown-item <?php echo in_array($currentPage, ['registered_customers.php', 'chat_view.php']) ? 'active_customers' : ''; ?>">
+                    <i class="fas fa-user"></i>
+                    <span>List</span>
+                </a>
+            </div>
         </div>
-        <div class="nav-dropdown-menu <?php echo $customersActive ? 'show' : ''; ?>" id="customersDropdown">
-            <a href="registered_customers.php"
-                class="nav-dropdown-item <?php echo in_array($currentPage, ['registered_customers.php', 'chat_view.php']) ? 'active_customers' : ''; ?>">
-                <i class="fas fa-user"></i>
-                <span>List</span>
-            </a>
-        </div>
-    </div>
+    <?php endif; ?>
 
     <!-- ========== SYSTEM MANAGER / DB MANAGER DROPDOWN (authorize_access == 0 only) ========== -->
     <?php if ($authorizeAccess == 0): ?>
