@@ -334,6 +334,46 @@ if (empty($_SESSION['csrf_token'])) {
             pointer-events: none;
         }
 
+        /* ---- TORCH BUTTON ---- */
+        .btn-torch {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-torch.visible {
+            display: flex;
+        }
+
+        .btn-torch:active {
+            transform: scale(0.92);
+        }
+
+        .btn-torch.torch-on {
+            background: #f59e0b;
+            color: #000;
+            border-color: #fbbf24;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.9);
+        }
+
+        .btn-torch i {
+            pointer-events: none;
+        }
+
         button {
             padding: 10px 15px;
             border: none;
@@ -595,6 +635,10 @@ if (empty($_SESSION['csrf_token'])) {
                 <div class="camera-box" id="cameraBox">
                     <video id="camera" autoplay playsinline muted></video>
                     <img id="capturedPhoto" alt="Captured product">
+                    <!-- TORCH BUTTON -->
+                    <button type="button" class="btn-torch" id="torchBtn" title="Toggle flashlight">
+                        <i class="fas fa-lightbulb"></i>
+                    </button>
                 </div>
             </div>
 
@@ -732,6 +776,11 @@ if (empty($_SESSION['csrf_token'])) {
         var base64Input = document.getElementById('product_image_base64');
         var saveBtn = document.getElementById('saveBtn');
 
+        // TORCH
+        var torchBtn = document.getElementById('torchBtn');
+        var torchOn = false;
+        var torchTrack = null;
+
         var successOverlay = document.getElementById('successOverlay');
         var successCard = document.getElementById('successCard');
         var successTitle = document.getElementById('successTitle');
@@ -755,12 +804,31 @@ if (empty($_SESSION['csrf_token'])) {
         function showPlaceholder() { imagePlaceholder.classList.add('visible'); }
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
+        // TORCH visibility
+        function showTorchButton() {
+            if (torchTrack && typeof torchTrack.getCapabilities === 'function') {
+                var caps = torchTrack.getCapabilities();
+                if (caps.torch) {
+                    torchBtn.classList.add('visible');
+                    return;
+                }
+            }
+            // Fallback: show button anyway for devices that may support it
+            torchBtn.classList.add('visible');
+        }
+        function hideTorchButton() {
+            torchBtn.classList.remove('visible');
+            torchOn = false;
+            torchBtn.classList.remove('torch-on');
+        }
+
         function viewHasImage() {
             hideFloatingCamera();
             hideFloatingCapture();
             hideUploadButton();
             showCancelButton();
             hidePlaceholder();
+            hideTorchButton();
         }
 
         function viewNoImage() {
@@ -769,6 +837,7 @@ if (empty($_SESSION['csrf_token'])) {
             hideFloatingCapture();
             showUploadButton();
             showPlaceholder();
+            hideTorchButton();
         }
 
         function viewCameraActive() {
@@ -777,7 +846,39 @@ if (empty($_SESSION['csrf_token'])) {
             showFloatingCapture();
             hideUploadButton();
             hidePlaceholder();
+            if (torchTrack) {
+                showTorchButton();
+            }
         }
+
+        // ============================================================
+        // TORCH TOGGLE
+        // ============================================================
+        async function toggleTorch() {
+            if (!torchTrack) {
+                alert('Torch not available on this device/camera.');
+                return;
+            }
+
+            try {
+                torchOn = !torchOn;
+                await torchTrack.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                });
+                if (torchOn) {
+                    torchBtn.classList.add('torch-on');
+                } else {
+                    torchBtn.classList.remove('torch-on');
+                }
+            } catch (err) {
+                console.error('Torch error:', err);
+                torchOn = !torchOn;
+                alert('Could not toggle torch: ' + (err.message || err.name));
+                torchBtn.classList.remove('torch-on');
+            }
+        }
+
+        torchBtn.addEventListener('click', toggleTorch);
 
         async function startCamera() {
             try {
@@ -802,6 +903,11 @@ if (empty($_SESSION['csrf_token'])) {
                 cameraBox.classList.add('visible');
                 imageWrapper.style.display = 'none';
 
+                // Get the video track for torch
+                torchTrack = stream.getVideoTracks()[0] || null;
+                torchOn = false;
+                torchBtn.classList.remove('torch-on');
+
                 viewCameraActive();
                 cameraActive = true;
             } catch (err) {
@@ -816,6 +922,11 @@ if (empty($_SESSION['csrf_token'])) {
                 stream.getTracks().forEach(function (t) { t.stop(); });
                 stream = null;
             }
+            torchTrack = null;
+            torchOn = false;
+            torchBtn.classList.remove('torch-on');
+            hideTorchButton();
+
             cameraActive = false;
             cameraBox.classList.remove('visible');
         }
