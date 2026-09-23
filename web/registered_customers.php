@@ -56,6 +56,9 @@ if (!$userData) {
 $user = $userData;
 $authorizeAccess = $userData['authorize_access'] ?? 0;
 
+// ✅ Only show User/Pass column when authorize_access == 0
+$canViewUserPass = ($authorizeAccess == 0);
+
 // ==============================================
 // 5. SET TIMEZONE
 // ==============================================
@@ -395,7 +398,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             white-space: nowrap;
         }
 
-        /* ✅ Headers + data both centered */
         .inventory-table th,
         .inventory-table td {
             padding: 15px 12px;
@@ -1031,13 +1033,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <th>Full Name</th>
                                 <th>Status</th>
                                 <th>Used</th>
-                                <th style="text-align: center;">User / Pass</th>
+                                <?php if ($canViewUserPass): ?>
+                                    <th>User / Pass</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($admins)): ?>
                                 <tr>
-                                    <td colspan="4" style="padding: 40px;">No admins found</td>
+                                    <td colspan="<?php echo $canViewUserPass ? '4' : '3'; ?>" style="padding: 40px;">No admins found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($admins as $admin):
@@ -1067,32 +1071,34 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                 <i class="fas fa-desktop used-icon desktop" title="Web"></i>
                                             <?php endif; ?>
                                         </td>
-                                        <td style="white-space: nowrap;text-align: center;">
-                                            <div class="password-wrapper">
-                                                <span style="color: #475569; font-weight: 500;">
-                                                    <?php echo htmlspecialchars($admin['acc_number']); ?>
-                                                </span>
-                                                <span style="color: #94a3b8;">/</span>
-                                                <span class="password-text" id="pass_admin_<?php echo $admin['id']; ?>"
-                                                    style="display: none;">
-                                                    <?php echo htmlspecialchars($admin['text_pass'] ?? ''); ?>
-                                                </span>
-                                                <span class="password-placeholder"
-                                                    id="placeholder_admin_<?php echo $admin['id']; ?>">
-                                                    ••••••••
-                                                </span>
-                                                <button class="copy-btn copy-btn-eye"
-                                                    onclick="togglePassword('admin_<?php echo $admin['id']; ?>')"
-                                                    title="Show/Hide password">
-                                                    <i class="fas fa-eye" id="eye_admin_<?php echo $admin['id']; ?>"></i>
-                                                </button>
-                                                <button class="copy-btn copy-btn-copy"
-                                                    onclick="copyPassword('<?php echo addslashes($admin['text_pass'] ?? ''); ?>')"
-                                                    title="Copy password">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <?php if ($canViewUserPass): ?>
+                                            <td style="white-space: nowrap;">
+                                                <div class="password-wrapper">
+                                                    <span style="color: #475569; font-weight: 500;">
+                                                        <?php echo htmlspecialchars($admin['acc_number']); ?>
+                                                    </span>
+                                                    <span style="color: #94a3b8;">/</span>
+                                                    <span class="password-text" id="pass_admin_<?php echo $admin['id']; ?>"
+                                                        style="display: none;">
+                                                        <?php echo htmlspecialchars($admin['text_pass'] ?? ''); ?>
+                                                    </span>
+                                                    <span class="password-placeholder"
+                                                        id="placeholder_admin_<?php echo $admin['id']; ?>">
+                                                        ••••••••
+                                                    </span>
+                                                    <button class="copy-btn copy-btn-eye"
+                                                        onclick="togglePassword('admin_<?php echo $admin['id']; ?>')"
+                                                        title="Show/Hide password">
+                                                        <i class="fas fa-eye" id="eye_admin_<?php echo $admin['id']; ?>"></i>
+                                                    </button>
+                                                    <button class="copy-btn copy-btn-copy"
+                                                        onclick="copyPassword('<?php echo addslashes($admin['text_pass'] ?? ''); ?>')"
+                                                        title="Copy password">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -1115,13 +1121,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <th>Used</th>
                                 <th>Chat</th>
                                 <th>Phone Number</th>
-                                <th>User / Pass</th>
+                                <?php if ($canViewUserPass): ?>
+                                    <th>User / Pass</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($investors)): ?>
                                 <tr>
-                                    <td colspan="7" style="padding: 40px;">No investors found</td>
+                                    <td colspan="<?php echo $canViewUserPass ? '7' : '6'; ?>" style="padding: 40px;">No investors found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($investors as $investor):
@@ -1194,32 +1202,34 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                 </button>
                                             <?php endif; ?>
                                         </td>
-                                        <td style="white-space: nowrap;">
-                                            <div class="password-wrapper">
-                                                <span style="color: #475569; font-weight: 500;">
-                                                    <?php echo htmlspecialchars($investor['acc_number']); ?>
-                                                </span>
-                                                <span style="color: #94a3b8;">/</span>
-                                                <span class="password-text" id="pass_investor_<?php echo $investor['id']; ?>"
-                                                    style="display: none;">
-                                                    <?php echo htmlspecialchars($investor['text_pass'] ?? ''); ?>
-                                                </span>
-                                                <span class="password-placeholder"
-                                                    id="placeholder_investor_<?php echo $investor['id']; ?>">
-                                                    ••••••••
-                                                </span>
-                                                <button class="copy-btn copy-btn-eye"
-                                                    onclick="togglePassword('investor_<?php echo $investor['id']; ?>')"
-                                                    title="Show/Hide password">
-                                                    <i class="fas fa-eye" id="eye_investor_<?php echo $investor['id']; ?>"></i>
-                                                </button>
-                                                <button class="copy-btn copy-btn-copy"
-                                                    onclick="copyPassword('<?php echo addslashes($investor['text_pass'] ?? ''); ?>')"
-                                                    title="Copy password">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <?php if ($canViewUserPass): ?>
+                                            <td style="white-space: nowrap;">
+                                                <div class="password-wrapper">
+                                                    <span style="color: #475569; font-weight: 500;">
+                                                        <?php echo htmlspecialchars($investor['acc_number']); ?>
+                                                    </span>
+                                                    <span style="color: #94a3b8;">/</span>
+                                                    <span class="password-text" id="pass_investor_<?php echo $investor['id']; ?>"
+                                                        style="display: none;">
+                                                        <?php echo htmlspecialchars($investor['text_pass'] ?? ''); ?>
+                                                    </span>
+                                                    <span class="password-placeholder"
+                                                        id="placeholder_investor_<?php echo $investor['id']; ?>">
+                                                        ••••••••
+                                                    </span>
+                                                    <button class="copy-btn copy-btn-eye"
+                                                        onclick="togglePassword('investor_<?php echo $investor['id']; ?>')"
+                                                        title="Show/Hide password">
+                                                        <i class="fas fa-eye" id="eye_investor_<?php echo $investor['id']; ?>"></i>
+                                                    </button>
+                                                    <button class="copy-btn copy-btn-copy"
+                                                        onclick="copyPassword('<?php echo addslashes($investor['text_pass'] ?? ''); ?>')"
+                                                        title="Copy password">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -1243,13 +1253,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <th>Chat</th>
                                 <th>Phone Number</th>
                                 <th>Email</th>
-                                <th>User / Pass</th>
+                                <?php if ($canViewUserPass): ?>
+                                    <th>User / Pass</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="8" style="padding: 40px;">No customers found</td>
+                                    <td colspan="<?php echo $canViewUserPass ? '8' : '7'; ?>" style="padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
@@ -1337,32 +1349,34 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                 title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
                                             </span>
                                         </td>
-                                        <td style="white-space: nowrap;">
-                                            <div class="password-wrapper">
-                                                <span style="color: #475569; font-weight: 500;">
-                                                    <?php echo htmlspecialchars($customer['acc_number']); ?>
-                                                </span>
-                                                <span style="color: #94a3b8;">/</span>
-                                                <span class="password-text" id="pass_customer_<?php echo $customer['id']; ?>"
-                                                    style="display: none;">
-                                                    <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
-                                                </span>
-                                                <span class="password-placeholder"
-                                                    id="placeholder_customer_<?php echo $customer['id']; ?>">
-                                                    ••••••••
-                                                </span>
-                                                <button class="copy-btn copy-btn-eye"
-                                                    onclick="togglePassword('customer_<?php echo $customer['id']; ?>')"
-                                                    title="Show/Hide password">
-                                                    <i class="fas fa-eye" id="eye_customer_<?php echo $customer['id']; ?>"></i>
-                                                </button>
-                                                <button class="copy-btn copy-btn-copy"
-                                                    onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>')"
-                                                    title="Copy password">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <?php if ($canViewUserPass): ?>
+                                            <td style="white-space: nowrap;">
+                                                <div class="password-wrapper">
+                                                    <span style="color: #475569; font-weight: 500;">
+                                                        <?php echo htmlspecialchars($customer['acc_number']); ?>
+                                                    </span>
+                                                    <span style="color: #94a3b8;">/</span>
+                                                    <span class="password-text" id="pass_customer_<?php echo $customer['id']; ?>"
+                                                        style="display: none;">
+                                                        <?php echo htmlspecialchars($customer['text_pass'] ?? ''); ?>
+                                                    </span>
+                                                    <span class="password-placeholder"
+                                                        id="placeholder_customer_<?php echo $customer['id']; ?>">
+                                                        ••••••••
+                                                    </span>
+                                                    <button class="copy-btn copy-btn-eye"
+                                                        onclick="togglePassword('customer_<?php echo $customer['id']; ?>')"
+                                                        title="Show/Hide password">
+                                                        <i class="fas fa-eye" id="eye_customer_<?php echo $customer['id']; ?>"></i>
+                                                    </button>
+                                                    <button class="copy-btn copy-btn-copy"
+                                                        onclick="copyPassword('<?php echo addslashes($customer['text_pass'] ?? ''); ?>')"
+                                                        title="Copy password">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -1620,6 +1634,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         });
 
         console.log('📱 Sidebar loaded | 3 Tables: Admins | Investors | Customers');
+        console.log('🔐 Can view User/Pass: <?php echo $canViewUserPass ? "YES" : "NO"; ?>');
     </script>
 </body>
 
