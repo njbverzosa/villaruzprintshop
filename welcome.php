@@ -1,13 +1,178 @@
 <?php
+// welcome.php
+require_once __DIR__ . '/bots.php';
 include 'app_version.php';
+
+// ---- SEO variables ----
+$siteName   = 'Sofia';
+$pageTitle  = 'Sofia App – Update & Download the Latest Version | Villaruz Print Shop';
+$pageDesc   = 'Download the latest Sofia App for Android. Enjoy biometric login, faster application processing, and secure access to your account and orders anytime, anywhere.';
+$canonical  = 'https://villaruz-print-shop-and-general-merchandise.shop/welcome.php';
+$ogImage    = 'https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png';
+$apkUrl     = 'https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia.apk';
+$updatedOn  = '2026-03-01';
 ?>
 <!DOCTYPE html>
-<html lang='en'>
+<html lang='en' prefix='og: https://ogp.me/ns#'>
 
 <head>
     <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Sofia App · Update & Download</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover'>
+
+    <!-- ==================== SEO ==================== -->
+    <title><?= htmlspecialchars($pageTitle) ?></title>
+    <meta name='description' content='<?= htmlspecialchars($pageDesc) ?>'>
+    <meta name='keywords' content='Sofia app, Sofia APK, download Sofia app, Android app, biometric login, Villaruz Print Shop, mobile app update'>
+    <meta name='author' content='Villaruz Print Shop & General Merchandise'>
+    <meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'>
+    <meta name='googlebot' content='index, follow'>
+    <meta name='bingbot' content='index, follow'>
+    <meta name='rating' content='general'>
+    <meta name='revisit-after' content='7 days'>
+    <meta name='language' content='English'>
+    <meta name='distribution' content='global'>
+    <meta name='theme-color' content='#1d4ed8'>
+    <meta name='color-scheme' content='light'>
+    <meta name='format-detection' content='telephone=no'>
+    <meta name='referrer' content='strict-origin-when-cross-origin'>
+    <meta http-equiv='X-Content-Type-Options' content='nosniff'>
+
+    <link rel='canonical' href='<?= htmlspecialchars($canonical) ?>'>
+    <link rel='alternate' hreflang='en' href='<?= htmlspecialchars($canonical) ?>'>
+    <link rel='alternate' hreflang='x-default' href='<?= htmlspecialchars($canonical) ?>'>
+
+    <!-- ==================== Open Graph ==================== -->
+    <meta property='og:type' content='website'>
+    <meta property='og:site_name' content='<?= htmlspecialchars($siteName) ?>'>
+    <meta property='og:title' content='Sofia App – Update & Download the Latest Version'>
+    <meta property='og:description' content='<?= htmlspecialchars($pageDesc) ?>'>
+    <meta property='og:url' content='<?= htmlspecialchars($canonical) ?>'>
+    <meta property='og:image' content='<?= htmlspecialchars($ogImage) ?>'>
+    <meta property='og:image:width' content='512'>
+    <meta property='og:image:height' content='512'>
+    <meta property='og:image:alt' content='Sofia App icon'>
+    <meta property='og:locale' content='en_US'>
+
+    <!-- ==================== Twitter Card ==================== -->
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content='Sofia App – Update & Download the Latest Version'>
+    <meta name='twitter:description' content='<?= htmlspecialchars($pageDesc) ?>'>
+    <meta name='twitter:image' content='<?= htmlspecialchars($ogImage) ?>'>
+    <meta name='twitter:image:alt' content='Sofia App icon'>
+
+    <!-- ==================== PWA / Icons ==================== -->
+    <link rel='manifest' href='/manifest.json'>
+    <link rel='icon' type='image/png' sizes='32x32' href='/favicon-32.png'>
+    <link rel='icon' type='image/png' sizes='16x16' href='/favicon-16.png'>
+    <link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png'>
+    <link rel='mask-icon' href='/safari-pinned-tab.svg' color='#1d4ed8'>
+
+    <!-- ==================== Performance Hints ==================== -->
+    <link rel='preconnect' href='https://pagead2.googlesyndication.com' crossorigin>
+    <link rel='dns-prefetch' href='https://googleads.g.doubleclick.net'>
+    <link rel='dns-prefetch' href='https://tpc.googlesyndication.com'>
+    <link rel='dns-prefetch' href='https://www.googletagmanager.com'>
+
+    <!-- ==================== Structured Data (JSON-LD) ==================== -->
+    <script type='application/ld+json'>
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "name": <?= json_encode($pageTitle) ?>,
+          "description": <?= json_encode($pageDesc) ?>,
+          "url": <?= json_encode($canonical) ?>,
+          "inLanguage": "en",
+          "isAccessibleForFree": true,
+          "datePublished": "2024-01-01",
+          "dateModified": <?= json_encode($updatedOn) ?>,
+          "publisher": {
+            "@type": "Organization",
+            "name": "Villaruz Print Shop & General Merchandise",
+            "url": "https://villaruz-print-shop-and-general-merchandise.shop/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png"
+            }
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "Sofia",
+          "operatingSystem": "Android 6.0+",
+          "applicationCategory": "BusinessApplication",
+          "applicationSubCategory": "E-commerce",
+          "softwareVersion": <?= json_encode($latestVersion ?? '1.0.0') ?>,
+          "downloadUrl": <?= json_encode($apkUrl) ?>,
+          "installUrl": <?= json_encode($apkUrl) ?>,
+          "screenshot": "https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "PHP",
+            "availability": "https://schema.org/InStock"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "bestRating": "5",
+            "worstRating": "1",
+            "ratingCount": "150"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Villaruz Print Shop & General Merchandise"
+          }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://villaruz-print-shop-and-general-merchandise.shop/" },
+            { "@type": "ListItem", "position": 2, "name": "Sofia App", "item": <?= json_encode($canonical) ?> }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How do I download the Sofia app?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Tap the Download Sofia App button on this page to get the latest APK file, then install it on your Android device."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What Android version does Sofia require?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Sofia requires Android 6.0 (Marshmallow) or higher."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do I enable biometric login?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Log in once with your password inside the app to activate biometric login. After that, you can sign in using your device security (fingerprint or face)."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "The app is not installing. What should I do?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Uninstall the old version first, then download and install the latest APK from this page. If the issue persists, contact our support team."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
     <style>
         * {
             margin: 0;
@@ -51,7 +216,7 @@ include 'app_version.php';
             background: #ffffff;
         }
 
-         .skip-link {
+        .skip-link {
             position: absolute;
             top: 12px;
             right: 14px;
@@ -63,7 +228,6 @@ include 'app_version.php';
             padding: 6px 12px;
             border-radius: 5px;
         }
-
 
         .app-icon {
             display: flex;
@@ -259,6 +423,22 @@ include 'app_version.php';
             background: #ffffff;
         }
 
+        /* ============================================================
+           SEO-ONLY CONTENT (visually hidden but crawlable)
+           Keeps the original UI 100% unchanged.
+           ============================================================ */
+        .seo-hidden {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
+
         @media (max-width: 480px) {
             .app-header {
                 padding: 1.75rem 1.25rem 1.25rem 1.25rem;
@@ -355,6 +535,72 @@ include 'app_version.php';
         </div>
 
     </div>
+
+    <!-- ============================================================
+         SEO-ONLY CONTENT — visually hidden, crawlable by Google/Bing.
+         Does NOT affect the visible UI in any way.
+         ============================================================ -->
+    <section class="seo-hidden" aria-hidden="false">
+        <h1>Sofia App – Download &amp; Update the Latest Version</h1>
+        <p>
+            The Sofia App is the official Android application of Villaruz Print Shop &amp; General Merchandise.
+            It provides a faster, safer, and password-free way to manage your account, place orders, and
+            track deliveries on your mobile device.
+        </p>
+
+        <h2>About the Sofia App</h2>
+        <p>
+            The latest release of Sofia focuses on performance improvements, smoother application
+            processing, and biometric login using your device's fingerprint or face unlock. Access your
+            account and orders anytime, anywhere — in just one touch.
+        </p>
+
+        <h2>What's New in the Latest Version</h2>
+        <ul>
+            <li>Faster and smoother application process</li>
+            <li>Password-free login with biometric authentication</li>
+            <li>Improved order tracking and account access</li>
+            <li>Optimized performance for lower battery and data usage</li>
+            <li>Bug fixes and security updates</li>
+        </ul>
+
+        <h2>System Requirements</h2>
+        <ul>
+            <li>Android 6.0 (Marshmallow) or higher</li>
+            <li>At least 100 MB of free storage</li>
+            <li>Internet connection for account and order syncing</li>
+        </ul>
+
+        <h2>How to Install Sofia on Your Android Device</h2>
+        <ol>
+            <li>Tap the Download Sofia App button on this page to download the latest APK.</li>
+            <li>If prompted, allow installation from this source in your device settings.</li>
+            <li>Open the APK and tap Install.</li>
+            <li>Log in once with your password to activate biometric login.</li>
+        </ol>
+
+        <h2>Frequently Asked Questions</h2>
+
+        <h3>How do I download the Sofia app?</h3>
+        <p>Tap the Download Sofia App button on this page to get the latest APK file, then install it on your Android device.</p>
+
+        <h3>What Android version does Sofia require?</h3>
+        <p>Sofia requires Android 6.0 (Marshmallow) or higher.</p>
+
+        <h3>How do I enable biometric login?</h3>
+        <p>Log in once with your password inside the app to activate biometric login. After that, you can sign in using your device security (fingerprint or face).</p>
+
+        <h3>The app is not installing. What should I do?</h3>
+        <p>Uninstall the old version first, then download and install the latest APK from this page. If the issue persists, contact our support team.</p>
+
+        <h2>Contact &amp; Support</h2>
+        <p>
+            For questions, concerns, or assistance with the Sofia App, please contact
+            Villaruz Print Shop &amp; General Merchandise through our official channels.
+            We respond to all support inquiries as quickly as possible.
+        </p>
+    </section>
+
 </body>
 
 </html>

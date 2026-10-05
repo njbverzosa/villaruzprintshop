@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /welcome.php
+Allow: /
+Disallow: /API/
+Disallow: /APK/
+Disallow: /Business_Docs/
+Disallow: /Customer_API/
+Disallow: /DB_Conn/
+Disallow: /Inv_Products/
+Disallow: /investors/
+Disallow: /logo/
+Disallow: /Mail/
+Disallow: /Products/
+Disallow: /public/
+Disallow: /Sql/
+Disallow: /web/
+Sitemap: https://villaruz-print-shop-and-general-merchandise.shop/sitemap.xml
