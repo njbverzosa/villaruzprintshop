@@ -143,33 +143,6 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             gap: 10px;
         }
 
-        .brand-mark {
-            width: 26px;
-            height: 26px;
-            position: relative;
-        }
-
-        .brand-mark::before,
-        .brand-mark::after {
-            content: "";
-            position: absolute;
-            width: 14px;
-            height: 20px;
-            background: #e02020;
-            transform: skewX(-18deg);
-        }
-
-        .brand-mark::before {
-            left: 0;
-            top: 3px;
-        }
-
-        .brand-mark::after {
-            right: 0;
-            top: 0;
-            opacity: 0.75;
-        }
-
         .brand-text .name {
             font-size: 1.05rem;
             font-weight: 800;
@@ -285,6 +258,10 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             text-align: center;
         }
 
+        .items-table th.right {
+            text-align: right;
+        }
+
         .items-table td {
             padding: 12px;
             color: #2b2b2b;
@@ -323,27 +300,6 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             font-weight: 700;
             color: #2b2b2b;
             margin-bottom: 10px;
-        }
-
-        .terms-text {
-            font-size: 0.75rem;
-            color: #7a7a7a;
-            line-height: 1.5;
-            margin-bottom: 22px;
-            max-width: 320px;
-        }
-
-        .payment-info .pay-row {
-            font-size: 0.78rem;
-            color: #4a4a4a;
-            margin-bottom: 4px;
-        }
-
-        .payment-info .pay-row span {
-            font-weight: 700;
-            color: #2b2b2b;
-            display: inline-block;
-            min-width: 90px;
         }
 
         .bottom-right {
@@ -389,29 +345,67 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             color: #2b2b2b;
         }
 
-        /* ---------- SIGNATURE FOOTER ---------- */
-        .sign-footer {
+        /* ---------- SIGNATURE SECTION ---------- */
+        .signature-section {
             display: flex;
-            align-items: flex-end;
-            gap: 14px;
-            margin-top: 60px;
+            justify-content: space-between;
+            gap: 40px;
+            margin-top: 50px;
+            flex-wrap: wrap;
         }
 
-        .sign-footer .line {
+        .sign-block {
             flex: 1;
-            height: 2px;
-            background: #f7c600;
+            min-width: 240px;
         }
 
-        .sign-footer .sign-label {
-            font-size: 0.78rem;
+        .sign-block .sign-role {
+            font-size: 0.8rem;
+            font-weight: 700;
             color: #2b2b2b;
-            white-space: nowrap;
-            border-top: 1px solid #bdbdbd;
-            padding-top: 4px;
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
         }
 
-        /* QR block (kept, styled minimal) */
+        .sign-block .sign-name-line {
+            border-bottom: 1px solid #2b2b2b;
+            padding-bottom: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #2b2b2b;
+            margin-bottom: 4px;
+            min-height: 22px;
+        }
+
+        .sign-block .sign-under-label {
+            font-size: 0.7rem;
+            color: #7a7a7a;
+            font-style: italic;
+        }
+
+        /* Secondary role block (Assigned Delivery / Received By) */
+        .sign-block .sign-role-below {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #2b2b2b;
+            margin-top: 20px;
+            letter-spacing: 0.3px;
+        }
+
+        .sign-block .sign-role-line {
+            border-bottom: 1px solid #2b2b2b;
+            min-height: 22px;
+            margin-top: 4px;
+        }
+
+        .sign-block .sign-role-note {
+            font-size: 0.68rem;
+            color: #7a7a7a;
+            font-style: italic;
+            margin-top: 3px;
+        }
+
+        /* QR block */
         .qr-wrap {
             display: flex;
             align-items: center;
@@ -440,6 +434,28 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             margin-bottom: 2px;
         }
 
+        /* ---------- SIGNATURE FOOTER ---------- */
+        .sign-footer {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            margin-top: 40px;
+        }
+
+        .sign-footer .line {
+            flex: 1;
+            height: 2px;
+            background: #f7c600;
+        }
+
+        .sign-footer .sign-label {
+            font-size: 0.78rem;
+            color: #2b2b2b;
+            white-space: nowrap;
+            border-top: 1px solid #bdbdbd;
+            padding-top: 4px;
+        }
+
         /* ---------- RESPONSIVE ---------- */
         @media (max-width: 620px) {
             .receipt {
@@ -464,6 +480,11 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             .bottom-left,
             .bottom-right {
                 min-width: 100%;
+            }
+
+            .signature-section {
+                flex-direction: column;
+                gap: 24px;
             }
         }
 
@@ -519,7 +540,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             <div class="header">
                 <div class="brand-block">
                     <div class="brand-text">
-                        <div class="name">VILLARUZ PRINTSHOP</div>
+                        <div class="name">VILLARUZ PRINTSHOP &</div>
                         <div class="tagline">General Merchandise</div>
                     </div>
                 </div>
@@ -561,30 +582,28 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 </div>
             </div>
 
-            <!-- ITEMS TABLE -->
+            <!-- ITEMS TABLE: QTY, UNIT, Item Description, Unit Price, Amount -->
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th style="width:50px;">SL</th>
+                        <th class="center" style="width:70px;">QTY</th>
+                        <th class="center" style="width:70px;">UNIT</th>
                         <th>Item Description</th>
-                        <th class="center" style="width:70px;">Unit</th>
-                        <th class="center" style="width:60px;">Qty</th>
-                        <th class="right" style="width:110px;">Price</th>
-                        <th class="right" style="width:120px;">Total</th>
+                        <th class="right" style="width:110px;">Unit Price</th>
+                        <th class="right" style="width:120px;">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($items)): ?>
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 16px;">No items found</td>
+                            <td colspan="5" style="text-align: center; padding: 16px;">No items found</td>
                         </tr>
                     <?php else: ?>
-                        <?php $sl = 1; foreach ($items as $item): ?>
+                        <?php foreach ($items as $item): ?>
                             <tr>
-                                <td><?php echo $sl++; ?></td>
-                                <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-                                <td class="center"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
                                 <td class="center"><?php echo number_format(floatval($item['pieces'])); ?></td>
+                                <td class="center"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
+                                <td><?php echo htmlspecialchars($item['product_name']); ?></td>
                                 <td class="right">₱ <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?></td>
                                 <td class="right">₱ <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?></td>
                             </tr>
@@ -596,20 +615,6 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             <!-- BOTTOM: left info + right totals -->
             <div class="bottom-row">
                 <div class="bottom-left">
-                    <h3>Thank You For Your Business</h3>
-
-                    <h3 style="margin-top:18px;">Terms &amp; Conditions</h3>
-                    <p class="terms-text">
-                        Goods received in good order and condition. Please inspect items upon delivery.
-                        Any discrepancy must be reported within 24 hours.
-                    </p>
-
-                    <div class="payment-info">
-                        <h3>Payment Info</h3>
-                        <div class="pay-row"><span>Account #:</span> 1210 5210 8542</div>
-                        <div class="pay-row"><span>A/C Name:</span> Villaruz Printshop</div>
-                        <div class="pay-row"><span>Bank Details:</span> Dasol, Pangasinan Branch</div>
-                    </div>
 
                     <?php if (!empty($qrImageUrl)): ?>
                         <div class="qr-wrap">
@@ -632,6 +637,29 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                         <span class="total-label">Total :</span>
                         <span class="total-value">₱ <?php echo number_format($totalSales, 2, '.', ','); ?></span>
                     </div>
+                </div>
+            </div>
+
+            <!-- SIGNATURE SECTION -->
+            <div class="signature-section">
+                <div class="sign-block">
+                    <div class="sign-role">PREPARED by:</div>
+                    <div class="sign-name-line">JOSEPH M. VILLARUZ</div>
+                    <div class="sign-under-label">(Signature over Printed Name)</div>
+
+                    <div class="sign-role-below">Assigned Delivery</div>
+                    <div class="sign-role-line"></div>
+                    <div class="sign-role-note">Name and Signature</div>
+                </div>
+
+                <div class="sign-block">
+                    <div class="sign-role">Received in good condition:</div>
+                    <div class="sign-name-line">&nbsp;</div>
+                    <div class="sign-under-label">(Receiver's signature / date)</div>
+
+                    <div class="sign-role-below">Received By</div>
+                    <div class="sign-role-line"></div>
+                    <div class="sign-role-note">Name and Signature</div>
                 </div>
             </div>
 
