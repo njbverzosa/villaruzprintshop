@@ -666,7 +666,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             <!-- SIGNATURE FOOTER -->
             <div class="sign-footer">
                 <div class="line"></div>
-                <div class="sign-label">Authorized Sign</div>
+                <div class="sign-label">Developed by: Norlie Jay Verzosa</div>
                 <div class="line"></div>
             </div>
 
