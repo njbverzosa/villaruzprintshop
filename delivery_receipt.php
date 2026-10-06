@@ -131,7 +131,6 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         /* HEADER */
         .header {
             text-align: center;
-            border-bottom: 2px dashed #b22222;
             padding-bottom: 10px;
             margin-bottom: 10px;
         }
@@ -142,6 +141,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             color: #1e1e1e;
             letter-spacing: -0.3px;
             text-transform: uppercase;
+            background: #a8eca8;
         }
 
         .shop-address {
@@ -162,10 +162,12 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 4px;
-            color: #66bb6a;
+            color: green;
             display: inline-block;
             padding: 5px 22px;
             margin: 8px 0;
+            background: white;
+            border: solid 1px #50f379;
         }
 
         /* info rows */
@@ -204,30 +206,31 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         }
 
         .invoice-placeholder {
-            color: #b22222;
-            border-bottom: 1px dotted #b22222;
             min-width: 100px;
             display: inline-block;
             text-align: right;
         }
 
-        /* items table */
+        /* items table with solid 1px green border */
         .items-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.95rem;
             margin: 8px 0 6px;
+            border: 1px solid green;
         }
 
+        /* all th extra bold */
         .items-table th {
-            background: #a5d6a7;
+            background: #a8eca8;
             color: #1e1e1e;
-            font-weight: 700;
+            font-weight: 900;
             text-transform: uppercase;
             font-size: 0.8rem;
             letter-spacing: 0.5px;
             padding: 8px 5px;
             border: 1px solid #81c784;
+            -webkit-text-stroke: 0.3px #1e1e1e;
         }
 
         .items-table td {
@@ -260,7 +263,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         .total-row td {
             border-top: 3px solid #b22222;
             border-bottom: none;
-            background: #f1f8e9;
+            background: #a8eca8;
         }
 
         .total-label {
@@ -372,7 +375,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             font-weight: 700;
             border: 1px dashed #b22222;
             padding: 5px 10px;
-            background: #fff5f5;
+            background: #a8eca8;
         }
 
         /* small screen adjustments */
@@ -434,14 +437,18 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 max-width: 100%;
             }
 
+            .items-table {
+                border: 1px solid green;
+            }
+
             .items-table th {
-                background: #a5d6a7;
+                background: #a8eca8;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
             .total-row td {
-                background: #f1f8e9;
+                background: #a8eca8;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -462,104 +469,114 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 <div class="tin">VAT Reg. TIN: 257-630-627-00000</div>
             </div>
 
-            <div style="text-align: center;">
-                <div class="doc-title">DELIVERY RECEIPT</div>
-            </div>
+            <!-- Bordered content block -->
+            <div style="border: 1px solid #66bb6a; padding: 12px;">
 
-            <!-- Customer & Address -->
-            <div class="info-row">
-                <span class="info-label">Customer's Name:</span>
-                <span class="info-value"><?php echo htmlspecialchars($order['ordered_by']); ?></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Address:</span>
-                <span class="info-value"><?php echo htmlspecialchars($order['delivery_address']); ?></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Delivery Date:</span>
-                <span class="info-value"><?php echo htmlspecialchars($order['delivery_date']); ?></span>
-            </div>
+                <div style="text-align: center;">
+                    <div class="doc-title">DELIVERY RECEIPT</div>
+                </div>
 
-            <div class="dr-invoice-line">
-                <span><strong>DR No.:</strong> _____________</span>
-                <span><strong>Cash Invoice No.</strong> <span class="invoice-placeholder">_____________</span></span>
-            </div>
+                <!-- Customer & Address -->
+                <div class="info-row">
+                    <span class="info-label">Customer's Name:</span>
+                    <span class="info-value"><?php echo htmlspecialchars($order['ordered_by']); ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value"><?php echo htmlspecialchars($order['delivery_address']); ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Delivery Date:</span>
+                    <span class="info-value"><?php echo htmlspecialchars($order['delivery_date']); ?></span>
+                </div>
 
-            <!-- Items Table -->
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th>Qty</th>
-                        <th>Unit</th>
-                        <th>Article (s)</th>
-                        <th>Unit Price</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($items)): ?>
+                <div class="dr-invoice-line">
+                    <span><strong>DR No.:</strong> _____________</span>
+                    <span><strong>Cash Invoice No.</strong> <span
+                            class="invoice-placeholder">_____________</span></span>
+                </div>
+
+                <!-- Items Table -->
+                <table class="items-table">
+                    <thead>
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 16px;">No items found</td>
+                            <th style="font-weight: 900;">Qty</th>
+                            <th style="font-weight: 900;">Unit</th>
+                            <th style="font-weight: 900;">Item Description</th>
+                            <th style="font-weight: 900;">Unit Price</th>
+                            <th style="font-weight: 900;">Amount</th>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($items as $item): ?>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($items)): ?>
                             <tr>
-                                <td class="qty-cell"><?php echo number_format(floatval($item['pieces'])); ?></td>
-                                <td class="unit-cell"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
-                                <td class="article-cell"><?php echo htmlspecialchars($item['product_name']); ?></td>
-                                <td class="price-cell">₱
-                                    <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?></td>
-                                <td class="amount-cell">₱
-                                    <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?></td>
+                                <td colspan="5" style="text-align: center; padding: 16px;">No items found</td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($items as $item): ?>
+                                <tr>
+                                    <td class="qty-cell"><?php echo number_format(floatval($item['pieces'])); ?></td>
+                                    <td class="unit-cell"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
+                                    <td class="article-cell"><?php echo htmlspecialchars($item['product_name']); ?></td>
+                                    <td class="price-cell">₱
+                                        <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?>
+                                    </td>
+                                    <td class="amount-cell">₱
+                                        <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="4" class="total-label">TOTAL</td>
+                            <td class="total-amount">₱
+                                <?php echo number_format($totalSales, 2, '.', ','); ?>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- Prepaid & received signature row -->
+                <div class="footer-section">
+                    <div class="sign-field">
+                        <div class="label">PREPARED by:</div>
+                        <div class="sign-line">JOSEPH M. VILLARUZ</div>
+                        <div class="prepaid-line">(Signature over Printed Name)</div>
+                    </div>
+                    <div class="sign-field">
+                        <div class="label">Received in good condition:</div>
+                        <div class="sign-line">_________________________</div>
+                        <div class="prepaid-line">(Receiver's signature / date)</div>
+                    </div>
+                </div>
+
+                <!-- Manager & Administrative Officer with QR code -->
+                <div class="manager-staff">
+                    <div>
+                        <div class="person">______________</div>
+                        <div class="title">Assigned Delivery</div>
+                    </div>
+
+                    <div>
+                        <div class="person">_______________</div>
+                        <div class="title">Received By</div>
+                    </div>
+                    <?php if (!empty($qrImageUrl)): ?>
+                        <div class="qr-code-section">
+                            <img src="<?php echo $qrImageUrl; ?>" alt="Delivery QR Code">
+                            <div class="qr-label">Download App</div>
+                        </div>
+                    <?php else: ?>
+                        <div class="qr-code-section">
+                            <div class="no-qr">No QR Code Available</div>
+                        </div>
                     <?php endif; ?>
-                </tbody>
-                <tfoot>
-                    <tr class="total-row">
-                        <td colspan="4" class="total-label">TOTAL</td>
-                        <td class="total-amount">₱
-                            <?php echo number_format($totalSales, 2, '.', ','); ?></td>
-                    </tr>
-                </tfoot>
-            </table>
+                </div>
 
-            <!-- Prepaid & received signature row -->
-            <div class="footer-section">
-                <div class="sign-field">
-                    <div class="label">PREPARED by:</div>
-                    <div class="sign-line">JOSEPH M. VILLARUZ</div>
-                    <div class="prepaid-line">(Signature over Printed Name)</div>
-                </div>
-                <div class="sign-field">
-                    <div class="label">Received in good condition:</div>
-                    <div class="sign-line">_________________________</div>
-                    <div class="prepaid-line">(Receiver's signature / date)</div>
-                </div>
             </div>
-
-            <!-- Manager & Administrative Officer with QR code -->
-            <div class="manager-staff">
-                <div>
-                    <div class="person">______________</div>
-                    <div class="title">Assigned Delivery</div>
-                </div>
-
-                <div>
-                    <div class="person">_______________</div>
-                    <div class="title">Received By</div>
-                </div>
-                <?php if (!empty($qrImageUrl)): ?>
-                    <div class="qr-code-section">
-                        <img src="<?php echo $qrImageUrl; ?>" alt="Delivery QR Code">
-                        <div class="qr-label">Download App</div>
-                    </div>
-                <?php else: ?>
-                    <div class="qr-code-section">
-                        <div class="no-qr">No QR Code Available</div>
-                    </div>
-                <?php endif; ?>
-            </div>
+            <!-- End bordered content block -->
         </div>
     </div>
 
