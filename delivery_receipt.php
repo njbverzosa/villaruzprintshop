@@ -516,6 +516,116 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             padding-top: 5px;
         }
 
+        /* ---------- CUSTOM CONTEXT MENU MODAL ---------- */
+        .pdf-tip {
+            position: absolute;
+            z-index: 9999;
+            background: #ffffff;
+            color: #2a2a2a;
+            border: 1px solid #e6e8ea;
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(30, 40, 60, 0.18);
+            padding: 12px 16px;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            max-width: 260px;
+            display: none;
+        }
+
+        .pdf-tip::before {
+            content: "";
+            position: absolute;
+            top: -7px;
+            left: 20px;
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border-left: 1px solid #e6e8ea;
+            border-top: 1px solid #e6e8ea;
+            transform: rotate(45deg);
+        }
+
+        .pdf-tip .tip-icon {
+            color: #f5c518;
+            margin-right: 6px;
+            font-size: 0.9rem;
+        }
+
+        .pdf-tip strong {
+            display: block;
+            font-size: 0.82rem;
+            margin-bottom: 4px;
+            color: #2a2a2a;
+        }
+
+        .pdf-tip .tip-action {
+            color: #4a3a00;
+            background: #f5c518;
+            border-radius: 3px;
+            padding: 2px 7px;
+            font-weight: 700;
+            font-size: 0.72rem;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        /* ---------- TOAST (for Ctrl + P) ---------- */
+        .pdf-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-140%);
+            background: #2f3136;
+            color: #ffffff;
+            padding: 14px 22px;
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            z-index: 10000;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 480px;
+            transition: transform 0.35s ease, opacity 0.35s ease;
+            opacity: 0;
+        }
+
+        .pdf-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .pdf-toast .toast-icon {
+            color: #f5c518;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .pdf-toast .toast-body strong {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+
+        .pdf-toast .toast-body span {
+            color: #c4c8cc;
+        }
+
+        .pdf-toast .toast-close {
+            margin-left: 8px;
+            color: #909599;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .pdf-toast .toast-close:hover {
+            color: #ffffff;
+        }
+
         /* ---------- RESPONSIVE ---------- */
         @media (max-width: 720px) {
             .signature-section {
@@ -764,7 +874,27 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         </div>
     </div>
 
+    <!-- Custom right-click tip modal -->
+    <div class="pdf-tip" id="pdfTip">
+        <i class="fas fa-file-pdf tip-icon"></i>
+        <strong>For best print quality</strong>
+        Please use the
+        <span class="tip-action">📥 Download PDF</span>
+        button above instead of printing directly. Your receipt will print clearer and cleaner.
+    </div>
+
+    <!-- Toast notification (for Ctrl + P) -->
+    <div class="pdf-toast" id="pdfToast">
+        <i class="fas fa-print toast-icon"></i>
+        <div class="toast-body">
+            <strong>Better print quality available</strong>
+            <span>Please click the "Download PDF" button above for a cleaner print. Direct printing (Ctrl + P) may reduce print quality.</span>
+        </div>
+        <span class="toast-close" onclick="hideToast()">&times;</span>
+    </div>
+
     <script>
+        /* ---------- PDF DOWNLOAD ---------- */
         function downloadReceipt() {
             const element = document.getElementById('receipt-content');
             const opt = {
@@ -789,6 +919,75 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 downloadBtn.disabled = false;
                 alert('Error generating PDF. Please try again.');
             });
+        }
+
+        /* ---------- RIGHT-CLICK TIP MODAL ---------- */
+        const pdfTip = document.getElementById('pdfTip');
+        let tipTimeout = null;
+
+        document.addEventListener('contextmenu', function (e) {
+            // Allow right-click inside the tip itself
+            if (pdfTip.contains(e.target)) return;
+
+            e.preventDefault();
+
+            // Position the tip near the cursor
+            const tipWidth = 260;
+            const tipHeight = 110;
+            let left = e.pageX + 12;
+            let top = e.pageY + 12;
+
+            // Keep inside viewport
+            if (left + tipWidth > window.innerWidth + window.scrollX) {
+                left = e.pageX - tipWidth - 12;
+            }
+            if (top + tipHeight > window.innerHeight + window.scrollY) {
+                top = e.pageY - tipHeight - 12;
+            }
+
+            pdfTip.style.left = left + 'px';
+            pdfTip.style.top = top + 'px';
+            pdfTip.style.display = 'block';
+
+            // Auto-hide after 3.5 seconds
+            clearTimeout(tipTimeout);
+            tipTimeout = setTimeout(() => {
+                pdfTip.style.display = 'none';
+            }, 3500);
+        });
+
+        // Hide the tip when clicking anywhere or scrolling
+        document.addEventListener('click', function (e) {
+            if (!pdfTip.contains(e.target)) {
+                pdfTip.style.display = 'none';
+            }
+        });
+        document.addEventListener('scroll', function () {
+            pdfTip.style.display = 'none';
+        }, true);
+
+        /* ---------- CTRL + P TOAST ---------- */
+        const pdfToast = document.getElementById('pdfToast');
+        let toastTimeout = null;
+
+        document.addEventListener('keydown', function (e) {
+            // Ctrl + P (or Cmd + P on macOS)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+                e.preventDefault();
+                showToast();
+            }
+        });
+
+        function showToast() {
+            pdfToast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                hideToast();
+            }, 5000);
+        }
+
+        function hideToast() {
+            pdfToast.classList.remove('show');
         }
     </script>
 </body>
