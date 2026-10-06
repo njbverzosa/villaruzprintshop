@@ -627,10 +627,6 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                         <span>Sub Total :</span>
                         <span class="value">₱ <?php echo number_format($totalSales, 2, '.', ','); ?></span>
                     </div>
-                    <div class="subtotal-row">
-                        <span>Tax :</span>
-                        <span class="value">0.00%</span>
-                    </div>
 
                     <div class="total-bar">
                         <span class="total-label">Total :</span>
