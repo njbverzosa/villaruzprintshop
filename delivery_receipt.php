@@ -37,7 +37,6 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Format date - FIXED: Remove "at" from the date string
 $dateTimeSold = $order['date_time_sold'];
-// Remove the word "at" from the date string for proper parsing
 $cleanDateTime = str_replace(' at ', ' ', $dateTimeSold);
 $orderDate = new DateTime($cleanDateTime);
 $formattedDate = $orderDate->format('n/j/Y');
@@ -62,7 +61,6 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Villaruz Print Shop - Delivery Receipt</title>
-    <!-- Include html2pdf library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
         integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -81,13 +79,15 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         }
 
         body {
-            background: #e9e9e9;
+            background: #eef1f4;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            -webkit-font-smoothing: antialiased;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 20px 12px;
+            padding: 24px 12px;
         }
 
         .wrapper {
@@ -99,54 +99,56 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         .button-container {
             display: flex;
             justify-content: center;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
 
         .download-btn {
-            color: #1e1e1e;
+            color: #4a3a00;
             border: none;
-            padding: 10px 26px;
-            font-size: 0.95rem;
+            padding: 11px 28px;
+            font-size: 0.9rem;
             font-weight: 700;
             font-family: inherit;
             cursor: pointer;
             letter-spacing: 0.4px;
-            transition: background 0.15s;
-            background: #f7c600;
-            border-radius: 3px;
+            transition: background 0.18s, transform 0.12s;
+            background: #f5c518;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(245, 197, 24, 0.35);
         }
 
         .download-btn:hover {
-            background: #e0b300;
+            background: #e3b414;
+            transform: translateY(-1px);
         }
 
-        /* RECEIPT / INVOICE CARD */
+        /* RECEIPT CARD */
         .receipt {
             width: 100%;
             background: #ffffff;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-            padding: 40px 44px 36px 44px;
-            border-radius: 2px;
+            box-shadow: 0 12px 40px rgba(30, 40, 60, 0.08), 0 2px 8px rgba(30, 40, 60, 0.04);
+            padding: 44px 48px 40px 48px;
+            border-radius: 4px;
         }
 
         /* ---------- HEADER ---------- */
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 26px;
+            align-items: flex-start;
+            margin-bottom: 28px;
         }
 
         .brand-block {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
         }
 
         .brand-text .name {
             font-size: 1.05rem;
             font-weight: 800;
-            color: #2b2b2b;
+            color: #2a2a2a;
             letter-spacing: -0.2px;
         }
 
@@ -154,63 +156,88 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             font-size: 0.6rem;
             letter-spacing: 1.6px;
             text-transform: uppercase;
-            color: #9a9a9a;
-            margin-top: 2px;
+            color: #a0a4a8;
+            margin-top: 3px;
         }
 
-        /* ---------- YELLOW BAR + INVOICE TITLE ---------- */
+        .brand-text .tin-line {
+            font-size: 0.65rem;
+            color: #909599;
+            margin-top: 4px;
+            letter-spacing: 0.2px;
+        }
+
+        .header-address {
+            text-align: right;
+            font-size: 0.72rem;
+            color: #70757a;
+            line-height: 1.5;
+            max-width: 240px;
+        }
+
+        /* ---------- YELLOW BAR + TITLE ---------- */
         .title-row {
             display: flex;
             align-items: center;
-            margin-bottom: 22px;
+            margin-bottom: 30px;
         }
 
         .title-bar {
             flex: 1;
-            height: 14px;
-            background: #f7c600;
+            height: 12px;
+            background: #f5c518;
+            border-radius: 2px;
         }
 
         .title-text {
-            font-size: 2.4rem;
+            font-size: 2.3rem;
             font-weight: 800;
-            letter-spacing: 2px;
-            color: #2b2b2b;
-            padding: 0 22px;
+            letter-spacing: 2.5px;
+            color: #2a2a2a;
+            padding: 0 24px;
             line-height: 1;
         }
 
-        /* ---------- BILL TO / META ---------- */
+        /* ---------- ORDERED BY / META ---------- */
         .bill-row {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 26px;
+            gap: 24px;
+            margin-bottom: 30px;
         }
 
         .bill-to {
             flex: 1;
-            min-width: 220px;
+            min-width: 240px;
+        }
+
+        .bill-to .info-card {
+            background: #fafbfc;
+            border-left: 3px solid #f5c518;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
         }
 
         .bill-to .section-label {
-            font-size: 1rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            color: #2b2b2b;
-            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #909599;
+            margin-bottom: 4px;
         }
 
         .bill-to .customer-name {
             font-size: 0.95rem;
             font-weight: 700;
-            color: #2b2b2b;
-            margin-bottom: 4px;
+            color: #2a2a2a;
         }
 
         .bill-to .customer-line {
             font-size: 0.85rem;
-            color: #6b6b6b;
+            color: #70757a;
             line-height: 1.5;
         }
 
@@ -223,16 +250,16 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             justify-content: space-between;
             gap: 24px;
             font-size: 0.85rem;
-            margin-bottom: 8px;
+            margin-bottom: 9px;
         }
 
         .meta-row .meta-label {
             font-weight: 700;
-            color: #2b2b2b;
+            color: #2a2a2a;
         }
 
         .meta-row .meta-value {
-            color: #6b6b6b;
+            color: #70757a;
         }
 
         /* ---------- ITEMS TABLE ---------- */
@@ -240,17 +267,19 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            margin-bottom: 34px;
+            margin-bottom: 36px;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
         .items-table th {
-            background: #1f1f1f;
+            background: #2f3136;
             color: #ffffff;
             font-weight: 700;
             text-align: left;
-            padding: 10px 12px;
-            font-size: 0.75rem;
-            letter-spacing: 0.3px;
+            padding: 11px 13px;
+            font-size: 0.72rem;
+            letter-spacing: 0.5px;
             border: none;
         }
 
@@ -263,15 +292,14 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         }
 
         .items-table td {
-            padding: 12px;
-            color: #2b2b2b;
-            border-bottom: 1px solid #ececec;
+            padding: 12px 13px;
+            color: #3a3d42;
+            border-bottom: 1px solid #eef0f2;
             font-size: 0.85rem;
         }
 
-        /* striped rows */
         .items-table tbody tr:nth-child(even) td {
-            background: #f7f7f7;
+            background: #fafbfc;
         }
 
         .items-table td.center {
@@ -288,18 +316,12 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 30px;
+            margin-bottom: 8px;
         }
 
         .bottom-left {
             flex: 1;
             min-width: 260px;
-        }
-
-        .bottom-left h3 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #2b2b2b;
-            margin-bottom: 10px;
         }
 
         .bottom-right {
@@ -313,123 +335,160 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             justify-content: space-between;
             font-size: 0.9rem;
             font-weight: 700;
-            color: #2b2b2b;
+            color: #2a2a2a;
             margin-bottom: 10px;
             padding-right: 6px;
         }
 
         .subtotal-row .value {
             font-weight: 600;
-            color: #6b6b6b;
+            color: #70757a;
         }
 
         .total-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #f7c600;
-            padding: 14px 18px;
+            background: #f5c518;
+            padding: 15px 20px;
             margin-top: 18px;
+            border-radius: 4px;
         }
 
         .total-bar .total-label {
             font-size: 1rem;
             font-weight: 800;
-            color: #2b2b2b;
+            color: #4a3a00;
             letter-spacing: 0.5px;
         }
 
         .total-bar .total-value {
             font-size: 1.05rem;
             font-weight: 800;
-            color: #2b2b2b;
+            color: #4a3a00;
         }
 
         /* ---------- SIGNATURE SECTION ---------- */
         .signature-section {
-            display: flex;
-            justify-content: space-between;
-            gap: 40px;
-            margin-top: 50px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin-top: 52px;
+            padding-top: 32px;
+            border-top: 1px solid #eef0f2;
         }
 
         .sign-block {
-            flex: 1;
-            min-width: 240px;
+            display: flex;
+            flex-direction: column;
         }
 
         .sign-block .sign-role {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
-            color: #2b2b2b;
-            margin-bottom: 6px;
+            color: #2a2a2a;
+            margin-bottom: 4px;
             letter-spacing: 0.3px;
         }
 
+        /* underline exactly matches the width of the name inside */
         .sign-block .sign-name-line {
-            border-bottom: 1px solid #2b2b2b;
+            border-bottom: 1px solid #2a2a2a;
             padding-bottom: 4px;
             font-size: 0.85rem;
             font-weight: 600;
-            color: #2b2b2b;
-            margin-bottom: 4px;
-            min-height: 22px;
+            color: #2a2a2a;
+            margin-bottom: 5px;
+            min-height: 42px;
+            padding-top: 22px;
+            display: inline-block;
+            width: fit-content;
+            max-width: 100%;
         }
 
         .sign-block .sign-under-label {
-            font-size: 0.7rem;
-            color: #7a7a7a;
-            font-style: italic;
-        }
-
-        /* Secondary role block (Assigned Delivery / Received By) */
-        .sign-block .sign-role-below {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: #2b2b2b;
-            margin-top: 20px;
-            letter-spacing: 0.3px;
-        }
-
-        .sign-block .sign-role-line {
-            border-bottom: 1px solid #2b2b2b;
-            min-height: 22px;
-            margin-top: 4px;
-        }
-
-        .sign-block .sign-role-note {
             font-size: 0.68rem;
-            color: #7a7a7a;
+            color: #909599;
             font-style: italic;
-            margin-top: 3px;
+            max-width: 340px;
+        }
+
+        /* split line: signature (long) / date (short) — extended width */
+        .sign-block .sign-name-line.split-line {
+            display: flex;
+            align-items: flex-end;
+            border-bottom: none;
+            padding-bottom: 0;
+            padding-top: 22px;
+            min-height: 42px;
+            width: 100%;
+            max-width: 340px;
+            gap: 6px;
+        }
+
+        /* signature half — takes the remaining space */
+        .sign-block .sign-name-line.split-line .line-sig {
+            flex: 1;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 4px;
+            min-height: 20px;
+        }
+
+        /* date half — short, faded placeholder */
+        .sign-block .sign-name-line.split-line .line-date {
+            flex: 0 0 62px;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 4px;
+            min-height: 20px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: 0.55rem;
+            letter-spacing: 0.2px;
+            color: #c4c8cc;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .sign-block .sign-name-line.split-line .slash {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #2a2a2a;
+            padding-bottom: 2px;
+            line-height: 1;
+        }
+
+        /* label under the split line */
+        .sign-block .sign-name-line.split-line + .sign-under-label {
+            max-width: 340px;
         }
 
         /* QR block */
         .qr-wrap {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 26px;
+            gap: 12px;
+            margin-top: 4px;
         }
 
         .qr-wrap img {
-            width: 70px;
-            height: 70px;
-            border: 1px solid #e0e0e0;
-            padding: 3px;
+            width: 72px;
+            height: 72px;
+            border: 1px solid #e6e8ea;
+            padding: 4px;
             background: #fff;
+            border-radius: 4px;
         }
 
         .qr-wrap .qr-text {
             font-size: 0.7rem;
-            color: #6b6b6b;
-            line-height: 1.4;
+            color: #70757a;
+            line-height: 1.5;
         }
 
         .qr-wrap .qr-text strong {
             display: block;
-            color: #2b2b2b;
+            color: #2a2a2a;
             font-size: 0.78rem;
             margin-bottom: 2px;
         }
@@ -445,30 +504,55 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         .sign-footer .line {
             flex: 1;
             height: 2px;
-            background: #f7c600;
+            background: #f5c518;
+            border-radius: 1px;
         }
 
         .sign-footer .sign-label {
             font-size: 0.78rem;
-            color: #2b2b2b;
+            color: #70757a;
             white-space: nowrap;
-            border-top: 1px solid #bdbdbd;
-            padding-top: 4px;
+            border-top: 1px solid #d4d8dc;
+            padding-top: 5px;
         }
 
         /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 720px) {
+            .signature-section {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+
+            .sign-block .sign-name-line,
+            .sign-block .sign-under-label,
+            .sign-block .sign-name-line.split-line {
+                max-width: 100%;
+            }
+        }
+
         @media (max-width: 620px) {
             .receipt {
-                padding: 24px 18px;
+                padding: 26px 20px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            .header-address {
+                text-align: left;
+                max-width: 100%;
             }
 
             .title-text {
                 font-size: 1.6rem;
                 padding: 0 12px;
+                letter-spacing: 1.5px;
             }
 
             .title-bar {
-                height: 10px;
+                height: 9px;
             }
 
             .items-table th,
@@ -480,11 +564,6 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             .bottom-left,
             .bottom-right {
                 min-width: 100%;
-            }
-
-            .signature-section {
-                flex-direction: column;
-                gap: 24px;
             }
         }
 
@@ -506,13 +585,20 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             }
 
             .items-table th {
-                background: #1f1f1f !important;
+                background: #2f3136 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
             .items-table tbody tr:nth-child(even) td {
-                background: #f7f7f7 !important;
+                background: #fafbfc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .bill-to .info-card {
+                background: #fafbfc !important;
+                border-left: 3px solid #f5c518 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -520,7 +606,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             .total-bar,
             .title-bar,
             .sign-footer .line {
-                background: #f7c600 !important;
+                background: #f5c518 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -536,30 +622,38 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
 
         <div class="receipt" id="receipt-content">
 
-            <!-- HEADER: brand + logo -->
+            <!-- HEADER -->
             <div class="header">
                 <div class="brand-block">
                     <div class="brand-text">
                         <div class="name">VILLARUZ PRINTSHOP &</div>
                         <div class="tagline">General Merchandise</div>
+                        <div class="tin-line">NON-VAT Reg. TIN: 257-630-627-00000</div>
                     </div>
+                </div>
+                <div class="header-address">
+                    New Public Market, Poblacion, Dasol,<br>
+                    Pangasinan, Philippines (2411)
                 </div>
             </div>
 
-            <!-- YELLOW BAR + TITLE -->
+            <!-- TITLE -->
             <div class="title-row">
                 <div class="title-bar"></div>
                 <div class="title-text">DELIVERY RECEIPT</div>
                 <div class="title-bar"></div>
             </div>
 
-            <!-- BILL TO + META -->
+            <!-- ORDERED BY / META -->
             <div class="bill-row">
                 <div class="bill-to">
-                    <div class="section-label">Deliver To:</div>
-                    <div class="customer-name"><?php echo htmlspecialchars($order['ordered_by']); ?></div>
-                    <div class="customer-line">
-                        <?php echo htmlspecialchars($order['delivery_address']); ?>
+                    <div class="info-card">
+                        <div class="section-label">Ordered By</div>
+                        <div class="customer-name"><?php echo htmlspecialchars($order['ordered_by']); ?></div>
+                    </div>
+                    <div class="info-card">
+                        <div class="section-label">Delivery Address</div>
+                        <div class="customer-line"><?php echo htmlspecialchars($order['delivery_address']); ?></div>
                     </div>
                 </div>
                 <div class="meta-table">
@@ -575,14 +669,10 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                         <span class="meta-label">Delivery Date</span>
                         <span class="meta-value"><?php echo htmlspecialchars($order['delivery_date']); ?></span>
                     </div>
-                    <div class="meta-row">
-                        <span class="meta-label">TIN</span>
-                        <span class="meta-value">257-630-627-00000</span>
-                    </div>
                 </div>
             </div>
 
-            <!-- ITEMS TABLE: QTY, UNIT, Item Description, Unit Price, Amount -->
+            <!-- ITEMS TABLE -->
             <table class="items-table">
                 <thead>
                     <tr>
@@ -612,10 +702,9 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 </tbody>
             </table>
 
-            <!-- BOTTOM: left info + right totals -->
+            <!-- BOTTOM -->
             <div class="bottom-row">
                 <div class="bottom-left">
-
                     <?php if (!empty($qrImageUrl)): ?>
                         <div class="qr-wrap">
                             <img src="<?php echo $qrImageUrl; ?>" alt="Delivery QR Code">
@@ -640,33 +729,35 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 </div>
             </div>
 
-            <!-- SIGNATURE SECTION -->
+            <!-- SIGNATURE SECTION: 3 equal columns -->
             <div class="signature-section">
                 <div class="sign-block">
-                    <div class="sign-role">PREPARED by:</div>
-                    <div class="sign-name-line">JOSEPH M. VILLARUZ</div>
+                    <div class="sign-role">Prepared by:</div>
+                    <div class="sign-name-line">Joseph M. Villaruz</div>
                     <div class="sign-under-label">(Signature over Printed Name)</div>
+                </div>
 
-                    <div class="sign-role-below">Assigned Delivery</div>
-                    <div class="sign-role-line"></div>
-                    <div class="sign-role-note">Name and Signature</div>
+                <div class="sign-block">
+                    <div class="sign-role">Assigned Delivery:</div>
+                    <div class="sign-name-line">Corina M. Verzosa</div>
+                    <div class="sign-under-label">(Signature over Printed Name)</div>
                 </div>
 
                 <div class="sign-block">
                     <div class="sign-role">Received in good condition:</div>
-                    <div class="sign-name-line">&nbsp;</div>
-                    <div class="sign-under-label">(Receiver's signature / date)</div>
-
-                    <div class="sign-role-below">Received By</div>
-                    <div class="sign-role-line"></div>
-                    <div class="sign-role-note">Name and Signature</div>
+                    <div class="sign-name-line split-line">
+                        <span class="line-sig">&nbsp;</span>
+                        <span class="slash">/</span>
+                        <span class="line-date">MM-DD-YYYY</span>
+                    </div>
+                    <div class="sign-under-label">(Signature over Printed Name / date)</div>
                 </div>
             </div>
 
-            <!-- SIGNATURE FOOTER -->
+            <!-- FOOTER -->
             <div class="sign-footer">
                 <div class="line"></div>
-                <div class="sign-label">Developed by: Norlie Jay Verzosa</div>
+                <div class="sign-label">Villaruz Printshop & General Merchandise — System Developer: Norlie Jay Verzosa</div>
                 <div class="line"></div>
             </div>
 
