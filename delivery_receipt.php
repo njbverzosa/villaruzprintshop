@@ -626,11 +626,38 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             color: #ffffff;
         }
 
-        /* ---------- RESPONSIVE ---------- */
+        /* ============================================ */
+        /* ============ RESPONSIVE — TABLET =========== */
+        /* ============================================ */
+        @media (max-width: 900px) {
+            .receipt {
+                padding: 36px 32px 34px 32px;
+            }
+
+            .title-text {
+                font-size: 2rem;
+                letter-spacing: 2px;
+                padding: 0 18px;
+            }
+
+            .signature-section {
+                gap: 24px;
+            }
+
+            .items-table th,
+            .items-table td {
+                padding: 10px 10px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* ============================================ */
+        /* ============ RESPONSIVE — MOBILE =========== */
+        /* ============================================ */
         @media (max-width: 720px) {
             .signature-section {
                 grid-template-columns: 1fr;
-                gap: 28px;
+                gap: 26px;
             }
 
             .sign-block .sign-name-line,
@@ -638,42 +665,234 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             .sign-block .sign-name-line.split-line {
                 max-width: 100%;
             }
+
+            .sign-block .sign-name-line {
+                min-height: 38px;
+                padding-top: 18px;
+            }
+
+            .sign-block .sign-name-line.split-line {
+                min-height: 38px;
+                padding-top: 18px;
+                max-width: 100%;
+            }
+
+            .sign-block .sign-under-label {
+                max-width: 100%;
+            }
         }
 
-        @media (max-width: 620px) {
+        @media (max-width: 640px) {
+            body {
+                padding: 14px 8px;
+            }
+
             .receipt {
-                padding: 26px 20px;
+                padding: 22px 18px 24px 18px;
+                border-radius: 3px;
             }
 
             .header {
                 flex-direction: column;
-                gap: 14px;
+                gap: 12px;
+                margin-bottom: 22px;
             }
 
             .header-address {
                 text-align: left;
                 max-width: 100%;
+                font-size: 0.7rem;
+            }
+
+            .brand-text .name {
+                font-size: 0.98rem;
+            }
+
+            .brand-text .tin-line {
+                font-size: 0.6rem;
+            }
+
+            .title-row {
+                margin-bottom: 22px;
             }
 
             .title-text {
-                font-size: 1.6rem;
-                padding: 0 12px;
+                font-size: 1.35rem;
                 letter-spacing: 1.5px;
+                padding: 0 12px;
             }
 
             .title-bar {
                 height: 9px;
             }
 
-            .items-table th,
-            .items-table td {
-                padding: 8px 6px;
+            .bill-row {
+                flex-direction: column;
+                gap: 14px;
+                margin-bottom: 22px;
+            }
+
+            .bill-to,
+            .meta-table {
+                min-width: 100%;
+                width: 100%;
+            }
+
+            .meta-row {
+                font-size: 0.8rem;
+                margin-bottom: 7px;
+            }
+
+            /* Table — smaller font, tighter padding */
+            .items-table {
                 font-size: 0.72rem;
+                margin-bottom: 24px;
+            }
+
+            .items-table th {
+                padding: 8px 5px;
+                font-size: 0.6rem;
+                letter-spacing: 0.3px;
+            }
+
+            .items-table td {
+                padding: 8px 5px;
+                font-size: 0.72rem;
+            }
+
+            .bottom-row {
+                flex-direction: column;
+                gap: 14px;
             }
 
             .bottom-left,
             .bottom-right {
                 min-width: 100%;
+                max-width: 100%;
+            }
+
+            .subtotal-row {
+                font-size: 0.82rem;
+            }
+
+            .total-bar {
+                padding: 12px 14px;
+                margin-top: 12px;
+            }
+
+            .total-bar .total-label,
+            .total-bar .total-value {
+                font-size: 0.9rem;
+            }
+
+            .signature-section {
+                margin-top: 32px;
+                padding-top: 22px;
+                gap: 22px;
+            }
+
+            .sign-block .sign-role {
+                font-size: 0.72rem;
+            }
+
+            .sign-block .sign-name-line {
+                font-size: 0.82rem;
+                min-height: 36px;
+                padding-top: 16px;
+                max-width: 100%;
+            }
+
+            .sign-block .sign-under-label {
+                font-size: 0.64rem;
+            }
+
+            .qr-wrap img {
+                width: 60px;
+                height: 60px;
+            }
+
+            .qr-wrap .qr-text {
+                font-size: 0.66rem;
+            }
+
+            .sign-footer {
+                margin-top: 30px;
+                gap: 10px;
+            }
+
+            .sign-footer .sign-label {
+                font-size: 0.66rem;
+                white-space: normal;
+                text-align: center;
+                line-height: 1.4;
+            }
+
+            /* Tip modal on mobile: smaller, wraps inside screen */
+            .pdf-tip {
+                max-width: calc(100vw - 32px);
+                font-size: 0.72rem;
+                padding: 10px 13px;
+            }
+
+            .pdf-tip::before {
+                left: 16px;
+            }
+
+            /* Toast on mobile: full width minus margins */
+            .pdf-toast {
+                top: 12px;
+                max-width: calc(100vw - 20px);
+                padding: 12px 16px;
+                font-size: 0.78rem;
+            }
+
+            .pdf-toast .toast-body strong {
+                font-size: 0.82rem;
+            }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 400px) {
+            .receipt {
+                padding: 18px 14px 20px 14px;
+            }
+
+            .title-text {
+                font-size: 1.15rem;
+                letter-spacing: 1px;
+                padding: 0 8px;
+            }
+
+            .title-bar {
+                height: 7px;
+            }
+
+            .items-table th {
+                font-size: 0.55rem;
+                padding: 7px 3px;
+            }
+
+            .items-table td {
+                font-size: 0.66rem;
+                padding: 7px 3px;
+            }
+
+            .sign-block .sign-name-line {
+                font-size: 0.78rem;
+            }
+
+            .sign-block .sign-name-line.split-line .line-date {
+                flex: 0 0 52px;
+                font-size: 0.5rem;
+            }
+
+            .qr-wrap img {
+                width: 54px;
+                height: 54px;
+            }
+
+            .sign-footer .sign-label {
+                font-size: 0.6rem;
             }
         }
 
@@ -686,6 +905,11 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
 
             .button-container {
                 display: none;
+            }
+
+            .pdf-tip,
+            .pdf-toast {
+                display: none !important;
             }
 
             .receipt {
@@ -786,11 +1010,11 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th class="center" style="width:70px;">QTY</th>
-                        <th class="center" style="width:70px;">UNIT</th>
+                        <th class="center" style="width:52px;">QTY</th>
+                        <th class="center" style="width:56px;">UNIT</th>
                         <th>Item Description</th>
-                        <th class="right" style="width:110px;">Unit Price</th>
-                        <th class="right" style="width:120px;">Amount</th>
+                        <th class="right" style="width:90px;">Unit Price</th>
+                        <th class="right" style="width:100px;">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -932,8 +1156,8 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             e.preventDefault();
 
             // Position the tip near the cursor
-            const tipWidth = 260;
-            const tipHeight = 110;
+            const tipWidth = Math.min(260, window.innerWidth - 32);
+            const tipHeight = 120;
             let left = e.pageX + 12;
             let top = e.pageY + 12;
 
@@ -941,8 +1165,14 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             if (left + tipWidth > window.innerWidth + window.scrollX) {
                 left = e.pageX - tipWidth - 12;
             }
+            if (left < window.scrollX + 8) {
+                left = window.scrollX + 8;
+            }
             if (top + tipHeight > window.innerHeight + window.scrollY) {
                 top = e.pageY - tipHeight - 12;
+            }
+            if (top < window.scrollY + 8) {
+                top = window.scrollY + 8;
             }
 
             pdfTip.style.left = left + 'px';
