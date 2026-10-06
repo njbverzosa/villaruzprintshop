@@ -81,348 +81,396 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         }
 
         body {
-            background: #f0f2f5;
-            font-family: 'Courier New', Courier, monospace;
+            background: #e9e9e9;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 12px;
+            padding: 20px 12px;
         }
 
         .wrapper {
             width: 100%;
-            max-width: 780px;
-        }
-
-        /* RECEIPT CARD */
-        .receipt {
-            width: 100%;
-            background: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 16px 20px;
+            max-width: 800px;
         }
 
         /* buttons */
         .button-container {
             display: flex;
             justify-content: center;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
         }
 
         .download-btn {
-            color: black;
+            color: #1e1e1e;
             border: none;
             padding: 10px 26px;
-            font-size: 1rem;
-            font-weight: 600;
+            font-size: 0.95rem;
+            font-weight: 700;
             font-family: inherit;
             cursor: pointer;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.4px;
             transition: background 0.15s;
-            background: #14f3e8;
-            border-radius: 5px;
+            background: #f7c600;
+            border-radius: 3px;
         }
 
         .download-btn:hover {
-            background: #0fd4c9;
+            background: #e0b300;
         }
 
-        /* HEADER */
+        /* RECEIPT / INVOICE CARD */
+        .receipt {
+            width: 100%;
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            padding: 40px 44px 36px 44px;
+            border-radius: 2px;
+        }
+
+        /* ---------- HEADER ---------- */
         .header {
-            text-align: center;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 26px;
         }
 
-        .shop-name {
-            font-size: 1.4rem;
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-mark {
+            width: 26px;
+            height: 26px;
+            position: relative;
+        }
+
+        .brand-mark::before,
+        .brand-mark::after {
+            content: "";
+            position: absolute;
+            width: 14px;
+            height: 20px;
+            background: #e02020;
+            transform: skewX(-18deg);
+        }
+
+        .brand-mark::before {
+            left: 0;
+            top: 3px;
+        }
+
+        .brand-mark::after {
+            right: 0;
+            top: 0;
+            opacity: 0.75;
+        }
+
+        .brand-text .name {
+            font-size: 1.05rem;
             font-weight: 800;
-            color: #1e1e1e;
-            letter-spacing: -0.3px;
-            text-transform: uppercase;
-            background: #a8eca8;
+            color: #2b2b2b;
+            letter-spacing: -0.2px;
         }
 
-        .shop-address {
-            font-size: 0.95rem;
-            color: #3e3e3e;
-            font-weight: 500;
+        .brand-text .tagline {
+            font-size: 0.6rem;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+            color: #9a9a9a;
             margin-top: 2px;
         }
 
-        .tin {
-            font-size: 0.85rem;
-            color: #5e5e5e;
-            margin-top: 3px;
+        /* ---------- YELLOW BAR + INVOICE TITLE ---------- */
+        .title-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 22px;
         }
 
-        .doc-title {
-            font-size: 1.3rem;
+        .title-bar {
+            flex: 1;
+            height: 14px;
+            background: #f7c600;
+        }
+
+        .title-text {
+            font-size: 2.4rem;
             font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            color: green;
-            display: inline-block;
-            padding: 5px 22px;
-            margin: 8px 0;
-            background: white;
-            border: solid 1px #50f379;
+            letter-spacing: 2px;
+            color: #2b2b2b;
+            padding: 0 22px;
+            line-height: 1;
         }
 
-        /* info rows */
-        .info-row {
+        /* ---------- BILL TO / META ---------- */
+        .bill-row {
             display: flex;
+            justify-content: space-between;
             flex-wrap: wrap;
-            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 26px;
+        }
+
+        .bill-to {
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .bill-to .section-label {
             font-size: 1rem;
-            margin-bottom: 6px;
-            border-bottom: 1px dotted #ddd;
-            padding-bottom: 4px;
-            color: #1f1f1f;
-        }
-
-        .info-label {
             font-weight: 700;
+            color: #2b2b2b;
+            margin-bottom: 12px;
         }
 
-        .info-value {
-            font-weight: 600;
-            text-align: right;
-            word-break: break-word;
-            max-width: 65%;
+        .bill-to .customer-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #2b2b2b;
+            margin-bottom: 4px;
         }
 
-        /* DR / invoice line */
-        .dr-invoice-line {
+        .bill-to .customer-line {
+            font-size: 0.85rem;
+            color: #6b6b6b;
+            line-height: 1.5;
+        }
+
+        .meta-table {
+            min-width: 240px;
+        }
+
+        .meta-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #333;
-            margin: 8px 0 10px 0;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #ddd;
+            gap: 24px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
         }
 
-        .invoice-placeholder {
-            min-width: 100px;
-            display: inline-block;
-            text-align: right;
+        .meta-row .meta-label {
+            font-weight: 700;
+            color: #2b2b2b;
         }
 
-        /* items table with solid 1px green border */
+        .meta-row .meta-value {
+            color: #6b6b6b;
+        }
+
+        /* ---------- ITEMS TABLE ---------- */
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.95rem;
-            margin: 8px 0 6px;
-            border: 1px solid green;
+            font-size: 0.85rem;
+            margin-bottom: 34px;
         }
 
-        /* all th extra bold */
         .items-table th {
-            background: #a8eca8;
-            color: #1e1e1e;
-            font-weight: 900;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-            padding: 8px 5px;
-            border: 1px solid #81c784;
-            -webkit-text-stroke: 0.3px #1e1e1e;
+            background: #1f1f1f;
+            color: #ffffff;
+            font-weight: 700;
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 0.75rem;
+            letter-spacing: 0.3px;
+            border: none;
+        }
+
+        .items-table th.center {
+            text-align: center;
         }
 
         .items-table td {
-            padding: 8px 5px;
-            border: 1px solid #d0d0d0;
-            color: #1e1e1e;
-            font-weight: 600;
-            border-bottom: 1px solid #d0d0d0;
+            padding: 12px;
+            color: #2b2b2b;
+            border-bottom: 1px solid #ececec;
+            font-size: 0.85rem;
         }
 
-        .qty-cell,
-        .unit-cell,
-        .price-cell {
+        /* striped rows */
+        .items-table tbody tr:nth-child(even) td {
+            background: #f7f7f7;
+        }
+
+        .items-table td.center {
             text-align: center;
         }
 
-        .amount-cell {
+        .items-table td.right {
             text-align: right;
-            padding-right: 10px;
-            font-weight: 700;
-            color: #b22222;
         }
 
-        .article-cell {
-            font-weight: 600;
-            color: #1e1e1e;
-        }
-
-        /* total row */
-        .total-row td {
-            border-top: 3px solid #b22222;
-            border-bottom: none;
-            background: #a8eca8;
-        }
-
-        .total-label {
-            text-align: right;
-            font-weight: 800;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            color: #2e7d32;
-            padding-right: 12px;
-            letter-spacing: 1px;
-        }
-
-        .total-amount {
-            text-align: right;
-            font-weight: 800;
-            font-size: 1.15rem;
-            padding-right: 12px;
-            color: #b22222;
-        }
-
-        /* footer signatures */
-        .footer-section {
+        /* ---------- BOTTOM SECTION ---------- */
+        .bottom-row {
             display: flex;
-            flex-wrap: wrap;
             justify-content: space-between;
-            gap: 16px;
-            margin-top: 18px;
-            border-top: 1px dashed #b22222;
-            padding-top: 12px;
-        }
-
-        .sign-field {
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .sign-field .label {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #66bb6a;
-            border-bottom: 1px solid #c8e6c9;
-            display: inline-block;
-            margin-bottom: 6px;
-        }
-
-        .sign-line {
-            margin-top: 6px;
-            border-bottom: 2px solid #b22222;
-            padding-bottom: 3px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #1e1e1e;
-        }
-
-        .prepaid-line {
-            font-size: 0.7rem;
-            color: #5e5e5e;
-            margin-top: 3px;
-        }
-
-        /* manager / staff + QR */
-        .manager-staff {
-            display: flex;
             flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .bottom-left {
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .bottom-left h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #2b2b2b;
+            margin-bottom: 10px;
+        }
+
+        .terms-text {
+            font-size: 0.75rem;
+            color: #7a7a7a;
+            line-height: 1.5;
+            margin-bottom: 22px;
+            max-width: 320px;
+        }
+
+        .payment-info .pay-row {
+            font-size: 0.78rem;
+            color: #4a4a4a;
+            margin-bottom: 4px;
+        }
+
+        .payment-info .pay-row span {
+            font-weight: 700;
+            color: #2b2b2b;
+            display: inline-block;
+            min-width: 90px;
+        }
+
+        .bottom-right {
+            flex: 1;
+            min-width: 280px;
+            max-width: 340px;
+        }
+
+        .subtotal-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #2b2b2b;
+            margin-bottom: 10px;
+            padding-right: 6px;
+        }
+
+        .subtotal-row .value {
+            font-weight: 600;
+            color: #6b6b6b;
+        }
+
+        .total-bar {
+            display: flex;
             justify-content: space-between;
             align-items: center;
+            background: #f7c600;
+            padding: 14px 18px;
             margin-top: 18px;
-            padding-top: 12px;
-            border-top: 1px dashed #b22222;
-            font-size: 0.9rem;
-            gap: 12px;
         }
 
-        .person {
-            font-weight: 700;
-            color: #1e1e1e;
+        .total-bar .total-label {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #2b2b2b;
+            letter-spacing: 0.5px;
         }
 
-        .title {
-            font-size: 0.75rem;
-            color: #66bb6a;
-            font-weight: 600;
-            margin-top: 3px;
+        .total-bar .total-value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #2b2b2b;
         }
 
-        .qr-code-section {
-            text-align: center;
+        /* ---------- SIGNATURE FOOTER ---------- */
+        .sign-footer {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            margin-top: 60px;
         }
 
-        .qr-code-section img {
-            width: 75px;
-            height: auto;
-            border: 2px solid #a5d6a7;
+        .sign-footer .line {
+            flex: 1;
+            height: 2px;
+            background: #f7c600;
+        }
+
+        .sign-footer .sign-label {
+            font-size: 0.78rem;
+            color: #2b2b2b;
+            white-space: nowrap;
+            border-top: 1px solid #bdbdbd;
+            padding-top: 4px;
+        }
+
+        /* QR block (kept, styled minimal) */
+        .qr-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 26px;
+        }
+
+        .qr-wrap img {
+            width: 70px;
+            height: 70px;
+            border: 1px solid #e0e0e0;
             padding: 3px;
-            background: white;
+            background: #fff;
         }
 
-        .qr-label {
-            font-size: 0.65rem;
-            color: #b22222;
-            font-weight: 600;
-            margin-top: 3px;
+        .qr-wrap .qr-text {
+            font-size: 0.7rem;
+            color: #6b6b6b;
+            line-height: 1.4;
         }
 
-        .no-qr {
-            font-size: 0.65rem;
-            color: #b22222;
-            font-weight: 700;
-            border: 1px dashed #b22222;
-            padding: 5px 10px;
-            background: #a8eca8;
+        .qr-wrap .qr-text strong {
+            display: block;
+            color: #2b2b2b;
+            font-size: 0.78rem;
+            margin-bottom: 2px;
         }
 
-        /* small screen adjustments */
-        @media (max-width: 600px) {
+        /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 620px) {
             .receipt {
-                padding: 12px 14px;
+                padding: 24px 18px;
             }
 
-            .shop-name {
-                font-size: 1.1rem;
+            .title-text {
+                font-size: 1.6rem;
+                padding: 0 12px;
             }
 
-            .doc-title {
-                font-size: 1rem;
-                letter-spacing: 2px;
-                padding: 4px 14px;
-            }
-
-            .info-row {
-                font-size: 0.85rem;
+            .title-bar {
+                height: 10px;
             }
 
             .items-table th,
             .items-table td {
-                padding: 6px 3px;
-                font-size: 0.8rem;
+                padding: 8px 6px;
+                font-size: 0.72rem;
             }
 
-            .total-label {
-                font-size: 0.9rem;
-            }
-
-            .total-amount {
-                font-size: 0.95rem;
-            }
-
-            .manager-staff {
-                flex-direction: column;
-                gap: 12px;
-                text-align: center;
+            .bottom-left,
+            .bottom-right {
+                min-width: 100%;
             }
         }
 
-        /* print styles */
+        /* ---------- PRINT ---------- */
         @media print {
             body {
-                background: white;
+                background: #ffffff;
                 padding: 0;
             }
 
@@ -432,23 +480,26 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
 
             .receipt {
                 box-shadow: none;
-                border: 1px solid #ccc;
-                padding: 12px;
+                padding: 20px;
                 max-width: 100%;
             }
 
-            .items-table {
-                border: 1px solid green;
-            }
-
             .items-table th {
-                background: #a8eca8;
+                background: #1f1f1f !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
-            .total-row td {
-                background: #a8eca8;
+            .items-table tbody tr:nth-child(even) td {
+                background: #f7f7f7 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .total-bar,
+            .title-bar,
+            .sign-footer .line {
+                background: #f7c600 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -459,124 +510,142 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
 <body>
     <div class="wrapper">
         <div class="button-container">
-            <button class="download-btn" onclick="downloadReceipt()"><i class="fas fa-download"></i></button>
+            <button class="download-btn" onclick="downloadReceipt()"><i class="fas fa-download"></i> &nbsp;Download PDF</button>
         </div>
 
         <div class="receipt" id="receipt-content">
+
+            <!-- HEADER: brand + logo -->
             <div class="header">
-                <div class="shop-name">VILLARUZ PRINTSHOP & GENERAL MERCHANDISE</div>
-                <div class="shop-address">Poblacion 2411, Dasol, Pangasinan, Philippines</div>
-                <div class="tin">VAT Reg. TIN: 257-630-627-00000</div>
+                <div class="brand-block">
+                    <div class="brand-text">
+                        <div class="name">VILLARUZ PRINTSHOP</div>
+                        <div class="tagline">General Merchandise</div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Bordered content block -->
-            <div style="border: 1px solid #66bb6a; padding: 12px;">
+            <!-- YELLOW BAR + TITLE -->
+            <div class="title-row">
+                <div class="title-bar"></div>
+                <div class="title-text">DELIVERY RECEIPT</div>
+                <div class="title-bar"></div>
+            </div>
 
-                <div style="text-align: center;">
-                    <div class="doc-title">DELIVERY RECEIPT</div>
+            <!-- BILL TO + META -->
+            <div class="bill-row">
+                <div class="bill-to">
+                    <div class="section-label">Deliver To:</div>
+                    <div class="customer-name"><?php echo htmlspecialchars($order['ordered_by']); ?></div>
+                    <div class="customer-line">
+                        <?php echo htmlspecialchars($order['delivery_address']); ?>
+                    </div>
                 </div>
+                <div class="meta-table">
+                    <div class="meta-row">
+                        <span class="meta-label">DR No.</span>
+                        <span class="meta-value">_____________</span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Invoice No.</span>
+                        <span class="meta-value"><?php echo htmlspecialchars($deliveryNumber); ?></span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Delivery Date</span>
+                        <span class="meta-value"><?php echo htmlspecialchars($order['delivery_date']); ?></span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">TIN</span>
+                        <span class="meta-value">257-630-627-00000</span>
+                    </div>
+                </div>
+            </div>
 
-                <!-- Customer & Address -->
-                <div class="info-row">
-                    <span class="info-label">Customer's Name:</span>
-                    <span class="info-value"><?php echo htmlspecialchars($order['ordered_by']); ?></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Address:</span>
-                    <span class="info-value"><?php echo htmlspecialchars($order['delivery_address']); ?></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Delivery Date:</span>
-                    <span class="info-value"><?php echo htmlspecialchars($order['delivery_date']); ?></span>
-                </div>
-
-                <div class="dr-invoice-line">
-                    <span><strong>DR No.:</strong> _____________</span>
-                    <span><strong>Cash Invoice No.</strong> <span
-                            class="invoice-placeholder">_____________</span></span>
-                </div>
-
-                <!-- Items Table -->
-                <table class="items-table">
-                    <thead>
+            <!-- ITEMS TABLE -->
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:50px;">SL</th>
+                        <th>Item Description</th>
+                        <th class="center" style="width:70px;">Unit</th>
+                        <th class="center" style="width:60px;">Qty</th>
+                        <th class="right" style="width:110px;">Price</th>
+                        <th class="right" style="width:120px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($items)): ?>
                         <tr>
-                            <th style="font-weight: 900;">Qty</th>
-                            <th style="font-weight: 900;">Unit</th>
-                            <th style="font-weight: 900;">Item Description</th>
-                            <th style="font-weight: 900;">Unit Price</th>
-                            <th style="font-weight: 900;">Amount</th>
+                            <td colspan="6" style="text-align: center; padding: 16px;">No items found</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($items)): ?>
-                            <tr>
-                                <td colspan="5" style="text-align: center; padding: 16px;">No items found</td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($items as $item): ?>
-                                <tr>
-                                    <td class="qty-cell"><?php echo number_format(floatval($item['pieces'])); ?></td>
-                                    <td class="unit-cell"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
-                                    <td class="article-cell"><?php echo htmlspecialchars($item['product_name']); ?></td>
-                                    <td class="price-cell">₱
-                                        <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?>
-                                    </td>
-                                    <td class="amount-cell">₱
-                                        <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td colspan="4" class="total-label">TOTAL</td>
-                            <td class="total-amount">₱
-                                <?php echo number_format($totalSales, 2, '.', ','); ?>
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-
-                <!-- Prepaid & received signature row -->
-                <div class="footer-section">
-                    <div class="sign-field">
-                        <div class="label">PREPARED by:</div>
-                        <div class="sign-line">JOSEPH M. VILLARUZ</div>
-                        <div class="prepaid-line">(Signature over Printed Name)</div>
-                    </div>
-                    <div class="sign-field">
-                        <div class="label">Received in good condition:</div>
-                        <div class="sign-line">_________________________</div>
-                        <div class="prepaid-line">(Receiver's signature / date)</div>
-                    </div>
-                </div>
-
-                <!-- Manager & Administrative Officer with QR code -->
-                <div class="manager-staff">
-                    <div>
-                        <div class="person">______________</div>
-                        <div class="title">Assigned Delivery</div>
-                    </div>
-
-                    <div>
-                        <div class="person">_______________</div>
-                        <div class="title">Received By</div>
-                    </div>
-                    <?php if (!empty($qrImageUrl)): ?>
-                        <div class="qr-code-section">
-                            <img src="<?php echo $qrImageUrl; ?>" alt="Delivery QR Code">
-                            <div class="qr-label">Download App</div>
-                        </div>
                     <?php else: ?>
-                        <div class="qr-code-section">
-                            <div class="no-qr">No QR Code Available</div>
+                        <?php $sl = 1; foreach ($items as $item): ?>
+                            <tr>
+                                <td><?php echo $sl++; ?></td>
+                                <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                                <td class="center"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
+                                <td class="center"><?php echo number_format(floatval($item['pieces'])); ?></td>
+                                <td class="right">₱ <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?></td>
+                                <td class="right">₱ <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <!-- BOTTOM: left info + right totals -->
+            <div class="bottom-row">
+                <div class="bottom-left">
+                    <h3>Thank You For Your Business</h3>
+
+                    <h3 style="margin-top:18px;">Terms &amp; Conditions</h3>
+                    <p class="terms-text">
+                        Goods received in good order and condition. Please inspect items upon delivery.
+                        Any discrepancy must be reported within 24 hours.
+                    </p>
+
+                    <div class="payment-info">
+                        <h3>Payment Info</h3>
+                        <div class="pay-row"><span>Account #:</span> 1210 5210 8542</div>
+                        <div class="pay-row"><span>A/C Name:</span> Villaruz Printshop</div>
+                        <div class="pay-row"><span>Bank Details:</span> Dasol, Pangasinan Branch</div>
+                    </div>
+
+                    <?php if (!empty($qrImageUrl)): ?>
+                        <div class="qr-wrap">
+                            <img src="<?php echo $qrImageUrl; ?>" alt="Delivery QR Code">
+                            <div class="qr-text">
+                                <strong>Download App</strong>
+                                Scan to get the Sofia app.
+                            </div>
                         </div>
                     <?php endif; ?>
                 </div>
 
+                <div class="bottom-right">
+                    <div class="subtotal-row">
+                        <span>Sub Total :</span>
+                        <span class="value">₱ <?php echo number_format($totalSales, 2, '.', ','); ?></span>
+                    </div>
+                    <div class="subtotal-row">
+                        <span>Tax :</span>
+                        <span class="value">0.00%</span>
+                    </div>
+
+                    <div class="total-bar">
+                        <span class="total-label">Total :</span>
+                        <span class="total-value">₱ <?php echo number_format($totalSales, 2, '.', ','); ?></span>
+                    </div>
+                </div>
             </div>
-            <!-- End bordered content block -->
+
+            <!-- SIGNATURE FOOTER -->
+            <div class="sign-footer">
+                <div class="line"></div>
+                <div class="sign-label">Authorized Sign</div>
+                <div class="line"></div>
+            </div>
+
         </div>
     </div>
 
@@ -584,7 +653,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         function downloadReceipt() {
             const element = document.getElementById('receipt-content');
             const opt = {
-                margin: [0.5, 0.5, 0.5, 0.5],
+                margin: [0.4, 0.4, 0.4, 0.4],
                 filename: 'Delivery_Receipt_<?php echo htmlspecialchars($deliveryNumber); ?>.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, letterRendering: true, useCORS: true },
