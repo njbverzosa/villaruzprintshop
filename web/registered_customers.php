@@ -487,20 +487,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         }
 
-        /* Used / Login Type icons */
-        .used-icon {
-            font-size: 20px;
-            vertical-align: middle;
-        }
-
-        .used-icon.desktop {
-            color: #3b82f6;
-        }
-
-        .used-icon.mobile {
-            color: #10b981;
-        }
-
         /* Email Status Dot */
         .email-status-dot {
             display: inline-block;
@@ -518,8 +504,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         .dot-inactive {
-            background: #ef4444;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
         }
 
         @keyframes pulse-dot {
@@ -992,10 +978,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             .status-text {
                 font-size: 9px;
             }
-
-            .used-icon {
-                font-size: 16px;
-            }
         }
     </style>
 </head>
@@ -1032,7 +1014,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                             <tr>
                                 <th>Full Name</th>
                                 <th>Status</th>
-                                <th>Used</th>
                                 <?php if ($canViewUserPass): ?>
                                     <th>User / Pass</th>
                                 <?php endif; ?>
@@ -1041,7 +1022,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <tbody>
                             <?php if (empty($admins)): ?>
                                 <tr>
-                                    <td colspan="<?php echo $canViewUserPass ? '4' : '3'; ?>" style="padding: 40px;">No admins found</td>
+                                    <td colspan="<?php echo $canViewUserPass ? '3' : '2'; ?>" style="padding: 40px;">No admins found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($admins as $admin):
@@ -1061,14 +1042,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                 <i class="fas fa-clock status-offline"
                                                     title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
                                                 <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php $loginType = $admin['login_type'] ?? 'web'; ?>
-                                            <?php if ($loginType === 'app'): ?>
-                                                <i class="fas fa-mobile-alt used-icon mobile" title="App"></i>
-                                            <?php else: ?>
-                                                <i class="fas fa-desktop used-icon desktop" title="Web"></i>
                                             <?php endif; ?>
                                         </td>
                                         <?php if ($canViewUserPass): ?>
@@ -1118,9 +1091,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <th>Business Permit</th>
                                 <th>Full Name</th>
                                 <th>Status</th>
-                                <th>Used</th>
                                 <th>Chat</th>
                                 <th>Phone Number</th>
+                                <th>Email</th>
                                 <?php if ($canViewUserPass): ?>
                                     <th>User / Pass</th>
                                 <?php endif; ?>
@@ -1135,6 +1108,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <?php foreach ($investors as $investor):
                                     $onlineStatus = getOnlineStatus($investor['online_time'] ?? '');
                                     $unreadCount = getUnreadCount($pdo, $investor['acc_number']);
+
+                                    // ✅ Email status check (assumes column 'active_email' exists; fallback = inactive)
+                                    $isEmailActive = isset($investor['active_email']) && $investor['active_email'] == 1;
 
                                     $permitPhoto = normalizeImagePath($investor['business_permit'] ?? '');
                                     $investorName = htmlspecialchars($investor['f_name'] ?? 'Investor');
@@ -1168,14 +1144,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <?php $loginType = $investor['login_type'] ?? 'web'; ?>
-                                            <?php if ($loginType === 'app'): ?>
-                                                <i class="fas fa-mobile-alt used-icon mobile" title="App"></i>
-                                            <?php else: ?>
-                                                <i class="fas fa-desktop used-icon desktop" title="Web"></i>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
                                             <div class="chat-icon-wrapper">
                                                 <span class="chat-icon"
                                                     onclick="window.location.href='chat_view.php?acc=<?php echo urlencode($investor['acc_number']); ?>'"
@@ -1201,6 +1169,20 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                     <i class="fas fa-copy"></i>
                                                 </button>
                                             <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php echo htmlspecialchars($investor['email'] ?? 'N/A'); ?>
+                                            <?php if (!empty($investor['email'])): ?>
+                                                <button class="copy-btn copy-btn-email"
+                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($investor['email']); ?>', 'Email')"
+                                                    title="Copy email address">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                            <span
+                                                class="email-status-dot <?php echo $isEmailActive ? 'dot-active' : 'dot-inactive'; ?>"
+                                                title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
+                                            </span>
                                         </td>
                                         <?php if ($canViewUserPass): ?>
                                             <td style="white-space: nowrap;">
@@ -1249,7 +1231,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 <th>Landmark</th>
                                 <th>Full Name</th>
                                 <th>Status</th>
-                                <th>Used</th>
                                 <th>Chat</th>
                                 <th>Phone Number</th>
                                 <th>Email</th>
@@ -1261,7 +1242,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="<?php echo $canViewUserPass ? '8' : '7'; ?>" style="padding: 40px;">No customers found</td>
+                                    <td colspan="<?php echo $canViewUserPass ? '7' : '6'; ?>" style="padding: 40px;">No customers found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer):
@@ -1298,14 +1279,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                                 <i class="fas fa-clock status-offline"
                                                     title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
                                                 <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php $loginType = $customer['login_type'] ?? 'web'; ?>
-                                            <?php if ($loginType === 'app'): ?>
-                                                <i class="fas fa-mobile-alt used-icon mobile" title="App"></i>
-                                            <?php else: ?>
-                                                <i class="fas fa-desktop used-icon desktop" title="Web"></i>
                                             <?php endif; ?>
                                         </td>
                                         <td>
