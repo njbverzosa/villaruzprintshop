@@ -941,8 +941,13 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         @keyframes bioFadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes bioPopIn {
@@ -950,6 +955,7 @@ if (isset($_SESSION['exit_message'])) {
                 opacity: 0;
                 transform: scale(0.9) translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: scale(1) translateY(0);
@@ -1167,8 +1173,14 @@ if (isset($_SESSION['exit_message'])) {
                 opacity: 0;
             }
 
-            10% { opacity: 1; }
-            90% { opacity: 1; }
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
             100% {
                 transform: translateY(110vh) translateX(40px) rotate(360deg);
                 opacity: 0;
@@ -1185,9 +1197,18 @@ if (isset($_SESSION['exit_message'])) {
                 opacity: 0;
             }
 
-            10% { opacity: 1; }
-            50% { transform: translateY(50vh) translateX(-30px) rotate(180deg); }
-            90% { opacity: 1; }
+            10% {
+                opacity: 1;
+            }
+
+            50% {
+                transform: translateY(50vh) translateX(-30px) rotate(180deg);
+            }
+
+            90% {
+                opacity: 1;
+            }
+
             100% {
                 transform: translateY(110vh) translateX(30px) rotate(360deg);
                 opacity: 0;
@@ -1209,21 +1230,26 @@ if (isset($_SESSION['exit_message'])) {
                 padding-bottom: 0;
                 justify-content: center;
                 align-items: center;
+                min-height: 100vh;
             }
 
             .app-shell {
+                width: 100%; 
+                max-width: 420px;
                 min-height: auto;
                 height: auto;
-                margin: 0 auto;
+                max-height: 70vh;
+                margin: 24px auto;
                 border-radius: 15px;
                 box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
                 border: 1px solid #e2e8f0;
                 overflow: hidden;
             }
 
+            /* ✅ shrink GIF offsets on desktop */
             .light-overlay {
                 border-radius: 15px 15px 0 0;
-                top: -40px;
+                top: -50px;
             }
 
             .gift-footer {
@@ -1231,9 +1257,10 @@ if (isset($_SESSION['exit_message'])) {
                 bottom: -20px;
             }
 
+            /* ✅ tighter content padding */
             .auth-container {
                 flex: none;
-                padding: 0 40px 0 40px;
+                padding: 0 32px;
             }
 
             .auth-card {
@@ -1242,33 +1269,77 @@ if (isset($_SESSION['exit_message'])) {
                 border: none;
                 box-shadow: none;
                 max-width: 100%;
-                margin-top: 24px;
+                margin-top: 8px;
             }
 
+            /* ✅ shrink logo on desktop so it doesn't push content down */
             .logo {
-                margin-top: -95px;
+                margin-top: -70px;
             }
 
+            .logo-stack {
+                width: 130px;
+                height: 130px;
+            }
+
+            .logo-stack .main-logo {
+                width: 76px;
+                height: 76px;
+            }
+
+            .logo-stack .hood-overlay {
+                width: 80px;
+                height: 80px;
+                top: 8px;
+                right: -4px;
+            }
+
+            /* ✅ pull heading up */
             .portal-header {
-                margin-top: -35px;
+                margin-top: -28px;
             }
 
             h1 {
-                font-size: 28px;
+                font-size: 24px;
             }
 
             .portal-header::before {
-                height: 38px;
+                height: 32px;
             }
 
             .portal-subtitle {
-                font-size: 14px;
-                margin-bottom: 36px;
+                font-size: 13px;
+                margin-bottom: 20px;
+            }
+
+            /* ✅ compact form fields */
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .form-group:first-of-type {
+                margin-top: 4px;
+            }
+
+            .form-group select,
+            .form-group input {
+                height: 48px;
+                font-size: 15px;
+            }
+
+            .btn-primary {
+                height: 48px;
+                font-size: 15px;
             }
 
             .action-area {
-                margin-top: 8px;
-                padding-top: 8px;
+                margin-top: 4px;
+                padding-top: 12px;
+            }
+
+            .auth-footer {
+                margin-top: 12px;
+                font-size: 13px;
             }
         }
 

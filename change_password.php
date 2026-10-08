@@ -2,6 +2,9 @@
 // change_password.php – Reset Password with OTP Code
 // ✅ Checks OTP in BOTH `customers` AND `investors` tables
 // ✅ Updates the correct table based on where the email was found
+// ✅ Redirects to the correct login page after success:
+//      • Customer OTP → customers-portal.php
+//      • Investor OTP → login.php (investor login)
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
@@ -267,8 +270,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Clear session
                     unset($_SESSION['reset_email']);
-                    header('Location: login.php');
-                    exit;
+
+                    // ✅ ✅ ✅ REDIRECT BASED ON WHICH TABLE THE OTP CAME FROM
+                    if ($userTable === 'customers') {
+                        // Customer → customers-portal.php
+                        header('Location: customers-portal.php');
+                        exit;
+                    } else {
+                        // Investor → investors-portal.php (investor login)
+                        header('Location: investors-portal.php');
+                        exit;
+                    }
+
                 } else {
                     $errors[] = 'Failed to reset password. Please try again.';
                 }

@@ -1,5 +1,8 @@
 <?php
 // forgot_password.php – Request OTP Code for Password Reset
+// ✅ Checks BOTH `customers` AND `investors` tables
+// ✅ Updates otp_code in the table where the email was found
+// ✅ Sends OTP to the email
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
@@ -209,17 +212,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        // Check if email exists in customers table
+        // ==============================================
+        // ✅ CHECK BOTH TABLES: customers + investors
+        // ==============================================
+        $userTable = null;
+        $user = null;
+
+        // Try customers first
         $stmt = $pdo->prepare("SELECT id, f_name, email FROM customers WHERE email = ?");
         $stmt->execute([$email]);
-        $customer = $stmt->fetch();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($customer) {
+        if ($user) {
+            $userTable = 'customers';
+        } else {
+            // Try investors
+            $stmt = $pdo->prepare("SELECT id, f_name, email FROM investors WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user) {
+                $userTable = 'investors';
+            }
+        }
+
+        if ($user && $userTable) {
             // Generate OTP
             $otp = mt_rand(100000, 999999);
 
-            // Update OTP in database
-            $updateStmt = $pdo->prepare("UPDATE customers SET otp_code = ? WHERE email = ?");
+            // ✅ Update OTP in the CORRECT table
+            $updateStmt = $pdo->prepare("UPDATE $userTable SET otp_code = ? WHERE email = ?");
             $updateStmt->execute([$otp, $email]);
 
             // Send email with OTP
@@ -240,13 +262,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -261,7 +283,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             -webkit-tap-highlight-color: transparent;
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             overflow-x: hidden;
         }
@@ -277,7 +300,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* ========== APP CONTAINER — full-screen shell ========== */
         .app-shell {
             flex: 1;
             display: flex;
@@ -288,46 +310,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #ffffff;
         }
 
-        /* ========== HEADER (App-style) ========== */
-        .app-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 20px 24px 0 24px;
-        }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: #f1f5f9;
-            color: #3b82f6;
-            text-decoration: none;
-            font-size: 16px;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-        }
-
-        .back-btn:hover {
-            background: #e2e8f0;
-            transform: scale(1.05);
-        }
-
-        .back-btn:active {
-            transform: scale(0.95);
-        }
-
-        .app-header-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #64748b;
-            letter-spacing: 0.3px;
-        }
-
-        /* ========== CONTENT — pushed higher ========== */
         .auth-container {
             flex: 1;
             display: flex;
@@ -426,7 +408,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: linear-gradient(145deg, #3b82f6, #6366f1);
             border: none;
             padding: 16px;
-            border-radius: 5px;
+            border-radius: 40px;
             font-weight: 700;
             font-size: 16px;
             color: white;
@@ -501,7 +483,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #bbf7d0;
         }
 
-        /* ========== DESKTOP VIEW ========== */
         @media (min-width: 600px) {
             body {
                 background: #f1f5f9;
@@ -521,13 +502,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .auth-container {
                 padding: 10px 40px 50px 40px;
             }
-
-            .app-header {
-                padding: 24px 30px 0 30px;
-            }
         }
 
-        /* ========== SMALL PHONES ========== */
         @media (max-width: 380px) {
             .auth-title {
                 font-size: 24px;
@@ -541,13 +517,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 width: 84px;
                 height: 84px;
             }
-
-            .app-header {
-                padding: 16px 18px 0 18px;
-            }
         }
 
-        /* ========== SHORT SCREENS (landscape phones) ========== */
         @media (max-height: 700px) {
             .auth-logo {
                 margin-top: 0;
@@ -573,14 +544,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="app-shell">
 
-      
-
         <div class="auth-container">
             <div class="auth-card">
 
                 <div class="auth-logo">
                     <img src="logo/ic_launcher.png" alt="Villaruz Print Shop Logo">
                 </div>
+
+                <h2 class="auth-title">Forgot <span>Password?</span></h2>
+                <br><br><br>
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-error">
                         <i class="fas fa-exclamation-circle"></i>
@@ -592,16 +564,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
 
+                <?php if ($success): ?>
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <div><?php echo htmlspecialchars($success); ?></div>
+                    </div>
+                <?php endif; ?>
+
                 <form method="POST" action="" autocomplete="off">
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
                     <div class="form-group">
-                        <input type="email" name="email" placeholder="Enter your registered email"
-                            value="<?php echo htmlspecialchars($email); ?>" required>
+                        <label><i class="fas fa-envelope"></i> Email Address</label>
+                        <input type="email" name="email" placeholder="Enter your email"
+                            value="<?php echo htmlspecialchars($email); ?>" autocomplete="email" required>
                     </div>
 
                     <button type="submit" class="btn-primary">
-                        Request Code
+                        <i class="fas fa-paper-plane"></i>
+                        Send Reset Code
                     </button>
                 </form>
 

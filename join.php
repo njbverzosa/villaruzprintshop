@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* 2. Collect inputs */
     $f_name        = trim($_POST['f_name'] ?? '');
     $business_name = trim($_POST['business_name'] ?? '');
+    $email         = trim($_POST['email'] ?? '');
     $phone_number  = trim($_POST['phone_number'] ?? '');
     $password      = $_POST['password'] ?? '';
 
@@ -31,6 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Full name is required.';
     if ($business_name === '')
         $errors[] = 'Business name is required.';
+
+    /* ✅ Email validation — required for OTP delivery */
+    if ($email === '') {
+        $errors[] = 'Email is required. Your email must receive the OTP code.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Please enter a valid email address.';
+    }
 
     if ($phone_number === '') {
         $errors[] = 'Phone number is required.';
@@ -93,8 +101,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $digits     = preg_replace('/\D/', '', $phone_number);
         $acc_number = substr($digits, -4);
 
-        $nameParts = preg_split('/\s+/', $f_name);
+        /* ✅ user_name = first word of f_name */
+        $nameParts = preg_split('/\s+/', trim($f_name), -1, PREG_SPLIT_NO_EMPTY);
         $user_name = $nameParts[0] ?? '';
+
+        // Keep only safe characters (letters, numbers, underscore, hyphen)
+        $user_name = preg_replace('/[^A-Za-z0-9_\-]/', '', $user_name);
+
+        // Lowercase for consistency
+        $user_name = strtolower($user_name);
+
+        // Fallback if it somehow becomes empty
+        if ($user_name === '') {
+            $user_name = 'user';
+        }
     }
 
     /* 6. Move uploaded file */
@@ -126,11 +146,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         try {
-            $sql = "INSERT INTO customers
-                    (registered_at, acc_number, f_name, user_name, phone_number,
+            $sql = "INSERT INTO investors
+                    (registered_at, acc_number, f_name, user_name, email, phone_number,
                      password, text_pass, authorize_access, profile,
                      business_name, business_permit)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
@@ -138,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $acc_number,
                 $f_name,
                 $user_name,
+                $email,
                 $phone_number,
                 $hashedPassword,
                 $password,
@@ -304,6 +325,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #94a3b8;
             margin-top: 6px;
             line-height: 1.5;
+        }
+
+        /* ✅ Highlighted OTP note */
+        .otp-hint {
+            font-size: 0.72rem;
+            color: #1d4ed8;
+            margin-top: 6px;
+            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+
+        .otp-hint i {
+            color: #2563eb;
+            font-size: 0.75rem;
+            flex-shrink: 0;
         }
 
         .file-upload {
@@ -571,6 +610,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="section-label"><i class="fas fa-lock"></i> Account Credentials</div>
 
         <div class="form-grid">
+            <!-- ✅ Email field with OTP note -->
+            <div class="form-group full-width">
+                <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                <input type="email" name="email" id="email" placeholder="e.g. yourname@gmail.com"
+                    autocomplete="email" required>
+                <div class="otp-hint">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Your email must receive the OTP code for password recovery.</span>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="phone_number"><i class="fas fa-phone"></i> Phone Number</label>
                 <input type="tel" name="phone_number" id="phone_number" placeholder="e.g. 09XXXXXXXXX"
@@ -656,14 +706,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (el) el.textContent = seconds;
             if (seconds <= 0) {
                 clearInterval(timer);
-                window.location.href = 'welcome.php';
+                window.location.href = 'investors-portal.php';
             }
         }, 1000);
 
         /* Fallback meta refresh for browsers without JS — matches the 10s countdown */
         const meta = document.createElement('meta');
         meta.httpEquiv = 'refresh';
-        meta.content = '10;url=welcome.php';
+        meta.content = '10;url=investors-portal.php';
         document.head.appendChild(meta);
     </script>
     <?php endif; ?>
