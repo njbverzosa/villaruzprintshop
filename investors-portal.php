@@ -826,6 +826,116 @@ if (isset($_SESSION['exit_message'])) {
             text-decoration: underline;
         }
 
+        /* ==============================================
+           ✅ CUSTOM BIOMETRIC POPUP (no URL change)
+           ============================================== */
+        .bio-popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            animation: bioFadeIn 0.2s ease-out;
+        }
+
+        .bio-popup-overlay.visible {
+            display: flex;
+        }
+
+        .bio-popup {
+            background: #ffffff;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+            overflow: hidden;
+            text-align: center;
+            animation: bioPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .bio-popup-icon {
+            padding: 26px 24px 12px 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .bio-popup-icon i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            font-size: 32px;
+            background: linear-gradient(145deg, #dbeafe, #eff6ff);
+            color: #3b82f6;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .bio-popup-title {
+            padding: 0 24px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+
+        .bio-popup-message {
+            padding: 10px 26px 22px 26px;
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.55;
+        }
+
+        .bio-popup-actions {
+            padding: 0 20px 20px 20px;
+        }
+
+        .bio-popup-btn {
+            width: 100%;
+            height: 48px;
+            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            border: none;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+            transition: 0.25s ease;
+        }
+
+        .bio-popup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+        }
+
+        .bio-popup-btn:active {
+            transform: translateY(0);
+        }
+
+        @keyframes bioFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes bioPopIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
         /* ========== UPDATE MODAL ========== */
         .update-overlay {
             position: fixed;
@@ -1481,6 +1591,22 @@ if (isset($_SESSION['exit_message'])) {
         <img src="logo/gift.jpg" alt="Gift" class="gift-footer">
     </div>
 
+    <!-- ✅ Custom biometric popup (NO URL change, NO #hash) -->
+    <div class="bio-popup-overlay" id="bioPopup" role="dialog" aria-modal="true" aria-labelledby="bioPopupTitle">
+        <div class="bio-popup">
+            <div class="bio-popup-icon">
+                <i class="fas fa-fingerprint" id="bioPopupIcon"></i>
+            </div>
+            <div class="bio-popup-title" id="bioPopupTitle">Fingerprint not available</div>
+            <div class="bio-popup-message" id="bioPopupMessage">
+                No fingerprint enrolled. Please log in with password first and enroll your fingerprint.
+            </div>
+            <div class="bio-popup-actions">
+                <button type="button" class="bio-popup-btn" onclick="closeBioPopup()">Got it</button>
+            </div>
+        </div>
+    </div>
+
     <?php if ($renderUpdateModal): ?>
         <div class="update-overlay" id="updateOverlay">
             <div class="update-card">
@@ -1549,6 +1675,29 @@ if (isset($_SESSION['exit_message'])) {
         const skipBiometricAutoPrompt = <?php echo $skipBiometricAutoPrompt ? 'true' : 'false'; ?>;
         const showFingerprint = <?php echo $showFingerprint ? 'true' : 'false'; ?>;
 
+        /* ✅ Custom popup helpers */
+        function showBioPopup(title, message, iconClass) {
+            document.getElementById('bioPopupTitle').textContent = title;
+            document.getElementById('bioPopupMessage').textContent = message;
+            const iconEl = document.getElementById('bioPopupIcon');
+            iconEl.className = iconClass || 'fas fa-fingerprint';
+            document.getElementById('bioPopup').classList.add('visible');
+        }
+
+        function closeBioPopup() {
+            document.getElementById('bioPopup').classList.remove('visible');
+        }
+
+        /* Close on overlay click (outside the popup card) */
+        document.getElementById('bioPopup').addEventListener('click', function (e) {
+            if (e.target === this) closeBioPopup();
+        });
+
+        /* Close on Escape key */
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeBioPopup();
+        });
+
         function readInstalledVersion() {
             if (window.__SOFIA_APP_VERSION__) return window.__SOFIA_APP_VERSION__;
             try {
@@ -1580,12 +1729,20 @@ if (isset($_SESSION['exit_message'])) {
 
         function triggerBiometric() {
             if (!isInApp) {
-                alert('Fingerprint login is only available inside the SofiaApp.');
+                showBioPopup(
+                    'App required',
+                    'Fingerprint login is only available inside the Sofia app.',
+                    'fas fa-mobile-alt'
+                );
                 return;
             }
 
             if (!hasBiometric || !userId) {
-                alert('No fingerprint enrolled. Please log in with password first and enroll your fingerprint.');
+                showBioPopup(
+                    'Fingerprint not enrolled',
+                    'No fingerprint enrolled. Please log in with password first and enroll your fingerprint.',
+                    'fas fa-fingerprint'
+                );
                 return;
             }
 
@@ -1595,7 +1752,11 @@ if (isset($_SESSION['exit_message'])) {
             if (window.AndroidBiometric && window.AndroidBiometric.authenticate) {
                 window.AndroidBiometric.authenticate('manual');
             } else {
-                alert('Biometric bridge not available.');
+                showBioPopup(
+                    'Biometric unavailable',
+                    'Biometric bridge not available on this device.',
+                    'fas fa-exclamation-triangle'
+                );
                 if (fpBtn) fpBtn.disabled = false;
             }
         }
