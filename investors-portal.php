@@ -1727,6 +1727,7 @@ if (isset($_SESSION['exit_message'])) {
             btn.innerHTML = 'Login';
         }
 
+        /* ✅ Manual trigger — user MUST tap the fingerprint button */
         function triggerBiometric() {
             if (!isInApp) {
                 showBioPopup(
@@ -1833,10 +1834,8 @@ if (isset($_SESSION['exit_message'])) {
                 }
             }
 
-            const modalVisible = overlay && overlay.classList.contains('visible');
-            if (showFingerprint && !skipBiometricAutoPrompt && !modalVisible && hasBiometric && isInApp && userId) {
-                window.AndroidBiometric.authenticate('auto');
-            }
+            /* ✅ REMOVED: auto biometric prompt on page load.
+               User must now tap the fingerprint button to trigger biometric. */
         });
 
         (function () {
