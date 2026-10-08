@@ -889,13 +889,11 @@ if (isset($_SESSION['success'])) {
                 <div class="logo">
                     <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png"
                         alt="Villaruz Print Shop Logo">
-                    <span class="version-badge">V<?php echo $latestVersion; ?></span>
                 </div>
 
                 <div class="portal-header">
                     <h1>Create your account</h1>
                 </div>
-                <p class="portal-subtitle">Enter your phone number and password to register</p>
                 <br>
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-error">
