@@ -1,6 +1,6 @@
 <?php
 // join.php — plain HTML form POST, no JSON, no AJAX
-
+require_once __DIR__ . '/bots.php';
 session_start();
 
 $errors = [];

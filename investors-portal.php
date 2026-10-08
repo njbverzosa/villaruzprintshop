@@ -6,6 +6,7 @@
 // ✅ Records online_time + login_type ("web"/"app") on every login
 
 // Set session lifetime
+require_once __DIR__ . '/bots.php';
 $sessionLifetime = 604800;
 ini_set('session.cookie_lifetime', $sessionLifetime);
 ini_set('session.gc_maxlifetime', $sessionLifetime);

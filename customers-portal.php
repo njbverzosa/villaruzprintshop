@@ -5,6 +5,7 @@ $sessionLifetime = 604800;
 ini_set('session.cookie_lifetime', $sessionLifetime);
 ini_set('session.gc_maxlifetime', $sessionLifetime);
 
+require_once __DIR__ . '/bots.php';
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
 include __DIR__ . '/app_version.php';

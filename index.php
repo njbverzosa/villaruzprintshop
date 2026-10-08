@@ -1,5 +1,5 @@
 <?php
-// index.php - Villaruz Print Shop Homepage with APK Download
+require_once __DIR__ . '/bots.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">

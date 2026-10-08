@@ -1,5 +1,6 @@
 <?php
 // delivery_receipt.php
+require_once __DIR__ . '/bots.php';
 session_start();
 require_once 'DB_Conn/config.php';
 
