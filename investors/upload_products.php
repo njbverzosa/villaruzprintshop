@@ -27,7 +27,7 @@ function isLoggedIn()
 
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
-    header('Location: ../login.php');
+    header('Location: ../investors-portal.php');
     exit;
 }
 
@@ -50,7 +50,7 @@ if ($userRole === 'Investor') {
 
 if (!$userData) {
     session_destroy();
-    header('Location: ../login.php');
+    header('Location: ../investors-portal.php');
     exit;
 }
 

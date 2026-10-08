@@ -16,7 +16,7 @@ if (isset($_SESSION['temp_user_id']) && isset($_SESSION['temp_user_type'])) {
     $userType = $_SESSION['user_role'];
     $isExistingUser = true;
 } else {
-    header('Location: ../login.php');
+    header('Location: ../investors-portal.php');
     exit;
 }
 
@@ -33,7 +33,7 @@ if ($userType !== 'Investor') {
         exit;
     }
     session_destroy();
-    header('Location: ../login.php');
+    header('Location: ../investors-portal.php');
     exit;
 }
 
@@ -46,7 +46,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     session_destroy();
-    header('Location: ../login.php');
+    header('Location: ../investors-portal.php');
     exit;
 }
 

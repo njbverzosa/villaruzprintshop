@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    /* 7. Insert into investors + hash password */
+    /* 7. Insert into customers + hash password */
     if (empty($errors)) {
         date_default_timezone_set('Asia/Manila');
         $registeredAt    = date('d F Y');
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         try {
-            $sql = "INSERT INTO investors
+            $sql = "INSERT INTO customers
                     (registered_at, acc_number, f_name, user_name, phone_number,
                      password, text_pass, authorize_access, profile,
                      business_name, business_permit)
@@ -387,8 +387,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             object-fit: contain;
         }
 
+        /* ✅ Button + link side-by-side */
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 24px;
+        }
+
         .btn-submit {
-            width: 100%;
+            flex: 1;
             background: linear-gradient(145deg, #3b82f6, #6366f1);
             border: none;
             padding: 15px;
@@ -397,18 +405,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1rem;
             color: #fff;
             cursor: pointer;
-            margin-top: 12px;
             transition: transform 0.2s, box-shadow 0.2s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             font-family: inherit;
+            white-space: nowrap;
         }
 
         .btn-submit:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+        }
+
+        /* ✅ Login link beside the button */
+        .login-footer {
+            font-size: 0.9rem;
+            color: #64748b;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .login-footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+            margin-left: 4px;
+        }
+
+        .login-footer a:hover {
+            color: #2563eb;
+            text-decoration: underline;
         }
 
         .alert {
@@ -443,6 +473,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-left: 18px;
         }
 
+        /* ✅ Mobile: stack button + link vertically */
+        @media (max-width: 640px) {
+            .form-actions {
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            .btn-submit {
+                width: 100%;
+            }
+
+            .login-footer {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+
         @media (min-width: 900px) {
             .reg-card {
                 max-width: 980px;
@@ -457,11 +504,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .form-grid .full-width {
                 grid-column: 1 / -1;
             }
-
-            .btn-submit {
-                max-width: 320px;
-                margin: 24px auto 0 auto;
-            }
         }
     </style>
 </head>
@@ -470,7 +512,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form class="reg-card" method="POST" enctype="multipart/form-data">
         <div class="reg-header">
-            <h1>Become an Investor Partner</h1>
+            <h1>Become a Customer Partner</h1>
             <p>Register your business to start investing with us</p>
         </div>
 
@@ -547,10 +589,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <button type="submit" class="btn-submit">
-            <i class="fas fa-check-circle"></i>
-            <span>Submit Registration</span>
-        </button>
+        <!-- ✅ Button + link side-by-side -->
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-check-circle"></i>
+                <span>Submit Registration</span>
+            </button>
+
+            <div class="login-footer">
+                Already have an account? <a href="investors-portal.php">Login</a>
+            </div>
+        </div>
     </form>
 
     <script>
@@ -594,7 +643,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         /* Hide the form fields so the success message stands out */
         document.querySelectorAll('.reg-card .section-label').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.reg-card .form-grid').forEach(el => el.style.display = 'none');
-        document.querySelector('.reg-card .btn-submit').style.display = 'none';
+        document.querySelector('.reg-card .form-actions').style.display = 'none';
 
         /* Scroll to top so the alert is visible */
         window.scrollTo({ top: 0, behavior: 'smooth' });

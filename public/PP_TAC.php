@@ -21,7 +21,7 @@ function isLoggedIn()
 // Redirect to login if not logged in
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the chat.';
-    header('Location: ../login.php');
+    header('Location: ../customers-portal.php');
     exit;
 }
 
@@ -42,7 +42,7 @@ if ($userRole === 'Customer') {
 
 if (!$userData) {
     session_destroy();
-    header('Location: ../login.php');
+    header('Location: ../customers-portal.php');
     exit;
 }
 

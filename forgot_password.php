@@ -14,7 +14,7 @@ function sendResetOTP($email, $otp)
     $mail->SMTPAuth = true;
     $mail->SMTPSecure = 'tls';
     $mail->Username = 'villaruzsofiaapp@gmail.com';
-    $mail->Password = 'lewu ykhi nttm xlvw';
+    $mail->Password = 'pjip iqic xpdq xjqf';
     $mail->setFrom('villaruzsofiaapp@gmail.com', 'Sofia');
     $mail->addAddress($email);
 
@@ -573,12 +573,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="app-shell">
 
-        <!-- App-style header with back button + app name -->
-        <div class="app-header">
-            <a href="login.php" class="back-btn" aria-label="Back to home">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-        </div>
+      
 
         <div class="auth-container">
             <div class="auth-card">

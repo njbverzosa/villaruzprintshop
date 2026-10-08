@@ -17,7 +17,7 @@ function isLoggedIn()
 
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
-    header('Location: ../login.php');
+    header('Location: ../investors-portal.php');
     exit;
 }
 
@@ -40,7 +40,7 @@ if ($userRole === 'Investor') {
 
 if (!$userData) {
     session_destroy();
-    header('Location: ../login.php');
+    header('Location: ../investors-portal.php');
     exit;
 }
 
@@ -52,7 +52,7 @@ $timezone = new DateTimeZone('Asia/Manila');
 $productNumber = $_GET['product_number'] ?? '';
 
 if (empty($productNumber)) {
-    header('Location: all_products.php');
+    header('Location: investors_product.php');
     exit;
 }
 
@@ -61,7 +61,7 @@ $stmt->execute([$productNumber]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
-    header('Location: all_products.php');
+    header('Location: investors_product.php');
     exit;
 }
 

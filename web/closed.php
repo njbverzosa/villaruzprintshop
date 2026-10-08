@@ -20,7 +20,7 @@ function isLoggedIn() {
 // If not logged in, redirect to login
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first.';
-    header('Location: ../login.php');
+    header('Location: ../admins-portal.php');
     exit;
 }
 
@@ -85,6 +85,6 @@ session_start();
 // error_log('Exit message set in session: ' . $_SESSION['exit_message']);
 
 // Redirect to login page (go up one level from public folder)
-header('Location: ../login.php');
+header('Location: ../admins-portal.php');
 exit;
 ?>

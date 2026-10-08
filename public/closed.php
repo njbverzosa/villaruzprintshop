@@ -21,7 +21,7 @@ function isLoggedIn()
 // If not logged in, redirect to login
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first.';
-    header('Location: ../login.php');
+    header('Location: ../customers-portal.php');
     exit;
 }
 
@@ -44,7 +44,7 @@ if ($userRole === 'Customer') {
 
 if (!$userData) {
     session_destroy();
-    header('Location: ../login.php');
+    header('Location: ../customers-portal.php');
     exit;
 }
 
@@ -89,6 +89,6 @@ session_start();
 // Set the exit message
 
 // Redirect to login page (go up one level from public folder)
-header('Location: ../login.php');
+header('Location: ../customers-portal.php');
 exit;
 ?>

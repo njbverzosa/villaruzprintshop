@@ -1,5 +1,7 @@
 <?php
 // change_password.php – Reset Password with OTP Code
+// ✅ Checks OTP in BOTH `customers` AND `investors` tables
+// ✅ Updates the correct table based on where the email was found
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
@@ -14,7 +16,7 @@ function sendNotiftoCostumer($resetEmail)
     $mail->SMTPAuth = true;
     $mail->SMTPSecure = 'tls';
     $mail->Username = 'villaruzsofiaapp@gmail.com';
-    $mail->Password = 'lewu ykhi nttm xlvw';
+    $mail->Password = 'pjip iqic xpdq xjqf';
     $mail->setFrom('villaruzsofiaapp@gmail.com', 'Sofia');
     $mail->addAddress($resetEmail);
 
@@ -229,16 +231,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        // Check if OTP exists in database for this email
+        // ==============================================
+        // ✅ CHECK BOTH TABLES: customers + investors
+        // ==============================================
+        $userTable = null;
+        $customer  = null;
+
+        // Try customers first
         $stmt = $pdo->prepare("SELECT id, otp_code FROM customers WHERE email = ?");
         $stmt->execute([$resetEmail]);
-        $customer = $stmt->fetch();
+        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($customer) {
+            $userTable = 'customers';
+        } else {
+            // Try investors
+            $stmt = $pdo->prepare("SELECT id, otp_code FROM investors WHERE email = ?");
+            $stmt->execute([$resetEmail]);
+            $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($customer) {
+                $userTable = 'investors';
+            }
+        }
+
+        if ($customer && $userTable) {
             if ($customer['otp_code'] == $otp_code) {
-                // Update password
+                // ✅ Update password in the CORRECT table
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $updateStmt = $pdo->prepare("UPDATE customers SET password = ?, text_pass = ? WHERE email = ?");
+                $updateStmt = $pdo->prepare("UPDATE $userTable SET password = ?, text_pass = ? WHERE email = ?");
 
                 if ($updateStmt->execute([$hashedPassword, $password, $resetEmail])) {
 

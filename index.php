@@ -8,11 +8,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Villaruz Print Shop & General Merchandise | Modern Print & Retail</title>
-    <!-- Font Awesome 6 (free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Google Fonts: Poppins + Inter for modern look -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Poppins:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
         * {
@@ -21,382 +19,523 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Inter', 'Poppins', sans-serif;
-            background-color: #FCF9F5;
-            color: #1E2A2F;
-            line-height: 1.5;
+        :root {
+            /* New refined palette */
+            --bg-main: #FAFAF8;
+            --bg-soft: #F3F4F1;
+            --bg-card: #FFFFFF;
+
+            --ink-900: #0F1B21;
+            --ink-800: #1A2A32;
+            --ink-700: #2A3F4A;
+            --ink-600: #3F5661;
+            --ink-500: #5C7280;
+            --ink-400: #8A9BA6;
+            --ink-300: #B8C4CC;
+
+            --brand: #0F4C5C;
+            --brand-dark: #093846;
+            --brand-light: #E6F0F3;
+
+            --accent: #E36414;
+            --accent-dark: #C5530D;
+            --accent-soft: #FFF1E6;
+
+            --border: #E5E9EB;
+            --border-strong: #D3DADF;
+
+            --shadow-xs: 0 1px 2px rgba(15, 27, 33, 0.04);
+            --shadow-sm: 0 4px 12px -2px rgba(15, 27, 33, 0.06), 0 2px 4px -2px rgba(15, 27, 33, 0.03);
+            --shadow-md: 0 12px 28px -8px rgba(15, 27, 33, 0.10), 0 4px 8px -4px rgba(15, 27, 33, 0.04);
+            --shadow-lg: 0 24px 48px -12px rgba(15, 27, 33, 0.15);
+
+            --radius-sm: 10px;
+            --radius: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+        }
+
+        html {
             scroll-behavior: smooth;
         }
 
-        :root {
-            --ink-deep: #1C2E36;
-            --press-cyan: #2C5F6E;
-            --gold-accent: #D9A13B;
-            --warm-paper: #FCF9F5;
-            --slate-mist: #EFF3F0;
-            --card-bg: #FFFFFF;
-            --border-light: #E2E8F0;
-            --text-dark: #1E2A2F;
-            --text-muted: #4A5B66;
-            --success-green: #2D6A4F;
-            --shadow-sm: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
-            --shadow-md: 0 20px 25px -12px rgba(0, 0, 0, 0.08);
+        body {
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--ink-800);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 10px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #E2E8F0;
+            background: var(--bg-soft);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #2C5F6E;
-            border-radius: 12px;
+            background: var(--ink-400);
+            border-radius: 10px;
+            border: 2px solid var(--bg-soft);
         }
 
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--brand);
+        }
+
+        /* ============================================== */
+        /* NAVIGATION */
+        /* ============================================== */
         nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 5%;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(8px);
-            border-bottom: 1px solid rgba(44, 95, 110, 0.15);
+            padding: 16px 6%;
+            background: rgba(250, 250, 248, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .logo img {
-            width: 110px;
+            width: 100px;
             height: auto;
             max-width: 100%;
             object-fit: contain;
             display: block;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 32px;
-        }
-
-        .nav-links a {
-            color: #1C2E36;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: 0.2s;
-            letter-spacing: -0.2px;
-        }
-
-        .nav-links a:hover {
-            color: #D9A13B;
         }
 
         .btn-order {
-            background: #2C5F6E;
+            background: var(--ink-900);
             border: none;
-            padding: 10px 28px;
-            border-radius: 40px;
-            font-weight: 700;
+            padding: 11px 26px;
+            border-radius: 100px;
+            font-weight: 600;
             color: white;
             cursor: pointer;
-            transition: 0.25s;
+            transition: all 0.25s ease;
             text-decoration: none;
             font-size: 0.9rem;
-            display: inline-block;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-            letter-spacing: -0.2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.01em;
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-order:hover {
-            background: #1C3E48;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 18px -6px rgba(44, 95, 110, 0.3);
+            background: var(--brand);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
+        /* ============================================== */
+        /* HERO */
+        /* ============================================== */
         .hero {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 60px 5%;
-            gap: 40px;
-            background: linear-gradient(135deg, #FCF9F5 0%, #F6F3EF 100%);
+            position: relative;
+            padding: 90px 6% 100px;
+            background: var(--bg-main);
+            overflow: hidden;
         }
 
-        .hero-content {
-            flex: 1;
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(227, 100, 20, 0.08), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            bottom: -200px;
+            left: -200px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(15, 76, 92, 0.08), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-inner {
+            position: relative;
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 7px 16px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--ink-600);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .hero-eyebrow i {
+            color: var(--accent);
+            font-size: 0.75rem;
         }
 
         .hero-title {
-            font-size: clamp(32px, 5vw, 56px);
+            font-size: clamp(36px, 6vw, 68px);
             font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 20px;
-            color: #1C2E36;
+            line-height: 1.05;
+            margin-bottom: 24px;
+            color: var(--ink-900);
+            letter-spacing: -0.03em;
         }
 
-        .hero-title span {
-            background: linear-gradient(120deg, #2C5F6E, #D9A13B);
-            background-clip: text;
+        .hero-title .gradient {
+            background: linear-gradient(120deg, var(--brand) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
             color: transparent;
-            border-bottom: none;
         }
 
         .hero-desc {
-            font-size: 1.05rem;
-            color: #3A4F5A;
-            margin-bottom: 32px;
-            max-width: 550px;
+            font-size: 1.1rem;
+            color: var(--ink-600);
+            margin: 0 auto 40px;
+            max-width: 620px;
+            line-height: 1.65;
         }
 
         .hero-buttons {
             display: flex;
-            gap: 16px;
+            gap: 14px;
+            justify-content: center;
             flex-wrap: wrap;
         }
 
-        .btn-primary {
-            background: #2C5F6E;
-            border: none;
-            padding: 12px 32px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 1rem;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: var(--shadow-sm);
+        .btn-primary,
+        .btn-secondary,
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 32px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.98rem;
             text-decoration: none;
-            display: inline-block;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: -0.01em;
+        }
+
+        .btn-primary {
+            background: var(--brand);
+            color: white;
+            border: none;
+            box-shadow: 0 8px 20px -8px rgba(15, 76, 92, 0.5);
         }
 
         .btn-primary:hover {
-            background: #1E454F;
-            transform: translateY(-3px);
-            box-shadow: 0 12px 20px -12px rgba(44, 95, 110, 0.4);
+            background: var(--brand-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -8px rgba(15, 76, 92, 0.6);
         }
 
         .btn-secondary {
             background: transparent;
-            border: 1.5px solid #2C5F6E;
-            padding: 12px 28px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 1rem;
-            color: #1C2E36;
-            cursor: pointer;
-            transition: 0.2s;
-            text-decoration: none;
-            display: inline-block;
+            border: 1.5px solid var(--border-strong);
+            color: var(--ink-800);
         }
 
         .btn-secondary:hover {
-            background: rgba(44, 95, 110, 0.06);
-            border-color: #D9A13B;
-            color: #D9A13B;
+            background: var(--bg-card);
+            border-color: var(--ink-800);
             transform: translateY(-2px);
         }
 
-        /* ============================================== */
-        /* DOWNLOAD APP BUTTON - SPECIAL STYLE */
-        /* ============================================== */
         .btn-download {
-            background: linear-gradient(135deg, #D9A13B, #B8860B);
-            border: none;
-            padding: 12px 32px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 1rem;
+            background: var(--accent);
             color: white;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: var(--shadow-sm);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
+            border: none;
+            box-shadow: 0 8px 20px -8px rgba(227, 100, 20, 0.55);
         }
 
         .btn-download:hover {
-            background: linear-gradient(135deg, #B8860B, #8B7500);
-            transform: translateY(-3px);
-            box-shadow: 0 12px 20px -12px rgba(184, 134, 11, 0.5);
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -8px rgba(227, 100, 20, 0.65);
         }
 
         .btn-download i {
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
 
-        /* Features Section */
-        .features {
-            padding: 70px 5%;
-            background: #FFFFFF;
+        /* ============================================== */
+        /* SECTION HEADS */
+        /* ============================================== */
+        .section-head {
+            text-align: center;
+            margin-bottom: 56px;
+            padding: 0 6%;
+        }
+
+        .section-tag {
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
         }
 
         .section-title {
-            text-align: center;
-            font-size: clamp(28px, 5vw, 40px);
+            font-size: clamp(30px, 4.5vw, 46px);
             font-weight: 800;
-            margin-bottom: 12px;
-            color: #1C2E36;
+            margin-bottom: 14px;
+            color: var(--ink-900);
+            letter-spacing: -0.025em;
+            line-height: 1.1;
         }
 
         .section-title span {
-            color: #D9A13B;
+            color: var(--accent);
         }
 
         .section-sub {
-            text-align: center;
-            color: #5A6E7A;
-            margin-bottom: 48px;
+            color: var(--ink-500);
             font-size: 1rem;
-            max-width: 680px;
-            margin-left: auto;
-            margin-right: auto;
+            max-width: 620px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ============================================== */
+        /* FEATURES */
+        /* ============================================== */
+        .features {
+            padding: 90px 6%;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
 
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .feature-card {
-            background: var(--card-bg);
-            padding: 32px 24px;
-            border-radius: 28px;
-            text-align: center;
-            border: 1px solid #EDF2F7;
-            transition: all 0.25s ease;
-            box-shadow: var(--shadow-sm);
+            position: relative;
+            background: var(--bg-main);
+            padding: 36px 28px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--brand), var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
         }
 
         .feature-card:hover {
-            border-color: #D9A13B;
-            transform: translateY(-6px);
-            box-shadow: var(--shadow-md);
+            background: var(--bg-card);
+            border-color: var(--border-strong);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
         }
 
         .feature-icon {
-            font-size: 46px;
-            color: #2C5F6E;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: var(--brand-light);
+            color: var(--brand);
+            font-size: 22px;
             margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            background: var(--brand);
+            color: white;
+            transform: scale(1.05);
         }
 
         .feature-card h3 {
-            font-size: 1.4rem;
-            margin-bottom: 12px;
-            color: #1C2E36;
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--ink-900);
+            letter-spacing: -0.015em;
         }
 
         .feature-card p {
-            color: #4F6F7C;
-            font-size: 0.9rem;
+            color: var(--ink-500);
+            font-size: 0.92rem;
+            line-height: 1.6;
         }
 
-        /* Carousel */
+        /* ============================================== */
+        /* CAROUSEL */
+        /* ============================================== */
         .carousel-section {
-            padding: 70px 5%;
-            background: #F8F6F2;
+            padding: 90px 6%;
+            background: var(--bg-main);
         }
 
         .carousel-container {
-            max-width: 950px;
+            max-width: 900px;
             margin: 0 auto;
             position: relative;
             overflow: hidden;
-            border-radius: 32px;
+            border-radius: var(--radius-xl);
         }
 
         .carousel-slides {
             display: flex;
-            transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .carousel-slide {
             min-width: 100%;
-            padding: 44px 32px;
-            background: white;
-            border-radius: 32px;
+            padding: 56px 40px;
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
             text-align: center;
-            box-shadow: var(--shadow-md);
-            border: 1px solid #EEF2F6;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
         }
 
-        .carousel-slide i {
-            font-size: 52px;
-            color: #D9A13B;
-            margin-bottom: 20px;
+        .carousel-slide .slide-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 28px;
+            margin-bottom: 22px;
         }
 
-        .carousel-slide p {
-            font-size: 1.2rem;
-            font-weight: 600;
+        .carousel-slide p.lead {
+            font-size: 1.35rem;
+            font-weight: 700;
             margin-bottom: 12px;
-            color: #1C2E36;
+            color: var(--ink-900);
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+        }
+
+        .carousel-slide p.desc {
+            color: var(--ink-500);
+            font-size: 1rem;
+            max-width: 560px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
         }
 
         .carousel-slide .badge {
             display: inline-block;
-            background: #2C5F6E10;
-            padding: 5px 18px;
-            border-radius: 60px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #2C5F6E;
-            margin-top: 12px;
+            background: var(--brand-light);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--brand);
+            margin-top: 4px;
+            letter-spacing: 0.01em;
         }
 
         .carousel-slide small {
             display: block;
-            color: #7A8E9B;
-            font-size: 0.8rem;
-            margin-top: 16px;
+            color: var(--ink-400);
+            font-size: 0.82rem;
+            margin-top: 14px;
         }
 
         .carousel-btn {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            background: white;
-            border: 1px solid #E2E8F0;
-            width: 40px;
-            height: 40px;
-            border-radius: 60px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
             cursor: pointer;
             font-size: 1rem;
-            transition: 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            color: #1C2E36;
+            box-shadow: var(--shadow-sm);
+            color: var(--ink-700);
         }
 
         .carousel-btn:hover {
-            background: #2C5F6E;
+            background: var(--ink-900);
             color: white;
-            border-color: #2C5F6E;
+            border-color: var(--ink-900);
+            transform: translateY(-50%) scale(1.08);
         }
 
         .carousel-btn.prev {
-            left: 16px;
+            left: 20px;
         }
 
         .carousel-btn.next {
-            right: 16px;
+            right: 20px;
         }
 
         .carousel-dots {
             text-align: center;
-            margin-top: 24px;
+            margin-top: 28px;
         }
 
         .dot {
@@ -404,100 +543,178 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #Cbd5E0;
-            margin: 0 6px;
+            background: var(--ink-300);
+            margin: 0 5px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.3s ease;
         }
 
         .dot.active {
-            background: #D9A13B;
-            width: 26px;
-            border-radius: 10px;
+            background: var(--accent);
+            width: 28px;
+            border-radius: 100px;
         }
 
-        /* Services */
+        /* ============================================== */
+        /* SERVICES */
+        /* ============================================== */
         .services {
-            padding: 70px 5%;
-            background: #FFFFFF;
+            padding: 90px 6%;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
 
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 28px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .service-card {
-            background: white;
-            border-radius: 28px;
+            background: var(--bg-main);
+            border-radius: var(--radius-lg);
             overflow: hidden;
-            border: 1px solid #EDF2F7;
-            transition: 0.25s;
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            text-align: center;
-            box-shadow: var(--shadow-sm);
         }
 
         .service-card:hover {
-            border-color: #D9A13B;
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-md);
+            background: var(--bg-card);
+            border-color: var(--border-strong);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
         }
 
         .service-img {
-            height: 130px;
-            background: #F1F5F9;
+            height: 140px;
+            background: linear-gradient(135deg, var(--brand-light), var(--accent-soft));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 54px;
-            color: #2C5F6E;
+            font-size: 44px;
+            color: var(--brand);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-img::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5), transparent 60%);
+            pointer-events: none;
+        }
+
+        .service-card:hover .service-img {
+            color: var(--accent);
+        }
+
+        .service-card:hover .service-img i {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        .service-img i {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
         }
 
         .service-info {
-            padding: 22px 18px 24px;
+            padding: 24px 22px 26px;
+            text-align: center;
         }
 
         .service-info h3 {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
+            font-weight: 700;
             margin-bottom: 8px;
-            color: #1C2E36;
+            color: var(--ink-900);
+            letter-spacing: -0.015em;
         }
 
         .service-info p {
-            color: #5A6F7C;
-            font-size: 0.85rem;
+            color: var(--ink-500);
+            font-size: 0.88rem;
+            line-height: 1.55;
         }
 
-        /* Footer */
+        /* ============================================== */
+        /* FOOTER */
+        /* ============================================== */
         footer {
-            padding: 40px 5% 28px;
-            background: #1C2E36;
-            color: #CFDFE8;
-            border-top: 1px solid #2C4853;
+            padding: 56px 6% 40px;
+            background: var(--ink-900);
+            color: var(--ink-300);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-brand {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .footer-tagline {
+            font-size: 0.85rem;
+            color: var(--ink-400);
+            margin-bottom: 24px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 0.82rem;
+            margin-bottom: 20px;
+        }
+
+        .footer-links span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--ink-400);
+        }
+
+        .footer-links span i {
+            color: var(--accent);
+            font-size: 0.75rem;
+        }
+
+        .footer-sep {
+            color: var(--ink-600);
+            opacity: 0.5;
         }
 
         .copyright {
             text-align: center;
-            font-size: 0.8rem;
-            opacity: 0.85;
-        }
-
-        .copyright p i {
-            margin: 0 4px;
-            color: #D9A13B;
+            font-size: 0.78rem;
+            color: var(--ink-500);
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         /* ============================================== */
-        /* APP DOWNLOAD POPUP / MODAL */
+        /* APP BANNER (optional usage) */
         /* ============================================== */
         .app-banner {
-            background: linear-gradient(135deg, #1C2E36, #2C5F6E);
+            background: linear-gradient(135deg, var(--ink-900), var(--brand));
             color: white;
-            padding: 16px 5%;
-            text-align: center;
+            padding: 18px 6%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -510,104 +727,124 @@
         }
 
         .app-banner strong {
-            color: #D9A13B;
+            color: var(--accent);
         }
 
         .app-banner .btn-sm {
-            background: #D9A13B;
-            color: #1C2E36;
-            padding: 8px 24px;
-            border-radius: 40px;
-            font-weight: 700;
+            background: var(--accent);
+            color: white;
+            padding: 9px 22px;
+            border-radius: 100px;
+            font-weight: 600;
             text-decoration: none;
-            font-size: 0.9rem;
-            transition: 0.2s;
+            font-size: 0.88rem;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
 
         .app-banner .btn-sm:hover {
-            background: #B8860B;
-            transform: scale(1.02);
+            background: var(--accent-dark);
+            transform: translateY(-1px);
         }
 
-        /* Responsive */
+        /* ============================================== */
+        /* RESPONSIVE */
+        /* ============================================== */
         @media (max-width: 768px) {
             nav {
-                padding: 12px 5%;
+                padding: 14px 5%;
             }
 
             .logo img {
-                width: 85px;
-            }
-
-            .nav-links {
-                display: none;
+                width: 88px;
             }
 
             .btn-order {
-                padding: 8px 20px;
-                font-size: 0.8rem;
+                padding: 9px 20px;
+                font-size: 0.82rem;
             }
 
             .hero {
-                flex-direction: column;
-                text-align: center;
-                padding: 48px 5%;
+                padding: 64px 5% 72px;
             }
 
             .hero-desc {
-                margin-left: auto;
-                margin-right: auto;
+                font-size: 1rem;
             }
 
-            .hero-buttons {
-                justify-content: center;
+            .features,
+            .carousel-section,
+            .services {
+                padding: 64px 5%;
             }
 
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .services-grid {
-                grid-template-columns: 1fr;
+            .section-head {
+                margin-bottom: 40px;
             }
 
             .carousel-btn {
-                width: 34px;
-                height: 34px;
+                width: 38px;
+                height: 38px;
+            }
+
+            .carousel-btn.prev {
+                left: 10px;
+            }
+
+            .carousel-btn.next {
+                right: 10px;
             }
 
             .app-banner {
                 flex-direction: column;
                 gap: 10px;
-                padding: 12px 5%;
+                padding: 14px 5%;
+                text-align: center;
             }
         }
 
         @media (max-width: 480px) {
             .hero-title {
-                font-size: 2rem;
+                font-size: 2.1rem;
             }
 
             .btn-primary,
             .btn-secondary,
             .btn-download {
-                font-size: 0.85rem;
-                padding: 10px 20px;
+                font-size: 0.88rem;
+                padding: 12px 22px;
+                width: 100%;
+                justify-content: center;
             }
 
-            .feature-card {
-                padding: 24px 16px;
+            .hero-buttons {
+                flex-direction: column;
+                width: 100%;
             }
 
             .carousel-slide {
-                padding: 32px 20px;
+                padding: 40px 24px;
+            }
+
+            .carousel-slide .slide-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+
+            .carousel-slide p.lead {
+                font-size: 1.15rem;
+            }
+
+            .feature-card {
+                padding: 28px 22px;
             }
         }
     </style>
 </head>
+
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-95VNH7KVRB"></script>
 <script>
@@ -619,41 +856,61 @@
 
 <body>
 
+    <!-- ============================================== -->
+    <!-- NAV -->
+    <!-- ============================================== -->
     <nav>
         <div class="logo">
-            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Print Shop Logo">
+            <img src="logo/logo.jpeg"
+                alt="Villaruz Print Shop Logo">
         </div>
-        <div class="nav-links">
-            <a href="#">Home</a>
-            <a href="#services">Services</a>
-            <a href="#pricing">Packages</a>
-        </div>
-        <a href="login.php" class="btn-order">Login</a>
+        <a href="role.php" class="btn-order">
+            <i class="fas fa-user-circle"></i> Select Role
+        </a>
     </nav>
 
+    <!-- ============================================== -->
+    <!-- HERO -->
+    <!-- ============================================== -->
     <section class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title"><span>Villaruz Print Shop</span> & General Merchandise</h1>
-            <p class="hero-desc">Premium printing + everyday essentials — banners, flyers, custom merch, school & office
-                supplies. Fast, reliable, and creatively driven.</p>
+        <div class="hero-inner">
+            <div class="hero-eyebrow">
+                <i class="fas fa-star"></i> Trusted by DepEd, Local Businesses & Families
+            </div>
+
+            <h1 class="hero-title">
+                <span class="gradient">Villaruz Print Shop</span><br>
+                &amp; General Merchandise
+            </h1>
+
+            <p class="hero-desc">
+                Premium printing and everyday essentials — banners, flyers, custom merch,
+                school and office supplies. Fast, reliable, and creatively driven.
+            </p>
+
             <div class="hero-buttons">
-                <a href="registration.php" class="btn-primary">Create an account</a>
-                <!-- <a href="/villaruz-app.apk" class="btn-download" id="heroDownloadBtn">
-                    <i class="fas fa-download"></i> Download App
-                </a> -->
+                <a href="role.php" class="btn-primary">
+                    <i class="fas fa-rocket"></i> Get Started
+                </a>
             </div>
         </div>
     </section>
 
-    <!-- Features -->
+    <!-- ============================================== -->
+    <!-- FEATURES -->
+    <!-- ============================================== -->
     <section class="features">
-        <h2 class="section-title">Why Choose <span>Villaruz</span></h2>
-        <p class="section-sub">Where quality meets convenience — trusted by local businesses and families</p>
+        <div class="section-head">
+            <div class="section-tag">Why Choose Us</div>
+            <h2 class="section-title">Built on <span>Quality</span></h2>
+            <p class="section-sub">Where quality meets convenience — trusted by DepEd, Local Businesses & Families</p>
+        </div>
+
         <div class="feature-grid">
             <div class="feature-card">
                 <div class="feature-icon"><i class="fas fa-palette"></i></div>
                 <h3>Custom Design Studio</h3>
-                <p>In-house experts bring your vision to life. Free mockups & revisions on bulk orders.</p>
+                <p>In-house experts bring your vision to life. Free mockups and revisions on bulk orders.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon"><i class="fas fa-cubes"></i></div>
@@ -673,66 +930,89 @@
         </div>
     </section>
 
-    <!-- Carousel -->
+    <!-- ============================================== -->
+    <!-- CAROUSEL -->
+    <!-- ============================================== -->
     <section class="carousel-section">
-        <h2 class="section-title">Commitment to <span>Excellence</span></h2>
-        <p class="section-sub">What makes Villaruz your go-to print & retail partner</p>
+        <div class="section-head">
+            <div class="section-tag">Our Promise</div>
+            <h2 class="section-title">Commitment to <span>Excellence</span></h2>
+            <p class="section-sub">What makes Villaruz your go-to print and retail partner</p>
+        </div>
+
         <div class="carousel-container">
             <div class="carousel-slides">
                 <div class="carousel-slide">
-                    <i class="fas fa-print"></i>
-                    <p>🎨 Premium Digital & Offset Printing</p>
-                    <p>Vibrant color accuracy, high-resolution output for all marketing materials.</p>
+                    <div class="slide-icon"><i class="fas fa-print"></i></div>
+                    <p class="lead">Premium Digital &amp; Offset Printing</p>
+                    <p class="desc">Vibrant color accuracy, high-resolution output for all marketing materials.</p>
                     <div class="badge">Pro-Grade Equipment</div>
                     <small>Consistent quality, batch after batch</small>
                 </div>
+
                 <div class="carousel-slide">
-                    <i class="fas fa-box-open"></i>
-                    <p>📦 General Merchandise Corner</p>
-                    <p>School supplies, office needs, cleaning tools — real value items.</p>
+                    <div class="slide-icon"><i class="fas fa-box-open"></i></div>
+                    <p class="lead">General Merchandise Corner</p>
+                    <p class="desc">School supplies, office needs, cleaning tools — real value items.</p>
                     <div class="badge">Everyday Low Prices</div>
                     <small>Retail + Wholesale availability</small>
                 </div>
+
                 <div class="carousel-slide">
-                    <i class="fas fa-stopwatch"></i>
-                    <p>⏱️ Rush Orders Ready in Hours</p>
-                    <p>Need 500 flyers for tomorrow's event? We deliver express printing.</p>
+                    <div class="slide-icon"><i class="fas fa-stopwatch"></i></div>
+                    <p class="lead">Rush Orders Ready in Hours</p>
+                    <p class="desc">Need 500 flyers for tomorrow's event? We deliver express printing.</p>
                     <div class="badge">Same-Day Service</div>
                     <small>24-hour hotline for urgent requests</small>
                 </div>
+
                 <div class="carousel-slide">
-                    <i class="fas fa-hand-holding-heart"></i>
-                    <p>🤝 Community & B2B Partnerships</p>
-                    <p>Loyalty programs, bulk discounts, and flexible terms for regulars.</p>
+                    <div class="slide-icon"><i class="fas fa-hand-holding-heart"></i></div>
+                    <p class="lead">Community &amp; B2B Partnerships</p>
+                    <p class="desc">Loyalty programs, bulk discounts, and flexible terms for regulars.</p>
                     <div class="badge">Corporate Friendly</div>
                     <small>Trusted by 200+ local businesses</small>
                 </div>
             </div>
-            <button class="carousel-btn prev" onclick="prevSlide()">❮</button>
-            <button class="carousel-btn next" onclick="nextSlide()">❯</button>
+
+            <button class="carousel-btn prev" onclick="prevSlide()" aria-label="Previous slide">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="carousel-btn next" onclick="nextSlide()" aria-label="Next slide">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
             <div class="carousel-dots" id="dots"></div>
         </div>
     </section>
 
-    <!-- Services -->
+    <!-- ============================================== -->
+    <!-- SERVICES -->
+    <!-- ============================================== -->
     <section class="services" id="services">
-        <h2 class="section-title">Our <span>Offerings</span></h2>
-        <p class="section-sub">Printing + merchandise — everything under one roof</p>
+        <div class="section-head">
+            <div class="section-tag">What We Offer</div>
+            <h2 class="section-title">Our <span>Services</span></h2>
+            <p class="section-sub">Printing and merchandise — everything under one roof</p>
+        </div>
+
         <div class="services-grid">
             <div class="service-card">
                 <div class="service-img"><i class="fas fa-tshirt"></i></div>
                 <div class="service-info">
-                    <h3>Custom Apparel & Totes</h3>
-                    <p>Screenprint, DTG, embroidery. Perfect for teams & giveaways.</p>
+                    <h3>Custom Apparel &amp; Totes</h3>
+                    <p>Screenprint, DTG, embroidery. Perfect for teams and giveaways.</p>
                 </div>
             </div>
+
             <div class="service-card">
                 <div class="service-img"><i class="fas fa-book"></i></div>
                 <div class="service-info">
-                    <h3>School & Office Supplies</h3>
+                    <h3>School &amp; Office Supplies</h3>
                     <p>Notebooks, folders, record books, calculators, and more.</p>
                 </div>
             </div>
+
             <div class="service-card">
                 <div class="service-img"><i class="fas fa-store"></i></div>
                 <div class="service-info">
@@ -740,26 +1020,38 @@
                     <p>Cleaning, storage, kitchen basics — quality general merchandise.</p>
                 </div>
             </div>
+
             <div class="service-card">
                 <div class="service-img"><i class="fas fa-flag-checkered"></i></div>
                 <div class="service-info">
-                    <h3>Large Format & Banners</h3>
+                    <h3>Large Format &amp; Banners</h3>
                     <p>Tarpaulins, posters, retractable banners, outdoor-grade prints.</p>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- ============================================== -->
+    <!-- FOOTER -->
+    <!-- ============================================== -->
     <footer>
-        <div class="copyright">
-            <p>© 2026 Villaruz Print Shop & GEN. MDSE.</p>
-            <p style="margin-top: 12px;">
-                <i class="fas fa-print"></i> Custom Printing |
-                <i class="fas fa-store"></i> Retail Merchandise |
-                <i class="fas fa-headset"></i> Support 24/7 |
-                <i class="fas fa-code"></i> Developer: Norlie Jay Verzosa |
-                <i class="fas fa-envelope"></i> Message Us: villaruzprintshop@gmail.com
-            </p>
+        <div class="footer-inner">
+            <div class="footer-brand">Villaruz Print Shop &amp; General Merchandise</div>
+            <div class="footer-tagline">Printing excellence, delivered daily.</div>
+
+            <div class="footer-links">
+                <span><i class="fas fa-print"></i> Custom Printing</span>
+                <span class="footer-sep">•</span>
+                <span><i class="fas fa-store"></i> Retail Merchandise</span>
+                <span class="footer-sep">•</span>
+                <span><i class="fas fa-headset"></i> Support 24/7</span>
+                <span class="footer-sep">•</span>
+                <span><i class="fas fa-envelope"></i> villaruzsofiaapp@gmail.com</span>
+            </div>
+
+            <div class="copyright">
+                © 2026 Villaruz Print Shop &amp; Gen. MDSE. All rights reserved.
+            </div>
         </div>
     </footer>
 
@@ -826,17 +1118,13 @@
         // ==============================================
         // FINGERPRINT DETECTION (For App Users)
         // ==============================================
-
-        // Check if running inside the Android app
         if (typeof AndroidBiometric !== 'undefined') {
-            // User is in the app — change "Download App" to "Login with Fingerprint"
             var downloadBtns = document.querySelectorAll('.btn-download, #downloadAppBtn, .btn-sm');
-            downloadBtns.forEach(function(btn) {
+            downloadBtns.forEach(function (btn) {
                 btn.innerHTML = '<i class="fas fa-fingerprint"></i> Login with Fingerprint';
                 btn.href = '#';
-                btn.onclick = function(e) {
+                btn.onclick = function (e) {
                     e.preventDefault();
-                    // Trigger fingerprint login
                     if (typeof AndroidBiometric !== 'undefined') {
                         var challenge = "app_launch_" + Date.now();
                         AndroidBiometric.authenticate(challenge);
@@ -844,7 +1132,6 @@
                 };
             });
 
-            // Also hide the app banner for app users (optional)
             var appBanner = document.getElementById('appBanner');
             if (appBanner) {
                 appBanner.style.display = 'none';
@@ -852,15 +1139,14 @@
         }
 
         // ==============================================
-        // FINGERPRINT CALLBACK FUNCTIONS
+        // FINGERPRINT CALLBACKS
         // ==============================================
-
         function biometricSuccess(challenge) {
             window.location.href = 'faceLogin.php';
         }
 
         function biometricFailed() {
-            alert('❌ Fingerprint not recognized. Please try again.');
+            alert('Fingerprint not recognized. Please try again.');
         }
 
         function cancelBiometric() {
@@ -868,7 +1154,7 @@
         }
 
         function biometricError(errorMessage) {
-            alert('⚠️ Biometric error: ' + errorMessage);
+            alert('Biometric error: ' + errorMessage);
         }
     </script>
 </body>

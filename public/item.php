@@ -19,7 +19,7 @@ function isLoggedIn()
 
 if (!isLoggedIn()) {
     $_SESSION['login_error'] = 'Please login first to access the shop.';
-    header('Location: ../login.php');
+    header('Location: ../customers-portal.php');
     exit;
 }
 
