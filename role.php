@@ -108,8 +108,9 @@
         .option-card {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 18px 20px;
+            /* ✅ Bigger gap between card content, divider, and download button */
+            gap: 20px;
+            padding: 18px 22px;
             background: #f8fafc;
             border: 1.5px solid #e2e8f0;
             border-radius: 16px;
@@ -172,6 +173,20 @@
             line-height: 1.4;
         }
 
+        /* ========== VERTICAL DIVIDER ========== */
+        /* ✅ Side gaps come from the card's `gap: 20px` plus this margin */
+        .option-divider {
+            width: 1px;
+            align-self: stretch;
+            background: linear-gradient(to bottom,
+                    transparent 0%,
+                    #cbd5e1 20%,
+                    #cbd5e1 80%,
+                    transparent 100%);
+            flex-shrink: 0;
+            margin: 0 8px;
+        }
+
         /* ========== DOWNLOAD BUTTON ========== */
         .option-links {
             display: flex;
@@ -186,7 +201,7 @@
             justify-content: center;
             color: #3b82f6;
             text-decoration: none;
-            padding: 6px;
+            padding: 8px;
             line-height: 1;
             border-radius: 10px;
             transition: background 0.2s ease, color 0.2s ease;
@@ -241,7 +256,7 @@
 
             .option-card {
                 padding: 14px 16px;
-                gap: 12px;
+                gap: 14px;
             }
 
             .option-icon {
@@ -260,6 +275,11 @@
 
             .option-links a i {
                 font-size: 24px;
+            }
+
+            /* ✅ keep visible gap on small phones */
+            .option-divider {
+                margin: 0 4px;
             }
         }
 
@@ -310,6 +330,9 @@
                             </div>
                         </a>
 
+                        <!-- ✅ Vertical divider -->
+                        <div class="option-divider" aria-hidden="true"></div>
+
                         <!-- Click download icon → download APK (does NOT navigate) -->
                         <div class="option-links">
                             <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/admin_app.apk"
@@ -332,6 +355,10 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- ✅ Vertical divider -->
+                        <div class="option-divider" aria-hidden="true"></div>
+
                         <div class="option-links">
                             <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/investor_app.apk"
                                 download title="Download App">
@@ -351,6 +378,10 @@
                                 <div class="option-desc">Download the app and register to browse our shop</div>
                             </div>
                         </div>
+
+                        <!-- ✅ Vertical divider -->
+                        <div class="option-divider" aria-hidden="true"></div>
+
                         <div class="option-links">
                             <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/customer_app.apk"
                                 download title="Download App">
