@@ -1528,12 +1528,8 @@ if (isset($_SESSION['exit_message'])) {
                         </div>
                     </form>
                 </div>
-
             </div>
         </div>
-
-        <!-- ✅ Gift GIF — footer, katulad ng light -->
-        <img src="logo/gift.jpg" alt="Gift" class="gift-footer">
     </div>
 
     <!-- ✅ Custom biometric popup (NO URL change, NO #hash) -->
