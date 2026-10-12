@@ -114,32 +114,6 @@ foreach ($orderItems as $item) {
     $totalAmount += floatval($item['total_amount'] ?? 0);
 }
 
-// ✅ Load total-level discount from for_deliveries
-$totalDiscountPercent = 0;
-$totalDiscountType = 'less';
-try {
-    $stmt = $pdo->prepare("SELECT total_discount_percent, total_discount_type FROM for_deliveries WHERE delivery_number = ?");
-    $stmt->execute([$selectedDeliveryNumber]);
-    $discountRow = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($discountRow) {
-        $totalDiscountPercent = floatval($discountRow['total_discount_percent'] ?? 0);
-        $totalDiscountType = $discountRow['total_discount_type'] ?? 'less';
-    }
-} catch (Exception $e) {
-    // Columns may not exist yet - ignore
-}
-
-// Calculate final total with adjustment
-$finalTotal = $totalAmount;
-if ($totalDiscountPercent > 0) {
-    $adjustment = $totalAmount * ($totalDiscountPercent / 100);
-    if ($totalDiscountType === 'less') {
-        $finalTotal = $totalAmount - $adjustment;
-    } else {
-        $finalTotal = $totalAmount + $adjustment;
-    }
-}
-
 $encodedMonthYear = urlencode($monthYear);
 
 function formatDeliveryDate($date)
@@ -916,106 +890,6 @@ function formatDeliveryDate($date)
                 font-size: 13px;
             }
         }
-
-        /* ========== ✅ TOTAL PERCENT ADJUSTMENT (EDIT MODE ONLY) ========== */
-        .total-percent-cell {
-            display: none;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 6px;
-            flex-wrap: nowrap;
-        }
-
-        .total-percent-cell.active {
-            display: flex;
-        }
-
-        .total-percent-cell input.percent-input {
-            width: 60px;
-            padding: 5px 8px;
-            border: 2px solid #8b5cf6;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-            background: #fff;
-            font-weight: 600;
-        }
-
-        .total-percent-cell input.percent-input:focus {
-            outline: none;
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
-        }
-
-        .total-percent-cell select.percent-type {
-            padding: 5px 4px;
-            border: 2px solid #8b5cf6;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: 'Poppins', sans-serif;
-            background: #fff;
-            cursor: pointer;
-            width: 65px;
-            font-weight: 600;
-        }
-
-        .total-percent-cell select.percent-type:focus {
-            outline: none;
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
-        }
-
-        .total-percent-cell .percent-label {
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 600;
-        }
-
-        /* Applied badge next to total */
-        .applied-badge {
-            display: inline-block;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 6px;
-            vertical-align: middle;
-        }
-
-        .applied-badge.less {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .applied-badge.plus {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        @media (max-width: 768px) {
-            .total-percent-cell {
-                gap: 3px;
-                flex-wrap: wrap;
-                justify-content: flex-end;
-            }
-
-            .total-percent-cell input.percent-input {
-                width: 45px;
-                padding: 3px 4px;
-                font-size: 11px;
-            }
-
-            .total-percent-cell select.percent-type {
-                width: 52px;
-                font-size: 11px;
-                padding: 3px 2px;
-            }
-
-            .total-percent-cell .percent-label {
-                font-size: 11px;
-            }
-        }
     </style>
 </head>
 
@@ -1108,38 +982,9 @@ function formatDeliveryDate($date)
                                                 id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
                                         </td>
                                         <td></td>
-                                        <td style="text-align: right; font-weight: 600; white-space: nowrap;">
-                                            TOTAL:
-                                        </td>
-                                        <td style="text-align: right; font-weight: 600;">
-                                            <!-- ✅ Percent adjustment inputs (EDIT MODE ONLY) -->
-                                            <div class="total-percent-cell" id="total-percent-cell">
-                                                <input type="number"
-                                                       class="percent-input"
-                                                       id="total-percent-input"
-                                                       value="<?= $totalDiscountPercent > 0 ? $totalDiscountPercent : '' ?>"
-                                                       placeholder="0"
-                                                       min="0"
-                                                       max="100"
-                                                       step="0.01"
-                                                       title="Enter percentage adjustment">
-                                                <select class="percent-type" id="total-percent-type" title="Less (discount) or Plus (markup)">
-                                                    <option value="less" <?= $totalDiscountType === 'less' ? 'selected' : '' ?>>Less</option>
-                                                    <option value="plus" <?= $totalDiscountType === 'plus' ? 'selected' : '' ?>>Plus</option>
-                                                </select>
-                                                <span class="percent-label">%</span>
-                                            </div>
-                                        </td>
-                                        <td style="font-weight: 600; white-space: nowrap;" id="total-amount-display"
-                                            data-base-total="<?= $totalAmount ?>">
-                                            ₱ <?= number_format($finalTotal, 2) ?>
-                                            <?php if ($totalDiscountPercent > 0): ?>
-                                                <span class="applied-badge <?= $totalDiscountType ?>" id="total-discount-badge">
-                                                    <?= $totalDiscountType === 'less' ? '-' : '+' ?><?= $totalDiscountPercent ?>%
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="applied-badge" id="total-discount-badge" style="display:none;"></span>
-                                            <?php endif; ?>
+                                        <td colspan="1" style="text-align: right; font-weight: 600;">TOTAL:</td>
+                                        <td style="font-weight: 600;" id="total-amount-display">₱
+                                            <?= number_format($totalAmount, 2) ?>
                                         </td>
                                         <td></td>
                                     </tr>
@@ -1237,89 +1082,10 @@ function formatDeliveryDate($date)
         const monthYear = '<?= htmlspecialchars($monthYear) ?>';
         const encodedMonthYear = '<?= $encodedMonthYear ?>';
         const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
-        const originalTotalDiscountPercent = '<?= $totalDiscountPercent ?>';
-        const originalTotalDiscountType = '<?= htmlspecialchars($totalDiscountType) ?>';
 
         let isEditMode = false;
         let originalData = new Map();
         let isProcessing = false;
-
-        // ============================================================
-        // ✅ TOTAL ROW PERCENT ADJUSTMENT LOGIC
-        // ============================================================
-        const totalPercentCell = document.getElementById('total-percent-cell');
-        const totalPercentInput = document.getElementById('total-percent-input');
-        const totalPercentType = document.getElementById('total-percent-type');
-        const totalAmountDisplay = document.getElementById('total-amount-display');
-        const totalDiscountBadge = document.getElementById('total-discount-badge');
-
-        function getBaseTotal() {
-            // Sum of all row totals (raw, without total-level adjustment)
-            let baseTotal = 0;
-            document.querySelectorAll('#orders-table tbody tr:not(.total-row)').forEach(row => {
-                const totalCell = row.querySelector('.total-amount');
-                const raw = totalCell?.dataset.rawTotal;
-                if (raw !== undefined && raw !== '') {
-                    baseTotal += parseFloat(raw) || 0;
-                } else {
-                    const txt = totalCell?.innerText || '0';
-                    baseTotal += parseFloat(txt.replace('₱', '').replace(/,/g, '')) || 0;
-                }
-            });
-            return baseTotal;
-        }
-
-        function applyTotalPercentAdjustment() {
-            const baseTotal = getBaseTotal();
-            const percent = parseFloat(totalPercentInput?.value) || 0;
-            const type = totalPercentType?.value || 'less';
-
-            let finalTotal = baseTotal;
-            if (percent > 0) {
-                const adjustment = baseTotal * (percent / 100);
-                if (type === 'less') {
-                    finalTotal = baseTotal - adjustment;
-                } else {
-                    finalTotal = baseTotal + adjustment;
-                }
-            }
-
-            if (totalAmountDisplay) {
-                totalAmountDisplay.dataset.baseTotal = baseTotal;
-                totalAmountDisplay.innerHTML = `₱ ${finalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            }
-
-            // Show/hide badge (only visible in view mode after update; during edit we show live too)
-            if (totalDiscountBadge) {
-                if (percent > 0) {
-                    totalDiscountBadge.className = 'applied-badge ' + type;
-                    totalDiscountBadge.textContent = (type === 'less' ? '-' : '+') + percent + '%';
-                    totalDiscountBadge.style.display = 'inline-block';
-                } else {
-                    totalDiscountBadge.style.display = 'none';
-                }
-            }
-
-            return { baseTotal, finalTotal, percent, type };
-        }
-
-        // Bind events
-        if (totalPercentInput) {
-            totalPercentInput.addEventListener('input', function () {
-                let val = parseFloat(this.value);
-                if (!isNaN(val)) {
-                    if (val < 0) this.value = 0;
-                    if (val > 100) this.value = 100;
-                }
-                applyTotalPercentAdjustment();
-            });
-            totalPercentInput.addEventListener('change', applyTotalPercentAdjustment);
-            totalPercentInput.addEventListener('blur', applyTotalPercentAdjustment);
-        }
-
-        if (totalPercentType) {
-            totalPercentType.addEventListener('change', applyTotalPercentAdjustment);
-        }
 
         // ========== COPY RECEIPT LINK ==========
         async function copyReceiptLink(type) {
@@ -1340,6 +1106,7 @@ function formatDeliveryDate($date)
                     'success'
                 );
             } catch (err) {
+                // Fallback for older browsers
                 const tempInput = document.createElement('input');
                 tempInput.value = receiptUrl;
                 document.body.appendChild(tempInput);
@@ -1485,11 +1252,12 @@ function formatDeliveryDate($date)
             let rowNumber = 1;
             rows.forEach(row => {
                 const cells = row.cells;
+                // ✅ Shifted by 1 because of new drag-handle cell
                 const unit = cells[3]?.innerText || '';
                 const itemDescription = cells[1]?.innerText || '';
                 const quantity = cells[2]?.innerText || '0';
                 let unitCost = cells[4]?.innerText || '0';
-                let totalCost = row.querySelector('.total-amount')?.innerText || '0';
+                let totalCost = cells[5]?.innerText || '0';
 
                 unitCost = unitCost.replace('₱', '').replace(/,/g, '').trim();
                 totalCost = totalCost.replace('₱', '').replace(/,/g, '').trim();
@@ -1498,21 +1266,13 @@ function formatDeliveryDate($date)
                 rowNumber++;
             });
 
-            const baseTotal = getBaseTotal();
-            const percentVal = parseFloat(originalTotalDiscountPercent) || 0;
-            const percentType = originalTotalDiscountType === 'less' ? '-' : '+';
-            const percentDisplay = percentVal > 0 ? percentType + percentVal + '%' : '-';
-
             excelData.push([]);
-            excelData.push(['', '', '', '', 'SUBTOTAL:', baseTotal.toFixed(2)]);
-            if (percentVal > 0) {
-                excelData.push(['', '', '', '', 'ADJUSTMENT:', percentDisplay]);
-            }
+            excelData.push(['', '', '', '', 'TOTAL:', '']);
 
             const totalDisplay = document.getElementById('total-amount-display');
             let totalAmount = totalDisplay?.innerText || '0';
-            totalAmount = totalAmount.replace(/[^\d.,]/g, '').replace(/,/g, '').trim();
-            excelData.push(['', '', '', '', 'TOTAL:', totalAmount]);
+            totalAmount = totalAmount.replace('₱', '').replace(/,/g, '').trim();
+            excelData.push(['', '', '', '', '', totalAmount]);
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
@@ -1674,11 +1434,6 @@ function formatDeliveryDate($date)
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
-            // ✅ Show the total-percent-cell (edit mode only)
-            if (totalPercentCell) {
-                totalPercentCell.classList.add('active');
-            }
-
             const dateDisplay = document.getElementById('deliveryDateDisplay');
             const dateInput = document.getElementById('deliveryDateInput');
             if (dateDisplay && dateInput) {
@@ -1689,11 +1444,12 @@ function formatDeliveryDate($date)
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
 
             rows.forEach((row, index) => {
+                // ✅ Shifted cell indices by 1 (drag-handle is cell 0)
                 const originalProduct = row.cells[1].innerText;
                 const originalPieces = row.cells[2].innerText;
                 const originalUnit = row.cells[3].innerText;
                 const originalSellingPrice = row.cells[4].innerText.replace('₱', '').replace(/,/g, '');
-                const originalTotal = row.querySelector('.total-amount').innerText.replace('₱', '').replace(/,/g, '');
+                const originalTotal = row.cells[5].innerText.replace('₱', '').replace(/,/g, '');
 
                 originalData.set(index, {
                     product: originalProduct,
@@ -1705,26 +1461,22 @@ function formatDeliveryDate($date)
 
                 row.cells[1].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
                 row.cells[2].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
-                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalUnit)}" data-field="unit">`;
+                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
                 row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
+                row.cells[5].innerHTML = `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
 
-                const totalCell = row.querySelector('.total-amount');
                 const piecesInput = row.cells[2].querySelector('input');
                 const sellingPriceInput = row.cells[4].querySelector('input');
-
-                // Initialize rawTotal from current display
-                totalCell.dataset.rawTotal = parseFloat(originalTotal) || 0;
+                const totalInput = row.cells[5].querySelector('input');
 
                 function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
                     const price = parseFloat(sellingPriceInput.value) || 0;
-                    const rawTotal = pieces * price;
-                    totalCell.dataset.rawTotal = rawTotal;
-                    totalCell.innerHTML = '₱ ' + rawTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    applyTotalPercentAdjustment();
+                    totalInput.value = (pieces * price).toFixed(2);
+                    updateGrandTotal();
                 }
 
-                if (piecesInput && sellingPriceInput) {
+                if (piecesInput && sellingPriceInput && totalInput) {
                     piecesInput.addEventListener('input', calculateRowTotal);
                     sellingPriceInput.addEventListener('input', calculateRowTotal);
 
@@ -1739,6 +1491,29 @@ function formatDeliveryDate($date)
                     });
                 }
             });
+
+            setTimeout(updateGrandTotal, 100);
+        }
+
+        function updateGrandTotal() {
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            let grandTotal = 0;
+            let totalItems = 0;
+
+            rows.forEach(row => {
+                const piecesInput = row.cells[2]?.querySelector('input');
+                const totalInput = row.cells[5]?.querySelector('input');
+                totalItems += parseFloat(piecesInput?.value) || 0;
+                grandTotal += parseFloat(totalInput?.value) || 0;
+            });
+
+            const totalDisplay = document.getElementById('total-amount-display');
+            if (totalDisplay) {
+                totalDisplay.innerHTML = `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            const totalItemsDisplay = document.getElementById('totalItemsDisplay');
+            if (totalItemsDisplay) totalItemsDisplay.textContent = totalItems;
         }
 
         async function disableEditMode() {
@@ -1749,14 +1524,16 @@ function formatDeliveryDate($date)
             const dateInput = document.getElementById('deliveryDateInput');
             const updatedDeliveryDate = dateInput ? dateInput.value : '';
 
+            updateGrandTotal();
+
             rows.forEach((row, index) => {
                 const productInput = row.cells[1].querySelector('input');
                 const piecesInput = row.cells[2].querySelector('input');
                 const unitInput = row.cells[3].querySelector('input');
                 const sellingPriceInput = row.cells[4].querySelector('input');
-                const totalCell = row.querySelector('.total-amount');
+                const totalInput = row.cells[5].querySelector('input');
 
-                if (!productInput || !piecesInput || !unitInput || !sellingPriceInput) {
+                if (!productInput || !piecesInput || !unitInput || !sellingPriceInput || !totalInput) {
                     isValid = false;
                     return;
                 }
@@ -1765,7 +1542,7 @@ function formatDeliveryDate($date)
                 const newPieces = piecesInput.value;
                 const newUnit = unitInput.value.trim();
                 const newSellingPrice = sellingPriceInput.value;
-                const newTotal = totalCell?.dataset.rawTotal ?? (parseFloat(totalCell?.innerText.replace('₱', '').replace(/,/g, '')) || 0);
+                const newTotal = totalInput.value;
 
                 if (!newProduct || !newPieces || newPieces <= 0 || newSellingPrice < 0 || newTotal <= 0) {
                     isValid = false;
@@ -1790,13 +1567,6 @@ function formatDeliveryDate($date)
 
             const dateChanged = updatedDeliveryDate && updatedDeliveryDate !== originalDeliveryDate;
 
-            // ✅ Total-level adjustment change detection
-            const newTotalPercent = totalPercentInput?.value || '';
-            const newTotalType = totalPercentType?.value || 'less';
-            const totalAdjustmentChanged =
-                String(parseFloat(newTotalPercent || 0)) !== String(parseFloat(originalTotalDiscountPercent || 0)) ||
-                newTotalType !== originalTotalDiscountType;
-
             let hasChanges = false;
             for (const item of updatedItems) {
                 if (item.original.product !== item.updated.product ||
@@ -1809,25 +1579,20 @@ function formatDeliveryDate($date)
                 }
             }
 
-            if (!hasChanges && !dateChanged && !totalAdjustmentChanged) {
+            if (!hasChanges && !dateChanged) {
                 exitEditMode();
                 return;
             }
 
             let confirmMessage = 'Are you sure you want to update the order?';
             if (dateChanged) confirmMessage += '\n\n📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
-            if (totalAdjustmentChanged && parseFloat(newTotalPercent) > 0) {
-                confirmMessage += `\n\n💰 Total adjustment: ${newTotalType === 'less' ? '-' : '+'}${newTotalPercent}%`;
-            } else if (totalAdjustmentChanged && (!newTotalPercent || parseFloat(newTotalPercent) === 0)) {
-                confirmMessage += `\n\n💰 Total adjustment will be removed.`;
-            }
 
             showConfirmModal('UPDATE ORDER ITEMS', confirmMessage, async () => {
-                await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, newTotalPercent, newTotalType);
+                await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged);
             });
         }
 
-        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, totalPercent, totalType) {
+        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged) {
             try {
                 const formData = new FormData();
                 formData.append('action', 'update_order_items');
@@ -1841,10 +1606,6 @@ function formatDeliveryDate($date)
                     selling_price: item.updated.selling_price,
                     total_amount: item.updated.total
                 }))));
-
-                // ✅ Send total-level adjustment
-                formData.append('total_discount_percent', totalPercent || 0);
-                formData.append('total_discount_type', totalType || 'less');
 
                 if (dateChanged && updatedDeliveryDate) {
                     formData.append('delivery_date', updatedDeliveryDate);
@@ -1900,7 +1661,7 @@ function formatDeliveryDate($date)
                     showSystemModal(
                         '⚠️ CANCELLATION CONFIRMATION',
                         `<strong>Delivery #${deliveryNumber}</strong><br>Customer: <?= htmlspecialchars($customerName) ?><br>
-                        Total: <strong>₱ <?= number_format($finalTotal, 2) ?></strong><br><br>
+                        Total: <strong>₱ <?= number_format($totalAmount, 2) ?></strong><br><br>
                         <strong style="color: #dc2626;">WARNING:</strong> This will <strong>DELETE</strong> all data!`,
                         'error',
                         [
@@ -1961,7 +1722,7 @@ function formatDeliveryDate($date)
                 const row = this.closest('tr');
                 const productName = row.cells[1]?.innerText || '';
                 const pieces = row.cells[2]?.innerText || '0';
-                const totalAmount = row.querySelector('.total-amount')?.innerText.replace('₱', '').replace(/,/g, '') || '0';
+                const totalAmount = row.cells[5]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
 
                 showConfirmModal(
                     'REMOVE ITEM',
@@ -1985,7 +1746,12 @@ function formatDeliveryDate($date)
 
                 if (data.success) {
                     row.remove();
-                    applyTotalPercentAdjustment();
+
+                    const totalDisplay = document.getElementById('total-amount-display');
+                    const currentTotal = parseFloat(totalDisplay.innerText.replace('₱', '').replace(/,/g, '')) || 0;
+                    const newTotal = currentTotal - parseFloat(totalAmount);
+
+                    totalDisplay.innerHTML = `₱ ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
                     const remainingRows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)').length;
                     if (remainingRows === 0) {
