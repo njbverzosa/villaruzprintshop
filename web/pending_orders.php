@@ -129,6 +129,15 @@ function formatDeliveryDate($date)
 
     return date('j F Y', $timestamp);
 }
+
+// ✅ Check if discount columns exist in database
+$hasDiscountColumns = false;
+try {
+    $stmt = $pdo->query("SHOW COLUMNS FROM order_status_history LIKE 'discount_percent'");
+    $hasDiscountColumns = $stmt->rowCount() > 0;
+} catch (Exception $e) {
+    $hasDiscountColumns = false;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -890,6 +899,111 @@ function formatDeliveryDate($date)
                 font-size: 13px;
             }
         }
+
+        /* ========== ✅ PERCENT ADJUSTMENT STYLES ========== */
+        .percent-adjust-cell {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 100px;
+        }
+
+        .percent-adjust-cell input.percent-input {
+            width: 50px;
+            padding: 4px 6px;
+            border: 2px solid #8b5cf6;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: #fff;
+        }
+
+        .percent-adjust-cell input.percent-input:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .percent-adjust-cell select.percent-type {
+            padding: 4px 2px;
+            border: 2px solid #8b5cf6;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'Poppins', sans-serif;
+            background: #fff;
+            cursor: pointer;
+            width: 55px;
+        }
+
+        .percent-adjust-cell select.percent-type:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .percent-adjust-cell .percent-label {
+            font-size: 11px;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .adjusted-price-display {
+            font-size: 11px;
+            color: #16a34a;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .adjusted-price-display.discount {
+            color: #dc2626;
+        }
+
+        @media (max-width: 768px) {
+            .percent-adjust-cell {
+                flex-wrap: wrap;
+                gap: 2px;
+                min-width: 80px;
+            }
+
+            .percent-adjust-cell input.percent-input {
+                width: 35px;
+                padding: 2px 4px;
+                font-size: 10px;
+            }
+
+            .percent-adjust-cell select.percent-type {
+                width: 45px;
+                font-size: 10px;
+                padding: 2px 1px;
+            }
+
+            .percent-adjust-cell .percent-label {
+                font-size: 9px;
+            }
+        }
+
+        /* New column header row */
+        .column-headers {
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .column-headers td {
+            font-weight: 600;
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 15px !important;
+        }
+
+        @media (max-width: 768px) {
+            .column-headers td {
+                font-size: 9px;
+                padding: 4px 5px !important;
+            }
+        }
     </style>
 </head>
 
@@ -954,14 +1068,31 @@ function formatDeliveryDate($date)
                         </div>
                         <div class="orders-table-container">
                             <table class="orders-table" id="orders-table">
+                                <thead>
+                                    <tr class="column-headers">
+                                        <td></td>
+                                        <td>Product</td>
+                                        <td>Pieces</td>
+                                        <td>Unit</td>
+                                        <td>Unit Price</td>
+                                        <td>% Adjust</td>
+                                        <td>Total</td>
+                                        <td></td>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    <?php foreach ($orderItems as $index => $item): ?>
+                                    <?php foreach ($orderItems as $index => $item): 
+                                        $discountPercent = floatval($item['discount_percent'] ?? 0);
+                                        $discountType = $item['discount_type'] ?? 'less';
+                                    ?>
                                         <tr data-id="<?= htmlspecialchars($item['id'] ?? $index) ?>"
                                             data-product="<?= htmlspecialchars($item['product_name'] ?? '') ?>"
                                             data-pieces="<?= htmlspecialchars($item['pieces'] ?? '0') ?>"
                                             data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
-                                            data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
+                                            data-total="<?= floatval($item['total_amount'] ?? 0) ?>"
+                                            data-discount-percent="<?= $discountPercent ?>"
+                                            data-discount-type="<?= htmlspecialchars($discountType) ?>">
                                             <!-- ✅ Drag handle -->
                                             <td class="drag-handle" title="Drag to reorder">
                                                 <i class="fas fa-grip-vertical"></i>
@@ -970,6 +1101,22 @@ function formatDeliveryDate($date)
                                             <td class="pieces"><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
                                             <td class="unit"><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
                                             <td class="selling_price">₱ <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?></td>
+                                            <!-- ✅ PERCENT ADJUSTMENT CELL -->
+                                            <td class="percent-adjust-cell">
+                                                <input type="number" 
+                                                       class="percent-input" 
+                                                       value="<?= $discountPercent > 0 ? $discountPercent : '' ?>" 
+                                                       placeholder="0" 
+                                                       min="0" 
+                                                       max="100" 
+                                                       step="0.01"
+                                                       data-field="discount_percent">
+                                                <select class="percent-type" data-field="discount_type">
+                                                    <option value="less" <?= $discountType === 'less' ? 'selected' : '' ?>>Less</option>
+                                                    <option value="plus" <?= $discountType === 'plus' ? 'selected' : '' ?>>Plus</option>
+                                                </select>
+                                                <span class="percent-label">%</span>
+                                            </td>
                                             <td class="total-amount">₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?></td>
                                             <td style="text-align: center;">
                                                 <button class="xampp-btn remove-btn" data-row-id="<?= $index ?>">Remove</button>
@@ -982,7 +1129,7 @@ function formatDeliveryDate($date)
                                                 id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
                                         </td>
                                         <td></td>
-                                        <td colspan="1" style="text-align: right; font-weight: 600;">TOTAL:</td>
+                                        <td colspan="2" style="text-align: right; font-weight: 600;">TOTAL:</td>
                                         <td style="font-weight: 600;" id="total-amount-display">₱
                                             <?= number_format($totalAmount, 2) ?>
                                         </td>
@@ -1086,6 +1233,96 @@ function formatDeliveryDate($date)
         let isEditMode = false;
         let originalData = new Map();
         let isProcessing = false;
+
+        // ========== ✅ PERCENT ADJUSTMENT LOGIC ==========
+        function calculateAdjustedTotal(pieces, unitPrice, percent, type) {
+            const baseTotal = pieces * unitPrice;
+            if (!percent || percent <= 0) return baseTotal;
+            
+            const adjustment = baseTotal * (percent / 100);
+            if (type === 'less') {
+                return baseTotal - adjustment;
+            } else {
+                return baseTotal + adjustment;
+            }
+        }
+
+        function updateRowTotalFromPercent(row) {
+            const pieces = parseFloat(row.cells[2]?.innerText) || 0;
+            const unitPrice = parseFloat(row.cells[4]?.innerText.replace('₱', '').replace(/,/g, '')) || 0;
+            const percentInput = row.querySelector('.percent-input');
+            const typeSelect = row.querySelector('.percent-type');
+            
+            if (!percentInput || !typeSelect) return;
+            
+            const percent = parseFloat(percentInput.value) || 0;
+            const type = typeSelect.value;
+            
+            const newTotal = calculateAdjustedTotal(pieces, unitPrice, percent, type);
+            
+            // Update the total cell display
+            const totalCell = row.querySelector('.total-amount');
+            if (totalCell) {
+                totalCell.innerHTML = '₱ ' + newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            
+            // Update data attribute
+            row.dataset.total = newTotal;
+            row.dataset.discountPercent = percent;
+            row.dataset.discountType = type;
+            
+            updateGrandTotalFromDisplay();
+        }
+
+        function updateGrandTotalFromDisplay() {
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            let grandTotal = 0;
+            let totalItems = 0;
+
+            rows.forEach(row => {
+                const pieces = parseFloat(row.cells[2]?.innerText) || 0;
+                const totalText = row.querySelector('.total-amount')?.innerText || '0';
+                const total = parseFloat(totalText.replace('₱', '').replace(/,/g, '')) || 0;
+                totalItems += pieces;
+                grandTotal += total;
+            });
+
+            const totalDisplay = document.getElementById('total-amount-display');
+            if (totalDisplay) {
+                totalDisplay.innerHTML = `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            const totalItemsDisplay = document.getElementById('totalItemsDisplay');
+            if (totalItemsDisplay) totalItemsDisplay.textContent = totalItems;
+        }
+
+        // Attach event listeners to percent inputs and selects
+        document.querySelectorAll('#orders-table tbody tr:not(.total-row)').forEach(row => {
+            const percentInput = row.querySelector('.percent-input');
+            const typeSelect = row.querySelector('.percent-type');
+            
+            if (percentInput) {
+                percentInput.addEventListener('input', function() {
+                    // Validate: only allow numbers 0-100
+                    let val = parseFloat(this.value);
+                    if (!isNaN(val)) {
+                        if (val < 0) this.value = 0;
+                        if (val > 100) this.value = 100;
+                    }
+                    updateRowTotalFromPercent(row);
+                });
+                
+                percentInput.addEventListener('change', function() {
+                    updateRowTotalFromPercent(row);
+                });
+            }
+            
+            if (typeSelect) {
+                typeSelect.addEventListener('change', function() {
+                    updateRowTotalFromPercent(row);
+                });
+            }
+        });
 
         // ========== COPY RECEIPT LINK ==========
         async function copyReceiptLink(type) {
@@ -1247,35 +1484,41 @@ function formatDeliveryDate($date)
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
             const excelData = [];
 
-            excelData.push(['#', 'Unit', 'Item Description', 'Quantity', 'Unit Cost', 'Total Cost']);
+            excelData.push(['#', 'Unit', 'Item Description', 'Quantity', 'Unit Cost', '% Adjust', 'Total Cost']);
 
             let rowNumber = 1;
             rows.forEach(row => {
                 const cells = row.cells;
-                // ✅ Shifted by 1 because of new drag-handle cell
+                // ✅ Shifted by 1 because of new drag-handle cell, and +1 for percent cell
                 const unit = cells[3]?.innerText || '';
                 const itemDescription = cells[1]?.innerText || '';
                 const quantity = cells[2]?.innerText || '0';
                 let unitCost = cells[4]?.innerText || '0';
-                let totalCost = cells[5]?.innerText || '0';
+                let totalCost = row.querySelector('.total-amount')?.innerText || '0';
+                
+                const percentInput = row.querySelector('.percent-input');
+                const typeSelect = row.querySelector('.percent-type');
+                const percentVal = percentInput?.value || '0';
+                const percentType = typeSelect?.value === 'less' ? '-' : '+';
+                const percentDisplay = percentVal && parseFloat(percentVal) > 0 ? percentType + percentVal + '%' : '-';
 
                 unitCost = unitCost.replace('₱', '').replace(/,/g, '').trim();
                 totalCost = totalCost.replace('₱', '').replace(/,/g, '').trim();
 
-                excelData.push([rowNumber, unit, itemDescription, quantity, unitCost, totalCost]);
+                excelData.push([rowNumber, unit, itemDescription, quantity, unitCost, percentDisplay, totalCost]);
                 rowNumber++;
             });
 
             excelData.push([]);
-            excelData.push(['', '', '', '', 'TOTAL:', '']);
+            excelData.push(['', '', '', '', '', 'TOTAL:', '']);
 
             const totalDisplay = document.getElementById('total-amount-display');
             let totalAmount = totalDisplay?.innerText || '0';
             totalAmount = totalAmount.replace('₱', '').replace(/,/g, '').trim();
-            excelData.push(['', '', '', '', '', totalAmount]);
+            excelData.push(['', '', '', '', '', '', totalAmount]);
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
-            ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
+            ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 15 }];
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `Order_${deliveryNumber}`);
@@ -1449,34 +1692,54 @@ function formatDeliveryDate($date)
                 const originalPieces = row.cells[2].innerText;
                 const originalUnit = row.cells[3].innerText;
                 const originalSellingPrice = row.cells[4].innerText.replace('₱', '').replace(/,/g, '');
-                const originalTotal = row.cells[5].innerText.replace('₱', '').replace(/,/g, '');
+                const originalTotal = row.querySelector('.total-amount').innerText.replace('₱', '').replace(/,/g, '');
+                
+                const percentInput = row.querySelector('.percent-input');
+                const typeSelect = row.querySelector('.percent-type');
+                const originalPercent = percentInput?.value || '';
+                const originalType = typeSelect?.value || 'less';
 
                 originalData.set(index, {
                     product: originalProduct,
                     pieces: originalPieces,
                     unit: originalUnit,
                     selling_price: originalSellingPrice,
-                    total: originalTotal
+                    total: originalTotal,
+                    discount_percent: originalPercent,
+                    discount_type: originalType
                 });
 
                 row.cells[1].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
                 row.cells[2].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
-                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
+                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalUnit)}" data-field="unit">`;
                 row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
-                row.cells[5].innerHTML = `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
 
+                // ✅ Keep the percent adjustment cell editable but with the existing inputs
+                // (they're already inputs, so no change needed - just make sure they're styled)
+                
                 const piecesInput = row.cells[2].querySelector('input');
                 const sellingPriceInput = row.cells[4].querySelector('input');
-                const totalInput = row.cells[5].querySelector('input');
+                const totalCell = row.querySelector('.total-amount');
+                
+                const percentInputEl = row.querySelector('.percent-input');
+                const typeSelectEl = row.querySelector('.percent-type');
 
                 function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
                     const price = parseFloat(sellingPriceInput.value) || 0;
-                    totalInput.value = (pieces * price).toFixed(2);
+                    const percent = parseFloat(percentInputEl?.value) || 0;
+                    const type = typeSelectEl?.value || 'less';
+                    
+                    const newTotal = calculateAdjustedTotal(pieces, price, percent, type);
+                    
+                    totalCell.innerHTML = '₱ ' + newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    totalCell.dataset.rawTotal = newTotal;
+                    row.dataset.total = newTotal;
+                    
                     updateGrandTotal();
                 }
 
-                if (piecesInput && sellingPriceInput && totalInput) {
+                if (piecesInput && sellingPriceInput) {
                     piecesInput.addEventListener('input', calculateRowTotal);
                     sellingPriceInput.addEventListener('input', calculateRowTotal);
 
@@ -1490,6 +1753,14 @@ function formatDeliveryDate($date)
                         calculateRowTotal();
                     });
                 }
+                
+                if (percentInputEl) {
+                    percentInputEl.addEventListener('input', calculateRowTotal);
+                    percentInputEl.addEventListener('change', calculateRowTotal);
+                }
+                if (typeSelectEl) {
+                    typeSelectEl.addEventListener('change', calculateRowTotal);
+                }
             });
 
             setTimeout(updateGrandTotal, 100);
@@ -1502,9 +1773,13 @@ function formatDeliveryDate($date)
 
             rows.forEach(row => {
                 const piecesInput = row.cells[2]?.querySelector('input');
-                const totalInput = row.cells[5]?.querySelector('input');
-                totalItems += parseFloat(piecesInput?.value) || 0;
-                grandTotal += parseFloat(totalInput?.value) || 0;
+                const totalCell = row.querySelector('.total-amount');
+                
+                const pieces = parseFloat(piecesInput?.value) || parseFloat(row.cells[2]?.innerText) || 0;
+                const total = parseFloat(totalCell?.dataset.rawTotal) || parseFloat(totalCell?.innerText.replace('₱', '').replace(/,/g, '')) || 0;
+                
+                totalItems += pieces;
+                grandTotal += total;
             });
 
             const totalDisplay = document.getElementById('total-amount-display');
@@ -1531,9 +1806,12 @@ function formatDeliveryDate($date)
                 const piecesInput = row.cells[2].querySelector('input');
                 const unitInput = row.cells[3].querySelector('input');
                 const sellingPriceInput = row.cells[4].querySelector('input');
-                const totalInput = row.cells[5].querySelector('input');
+                const totalCell = row.querySelector('.total-amount');
+                
+                const percentInput = row.querySelector('.percent-input');
+                const typeSelect = row.querySelector('.percent-type');
 
-                if (!productInput || !piecesInput || !unitInput || !sellingPriceInput || !totalInput) {
+                if (!productInput || !piecesInput || !unitInput || !sellingPriceInput) {
                     isValid = false;
                     return;
                 }
@@ -1542,7 +1820,9 @@ function formatDeliveryDate($date)
                 const newPieces = piecesInput.value;
                 const newUnit = unitInput.value.trim();
                 const newSellingPrice = sellingPriceInput.value;
-                const newTotal = totalInput.value;
+                const newTotal = totalCell?.dataset.rawTotal || totalCell?.innerText.replace('₱', '').replace(/,/g, '') || '0';
+                const newPercent = percentInput?.value || '';
+                const newType = typeSelect?.value || 'less';
 
                 if (!newProduct || !newPieces || newPieces <= 0 || newSellingPrice < 0 || newTotal <= 0) {
                     isValid = false;
@@ -1558,7 +1838,9 @@ function formatDeliveryDate($date)
                         pieces: newPieces,
                         unit: newUnit,
                         selling_price: newSellingPrice,
-                        total: newTotal
+                        total: newTotal,
+                        discount_percent: newPercent,
+                        discount_type: newType
                     }
                 });
             });
@@ -1573,7 +1855,9 @@ function formatDeliveryDate($date)
                     item.original.pieces !== item.updated.pieces ||
                     item.original.unit !== item.updated.unit ||
                     parseFloat(item.original.selling_price) !== parseFloat(item.updated.selling_price) ||
-                    parseFloat(item.original.total) !== parseFloat(item.updated.total)) {
+                    parseFloat(item.original.total) !== parseFloat(item.updated.total) ||
+                    item.original.discount_percent !== item.updated.discount_percent ||
+                    item.original.discount_type !== item.updated.discount_type) {
                     hasChanges = true;
                     break;
                 }
@@ -1604,7 +1888,9 @@ function formatDeliveryDate($date)
                     pieces: item.updated.pieces,
                     unit: item.updated.unit,
                     selling_price: item.updated.selling_price,
-                    total_amount: item.updated.total
+                    total_amount: item.updated.total,
+                    discount_percent: item.updated.discount_percent,
+                    discount_type: item.updated.discount_type
                 }))));
 
                 if (dateChanged && updatedDeliveryDate) {
@@ -1722,7 +2008,7 @@ function formatDeliveryDate($date)
                 const row = this.closest('tr');
                 const productName = row.cells[1]?.innerText || '';
                 const pieces = row.cells[2]?.innerText || '0';
-                const totalAmount = row.cells[5]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
+                const totalAmount = row.querySelector('.total-amount')?.innerText.replace('₱', '').replace(/,/g, '') || '0';
 
                 showConfirmModal(
                     'REMOVE ITEM',
