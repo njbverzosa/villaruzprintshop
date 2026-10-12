@@ -114,7 +114,7 @@ foreach ($orderItems as $item) {
     $totalAmount += floatval($item['total_amount'] ?? 0);
 }
 
-// ✅ Check if total-level discount columns exist in for_deliveries
+// ✅ Load total-level discount from for_deliveries
 $totalDiscountPercent = 0;
 $totalDiscountType = 'less';
 try {
@@ -917,21 +917,25 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* ========== ✅ TOTAL ROW PERCENT ADJUSTMENT ========== */
+        /* ========== ✅ TOTAL PERCENT ADJUSTMENT (EDIT MODE ONLY) ========== */
         .total-percent-cell {
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: flex-end;
             gap: 6px;
             flex-wrap: nowrap;
         }
 
+        .total-percent-cell.active {
+            display: flex;
+        }
+
         .total-percent-cell input.percent-input {
-            width: 55px;
+            width: 60px;
             padding: 5px 8px;
             border: 2px solid #8b5cf6;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 13px;
             font-family: 'Poppins', sans-serif;
             text-align: center;
             background: #fff;
@@ -948,11 +952,11 @@ function formatDeliveryDate($date)
             padding: 5px 4px;
             border: 2px solid #8b5cf6;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 13px;
             font-family: 'Poppins', sans-serif;
             background: #fff;
             cursor: pointer;
-            width: 60px;
+            width: 65px;
             font-weight: 600;
         }
 
@@ -963,21 +967,9 @@ function formatDeliveryDate($date)
         }
 
         .total-percent-cell .percent-label {
-            font-size: 12px;
+            font-size: 13px;
             color: #64748b;
             font-weight: 600;
-        }
-
-        .total-percent-cell .discount-preview {
-            font-size: 11px;
-            color: #dc2626;
-            font-weight: 600;
-            white-space: nowrap;
-            margin-left: 4px;
-        }
-
-        .total-percent-cell .discount-preview.plus {
-            color: #16a34a;
         }
 
         /* Applied badge next to total */
@@ -1009,25 +1001,19 @@ function formatDeliveryDate($date)
             }
 
             .total-percent-cell input.percent-input {
-                width: 40px;
+                width: 45px;
                 padding: 3px 4px;
-                font-size: 10px;
+                font-size: 11px;
             }
 
             .total-percent-cell select.percent-type {
-                width: 48px;
-                font-size: 10px;
+                width: 52px;
+                font-size: 11px;
                 padding: 3px 2px;
             }
 
             .total-percent-cell .percent-label {
-                font-size: 10px;
-            }
-
-            .total-percent-cell .discount-preview {
-                font-size: 9px;
-                width: 100%;
-                text-align: right;
+                font-size: 11px;
             }
         }
     </style>
@@ -1126,7 +1112,8 @@ function formatDeliveryDate($date)
                                             TOTAL:
                                         </td>
                                         <td style="text-align: right; font-weight: 600;">
-                                            <div class="total-percent-cell">
+                                            <!-- ✅ Percent adjustment inputs (EDIT MODE ONLY) -->
+                                            <div class="total-percent-cell" id="total-percent-cell">
                                                 <input type="number"
                                                        class="percent-input"
                                                        id="total-percent-input"
@@ -1147,9 +1134,11 @@ function formatDeliveryDate($date)
                                             data-base-total="<?= $totalAmount ?>">
                                             ₱ <?= number_format($finalTotal, 2) ?>
                                             <?php if ($totalDiscountPercent > 0): ?>
-                                                <span class="applied-badge <?= $totalDiscountType ?>">
+                                                <span class="applied-badge <?= $totalDiscountType ?>" id="total-discount-badge">
                                                     <?= $totalDiscountType === 'less' ? '-' : '+' ?><?= $totalDiscountPercent ?>%
                                                 </span>
+                                            <?php else: ?>
+                                                <span class="applied-badge" id="total-discount-badge" style="display:none;"></span>
                                             <?php endif; ?>
                                         </td>
                                         <td></td>
@@ -1258,9 +1247,11 @@ function formatDeliveryDate($date)
         // ============================================================
         // ✅ TOTAL ROW PERCENT ADJUSTMENT LOGIC
         // ============================================================
+        const totalPercentCell = document.getElementById('total-percent-cell');
         const totalPercentInput = document.getElementById('total-percent-input');
         const totalPercentType = document.getElementById('total-percent-type');
         const totalAmountDisplay = document.getElementById('total-amount-display');
+        const totalDiscountBadge = document.getElementById('total-discount-badge');
 
         function getBaseTotal() {
             // Sum of all row totals (raw, without total-level adjustment)
@@ -1293,24 +1284,26 @@ function formatDeliveryDate($date)
                 }
             }
 
-            // Store base on display for later
             if (totalAmountDisplay) {
                 totalAmountDisplay.dataset.baseTotal = baseTotal;
+                totalAmountDisplay.innerHTML = `₱ ${finalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
 
-            // Update display
-            if (totalAmountDisplay) {
-                let badgeHtml = '';
+            // Show/hide badge (only visible in view mode after update; during edit we show live too)
+            if (totalDiscountBadge) {
                 if (percent > 0) {
-                    badgeHtml = `<span class="applied-badge ${type}">${type === 'less' ? '-' : '+'}${percent}%</span>`;
+                    totalDiscountBadge.className = 'applied-badge ' + type;
+                    totalDiscountBadge.textContent = (type === 'less' ? '-' : '+') + percent + '%';
+                    totalDiscountBadge.style.display = 'inline-block';
+                } else {
+                    totalDiscountBadge.style.display = 'none';
                 }
-                totalAmountDisplay.innerHTML = `₱ ${finalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${badgeHtml}`;
             }
 
             return { baseTotal, finalTotal, percent, type };
         }
 
-        // Bind events to total percent input + type select
+        // Bind events
         if (totalPercentInput) {
             totalPercentInput.addEventListener('input', function () {
                 let val = parseFloat(this.value);
@@ -1327,13 +1320,6 @@ function formatDeliveryDate($date)
         if (totalPercentType) {
             totalPercentType.addEventListener('change', applyTotalPercentAdjustment);
         }
-
-        // Initialize display on page load (re-apply from PHP values)
-        (function initTotalAdjustment() {
-            if (getBaseTotal() > 0) {
-                applyTotalPercentAdjustment();
-            }
-        })();
 
         // ========== COPY RECEIPT LINK ==========
         async function copyReceiptLink(type) {
@@ -1512,24 +1498,21 @@ function formatDeliveryDate($date)
                 rowNumber++;
             });
 
-            const percentInput = document.getElementById('total-percent-input');
-            const typeSelect = document.getElementById('total-percent-type');
-            const percentVal = percentInput?.value || '0';
-            const percentType = typeSelect?.value === 'less' ? '-' : '+';
-            const percentDisplay = percentVal && parseFloat(percentVal) > 0 ? percentType + percentVal + '%' : '-';
+            const baseTotal = getBaseTotal();
+            const percentVal = parseFloat(originalTotalDiscountPercent) || 0;
+            const percentType = originalTotalDiscountType === 'less' ? '-' : '+';
+            const percentDisplay = percentVal > 0 ? percentType + percentVal + '%' : '-';
 
             excelData.push([]);
-            const baseTotal = getBaseTotal();
             excelData.push(['', '', '', '', 'SUBTOTAL:', baseTotal.toFixed(2)]);
-            if (percentVal && parseFloat(percentVal) > 0) {
+            if (percentVal > 0) {
                 excelData.push(['', '', '', '', 'ADJUSTMENT:', percentDisplay]);
             }
-            excelData.push(['', '', '', '', 'TOTAL:', '']);
 
             const totalDisplay = document.getElementById('total-amount-display');
-            let totalAmount = totalDisplay?.dataset.baseTotal ? totalDisplay.innerText : totalDisplay?.innerText || '0';
+            let totalAmount = totalDisplay?.innerText || '0';
             totalAmount = totalAmount.replace(/[^\d.,]/g, '').replace(/,/g, '').trim();
-            excelData.push(['', '', '', '', '', totalAmount]);
+            excelData.push(['', '', '', '', 'TOTAL:', totalAmount]);
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
@@ -1691,6 +1674,11 @@ function formatDeliveryDate($date)
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
+            // ✅ Show the total-percent-cell (edit mode only)
+            if (totalPercentCell) {
+                totalPercentCell.classList.add('active');
+            }
+
             const dateDisplay = document.getElementById('deliveryDateDisplay');
             const dateInput = document.getElementById('deliveryDateInput');
             if (dateDisplay && dateInput) {
@@ -1719,11 +1707,13 @@ function formatDeliveryDate($date)
                 row.cells[2].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
                 row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalUnit)}" data-field="unit">`;
                 row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
-                // Row total is now read-only display (still updates from pieces × price)
-                const totalCell = row.querySelector('.total-amount');
 
+                const totalCell = row.querySelector('.total-amount');
                 const piecesInput = row.cells[2].querySelector('input');
                 const sellingPriceInput = row.cells[4].querySelector('input');
+
+                // Initialize rawTotal from current display
+                totalCell.dataset.rawTotal = parseFloat(originalTotal) || 0;
 
                 function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
@@ -1731,7 +1721,6 @@ function formatDeliveryDate($date)
                     const rawTotal = pieces * price;
                     totalCell.dataset.rawTotal = rawTotal;
                     totalCell.innerHTML = '₱ ' + rawTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    // Re-apply total-level adjustment on top
                     applyTotalPercentAdjustment();
                 }
 
@@ -1750,18 +1739,6 @@ function formatDeliveryDate($date)
                     });
                 }
             });
-
-            // Re-apply total adjustment after row inputs render
-            setTimeout(() => {
-                // Initialize rawTotal data attribute for each row from current display
-                document.querySelectorAll('#orders-table tbody tr:not(.total-row)').forEach(row => {
-                    const totalCell = row.querySelector('.total-amount');
-                    if (totalCell && totalCell.dataset.rawTotal === undefined) {
-                        totalCell.dataset.rawTotal = parseFloat(totalCell.innerText.replace('₱', '').replace(/,/g, '')) || 0;
-                    }
-                });
-                applyTotalPercentAdjustment();
-            }, 50);
         }
 
         async function disableEditMode() {
@@ -2008,8 +1985,6 @@ function formatDeliveryDate($date)
 
                 if (data.success) {
                     row.remove();
-
-                    // Re-apply total adjustment (base changed)
                     applyTotalPercentAdjustment();
 
                     const remainingRows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)').length;
