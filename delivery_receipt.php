@@ -289,7 +289,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
 
         /* --- THIN ROWS --- */
         .items-table td {
-            padding: 4px 13px;
+            padding: 8px 13px;
             color: #3a3d42;
             border-bottom: 1px solid #eef0f2;
             font-size: 0.85rem;
