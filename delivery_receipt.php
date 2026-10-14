@@ -22,16 +22,10 @@ if (!$order) {
 
 // Fetch all items from order_status_history with the same delivery_number
 $stmt = $pdo->prepare("
-    SELECT 
-        product_name,
-        selling_price,
-        unit,
-        pieces,
-        total_amount,
-        qr_code
+    SELECT *
     FROM order_status_history 
     WHERE delivery_number = :delivery_number
-    ORDER BY id ASC
+    ORDER BY order_id ASC
 ");
 $stmt->execute([':delivery_number' => $deliveryNumber]);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
