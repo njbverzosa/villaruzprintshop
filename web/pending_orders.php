@@ -677,7 +677,6 @@ function formatDeliveryDate($date)
 
         /* ========== ✅ EDIT MODE — SLIDE-IN ANIMATION ========== */
 
-        /* The whole row slides in from the right when edit mode starts */
         @keyframes rowSlideIn {
             from {
                 transform: translateX(80px);
@@ -689,7 +688,6 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* Each input fades + slides in slightly after the row, giving a staggered feel */
         @keyframes inputSlideIn {
             from {
                 transform: translateX(30px);
@@ -701,7 +699,6 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* Edit-mode row — wider padding, soft yellow highlight */
         .orders-table tr.edit-row {
             animation: rowSlideIn 0.3s ease forwards;
             background: #fffbeb;
@@ -712,26 +709,22 @@ function formatDeliveryDate($date)
             vertical-align: middle;
         }
 
-        /* Edit-mode inputs slide in and stay wide enough to show all data */
         .orders-table tr.edit-row .editable-input {
             animation: inputSlideIn 0.35s ease forwards;
             min-width: 110px;
             white-space: nowrap;
         }
 
-        /* Product name column gets the widest input */
         .orders-table tr.edit-row td:nth-child(3) .editable-input {
             min-width: 240px;
         }
 
-        /* Stagger the inputs a tiny bit per column for a nicer effect */
         .orders-table tr.edit-row td:nth-child(3) .editable-input { animation-delay: 0.03s; }
         .orders-table tr.edit-row td:nth-child(4) .editable-input { animation-delay: 0.06s; }
         .orders-table tr.edit-row td:nth-child(5) .editable-input { animation-delay: 0.09s; }
         .orders-table tr.edit-row td:nth-child(6) .editable-input { animation-delay: 0.12s; }
         .orders-table tr.edit-row td:nth-child(7) .editable-input { animation-delay: 0.15s; }
 
-        /* Editable inputs */
         .editable-input,
         .editable-select {
             width: 100%;
@@ -751,7 +744,13 @@ function formatDeliveryDate($date)
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
-        /* On mobile, allow the table to scroll so all inputs are reachable */
+        /* Highlight the input that the calculator is currently targeting */
+        .editable-input.calc-active {
+            border-color: #16a34a !important;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
+            background: #f0fdf4 !important;
+        }
+
         @media (max-width: 768px) {
             .orders-table tr.edit-row td:nth-child(3) .editable-input {
                 min-width: 180px;
@@ -785,7 +784,6 @@ function formatDeliveryDate($date)
         /* ============ ✅ FLOATING CALCULATOR ======================= */
         /* ============================================================ */
 
-        /* Floating toggle button (bottom-right) — only visible in edit mode */
         #calcToggleBtn {
             position: fixed;
             bottom: 24px;
@@ -825,7 +823,6 @@ function formatDeliveryDate($date)
             to   { transform: scale(1); opacity: 1; }
         }
 
-        /* Floating calculator panel */
         #calcPanel {
             position: fixed;
             bottom: 96px;
@@ -850,7 +847,6 @@ function formatDeliveryDate($date)
             to   { transform: scale(1) translateY(0); opacity: 1; }
         }
 
-        /* Calculator header */
         .calc-header {
             background: #0f172a;
             color: #e2e8f0;
@@ -890,7 +886,6 @@ function formatDeliveryDate($date)
             color: #fff;
         }
 
-        /* Calculator display */
         .calc-display {
             background: #0f172a;
             color: #fff;
@@ -924,7 +919,6 @@ function formatDeliveryDate($date)
             line-height: 1.1;
         }
 
-        /* Calculator buttons */
         .calc-buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -986,7 +980,6 @@ function formatDeliveryDate($date)
             grid-column: span 2;
         }
 
-        /* Mobile: smaller calculator */
         @media (max-width: 480px) {
             #calcPanel {
                 width: calc(100vw - 32px);
@@ -1272,9 +1265,7 @@ function formatDeliveryDate($date)
                                             data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
                                             data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
-                                            <!-- ✅ Order ID (from order_status_history.order_id) -->
                                             <td class="order-id"><?= htmlspecialchars($item['order_id'] ?? '') ?></td>
-                                            <!-- ✅ Drag handle -->
                                             <td class="drag-handle" title="Drag to reorder">
                                                 <i class="fas fa-grip-vertical"></i>
                                             </td>
@@ -1289,8 +1280,8 @@ function formatDeliveryDate($date)
                                         </tr>
                                     <?php endforeach; ?>
                                     <tr class="total-row">
-                                        <td></td><!-- order-id -->
-                                        <td></td><!-- drag-handle -->
+                                        <td></td>
+                                        <td></td>
                                         <td colspan="2" style="text-align: right; font-weight: 600;">Total Items: <span
                                                 id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
                                         </td>
@@ -1337,7 +1328,7 @@ function formatDeliveryDate($date)
     <?php include '../footer.php'; ?>
 
     <!-- ============================================================ -->
-    <!-- ✅ FLOATING CALCULATOR (only shown in edit mode)             -->
+    <!-- ✅ FLOATING CALCULATOR                                      -->
     <!-- ============================================================ -->
     <button id="calcToggleBtn" title="Open calculator">
         <i class="fas fa-calculator"></i>
@@ -1466,7 +1457,6 @@ function formatDeliveryDate($date)
                     'success'
                 );
             } catch (err) {
-                // Fallback for older browsers
                 const tempInput = document.createElement('input');
                 tempInput.value = receiptUrl;
                 document.body.appendChild(tempInput);
@@ -1591,8 +1581,6 @@ function formatDeliveryDate($date)
 
                     const data = await response.json();
 
-                    // ✅ Silently ignore success — no popup
-                    // Only show a modal if the save actually FAILED
                     if (!data.success) {
                         showMessageModal('ERROR', data.message || 'Failed to save order', 'error');
                     }
@@ -1612,7 +1600,6 @@ function formatDeliveryDate($date)
             let rowNumber = 1;
             rows.forEach(row => {
                 const cells = row.cells;
-                // ✅ Shifted by 1 because of new order-id cell at index 0
                 const unit = cells[4]?.innerText || '';
                 const itemDescription = cells[2]?.innerText || '';
                 const quantity = cells[3]?.innerText || '0';
@@ -1786,7 +1773,7 @@ function formatDeliveryDate($date)
         }
 
         // ============================================================
-        // ✅ FLOATING CALCULATOR LOGIC
+        // ✅ FLOATING CALCULATOR — REAL CALCULATOR BEHAVIOR
         // ============================================================
         const calcToggleBtn = document.getElementById('calcToggleBtn');
         const calcPanel = document.getElementById('calcPanel');
@@ -1797,126 +1784,106 @@ function formatDeliveryDate($date)
         const calcButtons = document.getElementById('calcButtons');
         const calcHeader = document.getElementById('calcHeader');
 
+        /*
+         * Calculator state — behaves like a real calculator:
+         *   - `currentInput` is the number currently being typed or displayed
+         *   - `previousValue` is the pending left operand
+         *   - `operator` is the pending operation
+         *   - `justEvaluated` prevents appending digits to a result
+         *   - `expressionParts` builds the visible expression string (e.g. "12 + 5")
+         */
         let calcState = {
-            currentInput: '0',   // what's currently being typed
-            previousValue: null, // left operand
-            operator: null,      // '+', '-', '*', '/', '%'
-            expression: '',      // full expression for display
+            currentInput: '0',
+            previousValue: null,
+            operator: null,
             justEvaluated: false,
-            targetInput: null    // the <input> in the table that will receive the result
+            expressionParts: [],   // strings shown in expression line
+            targetInput: null
         };
+
+        let activeCalcInput = null; // the input element that has the green highlight
 
         function resetCalcState() {
             calcState.currentInput = '0';
             calcState.previousValue = null;
             calcState.operator = null;
-            calcState.expression = '';
             calcState.justEvaluated = false;
+            calcState.expressionParts = [];
             updateCalcDisplay();
         }
 
+        function formatDisplayNumber(n) {
+            if (n === null || n === undefined || isNaN(n)) return '0';
+            // Use up to 10 significant digits, trim trailing zeros
+            const num = parseFloat(n);
+            if (!isFinite(num)) return 'Error';
+            // Show integer if whole, otherwise show decimals (up to 10)
+            if (Number.isInteger(num)) return num.toString();
+            return parseFloat(num.toFixed(10)).toString();
+        }
+
         function updateCalcDisplay() {
+            // Current input (big display)
             calcResult.textContent = calcState.currentInput || '0';
-            calcExpression.innerHTML = calcState.expression || '&nbsp;';
+
+            // Expression line — show pending parts joined
+            if (calcState.expressionParts.length > 0) {
+                let expr = calcState.expressionParts.join(' ');
+                if (calcState.operator) {
+                    // If operator is pending but not yet pushed to parts (edge case)
+                    expr += ' ' + opSymbol(calcState.operator);
+                }
+                calcExpression.textContent = expr + ' ';
+            } else if (calcState.operator && calcState.previousValue !== null) {
+                calcExpression.textContent = formatDisplayNumber(calcState.previousValue) + ' ' + opSymbol(calcState.operator) + ' ';
+            } else {
+                calcExpression.innerHTML = '&nbsp;';
+            }
+
+            // Target label
             if (calcState.targetInput) {
                 const row = calcState.targetInput.closest('tr');
                 const productName = row?.querySelector('.product-name input')?.value || 'row';
-                calcTarget.textContent = 'Target: ' + productName.substring(0, 22);
+                calcTarget.textContent = 'Target: ' + productName.substring(0, 24);
             } else {
                 calcTarget.textContent = 'No field focused';
             }
         }
 
         function setTargetInput(input) {
+            // Remove old highlight
+            if (activeCalcInput && activeCalcInput !== input) {
+                activeCalcInput.classList.remove('calc-active');
+            }
             calcState.targetInput = input;
-            updateCalcDisplay();
-        }
-
-        // Live-sync the result to the focused total_amount input
-        function syncResultToTarget() {
-            if (!calcState.targetInput) return;
-            // Only auto-sync when the value is a clean number
-            const val = calcState.currentInput;
-            if (!isNaN(parseFloat(val)) && isFinite(val)) {
-                calcState.targetInput.value = parseFloat(val).toFixed(2);
-                // Trigger input event so updateGrandTotal() recalculates
-                calcState.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            if (input) {
+                input.classList.add('calc-active');
+                activeCalcInput = input;
+            } else {
+                activeCalcInput = null;
             }
-        }
 
-        function handleCalcButton(action, num) {
-            switch (action) {
-                case 'num':
-                    if (calcState.justEvaluated) {
-                        calcState.currentInput = num === '.' ? '0.' : num;
-                        calcState.justEvaluated = false;
-                    } else {
-                        if (num === '.' && calcState.currentInput.includes('.')) return;
-                        if (calcState.currentInput === '0' && num !== '.') {
-                            calcState.currentInput = num;
-                        } else {
-                            calcState.currentInput += num;
-                        }
-                    }
-                    break;
-
-                case 'add':
-                case 'subtract':
-                case 'multiply':
-                case 'divide':
-                    if (calcState.operator && !calcState.justEvaluated) {
-                        // chain operations
-                        const result = computeResult();
-                        calcState.currentInput = String(result);
-                    }
-                    calcState.previousValue = parseFloat(calcState.currentInput) || 0;
-                    calcState.operator = action;
-                    calcState.expression = formatNumber(calcState.previousValue) + ' ' + opSymbol(action);
-                    calcState.justEvaluated = false;
-                    break;
-
-                case 'percent':
-                    // Simple percent: currentInput / 100
-                    calcState.currentInput = String((parseFloat(calcState.currentInput) || 0) / 100);
-                    break;
-
-                case 'equals':
-                    if (calcState.operator && calcState.previousValue !== null) {
-                        const right = parseFloat(calcState.currentInput) || 0;
-                        const result = computeResult();
-                        calcState.expression = formatNumber(calcState.previousValue) + ' ' +
-                            opSymbol(calcState.operator) + ' ' + formatNumber(right) + ' =';
-                        calcState.currentInput = String(result);
-                        calcState.previousValue = null;
-                        calcState.operator = null;
-                        calcState.justEvaluated = true;
-                        // Commit result to the focused input
-                        syncResultToTarget(true);
-                    }
-                    break;
-
-                case 'clear':
-                    resetCalcState();
-                    return;
-
-                case 'backspace':
-                    if (calcState.currentInput.length > 1) {
-                        calcState.currentInput = calcState.currentInput.slice(0, -1);
-                    } else {
-                        calcState.currentInput = '0';
-                    }
-                    break;
+            // Load current value into calculator
+            if (input) {
+                const raw = (input.value || '0').toString().replace(/,/g, '').trim();
+                const num = parseFloat(raw);
+                calcState.currentInput = isNaN(num) ? '0' : formatDisplayNumber(num);
+                calcState.previousValue = null;
+                calcState.operator = null;
+                calcState.justEvaluated = false;
+                calcState.expressionParts = [];
             }
 
             updateCalcDisplay();
-            // Auto-fill the target input live as the user types (only when no operator is pending)
-            if (!calcState.operator && !calcState.justEvaluated) {
-                syncResultToTarget();
-            }
         }
 
         function opSymbol(op) {
             return { add: '+', subtract: '−', multiply: '×', divide: '÷', percent: '%' }[op] || '';
+        }
+
+        // Push the current displayed number into the expression list
+        function pushCurrentToExpression() {
+            calcState.expressionParts.push(calcState.currentInput);
         }
 
         function computeResult() {
@@ -1931,21 +1898,131 @@ function formatDeliveryDate($date)
             }
         }
 
-        function formatNumber(n) {
-            if (n === null || isNaN(n)) return '0';
-            return parseFloat(n.toFixed(2)).toString();
+        // Live-fill the target input with the current display value
+        function syncResultToTarget() {
+            if (!calcState.targetInput) return;
+            const val = parseFloat(calcState.currentInput);
+            if (!isNaN(val) && isFinite(val)) {
+                calcState.targetInput.value = val.toFixed(2);
+                calcState.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+
+        function handleCalcButton(action, num) {
+            switch (action) {
+                // ---------- NUMBER / DECIMAL ----------
+                case 'num':
+                    if (calcState.justEvaluated) {
+                        // Start fresh after "="
+                        calcState.currentInput = (num === '.') ? '0.' : num;
+                        calcState.justEvaluated = false;
+                        calcState.expressionParts = [];
+                    } else if (calcState.currentInput === '0' && num !== '.') {
+                        calcState.currentInput = num;
+                    } else if (num === '.') {
+                        if (!calcState.currentInput.includes('.')) {
+                            calcState.currentInput += '.';
+                        }
+                    } else {
+                        // Cap length to avoid overflow
+                        if (calcState.currentInput.replace('-', '').replace('.', '').length < 12) {
+                            calcState.currentInput += num;
+                        }
+                    }
+                    break;
+
+                // ---------- OPERATORS ----------
+                case 'add':
+                case 'subtract':
+                case 'multiply':
+                case 'divide':
+                    if (calcState.operator !== null && !calcState.justEvaluated) {
+                        // Chain: evaluate pending first
+                        const result = computeResult();
+                        calcState.currentInput = formatDisplayNumber(result);
+                        // Replace the last expression part with the result
+                        calcState.expressionParts = [calcState.currentInput];
+                    } else if (calcState.justEvaluated) {
+                        // Continue with previous result
+                        calcState.expressionParts = [calcState.currentInput];
+                        calcState.justEvaluated = false;
+                    } else {
+                        // First operator — push current number
+                        calcState.expressionParts = [calcState.currentInput];
+                    }
+
+                    calcState.previousValue = parseFloat(calcState.currentInput) || 0;
+                    calcState.operator = action;
+                    calcState.expressionParts.push(opSymbol(action));
+                    // Prepare for the next number
+                    calcState.currentInput = '0';
+                    break;
+
+                // ---------- PERCENT ----------
+                case 'percent':
+                    const pctVal = parseFloat(calcState.currentInput) || 0;
+                    calcState.currentInput = formatDisplayNumber(pctVal / 100);
+                    break;
+
+                // ---------- EQUALS ----------
+                case 'equals':
+                    if (calcState.operator && calcState.previousValue !== null) {
+                        const right = parseFloat(calcState.currentInput) || 0;
+                        calcState.expressionParts.push(calcState.currentInput);
+                        const result = computeResult();
+                        // Show the full expression with "="
+                        calcExpression.textContent = calcState.expressionParts.join(' ') + ' =';
+                        calcState.currentInput = formatDisplayNumber(result);
+                        calcState.previousValue = null;
+                        calcState.operator = null;
+                        calcState.justEvaluated = true;
+                        // Push result to the target input
+                        syncResultToTarget();
+                    }
+                    break;
+
+                // ---------- CLEAR ----------
+                case 'clear':
+                    resetCalcState();
+                    // Also clear the target input's displayed value
+                    if (calcState.targetInput) {
+                        calcState.targetInput.value = '0.00';
+                        calcState.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    return;
+
+                // ---------- BACKSPACE ----------
+                case 'backspace':
+                    if (calcState.justEvaluated) {
+                        calcState.currentInput = '0';
+                        calcState.justEvaluated = false;
+                    } else if (calcState.currentInput.length > 1) {
+                        calcState.currentInput = calcState.currentInput.slice(0, -1);
+                        if (calcState.currentInput === '-' || calcState.currentInput === '') {
+                            calcState.currentInput = '0';
+                        }
+                    } else {
+                        calcState.currentInput = '0';
+                    }
+                    break;
+            }
+
+            updateCalcDisplay();
+
+            // Live-sync to target input whenever we're not in the middle of an operation
+            if (calcState.operator === null && !calcState.justEvaluated) {
+                syncResultToTarget();
+            }
         }
 
         // Bind calculator buttons
         calcButtons.querySelectorAll('.calc-btn').forEach(btn => {
             btn.addEventListener('click', function () {
-                const action = this.dataset.action;
-                const num = this.dataset.num;
-                handleCalcButton(action, num);
+                handleCalcButton(this.dataset.action, this.dataset.num);
             });
         });
 
-        // Toggle button visibility based on edit mode
+        // Toggle calculator panel
         function showCalcToggle() {
             calcToggleBtn.classList.add('show');
         }
@@ -1965,19 +2042,17 @@ function formatDeliveryDate($date)
             calcPanel.classList.remove('show');
         });
 
-        // Prevent clicks inside the calculator from closing it
         calcPanel.addEventListener('click', function (e) {
             e.stopPropagation();
         });
 
-        // Close calculator when clicking outside
         document.addEventListener('click', function (e) {
             if (!calcPanel.contains(e.target) && !calcToggleBtn.contains(e.target)) {
                 calcPanel.classList.remove('show');
             }
         });
 
-        // Keyboard support (only when calculator is open)
+        // Keyboard support when calculator is open
         document.addEventListener('keydown', function (e) {
             if (!calcPanel.classList.contains('show')) return;
             const key = e.key;
@@ -1992,6 +2067,7 @@ function formatDeliveryDate($date)
             } else if (key === '*') {
                 handleCalcButton('multiply');
             } else if (key === '/') {
+                e.preventDefault();
                 handleCalcButton('divide');
             } else if (key === '%') {
                 handleCalcButton('percent');
@@ -2000,17 +2076,20 @@ function formatDeliveryDate($date)
                 handleCalcButton('equals');
             } else if (key === 'Backspace') {
                 handleCalcButton('backspace');
-            } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+            } else if (key === 'Escape') {
+                calcPanel.classList.remove('show');
+            } else if (key.toLowerCase() === 'c') {
                 handleCalcButton('clear');
             }
         });
 
-        // ---- Drag the calculator panel by its header ----
+        // Drag calculator by header
         (function makeCalcDraggable() {
             let isDragging = false;
             let startX, startY, startLeft, startTop;
 
             calcHeader.addEventListener('mousedown', function (e) {
+                if (e.target.classList.contains('calc-close')) return;
                 isDragging = true;
                 const rect = calcPanel.getBoundingClientRect();
                 startX = e.clientX;
@@ -2018,7 +2097,6 @@ function formatDeliveryDate($date)
                 startLeft = rect.left;
                 startTop = rect.top;
 
-                // Convert to left/top positioning so it doesn't snap
                 calcPanel.style.left = startLeft + 'px';
                 calcPanel.style.top = startTop + 'px';
                 calcPanel.style.right = 'auto';
@@ -2054,9 +2132,8 @@ function formatDeliveryDate($date)
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
-            // ✅ Show the floating calculator toggle button
+            // ✅ Show the floating calculator toggle
             showCalcToggle();
-            resetCalcState();
 
             const dateDisplay = document.getElementById('deliveryDateDisplay');
             const dateInput = document.getElementById('deliveryDateInput');
@@ -2066,12 +2143,11 @@ function formatDeliveryDate($date)
             }
 
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            let firstTotalInput = null;
 
             rows.forEach((row, index) => {
-                // ✅ ADD edit-row class → triggers slide-in animation
                 row.classList.add('edit-row');
 
-                // ✅ New layout: [0]=order-id, [1]=drag-handle, [2]=product, [3]=pieces, [4]=unit, [5]=selling_price, [6]=total
                 const originalProduct = row.cells[2].innerText;
                 const originalPieces = row.cells[3].innerText;
                 const originalUnit = row.cells[4].innerText;
@@ -2096,6 +2172,8 @@ function formatDeliveryDate($date)
                 const sellingPriceInput = row.cells[5].querySelector('input');
                 const totalInput = row.cells[6].querySelector('input');
 
+                if (!firstTotalInput) firstTotalInput = totalInput;
+
                 function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
                     const price = parseFloat(sellingPriceInput.value) || 0;
@@ -2116,25 +2194,32 @@ function formatDeliveryDate($date)
                         if (this.value === '' || isNaN(this.value)) this.value = 0;
                         calculateRowTotal();
                     });
-
-                    // ✅ Focus on the total_amount input → calculator knows its target
-                    totalInput.addEventListener('focus', function () {
-                        setTargetInput(this);
-                    });
                 }
             });
 
-            // Attach focus listeners to ALL editable inputs so the calculator target updates
+            // ✅ Attach focus listeners AFTER all inputs are created
             document.querySelectorAll('#orders-table .editable-input').forEach(inp => {
                 inp.addEventListener('focus', function () {
                     if (this.dataset.field === 'total') {
                         setTargetInput(this);
-                    } else {
-                        // If user focuses another field, clear the calc target
-                        setTargetInput(null);
+                    } else if (activeCalcInput) {
+                        // Clear the calc target when user focuses something else
+                        activeCalcInput.classList.remove('calc-active');
+                        activeCalcInput = null;
+                        calcState.targetInput = null;
+                        updateCalcDisplay();
                     }
                 });
             });
+
+            // ✅ Auto-fill the calculator with the FIRST row's total_amount
+            if (firstTotalInput) {
+                setTargetInput(firstTotalInput);
+                // Focus the first total input so the user can immediately calculate
+                setTimeout(() => {
+                    firstTotalInput.focus();
+                }, 150);
+            }
 
             setTimeout(updateGrandTotal, 100);
         }
@@ -2364,7 +2449,6 @@ function formatDeliveryDate($date)
                 }
 
                 const row = this.closest('tr');
-                // ✅ New layout: [0]=order-id, [1]=drag-handle, [2]=product, [3]=pieces, [4]=unit, [5]=selling_price, [6]=total
                 const productName = row.cells[2]?.innerText || '';
                 const pieces = row.cells[3]?.innerText || '0';
                 const totalAmount = row.cells[6]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
