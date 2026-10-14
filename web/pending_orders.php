@@ -963,6 +963,7 @@ function formatDeliveryDate($date)
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
                                             data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
                                             <!-- ✅ Drag handle -->
+                                             <td class="product-name"><?= htmlspecialchars($item['id']) ?></td>
                                             <td class="drag-handle" title="Drag to reorder">
                                                 <i class="fas fa-grip-vertical"></i>
                                             </td>
