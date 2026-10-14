@@ -23,6 +23,7 @@ if (!$order) {
 // Fetch all items from order_status_history with the same delivery_number
 $stmt = $pdo->prepare("
     SELECT 
+        id,
         product_name,
         selling_price,
         unit,
