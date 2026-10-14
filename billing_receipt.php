@@ -21,16 +21,10 @@ if (!$order) {
 }
 
 $stmt = $pdo->prepare("
-    SELECT 
-        product_name,
-        unit,
-        pieces,
-        selling_price,
-        total_amount,
-        date_time_sold
+    SELECT *
     FROM order_status_history 
     WHERE delivery_number = :delivery_number
-    ORDER BY id ASC
+    ORDER BY order_id ASC
 ");
 $stmt->execute([':delivery_number' => $deliveryNumber]);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
