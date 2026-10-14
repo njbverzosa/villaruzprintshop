@@ -276,6 +276,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             font-size: 0.72rem;
             letter-spacing: 0.5px;
             border: none;
+            white-space: nowrap;
         }
 
         .items-table th.center {
@@ -1008,7 +1009,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                         <th class="center" style="width:52px;">QTY</th>
                         <th class="center" style="width:56px;">UNIT</th>
                         <th>Item Description</th>
-                        <th class="right" style="width:90px;">Unit Price</th>
+                        <th class="right" style="width:110px;">Unit Price</th>
                         <th class="right" style="width:100px;">Amount</th>
                     </tr>
                 </thead>
