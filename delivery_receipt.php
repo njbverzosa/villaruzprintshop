@@ -23,7 +23,6 @@ if (!$order) {
 // Fetch all items from order_status_history with the same delivery_number
 $stmt = $pdo->prepare("
     SELECT 
-        id,
         product_name,
         selling_price,
         unit,
@@ -1012,6 +1011,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             <table class="items-table">
                 <thead>
                     <tr>
+                        <th class="center" style="width:44px;">No.</th>
                         <th class="center" style="width:52px;">QTY</th>
                         <th class="center" style="width:56px;">UNIT</th>
                         <th>Item Description</th>
@@ -1022,11 +1022,13 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 <tbody>
                     <?php if (empty($items)): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 16px;">No items found</td>
+                            <td colspan="6" style="text-align: center; padding: 16px;">No items found</td>
                         </tr>
                     <?php else: ?>
+                        <?php $rowNum = 1; ?>
                         <?php foreach ($items as $item): ?>
                             <tr>
+                                <td class="center"><?php echo $rowNum++; ?></td>
                                 <td class="center"><?php echo number_format(floatval($item['pieces'])); ?></td>
                                 <td class="center"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
                                 <td><?php echo htmlspecialchars($item['product_name']); ?></td>
