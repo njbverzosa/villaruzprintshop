@@ -976,8 +976,8 @@ function formatDeliveryDate($date)
                                             data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
                                             data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
-                                            <!-- ✅ Order ID (from order_status_history.id) -->
-                                            <td class="order-id"><?= htmlspecialchars($orderItems['id'] ?? '') ?></td>
+                                            <!-- ✅ Order ID (from order_status_history.order_id) -->
+                                            <td class="order-id"><?= htmlspecialchars($item['order_id'] ?? '') ?></td>
                                             <!-- ✅ Drag handle -->
                                             <td class="drag-handle" title="Drag to reorder">
                                                 <i class="fas fa-grip-vertical"></i>
