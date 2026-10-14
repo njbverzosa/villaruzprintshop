@@ -42,7 +42,7 @@ if (empty($selectedDeliveryNumber)) {
     exit;
 }
 
-// ✅ Order by sort_order, then id
+// ✅ Order by order_id, then id
 $stmt = $pdo->prepare("
     SELECT * FROM order_status_history 
     WHERE delivery_number = ? 
@@ -60,7 +60,7 @@ if (empty($orderItems)) {
         $possibleColumns = ['delivery_num', 'delivery_id', 'order_number', 'order_id'];
         foreach ($possibleColumns as $col) {
             if (in_array($col, $availableColumns)) {
-                $stmt = $pdo->prepare("SELECT * FROM order_status_history WHERE $col = ? ORDER BY sort_order ASC, id ASC");
+                $stmt = $pdo->prepare("SELECT * FROM order_status_history WHERE $col = ? ORDER BY order_id ASC, id ASC");
                 $stmt->execute([$selectedDeliveryNumber]);
                 $orderItems = $stmt->fetchAll();
                 if (!empty($orderItems)) break;
@@ -80,7 +80,8 @@ if (!$deliveryInfo && !empty($orderItems)) {
         'delivery_m_y' => $firstItem['delivery_m_y'] ?? '',
         'status' => $firstItem['status'] ?? 'PENDING',
         'delivery_number' => $selectedDeliveryNumber,
-        'delivery_date' => $firstItem['delivery_date'] ?? null
+        'delivery_date' => $firstItem['delivery_date'] ?? null,
+        'total_amount' => $firstItem['total_amount'] ?? 0
     ];
 }
 
@@ -90,7 +91,8 @@ if (!$deliveryInfo) {
         'delivery_m_y' => '',
         'status' => 'PENDING',
         'delivery_number' => $selectedDeliveryNumber,
-        'delivery_date' => null
+        'delivery_date' => null,
+        'total_amount' => 0
     ];
 }
 
@@ -109,9 +111,30 @@ $monthYear = $deliveryInfo['delivery_m_y'] ?? '';
 $deliveryNumber = $deliveryInfo['delivery_number'] ?? $selectedDeliveryNumber;
 $currentStatus = $deliveryInfo['status'] ?? 'PENDING';
 
-$totalAmount = 0;
+// ✅ Prefer for_deliveries.total_amount if it's set, otherwise sum the rows
+$totalFromRows = 0;
 foreach ($orderItems as $item) {
-    $totalAmount += floatval($item['total_amount'] ?? 0);
+    $totalFromRows += floatval($item['total_amount'] ?? 0);
+}
+
+$totalAmount = isset($deliveryInfo['total_amount']) && floatval($deliveryInfo['total_amount']) > 0
+    ? floatval($deliveryInfo['total_amount'])
+    : $totalFromRows;
+
+// ✅ Compute discount info: compare sum of rows vs stored total
+$subTotalFromRows = $totalFromRows;
+$discountAmount = 0;
+$discountPercent = 0;
+
+if ($totalAmount > 0 && $subTotalFromRows > 0 && $totalAmount < $subTotalFromRows - 0.001) {
+    $discountAmount  = $subTotalFromRows - $totalAmount;
+    $discountPercent = ($discountAmount / $subTotalFromRows) * 100;
+}
+
+// ✅ Format discount percent without trailing ".00"
+$discountPercentDisplay = rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.');
+if ($discountPercentDisplay === '' || $discountPercentDisplay === '.') {
+    $discountPercentDisplay = '0';
 }
 
 $encodedMonthYear = urlencode($monthYear);
@@ -161,7 +184,7 @@ function formatDeliveryDate($date)
             flex-direction: column;
         }
 
-        /* ========== SIDEBAR - KEEPS OLD STRUCTURE ========== */
+        /* ========== SIDEBAR ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -450,15 +473,17 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* ✅ HORIZONTAL SCROLL WRAPPER (needed when inputs grow in edit mode) */
+        /* ✅ Horizontal scroll for mobile — no data wrapping */
         .orders-table-container {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            width: 100%;
         }
 
         .orders-table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 780px;
         }
 
         .orders-table tr {
@@ -473,10 +498,36 @@ function formatDeliveryDate($date)
             padding: 12px 15px;
             color: #1e293b;
             font-size: 13px;
+            white-space: nowrap;
+            vertical-align: middle;
         }
 
         .orders-table tr:hover {
             background: #f8fafc;
+        }
+
+        /* ✅ Sub Total / Discount rows */
+        .subtotal-row {
+            background: #f8fafc;
+            font-weight: 500;
+            font-size: 12.5px;
+        }
+
+        .subtotal-row td {
+            padding: 6px 15px;
+            border-top: 1px dashed #e2e8f0;
+        }
+
+        .subtotal-row:first-of-type td {
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .discount-row {
+            background: #fef2f2;
+        }
+
+        .discount-row td {
+            color: #dc2626;
         }
 
         .total-row {
@@ -489,7 +540,6 @@ function formatDeliveryDate($date)
             padding: 12px 15px;
         }
 
-        /* ========== ✅ ORDER ID COLUMN ========== */
         .orders-table td.order-id {
             width: 50px;
             text-align: center;
@@ -498,7 +548,6 @@ function formatDeliveryDate($date)
             font-size: 12px;
         }
 
-        /* ========== ✅ DRAG HANDLE ========== */
         .orders-table td.drag-handle {
             width: 36px;
             padding: 12px 6px !important;
@@ -675,8 +724,7 @@ function formatDeliveryDate($date)
             }
         }
 
-        /* ========== ✅ EDIT MODE — SLIDE-IN ANIMATION ========== */
-
+        /* ========== EDIT MODE — SLIDE-IN ANIMATION ========== */
         @keyframes rowSlideIn {
             from {
                 transform: translateX(80px);
@@ -707,6 +755,7 @@ function formatDeliveryDate($date)
         .orders-table tr.edit-row td {
             padding: 10px 10px;
             vertical-align: middle;
+            white-space: nowrap;
         }
 
         .orders-table tr.edit-row .editable-input {
@@ -744,13 +793,6 @@ function formatDeliveryDate($date)
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
-        /* Highlight the input that the calculator is currently targeting */
-        .editable-input.calc-active {
-            border-color: #16a34a !important;
-            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
-            background: #f0fdf4 !important;
-        }
-
         @media (max-width: 768px) {
             .orders-table tr.edit-row td:nth-child(3) .editable-input {
                 min-width: 180px;
@@ -781,219 +823,41 @@ function formatDeliveryDate($date)
         }
 
         /* ============================================================ */
-        /* ============ ✅ FLOATING CALCULATOR ======================= */
+        /* TOTAL AMOUNT — SWAP BETWEEN SPAN & INPUT IN EDIT MODE         */
         /* ============================================================ */
-
-        #calcToggleBtn {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
-            font-size: 24px;
-            z-index: 9998;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        #calcToggleBtn.show {
-            display: flex;
-            animation: calcBtnPop 0.3s ease;
-        }
-
-        #calcToggleBtn:hover {
-            transform: scale(1.08);
-            box-shadow: 0 10px 28px rgba(139, 92, 246, 0.6);
-        }
-
-        #calcToggleBtn:active {
-            transform: scale(0.95);
-        }
-
-        @keyframes calcBtnPop {
-            from { transform: scale(0); opacity: 0; }
-            to   { transform: scale(1); opacity: 1; }
-        }
-
-        #calcPanel {
-            position: fixed;
-            bottom: 96px;
-            right: 24px;
-            width: 280px;
-            background: #1e293b;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05);
-            z-index: 9999;
-            display: none;
-            overflow: hidden;
-            transform-origin: bottom right;
-            animation: calcPanelIn 0.25s ease;
-        }
-
-        #calcPanel.show {
-            display: block;
-        }
-
-        @keyframes calcPanelIn {
-            from { transform: scale(0.85) translateY(20px); opacity: 0; }
-            to   { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        .calc-header {
-            background: #0f172a;
-            color: #e2e8f0;
-            padding: 10px 14px;
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: move;
-            user-select: none;
-        }
-
-        .calc-header .calc-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .calc-header .calc-title i {
-            color: #8b5cf6;
-        }
-
-        .calc-header .calc-close {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            transition: background 0.2s, color 0.2s;
-        }
-
-        .calc-header .calc-close:hover {
-            background: #dc2626;
-            color: #fff;
-        }
-
-        .calc-display {
-            background: #0f172a;
-            color: #fff;
-            padding: 16px 18px;
-            text-align: right;
-            font-family: 'Courier New', monospace;
-        }
-
-        .calc-display .calc-target {
-            font-size: 10px;
-            color: #8b5cf6;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            min-height: 14px;
-            margin-bottom: 4px;
-        }
-
-        .calc-display .calc-expression {
-            font-size: 13px;
-            color: #94a3b8;
-            min-height: 18px;
-            word-break: break-all;
-        }
-
-        .calc-display .calc-result {
-            font-size: 26px;
+        #total-amount-display {
             font-weight: 700;
-            color: #fff;
-            margin-top: 4px;
-            word-break: break-all;
-            line-height: 1.1;
+            display: inline-block;
         }
 
-        .calc-buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            padding: 12px;
-            background: #1e293b;
+        #total-amount-input {
+            display: none;
+            width: 100%;
+            padding: 6px 10px;
+            border: 2px solid #8b5cf6;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+            background: #fff;
+            color: #1e293b;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-width: 110px;
         }
 
-        .calc-btn {
-            background: #334155;
-            color: #f1f5f9;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 0;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            transition: background 0.12s, transform 0.08s;
+        #total-amount-input:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
         }
 
-        .calc-btn:hover {
-            background: #475569;
+        body.edit-active #total-amount-display {
+            display: none;
         }
 
-        .calc-btn:active {
-            transform: scale(0.94);
-        }
-
-        .calc-btn.op {
-            background: #8b5cf6;
-            color: #fff;
-        }
-
-        .calc-btn.op:hover {
-            background: #7c3aed;
-        }
-
-        .calc-btn.clear {
-            background: #dc2626;
-            color: #fff;
-        }
-
-        .calc-btn.clear:hover {
-            background: #b91c1c;
-        }
-
-        .calc-btn.equals {
-            background: #16a34a;
-            color: #fff;
-            grid-column: span 2;
-        }
-
-        .calc-btn.equals:hover {
-            background: #15803d;
-        }
-
-        .calc-btn.zero {
-            grid-column: span 2;
-        }
-
-        @media (max-width: 480px) {
-            #calcPanel {
-                width: calc(100vw - 32px);
-                right: 16px;
-                bottom: 88px;
-            }
-
-            #calcToggleBtn {
-                width: 52px;
-                height: 52px;
-                font-size: 20px;
-                bottom: 18px;
-                right: 18px;
-            }
+        body.edit-active #total-amount-input {
+            display: block;
+            animation: inputSlideIn 0.35s ease forwards;
         }
 
         /* ========== SYSTEM MODAL ========== */
@@ -1279,6 +1143,39 @@ function formatDeliveryDate($date)
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
+
+                                    <!-- ✅ SUB TOTAL ROW (shown only if a discount exists) -->
+                                    <tr class="subtotal-row" id="subtotal-row"
+                                        style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
+                                        <td></td>
+                                        <td></td>
+                                        <td colspan="3" style="text-align: right; font-weight: 600; color: #64748b;">
+                                            Sub Total:</td>
+                                        <td colspan="1" style="text-align: right; font-weight: 600; color: #64748b;">
+                                            ₱</td>
+                                        <td style="font-weight: 600; color: #64748b;" id="subtotal-value">
+                                            <?= number_format($subTotalFromRows, 2) ?>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+
+                                    <!-- ✅ DISCOUNT ROW (shown only if a discount exists) -->
+                                    <tr class="subtotal-row discount-row" id="discount-row"
+                                        style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
+                                        <td></td>
+                                        <td></td>
+                                        <td colspan="3" style="text-align: right; font-weight: 600; color: #dc2626;">
+                                            Discount (<span id="discount-percent"><?= $discountPercentDisplay ?></span>%):
+                                        </td>
+                                        <td colspan="1" style="text-align: right; font-weight: 600; color: #dc2626;">
+                                            − ₱</td>
+                                        <td style="font-weight: 600; color: #dc2626;" id="discount-value">
+                                            <?= number_format($discountAmount, 2) ?>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+
+                                    <!-- ✅ TOTAL ROW -->
                                     <tr class="total-row">
                                         <td></td>
                                         <td></td>
@@ -1287,8 +1184,13 @@ function formatDeliveryDate($date)
                                         </td>
                                         <td></td>
                                         <td colspan="1" style="text-align: right; font-weight: 600;">TOTAL:</td>
-                                        <td style="font-weight: 600;" id="total-amount-display">₱
-                                            <?= number_format($totalAmount, 2) ?>
+                                        <td style="font-weight: bold; min-width: 130px;">
+                                            <span id="total-amount-display">₱
+                                                <?= number_format($totalAmount, 2) ?>
+                                            </span>
+                                            <input type="text" id="total-amount-input"
+                                                value="<?= number_format($totalAmount, 2, '.', '') ?>"
+                                                inputmode="decimal" autocomplete="off">
                                         </td>
                                         <td></td>
                                     </tr>
@@ -1326,53 +1228,6 @@ function formatDeliveryDate($date)
     </div>
 
     <?php include '../footer.php'; ?>
-
-    <!-- ============================================================ -->
-    <!-- ✅ FLOATING CALCULATOR                                      -->
-    <!-- ============================================================ -->
-    <button id="calcToggleBtn" title="Open calculator">
-        <i class="fas fa-calculator"></i>
-    </button>
-
-    <div id="calcPanel">
-        <div class="calc-header" id="calcHeader">
-            <div class="calc-title">
-                <i class="fas fa-calculator"></i>
-                <span>Calculator</span>
-            </div>
-            <button class="calc-close" id="calcCloseBtn" title="Close">&times;</button>
-        </div>
-        <div class="calc-display">
-            <div class="calc-target" id="calcTarget">No field focused</div>
-            <div class="calc-expression" id="calcExpression">&nbsp;</div>
-            <div class="calc-result" id="calcResult">0</div>
-        </div>
-        <div class="calc-buttons" id="calcButtons">
-            <button class="calc-btn clear" data-action="clear">C</button>
-            <button class="calc-btn op" data-action="backspace">⌫</button>
-            <button class="calc-btn op" data-action="percent">%</button>
-            <button class="calc-btn op" data-action="divide">÷</button>
-
-            <button class="calc-btn" data-action="num" data-num="7">7</button>
-            <button class="calc-btn" data-action="num" data-num="8">8</button>
-            <button class="calc-btn" data-action="num" data-num="9">9</button>
-            <button class="calc-btn op" data-action="multiply">×</button>
-
-            <button class="calc-btn" data-action="num" data-num="4">4</button>
-            <button class="calc-btn" data-action="num" data-num="5">5</button>
-            <button class="calc-btn" data-action="num" data-num="6">6</button>
-            <button class="calc-btn op" data-action="subtract">−</button>
-
-            <button class="calc-btn" data-action="num" data-num="1">1</button>
-            <button class="calc-btn" data-action="num" data-num="2">2</button>
-            <button class="calc-btn" data-action="num" data-num="3">3</button>
-            <button class="calc-btn op" data-action="add">+</button>
-
-            <button class="calc-btn zero" data-action="num" data-num="0">0</button>
-            <button class="calc-btn" data-action="num" data-num=".">.</button>
-            <button class="calc-btn equals" data-action="equals">=</button>
-        </div>
-    </div>
 
     <script>
         // ========== SIDEBAR ==========
@@ -1438,6 +1293,10 @@ function formatDeliveryDate($date)
         let originalData = new Map();
         let isProcessing = false;
 
+        let baseGrandTotal = 0;
+        let currentGrandTotal = 0;
+        let isManuallyAdjusted = false;
+
         // ========== COPY RECEIPT LINK ==========
         async function copyReceiptLink(type) {
             const baseUrl = 'https://villaruz-print-shop-and-general-merchandise.shop/';
@@ -1449,13 +1308,7 @@ function formatDeliveryDate($date)
 
             try {
                 await navigator.clipboard.writeText(receiptUrl);
-                showMessageModal(
-                    '✅ LINK COPIED',
-                    `<strong>${receiptLabel}</strong> link has been copied:<br><br>` +
-                    '<code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">' +
-                    escapeHtml(receiptUrl) + '</code>',
-                    'success'
-                );
+                showCopyLinkModal(receiptLabel, receiptUrl);
             } catch (err) {
                 const tempInput = document.createElement('input');
                 tempInput.value = receiptUrl;
@@ -1464,13 +1317,7 @@ function formatDeliveryDate($date)
                 tempInput.setSelectionRange(0, 99999);
                 try {
                     document.execCommand('copy');
-                    showMessageModal(
-                        '✅ LINK COPIED',
-                        `<strong>${receiptLabel}</strong> link has been copied:<br><br>` +
-                        '<code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">' +
-                        escapeHtml(receiptUrl) + '</code>',
-                        'success'
-                    );
+                    showCopyLinkModal(receiptLabel, receiptUrl);
                 } catch (fallbackErr) {
                     prompt('Copy this link manually:', receiptUrl);
                 } finally {
@@ -1479,8 +1326,100 @@ function formatDeliveryDate($date)
             }
         }
 
+        // ========== MODAL: COPY LINK NOTIFICATION ==========
+        function showCopyLinkModal(label, url) {
+            const existingModal = document.querySelector('.system-modal-overlay');
+            if (existingModal) existingModal.remove();
+
+            const overlay = document.createElement('div');
+            overlay.className = 'system-modal-overlay';
+
+            overlay.innerHTML = `
+                <div class="system-modal">
+                    <div class="system-modal-header">
+                        <i class="fas fa-shop"></i>
+                        <span>✅ LINK COPIED</span>
+                    </div>
+                    <div class="system-modal-content">
+                        <div class="system-modal-message success">
+                            <i class="fas fa-check-circle"></i>
+                            <div class="message-text">
+                                <strong>${escapeHtml(label)}</strong> link has been copied:<br><br>
+                                <code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">
+                                    ${escapeHtml(url)}
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="system-modal-footer">
+                        <button class="system-modal-btn primary" data-action="ok">OK</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            overlay.querySelectorAll('.system-modal-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+            });
+        }
+
+        // ========== MODAL: CONFIRMATION ==========
+        function showConfirmModal(title, message, onConfirm, onCancel = null) {
+            return new Promise((resolve) => {
+                const existingModal = document.querySelector('.system-modal-overlay');
+                if (existingModal) existingModal.remove();
+
+                const overlay = document.createElement('div');
+                overlay.className = 'system-modal-overlay';
+
+                overlay.innerHTML = `
+                    <div class="system-modal">
+                        <div class="system-modal-header">
+                            <i class="fas fa-shop"></i>
+                            <span>${escapeHtml(title)}</span>
+                        </div>
+                        <div class="system-modal-content">
+                            <div class="system-modal-message warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div class="message-text">${message}</div>
+                            </div>
+                        </div>
+                        <div class="system-modal-footer">
+                            <button class="system-modal-btn" data-action="cancel">CANCEL</button>
+                            <button class="system-modal-btn primary" data-action="confirm">CONFIRM</button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(overlay);
+
+                overlay.querySelectorAll('.system-modal-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const action = btn.dataset.action;
+                        overlay.remove();
+                        resolve(action);
+                        if (action === 'confirm' && onConfirm) onConfirm();
+                        else if (action === 'cancel' && onCancel) onCancel();
+                    });
+                });
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
         // ============================================================
-        // ✅ DRAG-AND-DROP ROW REORDERING
+        // ✅ DRAG-AND-DROP — reloads page after saving
         // ============================================================
         (function initDragAndDrop() {
             const tbody = document.querySelector('#orders-table tbody');
@@ -1488,7 +1427,7 @@ function formatDeliveryDate($date)
 
             let draggedRow = null;
 
-            tbody.querySelectorAll('tr:not(.total-row)').forEach(row => {
+            tbody.querySelectorAll('tr:not(.total-row):not(.subtotal-row)').forEach(row => {
                 row.setAttribute('draggable', 'true');
                 row.addEventListener('dragstart', handleDragStart);
                 row.addEventListener('dragend', handleDragEnd);
@@ -1560,7 +1499,7 @@ function formatDeliveryDate($date)
 
             async function saveRowOrder() {
                 const newOrder = [];
-                tbody.querySelectorAll('tr:not(.total-row)').forEach((row, index) => {
+                tbody.querySelectorAll('tr:not(.total-row):not(.subtotal-row)').forEach((row, index) => {
                     newOrder.push({
                         id: row.dataset.id,
                         sort_order: index
@@ -1581,18 +1520,18 @@ function formatDeliveryDate($date)
 
                     const data = await response.json();
 
-                    if (!data.success) {
-                        showMessageModal('ERROR', data.message || 'Failed to save order', 'error');
+                    if (data.success) {
+                        window.location.reload();
                     }
                 } catch (err) {
-                    showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
+                    console.error('Reorder error:', err);
                 }
             }
         })();
 
         // ========== EXCEL DOWNLOAD ==========
         document.getElementById('download-excel-btn')?.addEventListener('click', function () {
-            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)');
             const excelData = [];
 
             excelData.push(['#', 'Unit', 'Item Description', 'Quantity', 'Unit Cost', 'Total Cost']);
@@ -1616,10 +1555,15 @@ function formatDeliveryDate($date)
             excelData.push([]);
             excelData.push(['', '', '', '', 'TOTAL:', '']);
 
-            const totalDisplay = document.getElementById('total-amount-display');
-            let totalAmount = totalDisplay?.innerText || '0';
-            totalAmount = totalAmount.replace('₱', '').replace(/,/g, '').trim();
-            excelData.push(['', '', '', '', '', totalAmount]);
+            const totalInput = document.getElementById('total-amount-input');
+            const totalSpan = document.getElementById('total-amount-display');
+            let rawTotal = '0';
+            if (isEditMode && totalInput) {
+                rawTotal = totalInput.value || '0';
+            } else if (totalSpan) {
+                rawTotal = totalSpan.textContent.replace('₱', '').replace(/,/g, '').trim();
+            }
+            excelData.push(['', '', '', '', '', rawTotal]);
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
@@ -1627,92 +1571,7 @@ function formatDeliveryDate($date)
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `Order_${deliveryNumber}`);
             XLSX.writeFile(wb, `Order_${deliveryNumber}.xlsx`);
-
-            showMessageModal('EXPORT SUCCESS', 'Order data has been exported to Excel successfully!', 'success');
         });
-
-        // ========== SYSTEM MODAL ==========
-        function showSystemModal(title, message, type = 'warning', buttons = []) {
-            return new Promise((resolve) => {
-                const existingModal = document.querySelector('.system-modal-overlay');
-                if (existingModal) existingModal.remove();
-
-                const overlay = document.createElement('div');
-                overlay.className = 'system-modal-overlay';
-
-                let iconClass = 'fa-exclamation-triangle';
-                let iconColor = 'warning';
-
-                switch (type) {
-                    case 'error': iconClass = 'fa-times-circle'; iconColor = 'error'; break;
-                    case 'success': iconClass = 'fa-check-circle'; iconColor = 'success'; break;
-                    case 'info': iconClass = 'fa-info-circle'; iconColor = 'info'; break;
-                }
-
-                let buttonsHtml = '';
-                if (buttons.length === 0) {
-                    buttonsHtml = `<button class="system-modal-btn primary" data-action="ok">OK</button>`;
-                } else {
-                    buttonsHtml = buttons.map(btn => {
-                        let btnClass = 'system-modal-btn';
-                        if (btn.type === 'primary') btnClass += ' primary';
-                        if (btn.type === 'danger') btnClass += ' danger';
-                        return `<button class="${btnClass}" data-action="${btn.action}">${btn.label}</button>`;
-                    }).join('');
-                }
-
-                overlay.innerHTML = `
-                    <div class="system-modal">
-                        <div class="system-modal-header">
-                            <i class="fas fa-shop"></i>
-                            <span>${escapeHtml(title)}</span>
-                        </div>
-                        <div class="system-modal-content">
-                            <div class="system-modal-message ${iconColor}">
-                                <i class="fas ${iconClass}"></i>
-                                <div class="message-text">${message}</div>
-                            </div>
-                        </div>
-                        <div class="system-modal-footer">${buttonsHtml}</div>
-                    </div>
-                `;
-
-                document.body.appendChild(overlay);
-
-                overlay.querySelectorAll('.system-modal-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        overlay.remove();
-                        resolve(btn.dataset.action);
-                    });
-                });
-            });
-        }
-
-        function showConfirmModal(title, message, onConfirm, onCancel = null) {
-            showSystemModal(title, message, 'warning', [
-                { label: 'CANCEL', action: 'cancel', type: '' },
-                { label: 'CONFIRM', action: 'confirm', type: 'primary' }
-            ]).then(result => {
-                if (result === 'confirm' && onConfirm) onConfirm();
-                else if (result === 'cancel' && onCancel) onCancel();
-            });
-        }
-
-        function showMessageModal(title, message, type = 'info', onOk = null) {
-            showSystemModal(title, message, type, [
-                { label: 'OK', action: 'ok', type: 'primary' }
-            ]).then(() => { if (onOk) onOk(); });
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, m => {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
 
         function redirectToPendingFolderWith() {
             if (monthYear) {
@@ -1737,12 +1596,10 @@ function formatDeliveryDate($date)
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('✅ SUCCESS', data.message, 'success', () => redirectToPendingFolderWith());
-                } else {
-                    showMessageModal('❌ ERROR', data.message || 'Failed', 'error');
+                    window.location.reload();
                 }
             } catch (err) {
-                showMessageModal('❌ NETWORK ERROR', 'Connection error: ' + err.message, 'error');
+                console.error(err);
             } finally {
                 isProcessing = false;
             }
@@ -1761,365 +1618,109 @@ function formatDeliveryDate($date)
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('✅ SUCCESS', data.message, 'success', () => redirectToPendingFolderWith());
-                } else {
-                    showMessageModal('❌ ERROR', data.message || 'Failed', 'error');
+                    redirectToPendingFolderWith();
                 }
             } catch (err) {
-                showMessageModal('❌ NETWORK ERROR', 'Connection error: ' + err.message, 'error');
+                console.error(err);
             } finally {
                 isProcessing = false;
             }
         }
 
         // ============================================================
-        // ✅ FLOATING CALCULATOR — REAL CALCULATOR BEHAVIOR
+        // ✅ TOTAL INPUT LOGIC
         // ============================================================
-        const calcToggleBtn = document.getElementById('calcToggleBtn');
-        const calcPanel = document.getElementById('calcPanel');
-        const calcCloseBtn = document.getElementById('calcCloseBtn');
-        const calcResult = document.getElementById('calcResult');
-        const calcExpression = document.getElementById('calcExpression');
-        const calcTarget = document.getElementById('calcTarget');
-        const calcButtons = document.getElementById('calcButtons');
-        const calcHeader = document.getElementById('calcHeader');
+        const totalAmountDisplay = document.getElementById('total-amount-display');
+        const totalAmountInput = document.getElementById('total-amount-input');
 
-        /*
-         * Calculator state — behaves like a real calculator:
-         *   - `currentInput` is the number currently being typed or displayed
-         *   - `previousValue` is the pending left operand
-         *   - `operator` is the pending operation
-         *   - `justEvaluated` prevents appending digits to a result
-         *   - `expressionParts` builds the visible expression string (e.g. "12 + 5")
-         */
-        let calcState = {
-            currentInput: '0',
-            previousValue: null,
-            operator: null,
-            justEvaluated: false,
-            expressionParts: [],   // strings shown in expression line
-            targetInput: null
-        };
-
-        let activeCalcInput = null; // the input element that has the green highlight
-
-        function resetCalcState() {
-            calcState.currentInput = '0';
-            calcState.previousValue = null;
-            calcState.operator = null;
-            calcState.justEvaluated = false;
-            calcState.expressionParts = [];
-            updateCalcDisplay();
+        function formatPeso(n) {
+            const num = parseFloat(n) || 0;
+            return '₱ ' + num.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
         }
 
-        function formatDisplayNumber(n) {
-            if (n === null || n === undefined || isNaN(n)) return '0';
-            // Use up to 10 significant digits, trim trailing zeros
-            const num = parseFloat(n);
-            if (!isFinite(num)) return 'Error';
-            // Show integer if whole, otherwise show decimals (up to 10)
-            if (Number.isInteger(num)) return num.toString();
-            return parseFloat(num.toFixed(10)).toString();
+        function getTotalInputValue() {
+            if (!totalAmountInput) return baseGrandTotal;
+            const raw = (totalAmountInput.value || '0').toString().replace(/,/g, '').trim();
+            const num = parseFloat(raw);
+            return isNaN(num) ? 0 : num;
         }
 
-        function updateCalcDisplay() {
-            // Current input (big display)
-            calcResult.textContent = calcState.currentInput || '0';
+        function setTotalValue(n) {
+            const safe = parseFloat(n) || 0;
+            currentGrandTotal = safe;
 
-            // Expression line — show pending parts joined
-            if (calcState.expressionParts.length > 0) {
-                let expr = calcState.expressionParts.join(' ');
-                if (calcState.operator) {
-                    // If operator is pending but not yet pushed to parts (edge case)
-                    expr += ' ' + opSymbol(calcState.operator);
+            if (totalAmountDisplay) {
+                totalAmountDisplay.textContent = formatPeso(safe);
+            }
+            if (totalAmountInput) {
+                totalAmountInput.value = safe.toFixed(2);
+            }
+        }
+
+        function setEditModeUI(active) {
+            if (active) document.body.classList.add('edit-active');
+            else document.body.classList.remove('edit-active');
+        }
+
+        // ✅ Update the Sub Total / Discount rows based on current numbers
+        function updateDiscountRows() {
+            const subtotalRow = document.getElementById('subtotal-row');
+            const discountRow = document.getElementById('discount-row');
+            const subtotalValueEl = document.getElementById('subtotal-value');
+            const discountValueEl = document.getElementById('discount-value');
+            const discountPercentEl = document.getElementById('discount-percent');
+
+            if (!subtotalRow || !discountRow) return;
+
+            const subtotal = baseGrandTotal;
+            const finalTotal = getTotalInputValue();
+
+            if (subtotal > 0.001 && finalTotal > 0.001 && finalTotal < subtotal - 0.001) {
+                const discountAmt = subtotal - finalTotal;
+                const discountPct = (discountAmt / subtotal) * 100;
+
+                if (subtotalValueEl) subtotalValueEl.textContent = subtotal.toLocaleString('en-US', {
+                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                });
+                if (discountValueEl) discountValueEl.textContent = discountAmt.toLocaleString('en-US', {
+                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                });
+
+                // ✅ Strip trailing ".00" — 4.00 → 4, 4.50 → 4.5, 4.25 → 4.25
+                if (discountPercentEl) {
+                    discountPercentEl.textContent = parseFloat(discountPct.toFixed(2)).toString();
                 }
-                calcExpression.textContent = expr + ' ';
-            } else if (calcState.operator && calcState.previousValue !== null) {
-                calcExpression.textContent = formatDisplayNumber(calcState.previousValue) + ' ' + opSymbol(calcState.operator) + ' ';
+
+                subtotalRow.style.display = '';
+                discountRow.style.display = '';
             } else {
-                calcExpression.innerHTML = '&nbsp;';
-            }
-
-            // Target label
-            if (calcState.targetInput) {
-                const row = calcState.targetInput.closest('tr');
-                const productName = row?.querySelector('.product-name input')?.value || 'row';
-                calcTarget.textContent = 'Target: ' + productName.substring(0, 24);
-            } else {
-                calcTarget.textContent = 'No field focused';
+                subtotalRow.style.display = 'none';
+                discountRow.style.display = 'none';
             }
         }
 
-        function setTargetInput(input) {
-            // Remove old highlight
-            if (activeCalcInput && activeCalcInput !== input) {
-                activeCalcInput.classList.remove('calc-active');
-            }
-            calcState.targetInput = input;
-            if (input) {
-                input.classList.add('calc-active');
-                activeCalcInput = input;
-            } else {
-                activeCalcInput = null;
-            }
-
-            // Load current value into calculator
-            if (input) {
-                const raw = (input.value || '0').toString().replace(/,/g, '').trim();
-                const num = parseFloat(raw);
-                calcState.currentInput = isNaN(num) ? '0' : formatDisplayNumber(num);
-                calcState.previousValue = null;
-                calcState.operator = null;
-                calcState.justEvaluated = false;
-                calcState.expressionParts = [];
-            }
-
-            updateCalcDisplay();
-        }
-
-        function opSymbol(op) {
-            return { add: '+', subtract: '−', multiply: '×', divide: '÷', percent: '%' }[op] || '';
-        }
-
-        // Push the current displayed number into the expression list
-        function pushCurrentToExpression() {
-            calcState.expressionParts.push(calcState.currentInput);
-        }
-
-        function computeResult() {
-            const left = calcState.previousValue ?? 0;
-            const right = parseFloat(calcState.currentInput) || 0;
-            switch (calcState.operator) {
-                case 'add': return left + right;
-                case 'subtract': return left - right;
-                case 'multiply': return left * right;
-                case 'divide': return right === 0 ? 0 : left / right;
-                default: return right;
-            }
-        }
-
-        // Live-fill the target input with the current display value
-        function syncResultToTarget() {
-            if (!calcState.targetInput) return;
-            const val = parseFloat(calcState.currentInput);
-            if (!isNaN(val) && isFinite(val)) {
-                calcState.targetInput.value = val.toFixed(2);
-                calcState.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }
-
-        function handleCalcButton(action, num) {
-            switch (action) {
-                // ---------- NUMBER / DECIMAL ----------
-                case 'num':
-                    if (calcState.justEvaluated) {
-                        // Start fresh after "="
-                        calcState.currentInput = (num === '.') ? '0.' : num;
-                        calcState.justEvaluated = false;
-                        calcState.expressionParts = [];
-                    } else if (calcState.currentInput === '0' && num !== '.') {
-                        calcState.currentInput = num;
-                    } else if (num === '.') {
-                        if (!calcState.currentInput.includes('.')) {
-                            calcState.currentInput += '.';
-                        }
-                    } else {
-                        // Cap length to avoid overflow
-                        if (calcState.currentInput.replace('-', '').replace('.', '').length < 12) {
-                            calcState.currentInput += num;
-                        }
-                    }
-                    break;
-
-                // ---------- OPERATORS ----------
-                case 'add':
-                case 'subtract':
-                case 'multiply':
-                case 'divide':
-                    if (calcState.operator !== null && !calcState.justEvaluated) {
-                        // Chain: evaluate pending first
-                        const result = computeResult();
-                        calcState.currentInput = formatDisplayNumber(result);
-                        // Replace the last expression part with the result
-                        calcState.expressionParts = [calcState.currentInput];
-                    } else if (calcState.justEvaluated) {
-                        // Continue with previous result
-                        calcState.expressionParts = [calcState.currentInput];
-                        calcState.justEvaluated = false;
-                    } else {
-                        // First operator — push current number
-                        calcState.expressionParts = [calcState.currentInput];
-                    }
-
-                    calcState.previousValue = parseFloat(calcState.currentInput) || 0;
-                    calcState.operator = action;
-                    calcState.expressionParts.push(opSymbol(action));
-                    // Prepare for the next number
-                    calcState.currentInput = '0';
-                    break;
-
-                // ---------- PERCENT ----------
-                case 'percent':
-                    const pctVal = parseFloat(calcState.currentInput) || 0;
-                    calcState.currentInput = formatDisplayNumber(pctVal / 100);
-                    break;
-
-                // ---------- EQUALS ----------
-                case 'equals':
-                    if (calcState.operator && calcState.previousValue !== null) {
-                        const right = parseFloat(calcState.currentInput) || 0;
-                        calcState.expressionParts.push(calcState.currentInput);
-                        const result = computeResult();
-                        // Show the full expression with "="
-                        calcExpression.textContent = calcState.expressionParts.join(' ') + ' =';
-                        calcState.currentInput = formatDisplayNumber(result);
-                        calcState.previousValue = null;
-                        calcState.operator = null;
-                        calcState.justEvaluated = true;
-                        // Push result to the target input
-                        syncResultToTarget();
-                    }
-                    break;
-
-                // ---------- CLEAR ----------
-                case 'clear':
-                    resetCalcState();
-                    // Also clear the target input's displayed value
-                    if (calcState.targetInput) {
-                        calcState.targetInput.value = '0.00';
-                        calcState.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                    return;
-
-                // ---------- BACKSPACE ----------
-                case 'backspace':
-                    if (calcState.justEvaluated) {
-                        calcState.currentInput = '0';
-                        calcState.justEvaluated = false;
-                    } else if (calcState.currentInput.length > 1) {
-                        calcState.currentInput = calcState.currentInput.slice(0, -1);
-                        if (calcState.currentInput === '-' || calcState.currentInput === '') {
-                            calcState.currentInput = '0';
-                        }
-                    } else {
-                        calcState.currentInput = '0';
-                    }
-                    break;
-            }
-
-            updateCalcDisplay();
-
-            // Live-sync to target input whenever we're not in the middle of an operation
-            if (calcState.operator === null && !calcState.justEvaluated) {
-                syncResultToTarget();
-            }
-        }
-
-        // Bind calculator buttons
-        calcButtons.querySelectorAll('.calc-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                handleCalcButton(this.dataset.action, this.dataset.num);
-            });
-        });
-
-        // Toggle calculator panel
-        function showCalcToggle() {
-            calcToggleBtn.classList.add('show');
-        }
-
-        function hideCalcToggle() {
-            calcToggleBtn.classList.remove('show');
-            calcPanel.classList.remove('show');
-        }
-
-        calcToggleBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            calcPanel.classList.toggle('show');
-        });
-
-        calcCloseBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            calcPanel.classList.remove('show');
-        });
-
-        calcPanel.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
-
-        document.addEventListener('click', function (e) {
-            if (!calcPanel.contains(e.target) && !calcToggleBtn.contains(e.target)) {
-                calcPanel.classList.remove('show');
-            }
-        });
-
-        // Keyboard support when calculator is open
-        document.addEventListener('keydown', function (e) {
-            if (!calcPanel.classList.contains('show')) return;
-            const key = e.key;
-            if (/^[0-9]$/.test(key)) {
-                handleCalcButton('num', key);
-            } else if (key === '.') {
-                handleCalcButton('num', '.');
-            } else if (key === '+') {
-                handleCalcButton('add');
-            } else if (key === '-') {
-                handleCalcButton('subtract');
-            } else if (key === '*') {
-                handleCalcButton('multiply');
-            } else if (key === '/') {
-                e.preventDefault();
-                handleCalcButton('divide');
-            } else if (key === '%') {
-                handleCalcButton('percent');
-            } else if (key === 'Enter' || key === '=') {
-                e.preventDefault();
-                handleCalcButton('equals');
-            } else if (key === 'Backspace') {
-                handleCalcButton('backspace');
-            } else if (key === 'Escape') {
-                calcPanel.classList.remove('show');
-            } else if (key.toLowerCase() === 'c') {
-                handleCalcButton('clear');
-            }
-        });
-
-        // Drag calculator by header
-        (function makeCalcDraggable() {
-            let isDragging = false;
-            let startX, startY, startLeft, startTop;
-
-            calcHeader.addEventListener('mousedown', function (e) {
-                if (e.target.classList.contains('calc-close')) return;
-                isDragging = true;
-                const rect = calcPanel.getBoundingClientRect();
-                startX = e.clientX;
-                startY = e.clientY;
-                startLeft = rect.left;
-                startTop = rect.top;
-
-                calcPanel.style.left = startLeft + 'px';
-                calcPanel.style.top = startTop + 'px';
-                calcPanel.style.right = 'auto';
-                calcPanel.style.bottom = 'auto';
-
-                document.body.style.userSelect = 'none';
-            });
-
-            document.addEventListener('mousemove', function (e) {
-                if (!isDragging) return;
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                calcPanel.style.left = (startLeft + dx) + 'px';
-                calcPanel.style.top = (startTop + dy) + 'px';
-            });
-
-            document.addEventListener('mouseup', function () {
-                if (isDragging) {
-                    isDragging = false;
-                    document.body.style.userSelect = '';
+        if (totalAmountInput) {
+            totalAmountInput.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9.,]/g, '');
+                const raw = this.value.replace(/,/g, '');
+                if (!isNaN(parseFloat(raw)) && isFinite(raw)) {
+                    currentGrandTotal = parseFloat(raw);
+                    isManuallyAdjusted = true;
+                    if (totalAmountDisplay) totalAmountDisplay.textContent = formatPeso(currentGrandTotal);
+                    updateDiscountRows();
                 }
             });
-        })();
+
+            totalAmountInput.addEventListener('blur', function () {
+                const val = getTotalInputValue();
+                this.value = val.toFixed(2);
+                currentGrandTotal = val;
+                updateDiscountRows();
+            });
+        }
 
         // ============================================================
         // ✅ EDIT MODE
@@ -2132,8 +1733,9 @@ function formatDeliveryDate($date)
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
 
-            // ✅ Show the floating calculator toggle
-            showCalcToggle();
+            setEditModeUI(true);
+
+            isManuallyAdjusted = false;
 
             const dateDisplay = document.getElementById('deliveryDateDisplay');
             const dateInput = document.getElementById('deliveryDateInput');
@@ -2142,8 +1744,7 @@ function formatDeliveryDate($date)
                 dateInput.style.display = 'inline-block';
             }
 
-            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
-            let firstTotalInput = null;
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)');
 
             rows.forEach((row, index) => {
                 row.classList.add('edit-row');
@@ -2164,7 +1765,7 @@ function formatDeliveryDate($date)
 
                 row.cells[2].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
                 row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
-                row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
+                row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalUnit)}" data-field="unit">`;
                 row.cells[5].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
                 row.cells[6].innerHTML = `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
 
@@ -2172,13 +1773,11 @@ function formatDeliveryDate($date)
                 const sellingPriceInput = row.cells[5].querySelector('input');
                 const totalInput = row.cells[6].querySelector('input');
 
-                if (!firstTotalInput) firstTotalInput = totalInput;
-
                 function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
                     const price = parseFloat(sellingPriceInput.value) || 0;
                     totalInput.value = (pieces * price).toFixed(2);
-                    updateGrandTotal();
+                    recalcBaseGrandTotalFromRows();
                 }
 
                 if (piecesInput && sellingPriceInput && totalInput) {
@@ -2197,63 +1796,42 @@ function formatDeliveryDate($date)
                 }
             });
 
-            // ✅ Attach focus listeners AFTER all inputs are created
-            document.querySelectorAll('#orders-table .editable-input').forEach(inp => {
-                inp.addEventListener('focus', function () {
-                    if (this.dataset.field === 'total') {
-                        setTargetInput(this);
-                    } else if (activeCalcInput) {
-                        // Clear the calc target when user focuses something else
-                        activeCalcInput.classList.remove('calc-active');
-                        activeCalcInput = null;
-                        calcState.targetInput = null;
-                        updateCalcDisplay();
-                    }
-                });
-            });
-
-            // ✅ Auto-fill the calculator with the FIRST row's total_amount
-            if (firstTotalInput) {
-                setTargetInput(firstTotalInput);
-                // Focus the first total input so the user can immediately calculate
-                setTimeout(() => {
-                    firstTotalInput.focus();
-                }, 150);
-            }
-
-            setTimeout(updateGrandTotal, 100);
+            recalcBaseGrandTotalFromRows();
         }
 
-        function updateGrandTotal() {
-            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
-            let grandTotal = 0;
+        function recalcBaseGrandTotalFromRows() {
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)');
+            let sum = 0;
             let totalItems = 0;
 
             rows.forEach(row => {
                 const piecesInput = row.cells[3]?.querySelector('input');
                 const totalInput = row.cells[6]?.querySelector('input');
                 totalItems += parseFloat(piecesInput?.value) || 0;
-                grandTotal += parseFloat(totalInput?.value) || 0;
+                sum += parseFloat(totalInput?.value) || 0;
             });
 
-            const totalDisplay = document.getElementById('total-amount-display');
-            if (totalDisplay) {
-                totalDisplay.innerHTML = `₱ ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            baseGrandTotal = sum;
+
+            if (!isManuallyAdjusted) {
+                setTotalValue(sum);
             }
 
             const totalItemsDisplay = document.getElementById('totalItemsDisplay');
             if (totalItemsDisplay) totalItemsDisplay.textContent = totalItems;
+
+            updateDiscountRows();
         }
 
         async function disableEditMode() {
             const updatedItems = [];
-            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)');
             let isValid = true;
 
             const dateInput = document.getElementById('deliveryDateInput');
             const updatedDeliveryDate = dateInput ? dateInput.value : '';
 
-            updateGrandTotal();
+            recalcBaseGrandTotalFromRows();
 
             rows.forEach((row, index) => {
                 const productInput = row.cells[2].querySelector('input');
@@ -2275,7 +1853,6 @@ function formatDeliveryDate($date)
 
                 if (!newProduct || !newPieces || newPieces <= 0 || newSellingPrice < 0 || newTotal <= 0) {
                     isValid = false;
-                    showMessageModal('INVALID DATA', 'Please fill all fields with valid values.', 'error');
                     return;
                 }
 
@@ -2308,20 +1885,26 @@ function formatDeliveryDate($date)
                 }
             }
 
+            const finalTotal = getTotalInputValue();
+            if (Math.abs(finalTotal - baseGrandTotal) > 0.001) hasChanges = true;
+
             if (!hasChanges && !dateChanged) {
-                exitEditMode();
+                window.location.reload();
                 return;
             }
 
             let confirmMessage = 'Are you sure you want to update the order?';
-            if (dateChanged) confirmMessage += '\n\n📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
+            if (dateChanged) confirmMessage += '<br><br>📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
+            if (Math.abs(finalTotal - baseGrandTotal) > 0.001) {
+                confirmMessage += '<br><br>💰 Grand Total will be saved as: ' + formatPeso(finalTotal);
+            }
 
             showConfirmModal('UPDATE ORDER ITEMS', confirmMessage, async () => {
-                await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged);
+                await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, finalTotal);
             });
         }
 
-        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged) {
+        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, finalTotal) {
             try {
                 const formData = new FormData();
                 formData.append('action', 'update_order_items');
@@ -2340,21 +1923,17 @@ function formatDeliveryDate($date)
                     formData.append('delivery_date', updatedDeliveryDate);
                 }
 
+                formData.append('grand_total', finalTotal.toFixed(2));
+
                 const response = await fetch('../API/update_delivery_status.php', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('SUCCESS', data.message, 'success', () => window.location.reload());
-                } else {
-                    showMessageModal('ERROR', data.message || 'Failed', 'error');
+                    window.location.reload();
                 }
             } catch (err) {
-                showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
+                console.error(err);
             }
-        }
-
-        function exitEditMode() {
-            window.location.reload();
         }
 
         if (editModeBtn) {
@@ -2373,47 +1952,34 @@ function formatDeliveryDate($date)
                 const newStatus = this.value;
 
                 if (newStatus === 'PAID') {
-                    showSystemModal(
+                    showConfirmModal(
                         '⚠️ PAYMENT CONFIRMATION',
                         'This action will mark this order as PAID and deduct stock from inventory.<br><br><strong>Are you sure?</strong>',
-                        'warning',
-                        [
-                            { label: 'CANCEL', action: 'cancel', type: '' },
-                            { label: 'OK', action: 'confirm', type: 'primary' }
-                        ]
-                    ).then(result => {
-                        if (result === 'confirm') processPaidStatus();
-                        else statusSelect.value = previousStatus;
-                    });
+                        () => processPaidStatus(),
+                        () => { statusSelect.value = previousStatus; }
+                    );
                     statusSelect.value = previousStatus;
                 } else if (newStatus === 'CANCELLED') {
-                    showSystemModal(
+                    showConfirmModal(
                         '⚠️ CANCELLATION CONFIRMATION',
                         `<strong>Delivery #${deliveryNumber}</strong><br>Customer: <?= htmlspecialchars($customerName) ?><br>
                         Total: <strong>₱ <?= number_format($totalAmount, 2) ?></strong><br><br>
                         <strong style="color: #dc2626;">WARNING:</strong> This will <strong>DELETE</strong> all data!`,
-                        'error',
-                        [
-                            { label: 'CANCEL', action: 'cancel', type: '' },
-                            { label: 'DELETE ORDER', action: 'confirm', type: 'danger' }
-                        ]
-                    ).then(result => {
-                        if (result === 'confirm') processCancelledStatus();
-                        else statusSelect.value = previousStatus;
-                    });
+                        () => processCancelledStatus(),
+                        () => { statusSelect.value = previousStatus; }
+                    );
                     statusSelect.value = previousStatus;
                 } else {
-                    await updateStatusDirect(newStatus);
+                    await updateStatusDirect(newStatus, previousStatus);
                 }
             });
         }
 
-        async function updateStatusDirect(newStatus) {
-            const statusSelect = document.getElementById('status-select');
-            let previousStatus = statusSelect ? statusSelect.value : '';
+        async function updateStatusDirect(newStatus, previousStatus) {
+            const statusSelectEl = document.getElementById('status-select');
 
             try {
-                if (statusSelect) statusSelect.disabled = true;
+                if (statusSelectEl) statusSelectEl.disabled = true;
 
                 const formData = new FormData();
                 formData.append('action', 'update_order_status');
@@ -2425,28 +1991,22 @@ function formatDeliveryDate($date)
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessageModal('✅ SUCCESS', data.message, 'success', () => redirectToPendingFolderWith());
+                    window.location.reload();
                 } else {
-                    showMessageModal('ERROR', data.message || 'Failed', 'error');
-                    if (statusSelect) statusSelect.value = previousStatus;
+                    if (statusSelectEl) statusSelectEl.value = previousStatus;
                 }
             } catch (err) {
-                showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
-                if (statusSelect) statusSelect.value = previousStatus;
+                console.error(err);
+                if (statusSelectEl) statusSelectEl.value = previousStatus;
             } finally {
-                if (statusSelect) statusSelect.disabled = false;
+                if (statusSelectEl) statusSelectEl.disabled = false;
             }
         }
 
         // ========== REMOVE ITEM ==========
         document.querySelectorAll('.remove-btn').forEach(button => {
             button.addEventListener('click', async function () {
-                if (isEditMode) {
-                    showMessageModal('EDIT MODE ACTIVE',
-                        'Please click UPDATE to save changes or refresh the page to cancel edit mode.',
-                        'warning');
-                    return;
-                }
+                if (isEditMode) return;
 
                 const row = this.closest('tr');
                 const productName = row.cells[2]?.innerText || '';
@@ -2455,7 +2015,7 @@ function formatDeliveryDate($date)
 
                 showConfirmModal(
                     'REMOVE ITEM',
-                    `Are you sure you want to remove "${productName}" (${pieces} pcs) from this order?\n\nThis action cannot be undone.`,
+                    `Are you sure you want to remove "${productName}" (${pieces} pcs) from this order?<br><br>This action cannot be undone.`,
                     async () => { await removeOrderItem(productName, pieces, totalAmount, row); }
                 );
             });
@@ -2474,33 +2034,24 @@ function formatDeliveryDate($date)
                 const data = await response.json();
 
                 if (data.success) {
-                    row.remove();
-
-                    const totalDisplay = document.getElementById('total-amount-display');
-                    const currentTotal = parseFloat(totalDisplay.innerText.replace('₱', '').replace(/,/g, '')) || 0;
-                    const newTotal = currentTotal - parseFloat(totalAmount);
-
-                    totalDisplay.innerHTML = `₱ ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-                    const remainingRows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)').length;
-                    if (remainingRows === 0) {
-                        showMessageModal('ORDER EMPTY', 'No items remaining. Redirecting...', 'info', () => redirectToPendingFolderWith());
+                    const remainingRows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)').length;
+                    if (remainingRows - 1 === 0) {
+                        redirectToPendingFolderWith();
                     } else {
-                        showMessageModal('SUCCESS', data.message, 'success');
+                        window.location.reload();
                     }
-                } else {
-                    showMessageModal('ERROR', data.message || 'Failed', 'error');
                 }
             } catch (err) {
-                showMessageModal('NETWORK ERROR', 'Connection error: ' + err.message, 'error');
+                console.error(err);
             }
         }
 
         function copyDeliveryNumber() {
-            const deliveryNumber = document.getElementById('deliveryNumber').textContent;
+            const deliveryNumberEl = document.getElementById('deliveryNumber');
+            const deliveryNumberText = deliveryNumberEl.textContent;
 
             const tempInput = document.createElement('input');
-            tempInput.value = deliveryNumber;
+            tempInput.value = deliveryNumberText;
             document.body.appendChild(tempInput);
             tempInput.select();
             tempInput.setSelectionRange(0, 99999);
@@ -2516,9 +2067,27 @@ function formatDeliveryDate($date)
             }, 2000);
         }
 
-        console.log('📱 Sidebar menu loaded - Left Side');
-        console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
-        console.log('🧮 Floating calculator ready in edit mode');
+        // Initialize base grand total
+        (function init() {
+            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)');
+            let sum = 0;
+            rows.forEach(row => {
+                const cell = row.cells[6];
+                if (cell) {
+                    const raw = cell.innerText.replace('₱', '').replace(/,/g, '').trim();
+                    sum += parseFloat(raw) || 0;
+                }
+            });
+            baseGrandTotal = sum;
+            currentGrandTotal = parseFloat(getTotalInputValue()) || 0;
+
+            // Sync discount rows with initial values
+            updateDiscountRows();
+        })();
+
+        console.log('📱 Sidebar menu loaded');
+        console.log('💰 Total editable + saved to for_deliveries');
+        console.log('🏷️ Discount note auto-detects when total < subtotal');
     </script>
 </body>
 

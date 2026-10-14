@@ -37,10 +37,33 @@ $orderDate = new DateTime($cleanDateTime);
 $formattedDate = $orderDate->format('n/j/Y');
 $formattedTime = $orderDate->format('g:i A');
 
-// Calculate total sales
-$totalSales = 0;
+// ✅ SUB TOTAL — sum of all item rows
+$subTotal = 0;
 foreach ($items as $item) {
-    $totalSales += floatval($item['total_amount']);
+    $subTotal += floatval($item['total_amount'] ?? 0);
+}
+
+// ✅ TOTAL — pulled from for_deliveries.total_amount (authoritative total)
+$totalSales = floatval($order['total_amount'] ?? 0);
+
+// Fallback: if for_deliveries.total_amount is empty/zero, use sub total
+if ($totalSales <= 0) {
+    $totalSales = $subTotal;
+}
+
+// ✅ Detect discount: compare sub total vs stored total
+$discountAmount = 0;
+$discountPercent = 0;
+
+if ($totalSales > 0 && $subTotal > 0 && $totalSales < $subTotal - 0.001) {
+    $discountAmount  = $subTotal - $totalSales;
+    $discountPercent = ($discountAmount / $subTotal) * 100;
+}
+
+// ✅ Format discount percent without trailing ".00"
+$discountPercentDisplay = rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.');
+if ($discountPercentDisplay === '' || $discountPercentDisplay === '.') {
+    $discountPercentDisplay = '0';
 }
 
 // FIXED QR CODE URL - always points to the APK download
@@ -342,6 +365,22 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
         .subtotal-row .value {
             font-weight: 600;
             color: #70757a;
+        }
+
+        /* ✅ Discount line — red, slightly indented */
+        .discount-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 10px;
+            padding-right: 6px;
+        }
+
+        .discount-row .value {
+            font-weight: 600;
+            color: #dc2626;
         }
 
         .total-bar {
@@ -778,6 +817,10 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 font-size: 0.82rem;
             }
 
+            .discount-row {
+                font-size: 0.78rem;
+            }
+
             .total-bar {
                 padding: 12px 14px;
                 margin-top: 12px;
@@ -947,6 +990,13 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+
+            .discount-row,
+            .discount-row .value {
+                color: #dc2626 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
@@ -1054,11 +1104,21 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 </div>
 
                 <div class="bottom-right">
+                    <!-- ✅ SUB TOTAL — sum of all item rows -->
                     <div class="subtotal-row">
                         <span>Sub Total :</span>
-                        <span class="value">₱ <?php echo number_format($totalSales, 2, '.', ','); ?></span>
+                        <span class="value">₱ <?php echo number_format($subTotal, 2, '.', ','); ?></span>
                     </div>
 
+                    <!-- ✅ DISCOUNT ROW — only shown when a discount exists -->
+                    <?php if ($discountAmount > 0.001): ?>
+                        <div class="discount-row">
+                            <span>Discounted <?php echo htmlspecialchars($discountPercentDisplay); ?>% :</span>
+                            <span class="value">− ₱ <?php echo number_format($discountAmount, 2, '.', ','); ?></span>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- ✅ TOTAL BAR -->
                     <div class="total-bar">
                         <span class="total-label">Total :</span>
                         <span class="total-value">₱ <?php echo number_format($totalSales, 2, '.', ','); ?></span>

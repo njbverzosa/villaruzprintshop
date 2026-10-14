@@ -323,18 +323,39 @@ function removeOrderItem($pdo, $deliveryNumber, $productName)
         ];
     }
 
+    // ✅ Recalculate the for_deliveries.total_amount from remaining rows
+    $sumStmt = $pdo->prepare("
+        SELECT SUM(total_amount) as total FROM order_status_history 
+        WHERE delivery_number = :delivery_number
+    ");
+    $sumStmt->execute([':delivery_number' => $deliveryNumber]);
+    $sumRow = $sumStmt->fetch(PDO::FETCH_ASSOC);
+    $newTotal = floatval($sumRow['total'] ?? 0);
+
+    $updateTotalStmt = $pdo->prepare("
+        UPDATE for_deliveries SET total_amount = :total_amount 
+        WHERE delivery_number = :delivery_number
+    ");
+    $updateTotalStmt->execute([
+        ':total_amount' => $newTotal,
+        ':delivery_number' => $deliveryNumber
+    ]);
+
     return [
         'success' => true,
         'message' => "Successfully removed {$productName} from the order",
         'product_name' => $productName,
-        'order_empty' => false
+        'order_empty' => false,
+        'new_total' => $newTotal
     ];
 }
 
 /**
  * Update multiple order items with delivery date
+ *
+ * @param float|null $grandTotal  Optional manual grand total (overrides the computed sum)
  */
-function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
+function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null, $grandTotal = null)
 {
     $updatedCount = 0;
     $errors = [];
@@ -410,6 +431,7 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
         throw new Exception("Update errors: " . implode(", ", $errors));
     }
 
+    // ✅ Sum of item totals (used as fallback)
     $totalStmt = $pdo->prepare("
         SELECT SUM(total_amount) as total 
         FROM order_status_history 
@@ -417,8 +439,12 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
     ");
     $totalStmt->execute([':delivery_number' => $deliveryNumber]);
     $totalResult = $totalStmt->fetch(PDO::FETCH_ASSOC);
-    $newTotal = $totalResult['total'] ?? 0;
+    $sumOfItems = floatval($totalResult['total'] ?? 0);
 
+    // ✅ Use the manual grand total if it was sent, otherwise use the sum of items
+    $finalTotal = ($grandTotal !== null && $grandTotal > 0) ? $grandTotal : $sumOfItems;
+
+    // ✅ Update for_deliveries
     if ($deliveryDate !== null) {
         $updateDeliveryStmt = $pdo->prepare("
             UPDATE for_deliveries 
@@ -427,18 +453,18 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
             WHERE delivery_number = :delivery_number
         ");
         $updateDeliveryStmt->execute([
-            ':total_amount' => $newTotal,
+            ':total_amount' => $finalTotal,
             ':delivery_date' => $deliveryDate,
             ':delivery_number' => $deliveryNumber
         ]);
     } else {
         $updateDeliveryStmt = $pdo->prepare("
             UPDATE for_deliveries 
-            SET total_amount = :total_amount 
+            SET total_amount = :total_amount
             WHERE delivery_number = :delivery_number
         ");
         $updateDeliveryStmt->execute([
-            ':total_amount' => $newTotal,
+            ':total_amount' => $finalTotal,
             ':delivery_number' => $deliveryNumber
         ]);
     }
@@ -447,7 +473,9 @@ function updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate = null)
         'success' => true,
         'message' => "Successfully updated {$updatedCount} item(s)" . ($deliveryDate !== null ? " and delivery date to {$deliveryDate}" : ""),
         'updated_count' => $updatedCount,
-        'new_total' => $newTotal,
+        'new_total' => $finalTotal,
+        'sum_of_items' => $sumOfItems,
+        'grand_total_used' => $grandTotal,
         'delivery_date' => $deliveryDate
     ];
 }
@@ -592,6 +620,7 @@ elseif ($action === 'update_order_items') {
     $deliveryNumber = trim($_POST['delivery_number'] ?? '');
     $itemsJson = $_POST['items'] ?? '';
     $deliveryDate = isset($_POST['delivery_date']) && !empty($_POST['delivery_date']) ? trim($_POST['delivery_date']) : null;
+    $grandTotal = isset($_POST['grand_total']) && $_POST['grand_total'] !== '' ? floatval($_POST['grand_total']) : null;
 
     if (empty($deliveryNumber)) {
         echo json_encode(['success' => false, 'message' => 'Delivery number is required']);
@@ -612,7 +641,7 @@ elseif ($action === 'update_order_items') {
 
     try {
         $pdo->beginTransaction();
-        $result = updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate);
+        $result = updateOrderItems($pdo, $deliveryNumber, $items, $deliveryDate, $grandTotal);
         $pdo->commit();
         echo json_encode($result);
     } catch (Exception $e) {
@@ -720,7 +749,6 @@ elseif ($action === 'reorder_items') {
         if ($pdo->inTransaction())
             $pdo->rollBack();
 
-        // ✅ Send the actual error message so we can debug
         echo json_encode([
             'success' => false,
             'message' => 'Database error: ' . $e->getMessage()
