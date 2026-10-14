@@ -1022,11 +1022,11 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                         <?php $rowNum = 1; ?>
                         <?php foreach ($items as $item): ?>
                             <tr>
-                                <td class="center"><?php echo number_format(floatval($item['pieces'])); ?></td>
-                                <td class="center"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
-                                <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-                                <td class="right">₱ <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?></td>
-                                <td class="right">₱ <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?></td>
+                                <td class="center" style="height:40px;"><?php echo number_format(floatval($item['pieces'])); ?></td>
+                                <td class="center" style="height:40px;"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
+                                <td style="height:40px;"><?php echo htmlspecialchars($item['product_name']); ?></td>
+                                <td class="right" style="height:40px;">₱ <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?></td>
+                                <td class="right" style="height:40px;">₱ <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
