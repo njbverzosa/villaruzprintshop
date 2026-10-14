@@ -781,6 +781,228 @@ function formatDeliveryDate($date)
             color: #64748b;
         }
 
+        /* ============================================================ */
+        /* ============ ✅ FLOATING CALCULATOR ======================= */
+        /* ============================================================ */
+
+        /* Floating toggle button (bottom-right) — only visible in edit mode */
+        #calcToggleBtn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
+            font-size: 24px;
+            z-index: 9998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #calcToggleBtn.show {
+            display: flex;
+            animation: calcBtnPop 0.3s ease;
+        }
+
+        #calcToggleBtn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 10px 28px rgba(139, 92, 246, 0.6);
+        }
+
+        #calcToggleBtn:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes calcBtnPop {
+            from { transform: scale(0); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+
+        /* Floating calculator panel */
+        #calcPanel {
+            position: fixed;
+            bottom: 96px;
+            right: 24px;
+            width: 280px;
+            background: #1e293b;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            z-index: 9999;
+            display: none;
+            overflow: hidden;
+            transform-origin: bottom right;
+            animation: calcPanelIn 0.25s ease;
+        }
+
+        #calcPanel.show {
+            display: block;
+        }
+
+        @keyframes calcPanelIn {
+            from { transform: scale(0.85) translateY(20px); opacity: 0; }
+            to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* Calculator header */
+        .calc-header {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
+
+        .calc-header .calc-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .calc-header .calc-title i {
+            color: #8b5cf6;
+        }
+
+        .calc-header .calc-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .calc-header .calc-close:hover {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        /* Calculator display */
+        .calc-display {
+            background: #0f172a;
+            color: #fff;
+            padding: 16px 18px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+
+        .calc-display .calc-target {
+            font-size: 10px;
+            color: #8b5cf6;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            min-height: 14px;
+            margin-bottom: 4px;
+        }
+
+        .calc-display .calc-expression {
+            font-size: 13px;
+            color: #94a3b8;
+            min-height: 18px;
+            word-break: break-all;
+        }
+
+        .calc-display .calc-result {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 4px;
+            word-break: break-all;
+            line-height: 1.1;
+        }
+
+        /* Calculator buttons */
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            padding: 12px;
+            background: #1e293b;
+        }
+
+        .calc-btn {
+            background: #334155;
+            color: #f1f5f9;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.12s, transform 0.08s;
+        }
+
+        .calc-btn:hover {
+            background: #475569;
+        }
+
+        .calc-btn:active {
+            transform: scale(0.94);
+        }
+
+        .calc-btn.op {
+            background: #8b5cf6;
+            color: #fff;
+        }
+
+        .calc-btn.op:hover {
+            background: #7c3aed;
+        }
+
+        .calc-btn.clear {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .calc-btn.clear:hover {
+            background: #b91c1c;
+        }
+
+        .calc-btn.equals {
+            background: #16a34a;
+            color: #fff;
+            grid-column: span 2;
+        }
+
+        .calc-btn.equals:hover {
+            background: #15803d;
+        }
+
+        .calc-btn.zero {
+            grid-column: span 2;
+        }
+
+        /* Mobile: smaller calculator */
+        @media (max-width: 480px) {
+            #calcPanel {
+                width: calc(100vw - 32px);
+                right: 16px;
+                bottom: 88px;
+            }
+
+            #calcToggleBtn {
+                width: 52px;
+                height: 52px;
+                font-size: 20px;
+                bottom: 18px;
+                right: 18px;
+            }
+        }
+
         /* ========== SYSTEM MODAL ========== */
         .system-modal-overlay {
             position: fixed;
@@ -1113,6 +1335,53 @@ function formatDeliveryDate($date)
     </div>
 
     <?php include '../footer.php'; ?>
+
+    <!-- ============================================================ -->
+    <!-- ✅ FLOATING CALCULATOR (only shown in edit mode)             -->
+    <!-- ============================================================ -->
+    <button id="calcToggleBtn" title="Open calculator">
+        <i class="fas fa-calculator"></i>
+    </button>
+
+    <div id="calcPanel">
+        <div class="calc-header" id="calcHeader">
+            <div class="calc-title">
+                <i class="fas fa-calculator"></i>
+                <span>Calculator</span>
+            </div>
+            <button class="calc-close" id="calcCloseBtn" title="Close">&times;</button>
+        </div>
+        <div class="calc-display">
+            <div class="calc-target" id="calcTarget">No field focused</div>
+            <div class="calc-expression" id="calcExpression">&nbsp;</div>
+            <div class="calc-result" id="calcResult">0</div>
+        </div>
+        <div class="calc-buttons" id="calcButtons">
+            <button class="calc-btn clear" data-action="clear">C</button>
+            <button class="calc-btn op" data-action="backspace">⌫</button>
+            <button class="calc-btn op" data-action="percent">%</button>
+            <button class="calc-btn op" data-action="divide">÷</button>
+
+            <button class="calc-btn" data-action="num" data-num="7">7</button>
+            <button class="calc-btn" data-action="num" data-num="8">8</button>
+            <button class="calc-btn" data-action="num" data-num="9">9</button>
+            <button class="calc-btn op" data-action="multiply">×</button>
+
+            <button class="calc-btn" data-action="num" data-num="4">4</button>
+            <button class="calc-btn" data-action="num" data-num="5">5</button>
+            <button class="calc-btn" data-action="num" data-num="6">6</button>
+            <button class="calc-btn op" data-action="subtract">−</button>
+
+            <button class="calc-btn" data-action="num" data-num="1">1</button>
+            <button class="calc-btn" data-action="num" data-num="2">2</button>
+            <button class="calc-btn" data-action="num" data-num="3">3</button>
+            <button class="calc-btn op" data-action="add">+</button>
+
+            <button class="calc-btn zero" data-action="num" data-num="0">0</button>
+            <button class="calc-btn" data-action="num" data-num=".">.</button>
+            <button class="calc-btn equals" data-action="equals">=</button>
+        </div>
+    </div>
 
     <script>
         // ========== SIDEBAR ==========
@@ -1516,7 +1785,267 @@ function formatDeliveryDate($date)
             }
         }
 
-        // ========== EDIT MODE ==========
+        // ============================================================
+        // ✅ FLOATING CALCULATOR LOGIC
+        // ============================================================
+        const calcToggleBtn = document.getElementById('calcToggleBtn');
+        const calcPanel = document.getElementById('calcPanel');
+        const calcCloseBtn = document.getElementById('calcCloseBtn');
+        const calcResult = document.getElementById('calcResult');
+        const calcExpression = document.getElementById('calcExpression');
+        const calcTarget = document.getElementById('calcTarget');
+        const calcButtons = document.getElementById('calcButtons');
+        const calcHeader = document.getElementById('calcHeader');
+
+        let calcState = {
+            currentInput: '0',   // what's currently being typed
+            previousValue: null, // left operand
+            operator: null,      // '+', '-', '*', '/', '%'
+            expression: '',      // full expression for display
+            justEvaluated: false,
+            targetInput: null    // the <input> in the table that will receive the result
+        };
+
+        function resetCalcState() {
+            calcState.currentInput = '0';
+            calcState.previousValue = null;
+            calcState.operator = null;
+            calcState.expression = '';
+            calcState.justEvaluated = false;
+            updateCalcDisplay();
+        }
+
+        function updateCalcDisplay() {
+            calcResult.textContent = calcState.currentInput || '0';
+            calcExpression.innerHTML = calcState.expression || '&nbsp;';
+            if (calcState.targetInput) {
+                const row = calcState.targetInput.closest('tr');
+                const productName = row?.querySelector('.product-name input')?.value || 'row';
+                calcTarget.textContent = 'Target: ' + productName.substring(0, 22);
+            } else {
+                calcTarget.textContent = 'No field focused';
+            }
+        }
+
+        function setTargetInput(input) {
+            calcState.targetInput = input;
+            updateCalcDisplay();
+        }
+
+        // Live-sync the result to the focused total_amount input
+        function syncResultToTarget() {
+            if (!calcState.targetInput) return;
+            // Only auto-sync when the value is a clean number
+            const val = calcState.currentInput;
+            if (!isNaN(parseFloat(val)) && isFinite(val)) {
+                calcState.targetInput.value = parseFloat(val).toFixed(2);
+                // Trigger input event so updateGrandTotal() recalculates
+                calcState.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+
+        function handleCalcButton(action, num) {
+            switch (action) {
+                case 'num':
+                    if (calcState.justEvaluated) {
+                        calcState.currentInput = num === '.' ? '0.' : num;
+                        calcState.justEvaluated = false;
+                    } else {
+                        if (num === '.' && calcState.currentInput.includes('.')) return;
+                        if (calcState.currentInput === '0' && num !== '.') {
+                            calcState.currentInput = num;
+                        } else {
+                            calcState.currentInput += num;
+                        }
+                    }
+                    break;
+
+                case 'add':
+                case 'subtract':
+                case 'multiply':
+                case 'divide':
+                    if (calcState.operator && !calcState.justEvaluated) {
+                        // chain operations
+                        const result = computeResult();
+                        calcState.currentInput = String(result);
+                    }
+                    calcState.previousValue = parseFloat(calcState.currentInput) || 0;
+                    calcState.operator = action;
+                    calcState.expression = formatNumber(calcState.previousValue) + ' ' + opSymbol(action);
+                    calcState.justEvaluated = false;
+                    break;
+
+                case 'percent':
+                    // Simple percent: currentInput / 100
+                    calcState.currentInput = String((parseFloat(calcState.currentInput) || 0) / 100);
+                    break;
+
+                case 'equals':
+                    if (calcState.operator && calcState.previousValue !== null) {
+                        const right = parseFloat(calcState.currentInput) || 0;
+                        const result = computeResult();
+                        calcState.expression = formatNumber(calcState.previousValue) + ' ' +
+                            opSymbol(calcState.operator) + ' ' + formatNumber(right) + ' =';
+                        calcState.currentInput = String(result);
+                        calcState.previousValue = null;
+                        calcState.operator = null;
+                        calcState.justEvaluated = true;
+                        // Commit result to the focused input
+                        syncResultToTarget(true);
+                    }
+                    break;
+
+                case 'clear':
+                    resetCalcState();
+                    return;
+
+                case 'backspace':
+                    if (calcState.currentInput.length > 1) {
+                        calcState.currentInput = calcState.currentInput.slice(0, -1);
+                    } else {
+                        calcState.currentInput = '0';
+                    }
+                    break;
+            }
+
+            updateCalcDisplay();
+            // Auto-fill the target input live as the user types (only when no operator is pending)
+            if (!calcState.operator && !calcState.justEvaluated) {
+                syncResultToTarget();
+            }
+        }
+
+        function opSymbol(op) {
+            return { add: '+', subtract: '−', multiply: '×', divide: '÷', percent: '%' }[op] || '';
+        }
+
+        function computeResult() {
+            const left = calcState.previousValue ?? 0;
+            const right = parseFloat(calcState.currentInput) || 0;
+            switch (calcState.operator) {
+                case 'add': return left + right;
+                case 'subtract': return left - right;
+                case 'multiply': return left * right;
+                case 'divide': return right === 0 ? 0 : left / right;
+                default: return right;
+            }
+        }
+
+        function formatNumber(n) {
+            if (n === null || isNaN(n)) return '0';
+            return parseFloat(n.toFixed(2)).toString();
+        }
+
+        // Bind calculator buttons
+        calcButtons.querySelectorAll('.calc-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const action = this.dataset.action;
+                const num = this.dataset.num;
+                handleCalcButton(action, num);
+            });
+        });
+
+        // Toggle button visibility based on edit mode
+        function showCalcToggle() {
+            calcToggleBtn.classList.add('show');
+        }
+
+        function hideCalcToggle() {
+            calcToggleBtn.classList.remove('show');
+            calcPanel.classList.remove('show');
+        }
+
+        calcToggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            calcPanel.classList.toggle('show');
+        });
+
+        calcCloseBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            calcPanel.classList.remove('show');
+        });
+
+        // Prevent clicks inside the calculator from closing it
+        calcPanel.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        // Close calculator when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!calcPanel.contains(e.target) && !calcToggleBtn.contains(e.target)) {
+                calcPanel.classList.remove('show');
+            }
+        });
+
+        // Keyboard support (only when calculator is open)
+        document.addEventListener('keydown', function (e) {
+            if (!calcPanel.classList.contains('show')) return;
+            const key = e.key;
+            if (/^[0-9]$/.test(key)) {
+                handleCalcButton('num', key);
+            } else if (key === '.') {
+                handleCalcButton('num', '.');
+            } else if (key === '+') {
+                handleCalcButton('add');
+            } else if (key === '-') {
+                handleCalcButton('subtract');
+            } else if (key === '*') {
+                handleCalcButton('multiply');
+            } else if (key === '/') {
+                handleCalcButton('divide');
+            } else if (key === '%') {
+                handleCalcButton('percent');
+            } else if (key === 'Enter' || key === '=') {
+                e.preventDefault();
+                handleCalcButton('equals');
+            } else if (key === 'Backspace') {
+                handleCalcButton('backspace');
+            } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+                handleCalcButton('clear');
+            }
+        });
+
+        // ---- Drag the calculator panel by its header ----
+        (function makeCalcDraggable() {
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+
+            calcHeader.addEventListener('mousedown', function (e) {
+                isDragging = true;
+                const rect = calcPanel.getBoundingClientRect();
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = rect.left;
+                startTop = rect.top;
+
+                // Convert to left/top positioning so it doesn't snap
+                calcPanel.style.left = startLeft + 'px';
+                calcPanel.style.top = startTop + 'px';
+                calcPanel.style.right = 'auto';
+                calcPanel.style.bottom = 'auto';
+
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                calcPanel.style.left = (startLeft + dx) + 'px';
+                calcPanel.style.top = (startTop + dy) + 'px';
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                }
+            });
+        })();
+
+        // ============================================================
+        // ✅ EDIT MODE
+        // ============================================================
         const editModeBtn = document.getElementById('edit-mode-btn');
 
         function enableEditMode() {
@@ -1524,6 +2053,10 @@ function formatDeliveryDate($date)
             editModeBtn.innerHTML = '<i class="fas fa-save"></i> UPDATE';
             editModeBtn.classList.remove('edit-mode-btn');
             editModeBtn.classList.add('update-mode-btn');
+
+            // ✅ Show the floating calculator toggle button
+            showCalcToggle();
+            resetCalcState();
 
             const dateDisplay = document.getElementById('deliveryDateDisplay');
             const dateInput = document.getElementById('deliveryDateInput');
@@ -1583,7 +2116,24 @@ function formatDeliveryDate($date)
                         if (this.value === '' || isNaN(this.value)) this.value = 0;
                         calculateRowTotal();
                     });
+
+                    // ✅ Focus on the total_amount input → calculator knows its target
+                    totalInput.addEventListener('focus', function () {
+                        setTargetInput(this);
+                    });
                 }
+            });
+
+            // Attach focus listeners to ALL editable inputs so the calculator target updates
+            document.querySelectorAll('#orders-table .editable-input').forEach(inp => {
+                inp.addEventListener('focus', function () {
+                    if (this.dataset.field === 'total') {
+                        setTargetInput(this);
+                    } else {
+                        // If user focuses another field, clear the calc target
+                        setTargetInput(null);
+                    }
+                });
             });
 
             setTimeout(updateGrandTotal, 100);
@@ -1884,6 +2434,7 @@ function formatDeliveryDate($date)
 
         console.log('📱 Sidebar menu loaded - Left Side');
         console.log('📐 Desktop: Sidebar expanded | Mobile: Burger menu');
+        console.log('🧮 Floating calculator ready in edit mode');
     </script>
 </body>
 
