@@ -483,6 +483,15 @@ function formatDeliveryDate($date)
             padding: 12px 15px;
         }
 
+        /* ========== ✅ ORDER ID COLUMN ========== */
+        .orders-table td.order-id {
+            width: 50px;
+            text-align: center;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
         /* ========== ✅ DRAG HANDLE ========== */
         .orders-table td.drag-handle {
             width: 36px;
@@ -527,6 +536,11 @@ function formatDeliveryDate($date)
 
             .orders-table td.drag-handle i {
                 font-size: 12px;
+            }
+
+            .orders-table td.order-id {
+                width: 36px;
+                font-size: 10px;
             }
         }
 
@@ -962,8 +976,9 @@ function formatDeliveryDate($date)
                                             data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
                                             data-selling-price="<?= floatval($item['selling_price']) ?>"
                                             data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
+                                            <!-- ✅ Order ID (from order_status_history.id) -->
+                                            <td class="order-id"><?= htmlspecialchars($item['id'] ?? '') ?></td>
                                             <!-- ✅ Drag handle -->
-                                             <td class="product-name"><?= htmlspecialchars($columns['id']) ?></td>
                                             <td class="drag-handle" title="Drag to reorder">
                                                 <i class="fas fa-grip-vertical"></i>
                                             </td>
@@ -978,7 +993,8 @@ function formatDeliveryDate($date)
                                         </tr>
                                     <?php endforeach; ?>
                                     <tr class="total-row">
-                                        <td></td>
+                                        <td></td><!-- order-id -->
+                                        <td></td><!-- drag-handle -->
                                         <td colspan="2" style="text-align: right; font-weight: 600;">Total Items: <span
                                                 id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
                                         </td>
@@ -1253,12 +1269,12 @@ function formatDeliveryDate($date)
             let rowNumber = 1;
             rows.forEach(row => {
                 const cells = row.cells;
-                // ✅ Shifted by 1 because of new drag-handle cell
-                const unit = cells[3]?.innerText || '';
-                const itemDescription = cells[1]?.innerText || '';
-                const quantity = cells[2]?.innerText || '0';
-                let unitCost = cells[4]?.innerText || '0';
-                let totalCost = cells[5]?.innerText || '0';
+                // ✅ Shifted by 1 because of new order-id cell at index 0
+                const unit = cells[4]?.innerText || '';
+                const itemDescription = cells[2]?.innerText || '';
+                const quantity = cells[3]?.innerText || '0';
+                let unitCost = cells[5]?.innerText || '0';
+                let totalCost = cells[6]?.innerText || '0';
 
                 unitCost = unitCost.replace('₱', '').replace(/,/g, '').trim();
                 totalCost = totalCost.replace('₱', '').replace(/,/g, '').trim();
@@ -1445,12 +1461,12 @@ function formatDeliveryDate($date)
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
 
             rows.forEach((row, index) => {
-                // ✅ Shifted cell indices by 1 (drag-handle is cell 0)
-                const originalProduct = row.cells[1].innerText;
-                const originalPieces = row.cells[2].innerText;
-                const originalUnit = row.cells[3].innerText;
-                const originalSellingPrice = row.cells[4].innerText.replace('₱', '').replace(/,/g, '');
-                const originalTotal = row.cells[5].innerText.replace('₱', '').replace(/,/g, '');
+                // ✅ New layout: [0]=order-id, [1]=drag-handle, [2]=product, [3]=pieces, [4]=unit, [5]=selling_price, [6]=total
+                const originalProduct = row.cells[2].innerText;
+                const originalPieces = row.cells[3].innerText;
+                const originalUnit = row.cells[4].innerText;
+                const originalSellingPrice = row.cells[5].innerText.replace('₱', '').replace(/,/g, '');
+                const originalTotal = row.cells[6].innerText.replace('₱', '').replace(/,/g, '');
 
                 originalData.set(index, {
                     product: originalProduct,
@@ -1460,15 +1476,15 @@ function formatDeliveryDate($date)
                     total: originalTotal
                 });
 
-                row.cells[1].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
-                row.cells[2].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
-                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
-                row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
-                row.cells[5].innerHTML = `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
+                row.cells[2].innerHTML = `<input type="text" class="editable-input" value="${escapeHtml(originalProduct)}" data-field="product">`;
+                row.cells[3].innerHTML = `<input type="text" class="editable-input" value="${originalPieces}" data-field="pieces">`;
+                row.cells[4].innerHTML = `<input type="text" class="editable-input" value="${originalUnit}" data-field="unit">`;
+                row.cells[5].innerHTML = `<input type="text" class="editable-input" value="${originalSellingPrice}" data-field="selling_price">`;
+                row.cells[6].innerHTML = `<input type="text" class="editable-input" value="${originalTotal}" data-field="total">`;
 
-                const piecesInput = row.cells[2].querySelector('input');
-                const sellingPriceInput = row.cells[4].querySelector('input');
-                const totalInput = row.cells[5].querySelector('input');
+                const piecesInput = row.cells[3].querySelector('input');
+                const sellingPriceInput = row.cells[5].querySelector('input');
+                const totalInput = row.cells[6].querySelector('input');
 
                 function calculateRowTotal() {
                     const pieces = parseFloat(piecesInput.value) || 0;
@@ -1502,8 +1518,8 @@ function formatDeliveryDate($date)
             let totalItems = 0;
 
             rows.forEach(row => {
-                const piecesInput = row.cells[2]?.querySelector('input');
-                const totalInput = row.cells[5]?.querySelector('input');
+                const piecesInput = row.cells[3]?.querySelector('input');
+                const totalInput = row.cells[6]?.querySelector('input');
                 totalItems += parseFloat(piecesInput?.value) || 0;
                 grandTotal += parseFloat(totalInput?.value) || 0;
             });
@@ -1528,11 +1544,11 @@ function formatDeliveryDate($date)
             updateGrandTotal();
 
             rows.forEach((row, index) => {
-                const productInput = row.cells[1].querySelector('input');
-                const piecesInput = row.cells[2].querySelector('input');
-                const unitInput = row.cells[3].querySelector('input');
-                const sellingPriceInput = row.cells[4].querySelector('input');
-                const totalInput = row.cells[5].querySelector('input');
+                const productInput = row.cells[2].querySelector('input');
+                const piecesInput = row.cells[3].querySelector('input');
+                const unitInput = row.cells[4].querySelector('input');
+                const sellingPriceInput = row.cells[5].querySelector('input');
+                const totalInput = row.cells[6].querySelector('input');
 
                 if (!productInput || !piecesInput || !unitInput || !sellingPriceInput || !totalInput) {
                     isValid = false;
@@ -1721,9 +1737,10 @@ function formatDeliveryDate($date)
                 }
 
                 const row = this.closest('tr');
-                const productName = row.cells[1]?.innerText || '';
-                const pieces = row.cells[2]?.innerText || '0';
-                const totalAmount = row.cells[5]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
+                // ✅ New layout: [0]=order-id, [1]=drag-handle, [2]=product, [3]=pieces, [4]=unit, [5]=selling_price, [6]=total
+                const productName = row.cells[2]?.innerText || '';
+                const pieces = row.cells[3]?.innerText || '0';
+                const totalAmount = row.cells[6]?.innerText.replace('₱', '').replace(/,/g, '') || '0';
 
                 showConfirmModal(
                     'REMOVE ITEM',
