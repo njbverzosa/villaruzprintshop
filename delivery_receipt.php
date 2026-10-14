@@ -272,7 +272,7 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             color: #ffffff;
             font-weight: 700;
             text-align: left;
-            padding: 11px 13px;
+            padding: 8px 13px;
             font-size: 0.72rem;
             letter-spacing: 0.5px;
             border: none;
@@ -287,11 +287,14 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             text-align: right;
         }
 
+        /* --- THIN ROWS --- */
         .items-table td {
-            padding: 12px 13px;
+            padding: 4px 13px;
             color: #3a3d42;
             border-bottom: 1px solid #eef0f2;
             font-size: 0.85rem;
+            line-height: 1.2;
+            vertical-align: middle;
         }
 
         .items-table tbody tr:nth-child(even) td {
@@ -640,9 +643,13 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                 gap: 24px;
             }
 
-            .items-table th,
+            .items-table th {
+                padding: 7px 10px;
+                font-size: 0.8rem;
+            }
+
             .items-table td {
-                padding: 10px 10px;
+                padding: 4px 10px;
                 font-size: 0.8rem;
             }
         }
@@ -746,13 +753,13 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
             }
 
             .items-table th {
-                padding: 8px 5px;
+                padding: 6px 5px;
                 font-size: 0.6rem;
                 letter-spacing: 0.3px;
             }
 
             .items-table td {
-                padding: 8px 5px;
+                padding: 4px 5px;
                 font-size: 0.72rem;
             }
 
@@ -865,12 +872,12 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
 
             .items-table th {
                 font-size: 0.55rem;
-                padding: 7px 3px;
+                padding: 5px 3px;
             }
 
             .items-table td {
                 font-size: 0.66rem;
-                padding: 7px 3px;
+                padding: 3px 3px;
             }
 
             .sign-block .sign-name-line {
@@ -1019,14 +1026,13 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                             <td colspan="6" style="text-align: center; padding: 16px;">No items found</td>
                         </tr>
                     <?php else: ?>
-                        <?php $rowNum = 1; ?>
                         <?php foreach ($items as $item): ?>
                             <tr>
-                                <td class="center" style="height:30px;"><?php echo number_format(floatval($item['pieces'])); ?></td>
-                                <td class="center" style="height:30px;"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
-                                <td style="height:30px;"><?php echo htmlspecialchars($item['product_name']); ?></td>
-                                <td class="right" style="height:30px;">₱ <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?></td>
-                                <td class="right" style="height:30px;">₱ <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?></td>
+                                <td class="center"><?php echo number_format(floatval($item['pieces'])); ?></td>
+                                <td class="center"><?php echo htmlspecialchars($item['unit'] ?? 'Pcs'); ?></td>
+                                <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                                <td class="right">₱ <?php echo number_format(floatval($item['selling_price']), 2, '.', ','); ?></td>
+                                <td class="right">₱ <?php echo number_format(floatval($item['total_amount']), 2, '.', ','); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
