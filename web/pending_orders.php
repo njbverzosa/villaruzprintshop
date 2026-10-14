@@ -1231,9 +1231,9 @@ function formatDeliveryDate($date)
 
                     const data = await response.json();
 
-                    if (data.success) {
-                        showMessageModal('✅ ORDER SAVED', 'Item order updated successfully.', 'success');
-                    } else {
+                    // ✅ Silently ignore success — no popup
+                    // Only show a modal if the save actually FAILED
+                    if (!data.success) {
                         showMessageModal('ERROR', data.message || 'Failed to save order', 'error');
                     }
                 } catch (err) {
