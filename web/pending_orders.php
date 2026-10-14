@@ -450,6 +450,12 @@ function formatDeliveryDate($date)
             }
         }
 
+        /* ✅ HORIZONTAL SCROLL WRAPPER (needed when inputs grow in edit mode) */
+        .orders-table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .orders-table {
             width: 100%;
             border-collapse: collapse;
@@ -669,6 +675,62 @@ function formatDeliveryDate($date)
             }
         }
 
+        /* ========== ✅ EDIT MODE — SLIDE-IN ANIMATION ========== */
+
+        /* The whole row slides in from the right when edit mode starts */
+        @keyframes rowSlideIn {
+            from {
+                transform: translateX(80px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Each input fades + slides in slightly after the row, giving a staggered feel */
+        @keyframes inputSlideIn {
+            from {
+                transform: translateX(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Edit-mode row — wider padding, soft yellow highlight */
+        .orders-table tr.edit-row {
+            animation: rowSlideIn 0.3s ease forwards;
+            background: #fffbeb;
+        }
+
+        .orders-table tr.edit-row td {
+            padding: 10px 10px;
+            vertical-align: middle;
+        }
+
+        /* Edit-mode inputs slide in and stay wide enough to show all data */
+        .orders-table tr.edit-row .editable-input {
+            animation: inputSlideIn 0.35s ease forwards;
+            min-width: 110px;
+            white-space: nowrap;
+        }
+
+        /* Product name column gets the widest input */
+        .orders-table tr.edit-row td:nth-child(3) .editable-input {
+            min-width: 240px;
+        }
+
+        /* Stagger the inputs a tiny bit per column for a nicer effect */
+        .orders-table tr.edit-row td:nth-child(3) .editable-input { animation-delay: 0.03s; }
+        .orders-table tr.edit-row td:nth-child(4) .editable-input { animation-delay: 0.06s; }
+        .orders-table tr.edit-row td:nth-child(5) .editable-input { animation-delay: 0.09s; }
+        .orders-table tr.edit-row td:nth-child(6) .editable-input { animation-delay: 0.12s; }
+        .orders-table tr.edit-row td:nth-child(7) .editable-input { animation-delay: 0.15s; }
+
         /* Editable inputs */
         .editable-input,
         .editable-select {
@@ -679,6 +741,7 @@ function formatDeliveryDate($date)
             font-size: 13px;
             font-family: 'Poppins', sans-serif;
             background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .editable-input:focus,
@@ -686,6 +749,17 @@ function formatDeliveryDate($date)
             outline: none;
             border-color: #7c3aed;
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        /* On mobile, allow the table to scroll so all inputs are reachable */
+        @media (max-width: 768px) {
+            .orders-table tr.edit-row td:nth-child(3) .editable-input {
+                min-width: 180px;
+            }
+            .orders-table tr.edit-row .editable-input {
+                min-width: 90px;
+                font-size: 12px;
+            }
         }
 
         .empty-state {
@@ -1461,6 +1535,9 @@ function formatDeliveryDate($date)
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row)');
 
             rows.forEach((row, index) => {
+                // ✅ ADD edit-row class → triggers slide-in animation
+                row.classList.add('edit-row');
+
                 // ✅ New layout: [0]=order-id, [1]=drag-handle, [2]=product, [3]=pieces, [4]=unit, [5]=selling_price, [6]=total
                 const originalProduct = row.cells[2].innerText;
                 const originalPieces = row.cells[3].innerText;
