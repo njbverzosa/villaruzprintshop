@@ -161,6 +161,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
         }
 
         .product-image-wrapper {
@@ -427,6 +428,31 @@ $defaultImageUrl = '../Products/no-image.jpg';
         }
 
         /* ============================================================
+           ✅ DRAG & DROP HIGHLIGHT
+           ============================================================ */
+        .image-stage.dragover {
+            border-color: #0ea5e9;
+            background: #eff6ff;
+            box-shadow: inset 0 0 0 4px rgba(14, 165, 233, 0.15);
+        }
+
+        .image-stage.dragover::after {
+            content: "📸 Drop image here";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #0ea5e9;
+            background: rgba(239, 246, 255, 0.85);
+            z-index: 10;
+            pointer-events: none;
+            border-radius: 8px;
+        }
+
+        /* ============================================================
            ✅ SUCCESS MODAL — loader → check
            ============================================================ */
         .success-overlay {
@@ -612,7 +638,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
 
                 <div class="image-placeholder" id="imagePlaceholder">
                     <i class="fas fa-image"></i>
-                    <span>No image</span>
+                    <span>No image — drag & drop, paste, or use buttons</span>
                 </div>
 
                 <div class="camera-box" id="cameraBox">
@@ -764,6 +790,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
         var base64Input = document.getElementById('product_image_base64');
         var useDefaultImageInput = document.getElementById('use_default_image');
         var saveBtn = document.getElementById('saveBtn');
+        var imageStage = document.getElementById('imageStage');
 
         // TORCH
         var torchBtn = document.getElementById('torchBtn');
@@ -803,7 +830,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
 
         // TORCH visibility
         function showTorchButton() {
-            // Only show if we have a video track with torch capability (or try anyway)
             if (torchTrack && typeof torchTrack.getCapabilities === 'function') {
                 var caps = torchTrack.getCapabilities();
                 if (caps.torch) {
@@ -811,12 +837,10 @@ $defaultImageUrl = '../Products/no-image.jpg';
                     return;
                 }
             }
-            // Fallback: show button anyway for devices that may support it
             torchBtn.classList.add('visible');
         }
         function hideTorchButton() {
             torchBtn.classList.remove('visible');
-            // Reset torch state
             torchOn = false;
             torchBtn.classList.remove('torch-on');
         }
@@ -851,7 +875,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             hideUploadButton();
             hideDefaultButton();
             hidePlaceholder();
-            // Torch button is shown only if a torch track exists
             if (torchTrack) {
                 showTorchButton();
             }
@@ -878,7 +901,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 }
             } catch (err) {
                 console.error('Torch error:', err);
-                // Revert state if failed
                 torchOn = !torchOn;
                 alert('Could not toggle torch: ' + (err.message || err.name));
                 torchBtn.classList.remove('torch-on');
@@ -913,9 +935,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 cameraBox.classList.add('visible');
                 imageWrapper.style.display = 'none';
 
-                // Get the video track for torch
                 torchTrack = stream.getVideoTracks()[0] || null;
-                // Reset torch state
                 torchOn = false;
                 torchBtn.classList.remove('torch-on');
 
@@ -933,7 +953,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 stream.getTracks().forEach(function (t) { t.stop(); });
                 stream = null;
             }
-            // Reset torch
             torchTrack = null;
             torchOn = false;
             torchBtn.classList.remove('torch-on');
@@ -1015,6 +1034,121 @@ $defaultImageUrl = '../Products/no-image.jpg';
         });
 
         // ============================================================
+        // ✅ SHARED HELPER — apply an image file to the preview
+        // ============================================================
+        function applyImageFile(file) {
+            if (!file) return;
+
+            var allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (allowed.indexOf(file.type) === -1) {
+                alert('Please use a JPG, PNG, or WebP image.');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image is too large. Max 5MB.');
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+                var dataUrl = ev.target.result;
+
+                base64Input.value = dataUrl;
+                useDefaultImageInput.value = '0';
+                fileInput.value = '';
+
+                capturedPhoto.src = dataUrl;
+                capturedPhoto.style.display = 'block';
+                video.style.display = 'none';
+                cameraBox.classList.add('visible');
+
+                imageWrapper.style.display = 'none';
+                viewHasImage();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ============================================================
+        // ✅ DRAG & DROP IMAGE
+        // ============================================================
+        // Prevent browser from opening the file when dropped outside the stage
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
+            document.body.addEventListener(evt, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        // Highlight when dragging over the image stage
+        ['dragenter', 'dragover'].forEach(function (evt) {
+            imageStage.addEventListener(evt, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                imageStage.classList.add('dragover');
+            }, false);
+        });
+
+        // Remove highlight on leave / drop
+        ['dragleave', 'drop'].forEach(function (evt) {
+            imageStage.addEventListener(evt, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (evt === 'dragleave' && imageStage.contains(e.relatedTarget)) return;
+                imageStage.classList.remove('dragover');
+            }, false);
+        });
+
+        // Handle drop
+        imageStage.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            imageStage.classList.remove('dragover');
+
+            var dt = e.dataTransfer;
+            if (!dt) return;
+
+            var file = null;
+
+            if (dt.files && dt.files.length > 0) {
+                file = dt.files[0];
+            } else if (dt.items && dt.items.length > 0) {
+                for (var i = 0; i < dt.items.length; i++) {
+                    if (dt.items[i].kind === 'file') {
+                        file = dt.items[i].getAsFile();
+                        break;
+                    }
+                }
+            }
+
+            if (!file) {
+                alert('No image file detected in drop.');
+                return;
+            }
+
+            applyImageFile(file);
+        });
+
+        // ============================================================
+        // ✅ PASTE IMAGE FROM CLIPBOARD
+        // ============================================================
+        document.addEventListener('paste', function (e) {
+            var items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    var file = items[i].getAsFile();
+                    if (!file) continue;
+
+                    applyImageFile(file);
+                    e.preventDefault();
+                    break;
+                }
+            }
+        });
+
+        // ============================================================
         // ✅ CHOOSE DEFAULT IMAGE
         // ============================================================
         defaultBtn.addEventListener('click', function () {
@@ -1058,7 +1192,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
             var isDefault = useDefaultImageInput.value === '1';
 
             if (!base64Input.value && !isDefault) {
-                alert('Please capture, upload, or choose a default product image first.');
+                alert('Please capture, upload, drag-drop, paste, or choose a default product image first.');
                 return;
             }
 

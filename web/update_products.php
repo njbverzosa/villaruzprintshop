@@ -127,6 +127,28 @@ if (!empty($product['product_image'])) {
             width: 260px;
             max-width: 100%;
             margin: 0 auto 12px auto;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .image-stage.dragover {
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.35);
+            border-radius: 12px;
+        }
+
+        .image-stage.dragover::after {
+            content: "📸 Drop image here";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #0ea5e9;
+            background: rgba(239, 246, 255, 0.9);
+            z-index: 10;
+            pointer-events: none;
+            border-radius: 10px;
         }
 
         .product-image-wrapper {
@@ -338,7 +360,6 @@ if (!empty($product['product_image'])) {
             justify-content: center;
         }
 
-        /* -------- Spinner -------- */
         .success-spinner {
             width: 80px;
             height: 80px;
@@ -350,7 +371,6 @@ if (!empty($product['product_image'])) {
             transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
-        /* -------- Checkmark SVG (hidden initially) -------- */
         .success-check {
             position: absolute;
             top: 0;
@@ -362,13 +382,8 @@ if (!empty($product['product_image'])) {
             transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .success-check svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
+        .success-check svg { width: 100%; height: 100%; display: block; }
 
-        /* Circle */
         .success-check circle {
             fill: none;
             stroke: #10b981;
@@ -377,7 +392,6 @@ if (!empty($product['product_image'])) {
             stroke-dashoffset: 166;
         }
 
-        /* Tick */
         .success-check path {
             fill: none;
             stroke: #10b981;
@@ -388,36 +402,12 @@ if (!empty($product['product_image'])) {
             stroke-dashoffset: 48;
         }
 
-        /* ---- State: loading ---- */
-        .success-card.loading .success-spinner {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        .success-card.loading .success-check {
-            opacity: 0;
-            transform: scale(0.8);
-        }
-
-        /* ---- State: done ---- */
-        .success-card.done .success-spinner {
-            opacity: 0;
-            transform: scale(0.6);
-        }
-
-        .success-card.done .success-check {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Trigger the SVG drawing animation when in "done" state */
-        .success-card.done .success-check circle {
-            animation: drawCircle 0.5s ease-out forwards;
-        }
-
-        .success-card.done .success-check path {
-            animation: drawCheck 0.35s 0.4s ease-out forwards;
-        }
+        .success-card.loading .success-spinner { opacity: 1; transform: scale(1); }
+        .success-card.loading .success-check { opacity: 0; transform: scale(0.8); }
+        .success-card.done .success-spinner { opacity: 0; transform: scale(0.6); }
+        .success-card.done .success-check { opacity: 1; transform: scale(1); }
+        .success-card.done .success-check circle { animation: drawCircle 0.5s ease-out forwards; }
+        .success-card.done .success-check path { animation: drawCheck 0.35s 0.4s ease-out forwards; }
 
         .success-title {
             font-size: 20px;
@@ -442,32 +432,13 @@ if (!empty($product['product_image'])) {
             transition: opacity 0.35s ease;
         }
 
-        .success-card.done .success-redirect-hint {
-            opacity: 1;
-        }
+        .success-card.done .success-redirect-hint { opacity: 1; }
 
-        /* ---- Animations ---- */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-
-        @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(12px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes drawCircle {
-            to { stroke-dashoffset: 0; }
-        }
-
-        @keyframes drawCheck {
-            to { stroke-dashoffset: 0; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes drawCircle { to { stroke-dashoffset: 0; } }
+        @keyframes drawCheck { to { stroke-dashoffset: 0; } }
     </style>
 </head>
 
@@ -485,7 +456,6 @@ if (!empty($product['product_image'])) {
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
             <input type="hidden" name="replace_image" id="replace_image" value="0">
 
-            <!-- File input (hidden — used only via JS) -->
             <input type="file" id="productImageFile" accept="image/jpeg,image/jpg,image/png,image/webp">
 
             <div class="image-stage" id="imageStage">
@@ -502,7 +472,7 @@ if (!empty($product['product_image'])) {
 
                 <div class="image-placeholder" id="imagePlaceholder">
                     <i class="fas fa-image"></i>
-                    <span>No image</span>
+                    <span>No image — drag & drop or paste</span>
                 </div>
 
                 <div class="camera-box" id="cameraBox">
@@ -548,17 +518,10 @@ if (!empty($product['product_image'])) {
         <i class="fas fa-camera"></i>
     </button>
 
-    <!-- ============================================================
-         ✅ SUCCESS MODAL — loader then check
-         ============================================================ -->
     <div class="success-overlay" id="successOverlay">
         <div class="success-card loading" id="successCard">
             <div class="success-icon-wrap">
-
-                <!-- Spinner (shown first) -->
                 <div class="success-spinner"></div>
-
-                <!-- Green check (fades in after) -->
                 <div class="success-check">
                     <svg viewBox="0 0 52 52">
                         <circle cx="26" cy="26" r="24" />
@@ -566,7 +529,6 @@ if (!empty($product['product_image'])) {
                     </svg>
                 </div>
             </div>
-
             <div class="success-title" id="successTitle">Saving Changes…</div>
             <div class="success-message" id="successMessage">Please wait while we update the product.</div>
         </div>
@@ -587,6 +549,7 @@ if (!empty($product['product_image'])) {
         const base64Input = document.getElementById('product_image_base64');
         const replaceImageInput = document.getElementById('replace_image');
         const saveBtn = document.getElementById('saveBtn');
+        const imageStage = document.getElementById('imageStage');
 
         const successOverlay = document.getElementById('successOverlay');
         const successCard    = document.getElementById('successCard');
@@ -726,20 +689,20 @@ if (!empty($product['product_image'])) {
             fileInput.click();
         });
 
-        fileInput.addEventListener('change', function () {
-            const file = this.files[0];
+        // ============================================================
+        // ✅ SHARED HELPER — apply an image file to the preview
+        // ============================================================
+        function applyImageFile(file) {
             if (!file) return;
 
             const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
             if (!allowed.includes(file.type)) {
-                alert('Please choose a JPG, PNG, or WebP image.');
-                this.value = '';
+                alert('Please use a JPG, PNG, or WebP image.');
                 return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
                 alert('Image is too large. Max 5MB.');
-                this.value = '';
                 return;
             }
 
@@ -749,6 +712,7 @@ if (!empty($product['product_image'])) {
 
                 base64Input.value = dataUrl;
                 replaceImageInput.value = '1';
+                fileInput.value = '';
 
                 capturedPhoto.src = dataUrl;
                 capturedPhoto.style.display = 'block';
@@ -762,6 +726,87 @@ if (!empty($product['product_image'])) {
                 alert('Failed to read the image file. Please try another.');
             };
             reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+            applyImageFile(file);
+        });
+
+        // ============================================================
+        // ✅ DRAG & DROP IMAGE
+        // ============================================================
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
+            document.body.addEventListener(evt, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(function (evt) {
+            imageStage.addEventListener(evt, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                imageStage.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(function (evt) {
+            imageStage.addEventListener(evt, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (evt === 'dragleave' && imageStage.contains(e.relatedTarget)) return;
+                imageStage.classList.remove('dragover');
+            }, false);
+        });
+
+        imageStage.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            imageStage.classList.remove('dragover');
+
+            const dt = e.dataTransfer;
+            if (!dt) return;
+
+            let file = null;
+
+            if (dt.files && dt.files.length > 0) {
+                file = dt.files[0];
+            } else if (dt.items && dt.items.length > 0) {
+                for (let i = 0; i < dt.items.length; i++) {
+                    if (dt.items[i].kind === 'file') {
+                        file = dt.items[i].getAsFile();
+                        break;
+                    }
+                }
+            }
+
+            if (!file) {
+                alert('No image file detected in drop.');
+                return;
+            }
+
+            applyImageFile(file);
+        });
+
+        // ============================================================
+        // ✅ PASTE IMAGE FROM CLIPBOARD
+        // ============================================================
+        document.addEventListener('paste', function (e) {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    if (!file) continue;
+
+                    applyImageFile(file);
+                    e.preventDefault();
+                    break;
+                }
+            }
         });
 
         // ============================================================
@@ -792,7 +837,7 @@ if (!empty($product['product_image'])) {
             const isDeleting = replaceImageInput.value === '2';
 
             if (!hasNewImage && !originalImageExists && !isDeleting) {
-                alert('Please capture or upload a product image.');
+                alert('Please capture, upload, drag-drop, paste, or keep the current product image.');
                 return;
             }
 
@@ -826,7 +871,6 @@ if (!empty($product['product_image'])) {
                 }
 
                 if (data.success) {
-                    // ✅ Loader → check → redirect
                     showSuccessLoaderThenCheck(
                         data.redirect,
                         'Update Successful!',
@@ -848,25 +892,20 @@ if (!empty($product['product_image'])) {
         // SUCCESS MODAL — loader → check → redirect
         // ============================================================
         function showSuccessLoaderThenCheck(redirectUrl, doneTitle, doneMessage) {
-            // Reset to loading state
             successCard.classList.remove('done');
             successCard.classList.add('loading');
             successTitle.textContent = 'Saving Changes…';
             successMessage.textContent = 'Please wait while we update the product.';
 
-            // Show the overlay
             successOverlay.classList.add('visible');
 
-            // Phase 1: spinner runs for 1 second
             setTimeout(function () {
-                // Phase 2: switch to green check
                 successCard.classList.remove('loading');
                 successCard.classList.add('done');
 
                 successTitle.textContent = doneTitle || 'Update Successful!';
                 successMessage.textContent = doneMessage || 'Your product changes have been saved.';
 
-                // Phase 3: after the check draws, redirect
                 setTimeout(function () {
                     if (redirectUrl) {
                         window.location.href = redirectUrl;
