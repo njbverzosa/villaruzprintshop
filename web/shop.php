@@ -541,7 +541,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         .category-select {
             flex: 1;
             min-width: 180px;
-            max-width: 320px;
+            max-width: 180px;
             padding: 10px 40px 10px 15px;
             font-size: 14px;
             font-weight: 500;
