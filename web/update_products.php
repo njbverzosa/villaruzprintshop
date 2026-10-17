@@ -227,9 +227,20 @@ $currentCategory = $product['category_group'] ?? '';
             display: none;
         }
 
-        .image-link-status.loading { color: #0ea5e9; display: block; }
-        .image-link-status.ok      { color: #10b981; display: block; }
-        .image-link-status.error   { color: #ef4444; display: block; }
+        .image-link-status.loading {
+            color: #0ea5e9;
+            display: block;
+        }
+
+        .image-link-status.ok {
+            color: #10b981;
+            display: block;
+        }
+
+        .image-link-status.error {
+            color: #ef4444;
+            display: block;
+        }
 
         .image-stage {
             position: relative;
@@ -563,25 +574,43 @@ $currentCategory = $product['category_group'] ?? '';
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(12px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes drawCircle {
-            to { stroke-dashoffset: 0; }
+            to {
+                stroke-dashoffset: 0;
+            }
         }
 
         @keyframes drawCheck {
-            to { stroke-dashoffset: 0; }
+            to {
+                stroke-dashoffset: 0;
+            }
         }
     </style>
 </head>
@@ -589,7 +618,9 @@ $currentCategory = $product['category_group'] ?? '';
 <body>
     <div class="container">
         <h2>Update Product</h2>
-        <div class="product-number">Product #: <?php echo htmlspecialchars($product['product_number']); ?> - <?php echo htmlspecialchars($product['category_group']); ?></div>
+        <div class="product-number">Product #: <?php echo htmlspecialchars($product['product_number']); ?> -
+            <?php echo htmlspecialchars($product['category_group']); ?>
+        </div>
 
         <form id="productForm" enctype="multipart/form-data">
             <input type="hidden" name="action" value="update_product">
@@ -606,8 +637,7 @@ $currentCategory = $product['category_group'] ?? '';
             <select name="category_group" id="category_group">
                 <option value="">— None —</option>
                 <?php foreach ($allCategoryGroups as $cg): ?>
-                    <option value="<?php echo htmlspecialchars($cg); ?>"
-                        <?php echo ($cg === $currentCategory) ? 'selected' : ''; ?>>
+                    <option value="<?php echo htmlspecialchars($cg); ?>" <?php echo ($cg === $currentCategory) ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($cg); ?>
                     </option>
                 <?php endforeach; ?>
@@ -657,13 +687,13 @@ $currentCategory = $product['category_group'] ?? '';
             <div id="imageLinkBlock">
                 <label for="image_link">Image Link</label>
                 <div class="image-link-row">
-                    <input type="url" id="image_link"
-                        placeholder="Paste image URL here — it loads automatically"
+                    <input type="url" id="image_link" placeholder="Paste image URL here — it loads automatically"
                         autocomplete="off" spellcheck="false">
                 </div>
                 <div class="image-link-status" id="imageLinkStatus"></div>
                 <div class="image-link-hint">
-                    Paste a direct image URL (ending in .jpg, .png, .webp…). The image will load and preview automatically.
+                    Paste a direct image URL (ending in .jpg, .png, .webp…). The image will load and preview
+                    automatically.
                 </div>
             </div>
 
@@ -767,7 +797,7 @@ $currentCategory = $product['category_group'] ?? '';
         }
 
         // ============================================================
-        // ✅ IMAGE LINK INPUT (auto-load, no button)
+        // ✅ IMAGE LINK INPUT
         // ============================================================
         const imageLinkBlock = document.getElementById('imageLinkBlock');
         const imageLinkInput = document.getElementById('image_link');
@@ -787,7 +817,6 @@ $currentCategory = $product['category_group'] ?? '';
             if (imageLinkBlock) imageLinkBlock.style.display = 'none';
         }
 
-        // Basic URL sanity check
         function looksLikeImageUrl(u) {
             if (!u) return false;
             if (!/^https?:\/\//i.test(u)) return false;
@@ -863,6 +892,9 @@ $currentCategory = $product['category_group'] ?? '';
             }
         }
 
+        // ============================================================
+        // ✅ IMAGE LINK INPUT — paste / Enter / blur auto-load
+        // ============================================================
         if (imageLinkInput) {
             imageLinkInput.addEventListener('paste', function () {
                 setTimeout(() => {
@@ -884,6 +916,87 @@ $currentCategory = $product['category_group'] ?? '';
                 if (v && looksLikeImageUrl(v)) loadImageFromLink(v);
             });
         }
+
+        // ============================================================
+        // ✅ GLOBAL PASTE — image file + URL text
+        // ============================================================
+        function isTextField(el) {
+            if (!el) return false;
+            const tag = (el.tagName || '').toLowerCase();
+            return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+        }
+
+        function applyImageFile(file) {
+            if (!file) return;
+
+            const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowed.includes(file.type)) {
+                alert('Please use a JPG, PNG, or WebP image.');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image is too large. Max 5MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+
+                base64Input.value = dataUrl;
+                replaceImageInput.value = '1';
+
+                capturedPhoto.src = dataUrl;
+                capturedPhoto.style.display = 'block';
+                video.style.display = 'none';
+                cameraBox.classList.add('visible');
+
+                imageWrapper.style.display = 'none';
+                viewHasImage();
+
+                hideImageLinkBlock();
+            };
+            reader.onerror = () => {
+                alert('Failed to read the image file. Please try another.');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.addEventListener('paste', function (e) {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+
+            // ---- (A) pasted image file → preview + save
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type && items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    if (!file) continue;
+
+                    applyImageFile(file);
+                    e.preventDefault();
+                    return;
+                }
+            }
+
+            // ---- (B) pasted URL text → fill Image Link + auto-load
+            const active = document.activeElement;
+
+            if (active === imageLinkInput) return;
+            if (isTextField(active)) return;
+
+            const text = (e.clipboardData && e.clipboardData.getData('text')) || '';
+            const trimmed = text.trim();
+
+            if (trimmed && looksLikeImageUrl(trimmed)) {
+                if (imageLinkInput) {
+                    imageLinkInput.value = trimmed;
+                    showImageLinkBlock();
+                    loadImageFromLink(trimmed);
+                }
+                e.preventDefault();
+            }
+        });
 
         // ============================================================
         // ✅ GOOGLE SEARCH BUTTON
@@ -1070,7 +1183,7 @@ $currentCategory = $product['category_group'] ?? '';
             const isDeleting = replaceImageInput.value === '2';
 
             if (!hasNewImage && !originalImageExists && !isDeleting) {
-                alert('Please capture a photo or paste an image link first.');
+                alert('Please capture a photo, paste an image, or paste an image link first.');
                 return;
             }
 
