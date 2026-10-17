@@ -776,6 +776,7 @@ $currentCategory = $product['category_group'] ?? '';
         const originalImageExists = <?php echo $imageUrl ? 'true' : 'false'; ?>;
 
         let stream = null;
+        let isSaving = false; // guard so Enter can't fire twice
 
         // ============================================================
         // ✅ CATEGORY GROUP — show/hide "new category" input
@@ -906,6 +907,7 @@ $currentCategory = $product['category_group'] ?? '';
             imageLinkInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
+                    e.stopPropagation(); // don't bubble up to the global Enter-to-save
                     const v = (imageLinkInput.value || '').trim();
                     if (v) loadImageFromLink(v);
                 }
@@ -1174,18 +1176,22 @@ $currentCategory = $product['category_group'] ?? '';
         });
 
         // ============================================================
-        // FORM SUBMIT
+        // FORM SUBMIT (handles BOTH click on Save Changes AND Enter)
         // ============================================================
         const productFormEl = document.getElementById('productForm');
 
         productFormEl.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            if (isSaving) return; // prevent double submit
+            isSaving = true;
+
             const hasNewImage = base64Input.value !== '';
             const isDeleting = replaceImageInput.value === '2';
 
             if (!hasNewImage && !originalImageExists && !isDeleting) {
                 alert('Please capture a photo, paste an image, or paste an image link first.');
+                isSaving = false;
                 return;
             }
 
@@ -1194,6 +1200,7 @@ $currentCategory = $product['category_group'] ?? '';
                 if (!newName) {
                     alert('Please enter a name for the new category.');
                     newCategoryInput.focus();
+                    isSaving = false;
                     return;
                 }
                 categorySelect.value = newName;
@@ -1229,6 +1236,7 @@ $currentCategory = $product['category_group'] ?? '';
                 } catch (jsonErr) {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Save Changes';
+                    isSaving = false;
                     alert(
                         'Server did not return JSON.\n\n' +
                         'HTTP status: ' + res.status + '\n\n' +
@@ -1246,47 +1254,59 @@ $currentCategory = $product['category_group'] ?? '';
                 } else {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Save Changes';
+                    isSaving = false;
                     alert(data.message);
                 }
             } catch (err) {
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save Changes';
+                isSaving = false;
                 alert('Request failed: ' + err.message);
             }
         });
 
         // ============================================================
-        // ✅ Press Enter to save (single-line fields only)
+        // ✅ AUTO-SAVE ON ENTER (global — works from any field)
         // ============================================================
-        if (productFormEl) {
-            productFormEl.addEventListener('keydown', function (e) {
-                if (e.key !== 'Enter' && e.keyCode !== 13) return;
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.keyCode !== 13) return;
+            if (isSaving) return;
 
-                const el = e.target;
-                if (!el) return;
+            const el = e.target;
+            if (!el) return;
 
-                const tag = (el.tagName || '').toLowerCase();
+            const tag = (el.tagName || '').toLowerCase();
 
-                // Enter inside a <textarea> → new line, not submit
-                if (tag === 'textarea') return;
+            // Enter in a <textarea> → new line, don't save
+            if (tag === 'textarea') return;
 
-                // Multi-line contenteditable (rare here) → let it be
-                if (el.isContentEditable) return;
+            // Skip if the success modal is up
+            if (successOverlay && successOverlay.classList.contains('visible')) return;
 
-                // Let the Image Link input's own Enter handler load the URL
-                if (el.id === 'image_link') return;
+            // Skip if a modal-like overlay is open (in case you add more later)
+            if (document.querySelector('.bio-popup-overlay.visible, .confirm-modal.show')) return;
 
-                e.preventDefault();
+            // Image Link field's own Enter handler already runs; don't save from it
+            if (el.id === 'image_link') return;
 
-                // Reuse the form's existing submit handler
-                if (typeof productFormEl.requestSubmit === 'function') {
-                    productFormEl.requestSubmit();
-                } else {
-                    // Fallback for old browsers
-                    if (saveBtn) saveBtn.click();
-                }
-            });
-        }
+            // Enter inside a <select> → let the browser handle dropdown confirm
+            if (tag === 'select') {
+                // Only save if the select is NOT showing its option list
+                // (best-effort — most browsers don't expose this reliably, so we just bail)
+                return;
+            }
+
+            // Don't override Enter inside buttons
+            if (tag === 'button') return;
+
+            e.preventDefault();
+
+            if (typeof productFormEl.requestSubmit === 'function') {
+                productFormEl.requestSubmit();
+            } else {
+                if (saveBtn) saveBtn.click();
+            }
+        });
 
         // ============================================================
         // SUCCESS MODAL
