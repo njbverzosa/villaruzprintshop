@@ -1176,7 +1176,9 @@ $currentCategory = $product['category_group'] ?? '';
         // ============================================================
         // FORM SUBMIT
         // ============================================================
-        document.getElementById('productForm').addEventListener('submit', async (e) => {
+        const productFormEl = document.getElementById('productForm');
+
+        productFormEl.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const hasNewImage = base64Input.value !== '';
@@ -1252,6 +1254,39 @@ $currentCategory = $product['category_group'] ?? '';
                 alert('Request failed: ' + err.message);
             }
         });
+
+        // ============================================================
+        // ✅ Press Enter to save (single-line fields only)
+        // ============================================================
+        if (productFormEl) {
+            productFormEl.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' && e.keyCode !== 13) return;
+
+                const el = e.target;
+                if (!el) return;
+
+                const tag = (el.tagName || '').toLowerCase();
+
+                // Enter inside a <textarea> → new line, not submit
+                if (tag === 'textarea') return;
+
+                // Multi-line contenteditable (rare here) → let it be
+                if (el.isContentEditable) return;
+
+                // Let the Image Link input's own Enter handler load the URL
+                if (el.id === 'image_link') return;
+
+                e.preventDefault();
+
+                // Reuse the form's existing submit handler
+                if (typeof productFormEl.requestSubmit === 'function') {
+                    productFormEl.requestSubmit();
+                } else {
+                    // Fallback for old browsers
+                    if (saveBtn) saveBtn.click();
+                }
+            });
+        }
 
         // ============================================================
         // SUCCESS MODAL
