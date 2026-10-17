@@ -53,7 +53,7 @@ $productNumber = isset($_GET['product_number']) ? trim($_GET['product_number']) 
 
 if ($productNumber === '') {
     $_SESSION['error'] = 'No product specified.';
-    header('Location: ../web/all_products.php');
+    header('Location: ../web/shop.php');
     exit;
 }
 
@@ -66,7 +66,7 @@ $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
     $_SESSION['error'] = 'Product not found.';
-    header('Location: ../web/all_products.php');
+    header('Location: ../web/shop.php');
     exit;
 }
 
@@ -111,5 +111,5 @@ try {
 // ==============================================
 // 8. REDIRECT BACK
 // ==============================================
-header('Location: ../web/all_products.php');
+header('Location: ../web/shop.php');
 exit;
