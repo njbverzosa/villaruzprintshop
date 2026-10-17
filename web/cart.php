@@ -147,7 +147,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             position: relative;
         }
 
-        /* Mobile: sidebar hidden by default */
         @media (max-width: 768px) {
             .sidebar-wrapper {
                 transform: translateX(-100%);
@@ -158,7 +157,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             }
         }
 
-        /* Desktop: sidebar always visible */
         @media (min-width: 769px) {
             .sidebar-wrapper {
                 transform: translateX(0) !important;
@@ -182,7 +180,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             }
         }
 
-        /* Mobile overlay */
         .menu-overlay {
             position: fixed;
             top: 0;
@@ -199,7 +196,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             display: block;
         }
 
-        /* ========== BURGER BUTTON (Mobile Only) - In Header ========== */
         .burger-btn {
             background: none;
             border: none;
@@ -228,7 +224,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             }
         }
 
-        /* ========== SIDEBAR CLOSE BUTTON (Mobile Only) ========== */
         .sidebar-close-btn {
             position: absolute;
             top: 15px;
@@ -307,7 +302,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             color: #f59e0b;
         }
 
-
         .menu-header {
             padding: 25px 20px;
             border-bottom: 1px solid #e2e8f0;
@@ -339,7 +333,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             overflow-y: auto;
         }
 
-        
         /* ========== CART GRID ========== */
         .cart-grid {
             display: grid;
@@ -1145,37 +1138,28 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 <body>
 
     <div class="app-wrapper">
-        <!-- Overlay (Mobile Only) -->
         <div class="menu-overlay" id="menuOverlay"></div>
 
-        <!-- Sidebar Wrapper -->
         <div class="sidebar-wrapper" id="sidebarWrapper">
             <div class="side-menu" id="sideMenu">
-                <?php
-                include 'sidebar.php';
-                ?>
+                <?php include 'sidebar.php'; ?>
             </div>
         </div>
 
-        <!-- ========== MAIN CONTENT ========== -->
         <main class="main-content">
             <input type="hidden" id="csrfToken" value="<?php echo $csrfToken; ?>">
 
             <div class="dashboard-header">
                 <div class="header-left">
-                    <!-- Burger Button (Mobile Only) -->
                     <button class="burger-btn" id="burgerBtn" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="welcome">
-                        <h4>
-                            Cart
-                        </h4>
+                        <h4>Cart</h4>
                     </div>
                 </div>
             </div>
 
-            <!-- Cart Grid -->
             <div class="cart-grid">
                 <div class="cart-items" id="cartItemsContainer">
                     <?php if (empty($cartItems)): ?>
@@ -1213,7 +1197,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                 </div>
 
                 <div>
-                    <!-- Delivery Details -->
                     <?php if (!empty($cartItems)): ?>
                         <div class="cart-summary" style="margin-bottom: 20px;">
                             <h3>Delivery Details</h3>
@@ -1233,20 +1216,20 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                             </div>
 
                             <div class="checkout-inputs" id="checkoutInputs">
-                                <!-- Customer Name -->
                                 <div class="address-selection-group">
                                     <label>
                                         <i class="fas fa-user"></i> Customer Name
                                     </label>
-                                    <input type="text" id="customerName" placeholder="Enter customer name" value="">
+                                    <input type="text" id="customerName"  value=""
+                                        style="text-transform: uppercase;">
                                 </div>
 
-                                <!-- Delivery Address -->
                                 <div class="address-selection-group">
                                     <label>
                                         <i class="fas fa-location-dot"></i> Delivery Address
                                     </label>
-                                    <input type="text" id="deliveryAddress" placeholder="Enter delivery address" value="">
+                                    <input type="text" id="deliveryAddress"  value=""
+                                        style="text-transform: uppercase;">
                                 </div>
 
                                 <label
@@ -1261,11 +1244,9 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                         </div>
                     <?php endif; ?>
 
-                    <!-- Order Summary -->
                     <?php if (!empty($cartItems)): ?>
                         <div class="cart-summary">
                             <h3>Order Summary</h3>
-                            <!-- Current Total - Hidden by default, shown with green bg when delivery found -->
                             <div class="summary-row" id="currentTotalRow"
                                 style="display: none; background: #d1fae5; padding: 8px 12px; border-radius: 8px; margin: 4px 0;">
                                 <span>Current Total:</span>
@@ -1296,7 +1277,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
         </main>
     </div>
 
-    <!-- ========== CUSTOM ALERT ========== -->
     <div id="customAlert" class="custom-alert">
         <div class="custom-alert-content">
             <i class="fas fa-check-circle"></i>
@@ -1307,7 +1287,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
         </div>
     </div>
 
-    <!-- ========== LOADING OVERLAY ========== -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">
             <i class="fas fa-spinner"></i>
@@ -1365,11 +1344,9 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             menuOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Close sidebar when clicking a nav link (mobile only)
         document.querySelectorAll('.side-menu .nav-item, .side-menu .nav-dropdown-item').forEach(link => {
             link.addEventListener('click', function () {
                 if (window.innerWidth <= 768) {
-                    // Don't close if it's a dropdown toggle
                     if (!this.closest('.nav-dropdown-toggle')) {
                         closeSidebar();
                     }
@@ -1377,7 +1354,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             });
         });
 
-        // ========== DROPDOWN TOGGLE ==========
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
             const arrowId = dropdownId.replace('Dropdown', 'Arrow');
@@ -1389,10 +1365,8 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             }
         }
 
-        // ========== BURGER VISIBILITY ON RESIZE ==========
         window.addEventListener('resize', function () {
             if (window.innerWidth > 768) {
-                // Desktop: close sidebar if open and hide overlay
                 if (isSidebarOpen) {
                     closeSidebar();
                 }
@@ -1420,6 +1394,41 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 
             let currentTotalAmount = subtotalAmount;
             let existingOrderData = null;
+
+            // ============================================================
+            // ✅ UPPERCASE HELPER (Customer Name + Delivery Address)
+            //    Every letter becomes A-Z while typing.
+            // ============================================================
+            function toUpperCaseValue(str) {
+                if (!str) return str;
+                return String(str).toUpperCase();
+            }
+
+            function bindUpperCase(inputEl) {
+                if (!inputEl) return;
+
+                inputEl.addEventListener('input', function () {
+                    const el = this;
+                    const original = el.value;
+                    const cursor = el.selectionStart;
+
+                    const converted = toUpperCaseValue(original);
+                    if (converted === original) return;
+
+                    el.value = converted;
+
+                    try {
+                        el.setSelectionRange(cursor, cursor);
+                    } catch (e) { /* some browsers disallow on <input> */ }
+                });
+
+                inputEl.addEventListener('blur', function () {
+                    this.value = toUpperCaseValue(this.value);
+                });
+            }
+
+            bindUpperCase(document.getElementById('customerName'));
+            bindUpperCase(deliveryAddressInput);
 
             // ============================================================
             // VALIDATE EXISTING DELIVERY NUMBER
@@ -1723,7 +1732,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                 const existingDeliveryNumber = existingDeliveryNumberInput ? existingDeliveryNumberInput.value.trim() :
                     '';
 
-                // If adding to existing order
                 if (existingOrderData && existingOrderData.exists) {
                     const status = (existingOrderData.status || '').toUpperCase();
                     if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status ===
@@ -1733,8 +1741,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                         return;
                     }
 
-                    let deliveryAddress = existingOrderData.delivery_address || document.getElementById('deliveryAddress')
-                        .value.trim();
                     const newTotal = parseFloat(existingOrderData.total_amount) + subtotalAmount;
 
                     const confirmed = confirm(
@@ -1778,7 +1784,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                     return;
                 }
 
-                // New order
                 const customerName = document.getElementById('customerName').value.trim();
                 let deliveryAddress = document.getElementById('deliveryAddress').value.trim();
                 const deliveryDate = deliveryDateInput ? deliveryDateInput.value : '';

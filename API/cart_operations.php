@@ -26,6 +26,123 @@ if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_tok
 
 $action = $_POST['action'] ?? '';
 
+// ============================================================
+// ✅ UNIT SINGULAR / PLURAL HELPER
+//    - piece(s), pc(s), box(es), bottle(s), …
+//    - measures like kg, g, ml, L, m stay unchanged
+// ============================================================
+function resolveUnitForQuantity($rawUnit, $qty)
+{
+    $rawUnit = trim((string)$rawUnit);
+    if ($rawUnit === '') $rawUnit = 'pc';
+
+    $qty = (int)$qty;
+
+    // Base singular lookup (add entries here as your catalog grows)
+    $singularMap = [
+        // count / package units
+        'pcs'      => 'pc',
+        'pc'       => 'pc',
+        'piece'    => 'piece',
+        'pieces'   => 'piece',
+        'unit'     => 'unit',
+        'units'    => 'unit',
+        'set'      => 'set',
+        'sets'     => 'set',
+        'pair'     => 'pair',
+        'pairs'    => 'pair',
+        'dozen'    => 'dozen',
+        'dozens'   => 'dozen',
+        'box'      => 'box',
+        'boxes'    => 'box',
+        'carton'   => 'carton',
+        'cartons'  => 'carton',
+        'case'     => 'case',
+        'cases'    => 'case',
+        'crate'    => 'crate',
+        'crates'   => 'crate',
+        'pack'     => 'pack',
+        'packs'    => 'pack',
+        'packet'   => 'packet',
+        'packets'  => 'packet',
+        'sachet'   => 'sachet',
+        'sachets'  => 'sachet',
+        'pouch'    => 'pouch',
+        'pouches'  => 'pouch',
+        'bag'      => 'bag',
+        'bags'     => 'bag',
+        'sack'     => 'sack',
+        'sacks'    => 'sack',
+        'bundle'   => 'bundle',
+        'bundles'  => 'bundle',
+        'ream'     => 'ream',
+        'reams'    => 'ream',
+        'roll'     => 'roll',
+        'rolls'    => 'roll',
+        'pad'      => 'pad',
+        'pads'     => 'pad',
+        'sheet'    => 'sheet',
+        'sheets'   => 'sheet',
+        'bottle'   => 'bottle',
+        'bottles'  => 'bottle',
+        'can'      => 'can',
+        'cans'     => 'can',
+        'tin'      => 'tin',
+        'tins'     => 'tin',
+        'jar'      => 'jar',
+        'jars'     => 'jar',
+        'tube'     => 'tube',
+        'tubes'    => 'tube',
+        'drum'     => 'drum',
+        'drums'    => 'drum',
+        'barrel'   => 'barrel',
+        'barrels'  => 'barrel',
+        'gallon'   => 'gallon',
+        'gallons'  => 'gallon',
+        'bucket'   => 'bucket',
+        'buckets'  => 'bucket',
+        'roll of tape' => 'roll of tape',
+    ];
+
+    $lower = strtolower($rawUnit);
+
+    // Measures — never pluralize
+    $measureUnits = [
+        'kg', 'kgs', 'g', 'gram', 'grams',
+        'mg', 'ml', 'l', 'liter', 'liters', 'litre', 'litres',
+        'm', 'cm', 'mm', 'ft', 'in', 'inch', 'inches',
+        'yd', 'yard', 'yards',
+        'ton', 'tons', 'lb', 'lbs', 'oz',
+        'hour', 'hours', 'day', 'days', 'month', 'months',
+        'session', 'sessions'
+    ];
+    if (in_array($lower, $measureUnits, true)) {
+        return $rawUnit; // keep as-is (no plural)
+    }
+
+    // Resolve singular
+    $singular = $singularMap[$lower] ?? rtrim($lower, 's');
+    if ($singular === '') $singular = 'pc';
+
+    // 1 item → singular
+    if ($qty <= 1) {
+        return $singular;
+    }
+
+    // 2+ items → plural
+    // - if singular already ends in s/x/z/ch/sh → add "es"
+    // - otherwise → add "s"
+    $lastChar = substr($singular, -1);
+    $lastTwo = substr($singular, -2);
+
+    if (in_array($lastChar, ['s', 'x', 'z'], true) ||
+        in_array($lastTwo, ['ch', 'sh'], true)) {
+        return $singular . 'es';
+    }
+
+    return $singular . 's';
+}
+
 try {
     switch ($action) {
         case 'increment':
@@ -221,6 +338,9 @@ try {
             // Insert items into order_status_history
             $successCount = 0;
             foreach ($cartItems as $item) {
+                // ✅ Resolve unit based on this item's quantity
+                $resolvedUnit = resolveUnitForQuantity($item['unit'], $item['pieces']);
+
                 $stmt = $pdo->prepare("INSERT INTO order_status_history (acc_number, order_id, delivery_address, delivery_number, product_name, selling_price, status, pieces, unit, total_amount, date_time_sold, delivery_date, qr_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $result = $stmt->execute([
                     $userAccNumber,
@@ -231,7 +351,7 @@ try {
                     $item['selling_price'],
                     'PENDING',
                     $item['pieces'],
-                    $item['unit'],
+                    $resolvedUnit,
                     $item['total_amount'],
                     $dateTimeSold,
                     NULL,
@@ -384,6 +504,9 @@ try {
                         $itemTotalAmount = floatval($item['total_amount']);
                         $itemSellingPrice = floatval($item['selling_price']);
 
+                        // ✅ Resolve unit based on this item's quantity
+                        $resolvedUnit = resolveUnitForQuantity($item['unit'], $item['pieces']);
+
                         $stmt = $pdo->prepare("INSERT INTO order_status_history (acc_number, order_id, delivery_address, delivery_number, product_name, selling_price, status, pieces, unit, total_amount, date_time_sold, delivery_date) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?, ?, ?)");
                         $result2 = $stmt->execute([
                             $userAccNumber,
@@ -393,7 +516,7 @@ try {
                             $item['product_name'],
                             $itemSellingPrice,
                             $item['pieces'],
-                            $item['unit'],
+                            $resolvedUnit,
                             $itemTotalAmount,
                             $dateTimeSold,
                             $deliveryDateFormatted
@@ -548,6 +671,9 @@ try {
                 $itemTotalAmount = floatval($item['total_amount']);
                 $itemSellingPrice = floatval($item['selling_price']);
 
+                // ✅ Resolve unit based on this item's quantity
+                $resolvedUnit = resolveUnitForQuantity($item['unit'], $item['pieces']);
+
                 $stmt = $pdo->prepare("INSERT INTO order_status_history (acc_number, order_id, delivery_address, delivery_number, product_name, selling_price, status, pieces, unit, total_amount, date_time_sold, delivery_date, qr_code) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?, ?, ?, ?)");
                 $result2 = $stmt->execute([
                     $userAccNumber,
@@ -557,7 +683,7 @@ try {
                     $item['product_name'],
                     $itemSellingPrice,
                     $item['pieces'],
-                    $item['unit'],
+                    $resolvedUnit,
                     $itemTotalAmount,
                     $dateTimeSold,
                     $deliveryDateFormatted,
