@@ -67,6 +67,18 @@ if (!empty($product['product_image'])) {
     $absoluteImagePath = dirname(__DIR__) . '/Products/' . $product['product_image'];
     $imageExists = file_exists($absoluteImagePath);
 }
+
+// ✅ Fetch distinct category groups for the dropdown
+$catStmt = $pdo->query("
+    SELECT DISTINCT category_group
+    FROM merchandise_inventory
+    WHERE category_group IS NOT NULL AND category_group <> ''
+    ORDER BY category_group ASC
+");
+$allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
+
+// The current value of this product (for pre-selection)
+$currentCategory = $product['category_group'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -121,6 +133,7 @@ if (!empty($product['product_image'])) {
         input[type="text"],
         input[type="number"],
         input[type="url"],
+        select,
         textarea {
             width: 100%;
             padding: 10px;
@@ -128,6 +141,12 @@ if (!empty($product['product_image'])) {
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 14px;
+            font-family: inherit;
+        }
+
+        select {
+            background: #fff;
+            cursor: pointer;
         }
 
         textarea {
@@ -644,6 +663,33 @@ if (!empty($product['product_image'])) {
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
             <input type="hidden" name="replace_image" id="replace_image" value="0">
 
+            <!-- ============================================================
+                 ✅ CATEGORY GROUP — editable
+                 ============================================================ -->
+            <label for="category_group">Category Group</label>
+            <select name="category_group" id="category_group">
+                <option value="">— None —</option>
+                <?php foreach ($allCategoryGroups as $cg): ?>
+                    <option value="<?php echo htmlspecialchars($cg); ?>"
+                        <?php echo ($cg === $currentCategory) ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($cg); ?>
+                    </option>
+                <?php endforeach; ?>
+                <?php if ($currentCategory !== '' && !in_array($currentCategory, $allCategoryGroups, true)): ?>
+                    <option value="<?php echo htmlspecialchars($currentCategory); ?>" selected>
+                        <?php echo htmlspecialchars($currentCategory); ?>
+                    </option>
+                <?php endif; ?>
+                <option value="__new__">+ Add new category…</option>
+            </select>
+
+            <!-- ✅ Hidden new-category input (shown only when "+ Add new" is picked) -->
+            <div id="newCategoryWrap" style="display:none;">
+                <label for="new_category_group">New Category Name</label>
+                <input type="text" id="new_category_group" name="new_category_group"
+                    placeholder="e.g. Printer Accessories">
+            </div>
+
             <input type="file" id="productImageFile" accept="image/jpeg,image/jpg,image/png,image/webp">
 
             <div class="image-stage" id="imageStage">
@@ -780,6 +826,25 @@ if (!empty($product['product_image'])) {
         let cameraActive = false;
 
         // ============================================================
+        // ✅ CATEGORY GROUP — show/hide "new category" input
+        // ============================================================
+        const categorySelect = document.getElementById('category_group');
+        const newCategoryWrap = document.getElementById('newCategoryWrap');
+        const newCategoryInput = document.getElementById('new_category_group');
+
+        if (categorySelect) {
+            categorySelect.addEventListener('change', function () {
+                if (this.value === '__new__') {
+                    newCategoryWrap.style.display = 'block';
+                    newCategoryInput.focus();
+                } else {
+                    newCategoryWrap.style.display = 'none';
+                    newCategoryInput.value = '';
+                }
+            });
+        }
+
+        // ============================================================
         // ✅ IMAGE LINK INPUT (auto-load, no button)
         // ============================================================
         const imageLinkBlock = document.getElementById('imageLinkBlock');
@@ -827,7 +892,6 @@ if (!empty($product['product_image'])) {
         function looksLikeImageUrl(u) {
             if (!u) return false;
             if (!/^https?:\/\//i.test(u)) return false;
-            // Prefer explicit image extensions, but also allow hosts like imgur, unsplash, etc.
             return /\.(jpe?g|png|webp|gif|bmp|avif)(\?|#|$)/i.test(u)
                 || /(images?|photos?|cdn|imgur|unsplash|cloudinary|googleusercontent)/i.test(u);
         }
@@ -846,7 +910,6 @@ if (!empty($product['product_image'])) {
             setLinkStatus('Loading image…', 'loading');
 
             try {
-                // Try to fetch and convert to base64 (needed for the upload)
                 const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
 
@@ -865,7 +928,6 @@ if (!empty($product['product_image'])) {
                     reader.readAsDataURL(blob);
                 });
 
-                // ✅ Apply to preview + hidden fields
                 base64Input.value = dataUrl;
                 replaceImageInput.value = '1';
                 fileInput.value = '';
@@ -880,15 +942,12 @@ if (!empty($product['product_image'])) {
 
                 setLinkStatus('✔ Image loaded and ready to save.', 'ok');
 
-                // ✅ Hide the Image Link input once the image is loaded
                 setTimeout(function () {
                     hideImageLinkBlock();
                     setLinkStatus('', '');
                 }, 600);
             } catch (err) {
                 console.warn('Image link fetch failed:', err);
-                // Fallback: still show a visual preview so the user sees the image,
-                // but tell them it must be downloaded manually (CORS / host blocked).
                 const previewImg = new Image();
                 previewImg.onload = () => {
                     productImage.src = url;
@@ -898,7 +957,6 @@ if (!empty($product['product_image'])) {
                     capturedPhoto.style.display = 'none';
                     imagePlaceholder.classList.remove('visible');
 
-                    // Do NOT set replace_image yet — upload will fail without base64
                     setLinkStatus('Preview only — this host blocks cross-origin download. Download the image manually and upload it.', 'error');
                 };
                 previewImg.onerror = () => {
@@ -908,9 +966,7 @@ if (!empty($product['product_image'])) {
             }
         }
 
-        // ✅ Auto-load triggers: paste, Enter, blur (all no-button)
         if (imageLinkInput) {
-            // Paste
             imageLinkInput.addEventListener('paste', function () {
                 setTimeout(() => {
                     const v = (imageLinkInput.value || '').trim();
@@ -918,7 +974,6 @@ if (!empty($product['product_image'])) {
                 }, 30);
             });
 
-            // Enter
             imageLinkInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -927,7 +982,6 @@ if (!empty($product['product_image'])) {
                 }
             });
 
-            // Blur — catches cases where the user types or drags text in
             imageLinkInput.addEventListener('blur', function () {
                 const v = (imageLinkInput.value || '').trim();
                 if (v && looksLikeImageUrl(v)) loadImageFromLink(v);
@@ -1009,8 +1063,6 @@ if (!empty($product['product_image'])) {
             hideFloatingCapture();
             showUploadButton();
             showPlaceholder();
-
-            // ✅ When there's no image, always show the Image Link input
             showImageLinkBlock();
         }
 
@@ -1096,7 +1148,6 @@ if (!empty($product['product_image'])) {
             cameraBox.classList.add('visible');
             viewHasImage();
 
-            // ✅ Hide the Image Link input once a photo is captured
             hideImageLinkBlock();
         });
 
@@ -1137,7 +1188,6 @@ if (!empty($product['product_image'])) {
                 imageWrapper.style.display = 'none';
                 viewHasImage();
 
-                // ✅ Hide the Image Link input once a file is applied
                 hideImageLinkBlock();
             };
             reader.onerror = () => {
@@ -1245,7 +1295,6 @@ if (!empty($product['product_image'])) {
             if (imageLinkInput) imageLinkInput.value = '';
             setLinkStatus('', '');
 
-            // ✅ Show the Image Link input again (user can paste a new one)
             showImageLinkBlock();
 
             viewNoImage();
@@ -1265,10 +1314,31 @@ if (!empty($product['product_image'])) {
                 return;
             }
 
+            // ✅ If "Add new category" is chosen, require a name and promote it
+            if (categorySelect && categorySelect.value === '__new__') {
+                const newName = (newCategoryInput.value || '').trim();
+                if (!newName) {
+                    alert('Please enter a name for the new category.');
+                    newCategoryInput.focus();
+                    return;
+                }
+                categorySelect.value = newName;
+
+                // Add it as a selected option so the value sticks
+                const opt = document.createElement('option');
+                opt.value = newName;
+                opt.textContent = newName;
+                opt.selected = true;
+                categorySelect.appendChild(opt);
+
+                newCategoryWrap.style.display = 'none';
+            }
+
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
 
             const formData = new FormData(e.target);
+            formData.delete('new_category_group'); // helper field — server only needs category_group
 
             try {
                 const res = await fetch('../API/update_product.php', {
@@ -1344,11 +1414,9 @@ if (!empty($product['product_image'])) {
         window.addEventListener('load', () => {
             if (originalImageExists) {
                 viewHasImage();
-                // ✅ Hide the Image Link block when the product already has an image
                 hideImageLinkBlock();
             } else {
                 viewNoImage();
-                // ✅ Show the Image Link block when the product has no image
                 showImageLinkBlock();
             }
         });
