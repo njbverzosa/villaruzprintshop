@@ -572,47 +572,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             background-color: #ffffff;
         }
 
-        .category-badge {
-            font-size: 12px;
-            font-weight: 600;
-            color: #8b5cf6;
-            background: #f5f3ff;
-            padding: 4px 10px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            white-space: nowrap;
-        }
-
-        .category-badge.hidden {
-            display: none;
-        }
-
-        .category-clear-btn {
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            color: #64748b;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.2s;
-        }
-
-        .category-clear-btn:hover {
-            background: #e2e8f0;
-            color: #0f172a;
-        }
-
-        .category-clear-btn.hidden {
-            display: none;
-        }
-
         /* ========== PRODUCTS GRID ========== */
         .products-grid {
             display: grid;
@@ -1425,7 +1384,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                         </a>
                     </div>
 
-                    <!-- ✅ Row 2: Category Filter dropdown (under search bar) -->
+                    <!-- ✅ Row 2: Category Filter dropdown only (no badge, no clear button) -->
                     <div class="category-filter-row">
                         <select id="categoryFilter" class="category-select">
                             <option value="">All Categories</option>
@@ -1435,10 +1394,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <span class="category-badge hidden" id="categoryBadge"></span>
-                        <button type="button" class="category-clear-btn hidden" id="clearCategoryBtn">
-                            <i class="fas fa-times"></i> Clear filter
-                        </button>
                     </div>
                 </div>
 
@@ -1773,10 +1728,8 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const productsGrid = document.getElementById('productsGrid');
 
-        // ========== ✅ CATEGORY FILTER ELEMENTS ==========
+        // ========== ✅ CATEGORY FILTER ELEMENT ==========
         const categoryFilter = document.getElementById('categoryFilter');
-        const categoryBadge = document.getElementById('categoryBadge');
-        const clearCategoryBtn = document.getElementById('clearCategoryBtn');
         const noResults = document.getElementById('noResults');
         const noResultsText = document.getElementById('noResultsText');
 
@@ -1784,18 +1737,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         function applyFilters() {
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const selectedCategory = categoryFilter ? categoryFilter.value.trim() : '';
-
-            if (categoryBadge) {
-                if (selectedCategory) {
-                    categoryBadge.textContent = 'Showing: ' + selectedCategory;
-                    categoryBadge.classList.remove('hidden');
-                } else {
-                    categoryBadge.classList.add('hidden');
-                }
-            }
-            if (clearCategoryBtn) {
-                clearCategoryBtn.classList.toggle('hidden', !selectedCategory);
-            }
 
             const cards = productsGrid.querySelectorAll('.product-card');
             let visibleCount = 0;
@@ -1830,16 +1771,21 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                     noResults.classList.remove('show');
                 }
             }
-
-            if (categoryBadge && selectedCategory) {
-                categoryBadge.textContent = `${selectedCategory} (${visibleCount})`;
-            }
         }
 
-        // ✅ Search — debounced, does NOT touch the category filter
+        // ✅ Search — debounced
+        //    If the user types while a category is selected → auto-clear the dropdown.
         let searchTimeout;
         if (searchInput) {
             searchInput.addEventListener('input', function () {
+                const typed = searchInput.value.trim();
+
+                // Auto-clear category when the user starts typing
+                if (typed !== '' && categoryFilter && categoryFilter.value !== '') {
+                    categoryFilter.value = '';
+                    applyFilters(); // update UI immediately
+                }
+
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(applyFilters, 300);
             });
@@ -1848,7 +1794,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         if (clearSearchBtn) {
             clearSearchBtn.addEventListener('click', () => {
                 searchInput.value = '';
-                // ✅ Also clear the category when the user clears the search
                 if (categoryFilter) categoryFilter.value = '';
                 applyFilters();
                 searchInput.focus();
@@ -1857,13 +1802,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
         if (categoryFilter) {
             categoryFilter.addEventListener('change', applyFilters);
-        }
-
-        if (clearCategoryBtn) {
-            clearCategoryBtn.addEventListener('click', () => {
-                categoryFilter.value = '';
-                applyFilters();
-            });
         }
 
         // ========== ✅ DELETE CONFIRMATION MODAL ==========
@@ -1920,7 +1858,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 if (!pendingDeleteUrl) return;
                 confirmDeleteBtn.disabled = true;
                 confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
-                // Small delay so the button state is visible, then redirect
                 setTimeout(function () {
                     window.location.href = pendingDeleteUrl;
                 }, 150);
@@ -1988,7 +1925,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 var url = link.getAttribute('data-delete-url');
                 var name = link.getAttribute('data-delete-name') || 'this product';
 
-                // Close the dropdown first
                 document.querySelectorAll('.card-dropdown.show').forEach(function (d) {
                     d.classList.remove('show');
                 });
