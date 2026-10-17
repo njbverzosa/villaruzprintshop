@@ -23,47 +23,7 @@ function isMobileBrowser($userAgent)
 $isMobileBrowser = isMobileBrowser($userAgent) && !$isInApp;
 $showFingerprint = $isMobileBrowser || $isInApp;
 
-$installedVersion = trim($_POST['installed_version'] ?? $_GET['installed_version'] ?? '');
-
-if ($isInApp) {
-    $installedNorm = preg_replace('/[^0-9.]/', '', $installedVersion);
-    $latestNorm = preg_replace('/[^0-9.]/', '', $latestVersion);
-
-    if (!empty($installedNorm) && $installedNorm !== 'unknown') {
-        $appVersionMatch = version_compare($installedNorm, $latestNorm, '==');
-    } else {
-        $appVersionMatch = false;
-    }
-} else {
-    $appVersionMatch = false;
-}
-
 $loginType = $isInApp ? 'app' : 'web';
-
-$needsUpdate = version_compare(
-    preg_replace('/[^0-9.]/', '', $latestVersion),
-    preg_replace('/[^0-9.]/', '', $currentVersion),
-    '>'
-);
-
-$remindedVersion = $_COOKIE['update_reminded_version'] ?? '';
-$reminded = ($remindedVersion === $latestVersion);
-
-if (isset($_GET['skip_update']) && $_GET['skip_update'] === '1') {
-    setcookie('use_old_app', '1', [
-        'expires' => time() + 86400,
-        'path' => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    header('Location: customers-portal.php');
-    exit;
-}
-
-$skipUpdate = isset($_COOKIE['use_old_app']) && $_COOKIE['use_old_app'] === '1';
-$renderUpdateModal = ($isInApp && !$skipUpdate);
-
-$skipBiometricAutoPrompt = ($_SERVER['REQUEST_METHOD'] === 'POST');
 
 $biometricPage = 'public/biometric.php';
 
@@ -184,15 +144,6 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
     updateLoginMeta($pdo, $user['id'], $loginType);
-
-    if ($isInApp && !$appVersionMatch && !$skipUpdate) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Please update the app or click SKIP to continue.',
-            'show_update_modal' => true
-        ]);
-        exit;
-    }
 
     $redirectUrl = getCustomerRedirect($isInApp, $isMobileBrowser, $user);
 
@@ -895,179 +846,6 @@ if (isset($_SESSION['exit_message'])) {
             }
         }
 
-        /* ========== UPDATE MODAL ========== */
-        .update-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            z-index: 9999;
-            display: none;
-            align-items: flex-start;
-            justify-content: center;
-            overflow-y: auto;
-            padding: 24px 16px;
-        }
-
-        .update-overlay.visible {
-            display: flex;
-        }
-
-        .update-card {
-            background: #ffffff;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
-            overflow: hidden;
-            margin: auto;
-        }
-
-        .update-header {
-            padding: 24px 22px 18px 22px;
-            border-bottom: 1px solid #edf2f7;
-            text-align: center;
-            position: relative;
-            background: #ffffff;
-        }
-
-        .skip-link {
-            position: absolute;
-            top: 12px;
-            right: 14px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #000513;
-            text-decoration: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-        }
-
-        .update-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px auto;
-        }
-
-        .update-icon img {
-            max-width: 64px;
-            height: auto;
-        }
-
-        .update-title {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: #0b1e2e;
-        }
-
-        .update-installed-version {
-            display: inline-block;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #475569;
-            background: #f1f5f9;
-            padding: 4px 12px;
-            border-radius: 5px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .update-recommended {
-            font-size: 14px;
-            color: #067bf8;
-            margin-top: 12px;
-            font-weight: 600;
-        }
-
-        .update-body {
-            padding: 18px 22px 22px 22px;
-            background: #ffffff;
-        }
-
-        .update-info-block {
-            background: #f8fafd;
-            border-left: 4px solid #2563eb;
-            padding: 12px 14px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            font-size: 0.875rem;
-            color: #1e2b3c;
-            line-height: 1.5;
-        }
-
-        .update-info-label {
-            font-size: 0.68rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #5f6f80;
-            margin-bottom: 3px;
-        }
-
-        .update-details {
-            list-style: none;
-            margin: 0 0 18px 0;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .update-details li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 14px;
-            font-size: 0.83rem;
-            border-bottom: 1px solid #edf2f7;
-        }
-
-        .update-details li:last-child {
-            border-bottom: none;
-        }
-
-        .update-details .label {
-            color: #5f6f80;
-        }
-
-        .update-details .value {
-            color: #0b1e2e;
-            font-weight: 500;
-        }
-
-        .update-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .update-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 13px 20px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 15px;
-            border: 1px solid transparent;
-            cursor: pointer;
-            text-decoration: none;
-            width: 100%;
-        }
-
-        .update-btn-primary {
-            background: #1d4ed8;
-            color: #ffffff;
-            border-color: #1d4ed8;
-        }
-
-        .update-btn-outline {
-            background: #ffffff;
-            color: #1e2b3c;
-            border-color: #cbd5e1;
-        }
-
         /* ==============================================
            SNOW EFFECT ❄️ (auto — no button needed)
            ============================================== */
@@ -1484,7 +1262,6 @@ if (isset($_SESSION['exit_message'])) {
                 <div id="passwordSection">
                     <form method="POST" action="" id="loginForm">
                         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                        <input type="hidden" name="installed_version" id="installedVersionInput" value="">
 
                         <div class="form-group">
                             <label><i class="fas fa-id-card"></i> Account Number</label>
@@ -1547,72 +1324,11 @@ if (isset($_SESSION['exit_message'])) {
         </div>
     </div>
 
-    <?php if ($renderUpdateModal): ?>
-        <div class="update-overlay" id="updateOverlay">
-            <div class="update-card">
-                <div class="update-header">
-                    <a href="?skip_update=1" class="skip-link">SKIP</a>
-                    <div class="update-icon">
-                        <img src="logo/ic_launcher.png" alt="Sofia App Logo">
-                    </div>
-                    <div class="update-title">SofiaApp</div>
-                    <div class="update-installed-version" id="installedVersionBadge">
-                        Detecting installed version...
-                    </div>
-                    <div class="update-recommended">
-                        A new version is available. Update now or tap SKIP to continue with the current version.
-                    </div>
-                </div>
-
-                <div class="update-body">
-                    <div class="update-info-block">
-                        <div class="update-info-label">Update Notice</div>
-                        A new version of the <strong>Sofia App</strong> is now available.
-                    </div>
-
-                    <div class="update-info-block">
-                        <div class="update-info-label">Your Options</div>
-                        Keep using your current version, or tap <strong>SKIP</strong> to update later.
-                    </div>
-
-                    <div class="update-info-block">
-                        <div class="update-info-label">Having Trouble?</div>
-                        Uninstall the old app, then download the latest version from the link below.
-                    </div>
-
-                    <ul class="update-details">
-                        <li>
-                            <span class="label">New Release</span>
-                            <span class="value"><?php echo htmlspecialchars($latestVersion); ?></span>
-                        </li>
-                        <li>
-                            <span class="label">Old Version</span>
-                            <span class="value" id="installedVersionValue">—</span>
-                        </li>
-                        <li>
-                            <span class="label">Requirements</span>
-                            <span class="value">Android 6.0 and above.</span>
-                        </li>
-                    </ul>
-
-                    <div class="update-actions">
-                        <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk"
-                            class="update-btn update-btn-primary">Download Sofia App</a>
-                        <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia_app.apk"
-                            class="update-btn update-btn-outline">Re-Install App</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
-
     <script>
         const isInApp = typeof window.AndroidBiometric !== 'undefined';
         const hasBiometric = <?php echo $hasBiometric ? 'true' : 'false'; ?>;
         const userId = <?php echo json_encode($biometricUserId); ?>;
         const userType = <?php echo json_encode($biometricUserType); ?>;
-        const latestVersion = <?php echo json_encode($latestVersion); ?>;
-        const skipBiometricAutoPrompt = <?php echo $skipBiometricAutoPrompt ? 'true' : 'false'; ?>;
         const showFingerprint = <?php echo $showFingerprint ? 'true' : 'false'; ?>;
 
         /* ✅ Custom popup helpers */
@@ -1646,11 +1362,6 @@ if (isset($_SESSION['exit_message'])) {
                 }
             } catch (e) { }
             return 'unknown';
-        }
-
-        function versionsEqual(a, b) {
-            const norm = s => (s || '').toString().replace(/[^0-9.]/g, '');
-            return norm(a) === norm(b);
         }
 
         function setLoginButtonBusy() {
@@ -1745,36 +1456,11 @@ if (isset($_SESSION['exit_message'])) {
         })();
 
         document.addEventListener('DOMContentLoaded', function () {
-            const installedVersion = readInstalledVersion();
+            /* ✅ REMOVED: update modal logic.
+               The page no longer inspects installed version, no longer shows
+               the update overlay, and no longer redirects to ?skip_update=1. */
 
-            var versionInput = document.getElementById('installedVersionInput');
-            if (versionInput && isInApp) versionInput.value = installedVersion;
-
-            const overlay = document.getElementById('updateOverlay');
-            if (overlay) {
-                if (!isInApp || versionsEqual(installedVersion, latestVersion)) {
-                    overlay.classList.remove('visible');
-                } else {
-                    overlay.classList.add('visible');
-                }
-            }
-
-            var badge = document.getElementById('installedVersionBadge');
-            var versionValue = document.getElementById('installedVersionValue');
-            if (badge && versionValue) {
-                if (!isInApp) {
-                    badge.textContent = 'Not running in the app';
-                    versionValue.textContent = 'N/A';
-                } else if (!installedVersion || installedVersion === 'unknown') {
-                    badge.textContent = 'Version unknown';
-                    versionValue.textContent = 'Unknown';
-                } else {
-                    badge.textContent = 'Installed: ' + installedVersion;
-                    versionValue.textContent = installedVersion;
-                }
-            }
-
-            /* ✅ REMOVED: auto biometric prompt on page load.
+            /* ✅ Removed: auto biometric prompt on page load.
                User must now tap the fingerprint button to trigger biometric. */
         });
 
@@ -1807,9 +1493,6 @@ if (isset($_SESSION['exit_message'])) {
                 .then(data => {
                     if (data.success) {
                         setTimeout(() => window.location.href = data.redirect, 800);
-                    } else if (data.show_update_modal) {
-                        document.getElementById('updateOverlay')?.classList.add('visible');
-                        resetLoginButton();
                     } else {
                         resetLoginButton();
                     }
