@@ -45,7 +45,6 @@ $timezone = new DateTimeZone('Asia/Manila');
 
 $defaultImageUrl = '../Products/no-image.jpg';
 
-// ✅ Fetch distinct category groups for the dropdown
 $catStmt = $pdo->query("
     SELECT DISTINCT category_group
     FROM merchandise_inventory
@@ -132,6 +131,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
         input[type="text"],
         input[type="number"],
+        input[type="url"],
         textarea {
             width: 100%;
             padding: 10px;
@@ -157,6 +157,89 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             resize: vertical;
             min-height: 70px;
         }
+
+        /* ✅ Product Name + Search button row */
+        .name-search-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+            margin-bottom: 15px;
+        }
+
+        .name-search-row input[type="text"] {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-search-google {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0 14px;
+            background: #4285f4;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-search-google:hover {
+            background: #3367d6;
+        }
+
+        .btn-search-google:active {
+            transform: scale(0.97);
+        }
+
+        .btn-search-google i {
+            font-size: 13px;
+        }
+
+        /* ✅ Hidden by default; shown only when Product Name has content */
+        .btn-search-google.hidden {
+            display: none;
+        }
+
+        /* ============================================================
+           ✅ Image Link input (auto-load)
+           ============================================================ */
+        .image-link-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+            margin-bottom: 15px;
+        }
+
+        .image-link-row input[type="url"] {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .image-link-hint {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .image-link-status {
+            font-size: 12px;
+            margin-top: -8px;
+            margin-bottom: 12px;
+            min-height: 16px;
+            display: none;
+        }
+
+        .image-link-status.loading { color: #0ea5e9; display: block; }
+        .image-link-status.ok      { color: #10b981; display: block; }
+        .image-link-status.error   { color: #ef4444; display: block; }
 
         /* ============================================================
            ✅ SEARCHABLE UNIT DROPDOWN (no ✕ button)
@@ -422,7 +505,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             pointer-events: none;
         }
 
-        /* ---- TORCH BUTTON ---- */
         .btn-torch {
             position: absolute;
             top: 12px;
@@ -470,40 +552,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             cursor: pointer;
             color: white;
             font-family: inherit;
-        }
-
-        .btn-upload {
-            background: #0ea5e9;
-            width: 100%;
-            padding: 12px;
-            font-size: 15px;
-            margin-top: 10px;
-            margin-bottom: 8px;
-            display: none;
-        }
-
-        .btn-upload:hover {
-            background: #0284c7;
-        }
-
-        .btn-default {
-            background: #8b5cf6;
-            width: 100%;
-            padding: 12px;
-            font-size: 15px;
-            margin-bottom: 8px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-default:hover {
-            background: #7c3aed;
-        }
-
-        .btn-default.visible {
-            display: flex;
         }
 
         .btn-submit {
@@ -690,38 +738,11 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             min-height: 42px;
         }
 
-        .success-redirect-hint {
-            font-size: 12px;
-            color: #94a3b8;
-            opacity: 0;
-            transition: opacity 0.35s ease;
-        }
-
-        .success-card.done .success-redirect-hint {
-            opacity: 1;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(12px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes drawCircle {
-            to { stroke-dashoffset: 0; }
-        }
-
-        @keyframes drawCheck {
-            to { stroke-dashoffset: 0; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes drawCircle { to { stroke-dashoffset: 0; } }
+        @keyframes drawCheck { to { stroke-dashoffset: 0; } }
     </style>
 </head>
 
@@ -744,26 +765,31 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
                 <div class="image-placeholder" id="imagePlaceholder">
                     <i class="fas fa-image"></i>
-                    <span>No image — drag & drop, paste, or use buttons</span>
+                    <span>No image — drag & drop, paste, or use the camera</span>
                 </div>
 
                 <div class="camera-box" id="cameraBox">
                     <video id="camera" autoplay playsinline muted></video>
                     <img id="capturedPhoto" alt="Captured product">
-                    <!-- TORCH BUTTON -->
                     <button type="button" class="btn-torch" id="torchBtn" title="Toggle flashlight">
                         <i class="fas fa-lightbulb"></i>
                     </button>
                 </div>
             </div>
 
-            <button type="button" class="btn-upload" id="uploadBtn">
-                Upload Photo
-            </button>
-
-            <button type="button" class="btn-default" id="defaultBtn">
-                <i class="fas fa-image"></i> Choose Default
-            </button>
+            <!-- ============================================================
+                 ✅ Image Link input (auto-load)
+                 ============================================================ -->
+            <label for="image_link" style="margin-top: 12px;">Image Link</label>
+            <div class="image-link-row">
+                <input type="url" id="image_link"
+                    placeholder="Paste image URL here — it loads automatically"
+                    autocomplete="off" spellcheck="false">
+            </div>
+            <div class="image-link-status" id="imageLinkStatus"></div>
+            <div class="image-link-hint">
+                Paste a direct image URL (ending in .jpg, .png, .webp…). The image will load and preview automatically.
+            </div>
         </div>
 
         <!-- ============================================================
@@ -783,7 +809,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 <input type="file" id="productImageFile" name="product_image"
                     accept="image/jpeg,image/jpg,image/png,image/webp">
 
-                <!-- ✅ CATEGORY GROUP — above Product Name -->
+                <!-- ✅ CATEGORY GROUP -->
                 <label for="category_group">Category Group</label>
                 <select name="category_group" id="category_group">
                     <option value="">— None —</option>
@@ -801,12 +827,18 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                         placeholder="e.g. Printer Accessories">
                 </div>
 
+                <!-- ✅ Product Name + Search button -->
                 <label for="product_name">Product Name</label>
-                <input type="text" id="product_name" name="product_name" required>
+                <div class="name-search-row">
+                    <input type="text" id="product_name" name="product_name" required>
+                    <button type="button" class="btn-search-google hidden" id="searchGoogleBtn"
+                        title="Search this product on Google">
+                        <i class="fas fa-search"></i>
+                        <span>Search</span>
+                    </button>
+                </div>
 
-                <!-- ============================================================
-                     ✅ SEARCHABLE UNIT DROPDOWN (no ✕ button)
-                     ============================================================ -->
+                <!-- ✅ SEARCHABLE UNIT DROPDOWN -->
                 <label for="unitSearch">Unit</label>
                 <div class="unit-search-wrap">
                     <input type="text" id="unitSearch" class="unit-search-input"
@@ -814,8 +846,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                         autocomplete="off" spellcheck="false">
                     <div class="unit-options" id="unitOptions"></div>
                 </div>
-
-                <!-- ✅ Hidden input that actually submits the value -->
                 <input type="hidden" name="unit" id="unit" value="pcs">
 
                 <label for="quantity">Product Quantity</label>
@@ -840,9 +870,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         <i class="fas fa-camera"></i>
     </button>
 
-    <!-- ============================================================
-         ✅ SUCCESS MODAL — loader then check
-         ============================================================ -->
     <div class="success-overlay" id="successOverlay">
         <div class="success-card loading" id="successCard">
             <div class="success-icon-wrap">
@@ -864,8 +891,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         var capturedPhoto = document.getElementById('capturedPhoto');
         var captureBtn = document.getElementById('captureBtn');
         var retakeBtn = document.getElementById('retakeBtn');
-        var uploadBtn = document.getElementById('uploadBtn');
-        var defaultBtn = document.getElementById('defaultBtn');
         var cancelUploadBtn = document.getElementById('cancelUploadBtn');
         var cameraBox = document.getElementById('cameraBox');
         var imageWrapper = document.getElementById('imageWrapper');
@@ -877,7 +902,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         var saveBtn = document.getElementById('saveBtn');
         var imageStage = document.getElementById('imageStage');
 
-        // TORCH
         var torchBtn = document.getElementById('torchBtn');
         var torchOn = false;
         var torchTrack = null;
@@ -891,9 +915,65 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
         var stream = null;
         var cameraActive = false;
+        var isSaving = false;
 
         // ============================================================
-        // ✅ CATEGORY GROUP — show/hide "new category" input
+        // ✅ GOOGLE SEARCH BUTTON — shows only when Product Name has text
+        // ============================================================
+        var productNameInput = document.getElementById('product_name');
+        var searchGoogleBtn = document.getElementById('searchGoogleBtn');
+
+        function refreshSearchButton() {
+            if (!searchGoogleBtn || !productNameInput) return;
+            var v = (productNameInput.value || '').trim();
+            if (v.length > 0) {
+                searchGoogleBtn.classList.remove('hidden');
+            } else {
+                searchGoogleBtn.classList.add('hidden');
+            }
+        }
+
+        if (productNameInput) {
+            productNameInput.addEventListener('input', refreshSearchButton);
+            // Initial state
+            refreshSearchButton();
+        }
+
+        if (searchGoogleBtn) {
+            searchGoogleBtn.addEventListener('click', function () {
+                var name = (productNameInput.value || '').trim();
+                if (!name) {
+                    alert('Please enter a product name first.');
+                    productNameInput.focus();
+                    return;
+                }
+
+                var url = 'https://www.google.com/search?q=' + encodeURIComponent(name);
+
+                if (window.AndroidBiometric && typeof window.AndroidBiometric.openGoogleSearch === 'function') {
+                    try {
+                        window.AndroidBiometric.openGoogleSearch(name);
+                        return;
+                    } catch (e) {
+                        console.warn('openGoogleSearch bridge failed:', e);
+                    }
+                }
+
+                if (window.AndroidBiometric && typeof window.AndroidBiometric.openInBrowser === 'function') {
+                    try {
+                        window.AndroidBiometric.openInBrowser(url);
+                        return;
+                    } catch (e) {
+                        console.warn('openInBrowser bridge failed:', e);
+                    }
+                }
+
+                window.open(url, '_blank');
+            });
+        }
+
+        // ============================================================
+        // ✅ CATEGORY GROUP
         // ============================================================
         var categorySelect = document.getElementById('category_group');
         var newCategoryWrap = document.getElementById('newCategoryWrap');
@@ -912,7 +992,116 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         // ============================================================
-        // ✅ SEARCHABLE UNIT DROPDOWN — startsWith match, no ✕
+        // ✅ IMAGE LINK INPUT
+        // ============================================================
+        var imageLinkInput = document.getElementById('image_link');
+        var imageLinkStatus = document.getElementById('imageLinkStatus');
+
+        function setLinkStatus(msg, type) {
+            if (!imageLinkStatus) return;
+            imageLinkStatus.className = 'image-link-status ' + (type || '');
+            imageLinkStatus.textContent = msg || '';
+        }
+
+        function looksLikeImageUrl(u) {
+            if (!u) return false;
+            if (!/^https?:\/\//i.test(u)) return false;
+            return /\.(jpe?g|png|webp|gif|bmp|avif)(\?|#|$)/i.test(u)
+                || /(images?|photos?|cdn|imgur|unsplash|cloudinary|googleusercontent)/i.test(u);
+        }
+
+        async function loadImageFromLink(url) {
+            if (!url) {
+                setLinkStatus('Please paste an image URL first.', 'error');
+                return;
+            }
+            if (!looksLikeImageUrl(url)) {
+                setLinkStatus('That does not look like an image URL.', 'error');
+                return;
+            }
+
+            setLinkStatus('Loading image…', 'loading');
+
+            try {
+                var res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+
+                var blob = await res.blob();
+                if (!blob.type || blob.type.indexOf('image/') !== 0) {
+                    throw new Error('URL is not an image');
+                }
+                if (blob.size > 5 * 1024 * 1024) {
+                    throw new Error('Image is larger than 5MB');
+                }
+
+                var dataUrl = await new Promise(function (resolve, reject) {
+                    var reader = new FileReader();
+                    reader.onload = function () { resolve(reader.result); };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+
+                base64Input.value = dataUrl;
+                useDefaultImageInput.value = '0';
+
+                capturedPhoto.src = dataUrl;
+                capturedPhoto.style.display = 'block';
+                video.style.display = 'none';
+                cameraBox.classList.add('visible');
+
+                imageWrapper.style.display = 'none';
+                viewHasImage();
+
+                setLinkStatus('✔ Image loaded and ready to save.', 'ok');
+
+                setTimeout(function () {
+                    setLinkStatus('', '');
+                }, 600);
+            } catch (err) {
+                console.warn('Image link fetch failed:', err);
+                var previewImg = new Image();
+                previewImg.onload = function () {
+                    productImage.src = url;
+                    productImage.style.display = 'block';
+                    imageWrapper.style.display = 'flex';
+                    cameraBox.classList.remove('visible');
+                    capturedPhoto.style.display = 'none';
+                    imagePlaceholder.classList.remove('visible');
+
+                    setLinkStatus('Preview only — this host blocks cross-origin download. Download the image manually and upload it.', 'error');
+                };
+                previewImg.onerror = function () {
+                    setLinkStatus('Failed to load image. ' + (err.message || ''), 'error');
+                };
+                previewImg.src = url;
+            }
+        }
+
+        if (imageLinkInput) {
+            imageLinkInput.addEventListener('paste', function () {
+                setTimeout(function () {
+                    var v = (imageLinkInput.value || '').trim();
+                    if (v && looksLikeImageUrl(v)) loadImageFromLink(v);
+                }, 30);
+            });
+
+            imageLinkInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation(); // don't bubble to global Enter-to-save
+                    var v = (imageLinkInput.value || '').trim();
+                    if (v) loadImageFromLink(v);
+                }
+            });
+
+            imageLinkInput.addEventListener('blur', function () {
+                var v = (imageLinkInput.value || '').trim();
+                if (v && looksLikeImageUrl(v)) loadImageFromLink(v);
+            });
+        }
+
+        // ============================================================
+        // ✅ SEARCHABLE UNIT DROPDOWN
         // ============================================================
         var UNIT_OPTIONS = [
             { value: 'pcs', label: 'Pcs' },
@@ -967,20 +1156,18 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         ];
 
         var unitSearchInput = document.getElementById('unitSearch');
-        var unitOptionsBox  = document.getElementById('unitOptions');
-        var unitHidden      = document.getElementById('unit');
+        var unitOptionsBox = document.getElementById('unitOptions');
+        var unitHidden = document.getElementById('unit');
 
         var activeOptionIndex = -1;
-        var currentMatches    = [];
+        var currentMatches = [];
 
-        // Default selection
-        unitHidden.value       = 'pcs';
-        unitSearchInput.value  = 'Pcs';
+        unitHidden.value = 'pcs';
+        unitSearchInput.value = 'Pcs';
 
         function renderUnitOptions(filterText) {
             var term = (filterText || '').trim().toLowerCase();
 
-            // ✅ startsWith matching
             currentMatches = UNIT_OPTIONS.filter(function (opt) {
                 if (term === '') return true;
                 return opt.label.toLowerCase().indexOf(term) === 0 ||
@@ -997,7 +1184,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             for (var j = 0; j < currentMatches.length; j++) {
                 var o = currentMatches[j];
                 var selectedClass = (o.value === unitHidden.value) ? ' selected' : '';
-                var activeClass   = (j === activeOptionIndex) ? ' active' : '';
+                var activeClass = (j === activeOptionIndex) ? ' active' : '';
                 html += '<div class="unit-option' + selectedClass + activeClass + '"'
                       + ' data-value="' + o.value + '" data-label="' + o.label + '">'
                       + '<span class="unit-label">' + o.label + '</span>'
@@ -1019,25 +1206,22 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         function selectUnit(value, label) {
-            unitHidden.value      = value;
+            unitHidden.value = value;
             unitSearchInput.value = label;
             closeUnitOptions();
         }
 
-        // Open on focus / click
         unitSearchInput.addEventListener('focus', openUnitOptions);
         unitSearchInput.addEventListener('click', function () {
             if (!unitOptionsBox.classList.contains('open')) openUnitOptions();
         });
 
-        // Filter on typing — startsWith
         unitSearchInput.addEventListener('input', function () {
             activeOptionIndex = -1;
             renderUnitOptions(unitSearchInput.value);
             unitOptionsBox.classList.add('open');
         });
 
-        // Keyboard navigation
         unitSearchInput.addEventListener('keydown', function (e) {
             var opts = unitOptionsBox.querySelectorAll('.unit-option:not(.no-match)');
             if (!opts.length) return;
@@ -1052,6 +1236,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 updateActiveOption(opts);
             } else if (e.key === 'Enter') {
                 e.preventDefault();
+                e.stopPropagation(); // prevent global Enter-to-save while picking a unit
                 if (activeOptionIndex >= 0 && currentMatches[activeOptionIndex]) {
                     var c = currentMatches[activeOptionIndex];
                     selectUnit(c.value, c.label);
@@ -1073,7 +1258,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
         }
 
-        // ✅ Click on option — plain click, stopPropagation so outside-close doesn't fire
         unitOptionsBox.addEventListener('click', function (e) {
             var target = e.target.closest('.unit-option');
             if (!target || target.classList.contains('no-match')) return;
@@ -1082,7 +1266,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             selectUnit(target.getAttribute('data-value'), target.getAttribute('data-label'));
         });
 
-        // Close when clicking outside
         document.addEventListener('click', function (e) {
             if (!e.target.closest('.unit-search-wrap')) {
                 closeUnitOptions();
@@ -1101,16 +1284,9 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         function showFloatingCapture() { captureBtn.classList.add('visible'); }
         function hideFloatingCapture() { captureBtn.classList.remove('visible'); }
 
-        function showUploadButton() { uploadBtn.style.display = 'block'; }
-        function hideUploadButton() { uploadBtn.style.display = 'none'; }
-
-        function showDefaultButton() { defaultBtn.classList.add('visible'); }
-        function hideDefaultButton() { defaultBtn.classList.remove('visible'); }
-
         function showPlaceholder() { imagePlaceholder.classList.add('visible'); }
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
-        // TORCH visibility
         function showTorchButton() {
             if (torchTrack && typeof torchTrack.getCapabilities === 'function') {
                 var caps = torchTrack.getCapabilities();
@@ -1121,6 +1297,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
             torchBtn.classList.add('visible');
         }
+
         function hideTorchButton() {
             torchBtn.classList.remove('visible');
             torchOn = false;
@@ -1133,8 +1310,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         function viewHasImage() {
             hideFloatingCamera();
             hideFloatingCapture();
-            hideUploadButton();
-            hideDefaultButton();
             showCancelButton();
             hidePlaceholder();
             hideTorchButton();
@@ -1144,8 +1319,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             hideCancelButton();
             showFloatingCamera();
             hideFloatingCapture();
-            showUploadButton();
-            showDefaultButton();
             showPlaceholder();
             hideTorchButton();
         }
@@ -1154,8 +1327,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             hideCancelButton();
             hideFloatingCamera();
             showFloatingCapture();
-            hideUploadButton();
-            hideDefaultButton();
             hidePlaceholder();
             if (torchTrack) {
                 showTorchButton();
@@ -1163,7 +1334,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         // ============================================================
-        // TORCH TOGGLE
+        // TORCH
         // ============================================================
         async function toggleTorch() {
             if (!torchTrack) {
@@ -1276,47 +1447,8 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             viewHasImage();
         });
 
-        uploadBtn.addEventListener('click', function () {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', function () {
-            var file = fileInput.files[0];
-            if (!file) return;
-
-            var allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (allowed.indexOf(file.type) === -1) {
-                alert('Please choose a JPG, PNG, or WebP image.');
-                fileInput.value = '';
-                return;
-            }
-
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Image is too large. Max 5MB.');
-                fileInput.value = '';
-                return;
-            }
-
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                var dataUrl = e.target.result;
-
-                base64Input.value = dataUrl;
-                useDefaultImageInput.value = '0';
-
-                capturedPhoto.src = dataUrl;
-                capturedPhoto.style.display = 'block';
-                video.style.display = 'none';
-                cameraBox.classList.add('visible');
-
-                imageWrapper.style.display = 'none';
-                viewHasImage();
-            };
-            reader.readAsDataURL(file);
-        });
-
         // ============================================================
-        // ✅ SHARED HELPER — apply an image file to the preview
+        // ✅ SHARED — apply an image file to the preview
         // ============================================================
         function applyImageFile(file) {
             if (!file) return;
@@ -1387,7 +1519,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             if (!dt) return;
 
             var file = null;
-
             if (dt.files && dt.files.length > 0) {
                 file = dt.files[0];
             } else if (dt.items && dt.items.length > 0) {
@@ -1408,44 +1539,51 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         });
 
         // ============================================================
-        // ✅ PASTE IMAGE FROM CLIPBOARD
+        // ✅ GLOBAL PASTE — image file + URL text
         // ============================================================
+        function isTextField(el) {
+            if (!el) return false;
+            var tag = (el.tagName || '').toLowerCase();
+            return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+        }
+
         document.addEventListener('paste', function (e) {
             var items = e.clipboardData && e.clipboardData.items;
             if (!items) return;
 
+            // (A) pasted image file → preview + save
             for (var i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
+                if (items[i].type && items[i].type.indexOf('image') !== -1) {
                     var file = items[i].getAsFile();
                     if (!file) continue;
 
                     applyImageFile(file);
                     e.preventDefault();
-                    break;
+                    return;
                 }
+            }
+
+            // (B) pasted URL text → fill Image Link + auto-load
+            var active = document.activeElement;
+
+            if (active === imageLinkInput) return;
+            if (isTextField(active)) return;
+
+            var text = (e.clipboardData && e.clipboardData.getData('text')) || '';
+            var trimmed = text.trim();
+
+            if (trimmed && looksLikeImageUrl(trimmed)) {
+                if (imageLinkInput) {
+                    imageLinkInput.value = trimmed;
+                    loadImageFromLink(trimmed);
+                }
+                e.preventDefault();
             }
         });
 
         // ============================================================
-        // ✅ CHOOSE DEFAULT IMAGE
+        // TRASH BUTTON
         // ============================================================
-        defaultBtn.addEventListener('click', function () {
-            base64Input.value = '';
-            fileInput.value = '';
-            useDefaultImageInput.value = '1';
-
-            cameraBox.classList.remove('visible');
-            capturedPhoto.src = '';
-            capturedPhoto.style.display = 'none';
-            video.style.display = 'none';
-
-            productImage.src = defaultImageUrl;
-            productImage.style.display = 'block';
-            imageWrapper.style.display = 'flex';
-
-            viewHasImage();
-        });
-
         cancelUploadBtn.addEventListener('click', function () {
             base64Input.value = '';
             fileInput.value = '';
@@ -1458,16 +1596,23 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             capturedPhoto.src = '';
             cameraBox.classList.remove('visible');
 
+            if (imageLinkInput) imageLinkInput.value = '';
+            setLinkStatus('', '');
+
             viewNoImage();
         });
 
         // ============================================================
-        // FORM SUBMIT
+        // FORM SUBMIT (Save button + Enter key both funnel here)
         // ============================================================
-        document.getElementById('productForm').addEventListener('submit', async function (e) {
+        var productFormEl = document.getElementById('productForm');
+
+        productFormEl.addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            // ✅ Ensure the unit hidden input has a value (fallback to Pcs)
+            if (isSaving) return;
+            isSaving = true;
+
             if (!unitHidden.value) {
                 unitHidden.value = 'pcs';
             }
@@ -1475,16 +1620,17 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             var isDefault = useDefaultImageInput.value === '1';
 
             if (!base64Input.value && !isDefault) {
-                alert('Please capture, upload, drag-drop, paste, or choose a default product image first.');
+                alert('Please capture, drag-drop, paste an image, or paste an image link first.');
+                isSaving = false;
                 return;
             }
 
-            // ✅ If "Add new category" is chosen, require a name and send it as category_group
             if (categorySelect && categorySelect.value === '__new__') {
                 var newName = (newCategoryInput.value || '').trim();
                 if (!newName) {
                     alert('Please enter a name for the new category.');
                     newCategoryInput.focus();
+                    isSaving = false;
                     return;
                 }
                 categorySelect.value = newName;
@@ -1519,6 +1665,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 } catch (jsonErr) {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Save Product';
+                    isSaving = false;
                     alert(
                         'Server did not return JSON.\n\n' +
                         'HTTP status: ' + res.status + '\n\n' +
@@ -1536,17 +1683,49 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 } else {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Save Product';
+                    isSaving = false;
                     alert(data.message);
                 }
             } catch (err) {
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save Product';
+                isSaving = false;
                 alert('Request failed: ' + err.message);
             }
         });
 
         // ============================================================
-        // SUCCESS MODAL — loader → check → redirect
+        // ✅ AUTO-SAVE ON ENTER (works from any single-line field)
+        // ============================================================
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.keyCode !== 13) return;
+            if (isSaving) return;
+
+            var el = e.target;
+            if (!el) return;
+
+            var tag = (el.tagName || '').toLowerCase();
+
+            if (tag === 'textarea') return;
+            if (el.isContentEditable) return;
+            if (el.id === 'image_link') return;
+            if (el.id === 'unitSearch') return; // handled by unit dropdown
+            if (tag === 'select') return;
+            if (tag === 'button') return;
+
+            if (successOverlay && successOverlay.classList.contains('visible')) return;
+
+            e.preventDefault();
+
+            if (typeof productFormEl.requestSubmit === 'function') {
+                productFormEl.requestSubmit();
+            } else {
+                if (saveBtn) saveBtn.click();
+            }
+        });
+
+        // ============================================================
+        // SUCCESS MODAL
         // ============================================================
         function showSuccessLoaderThenCheck(redirectUrl, doneTitle, doneMessage) {
             successCard.classList.remove('done');
