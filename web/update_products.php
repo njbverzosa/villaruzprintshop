@@ -120,6 +120,7 @@ if (!empty($product['product_image'])) {
 
         input[type="text"],
         input[type="number"],
+        input[type="url"],
         textarea {
             width: 100%;
             padding: 10px;
@@ -176,6 +177,72 @@ if (!empty($product['product_image'])) {
         .btn-search-google i {
             font-size: 13px;
         }
+
+        /* ============================================================
+           ✅ APP-ONLY: Image Link input
+           ============================================================ */
+        .image-link-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+            margin-bottom: 15px;
+        }
+
+        .image-link-row input[type="url"] {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-load-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0 14px;
+            background: #10b981;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-load-link:hover {
+            background: #059669;
+        }
+
+        .btn-load-link:active {
+            transform: scale(0.97);
+        }
+
+        .btn-load-link:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .image-link-hint {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .image-link-status {
+            font-size: 12px;
+            margin-top: -8px;
+            margin-bottom: 12px;
+            min-height: 16px;
+            display: none;
+        }
+
+        .image-link-status.loading { color: #0ea5e9; display: block; }
+        .image-link-status.ok      { color: #10b981; display: block; }
+        .image-link-status.error   { color: #ef4444; display: block; }
 
         .image-stage {
             position: relative;
@@ -543,55 +610,26 @@ if (!empty($product['product_image'])) {
             min-height: 42px;
         }
 
-        .success-redirect-hint {
-            font-size: 12px;
-            color: #94a3b8;
-            opacity: 0;
-            transition: opacity 0.35s ease;
-        }
-
-        .success-card.done .success-redirect-hint {
-            opacity: 1;
-        }
-
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(12px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+            from { opacity: 0; transform: scale(0.9) translateY(12px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         @keyframes drawCircle {
-            to {
-                stroke-dashoffset: 0;
-            }
+            to { stroke-dashoffset: 0; }
         }
 
         @keyframes drawCheck {
-            to {
-                stroke-dashoffset: 0;
-            }
+            to { stroke-dashoffset: 0; }
         }
     </style>
 </head>
@@ -639,6 +677,24 @@ if (!empty($product['product_image'])) {
             </button>
 
             <div class="divider"></div>
+
+            <!-- ============================================================
+                 ✅ APP-ONLY: Image Link input (hidden on web by default)
+                 ============================================================ -->
+            <div id="imageLinkBlock" style="display:none;">
+                <label for="image_link">Image Link</label>
+                <div class="image-link-row">
+                    <input type="url" id="image_link" placeholder="https://example.com/photo.jpg"
+                        autocomplete="off" spellcheck="false">
+                    <button type="button" class="btn-load-link" id="loadImageLinkBtn">
+                        <i class="fas fa-download"></i> Load
+                    </button>
+                </div>
+                <div class="image-link-status" id="imageLinkStatus"></div>
+                <div class="image-link-hint">
+                    Paste a direct image URL (ending in .jpg, .png, .webp…). It will be previewed and saved when you click <strong>Save Changes</strong>.
+                </div>
+            </div>
 
             <!-- ✅ Product Name + Google Search button -->
             <label for="product_name">Product Name</label>
@@ -725,6 +781,134 @@ if (!empty($product['product_image'])) {
         let cameraActive = false;
 
         // ============================================================
+        // ✅ APP DETECTION + IMAGE LINK INPUT
+        // ============================================================
+        // window.__SOFIA_APP_VERSION__ is injected by MainActivity.onPageStarted()
+        // So it exists ONLY inside the Android app WebView.
+        const IS_APP = typeof window.__SOFIA_APP_VERSION__ !== 'undefined'
+                       && window.__SOFIA_APP_VERSION__ !== null;
+
+        const imageLinkBlock = document.getElementById('imageLinkBlock');
+        const imageLinkInput = document.getElementById('image_link');
+        const loadImageLinkBtn = document.getElementById('loadImageLinkBtn');
+        const imageLinkStatus = document.getElementById('imageLinkStatus');
+
+        if (IS_APP && imageLinkBlock) {
+            imageLinkBlock.style.display = 'block';
+        }
+
+        function setLinkStatus(msg, type) {
+            if (!imageLinkStatus) return;
+            imageLinkStatus.className = 'image-link-status ' + (type || '');
+            imageLinkStatus.textContent = msg || '';
+        }
+
+        // Basic URL sanity check
+        function looksLikeImageUrl(u) {
+            if (!u) return false;
+            if (!/^https?:\/\//i.test(u)) return false;
+            // Prefer explicit image extensions, but also allow hosts like imgur, unsplash, etc.
+            return /\.(jpe?g|png|webp|gif|bmp|avif)(\?|#|$)/i.test(u)
+                || /(images?|photos?|cdn|imgur|unsplash|cloudinary|googleusercontent)/i.test(u);
+        }
+
+        // Download the URL, convert to data URL, and populate the preview.
+        async function loadImageFromLink(url) {
+            if (!url) {
+                setLinkStatus('Please paste an image URL first.', 'error');
+                return;
+            }
+            if (!looksLikeImageUrl(url)) {
+                setLinkStatus('That does not look like an image URL.', 'error');
+                return;
+            }
+
+            setLinkStatus('Loading image…', 'loading');
+            loadImageLinkBtn.disabled = true;
+
+            try {
+                // Try to fetch and convert to base64 (needed for the upload)
+                const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+
+                const blob = await res.blob();
+                if (!blob.type || blob.type.indexOf('image/') !== 0) {
+                    throw new Error('URL is not an image');
+                }
+                if (blob.size > 5 * 1024 * 1024) {
+                    throw new Error('Image is larger than 5MB');
+                }
+
+                const dataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+
+                // ✅ Apply to preview + hidden fields
+                base64Input.value = dataUrl;
+                replaceImageInput.value = '1';
+                fileInput.value = '';
+
+                capturedPhoto.src = dataUrl;
+                capturedPhoto.style.display = 'block';
+                video.style.display = 'none';
+                cameraBox.classList.add('visible');
+
+                imageWrapper.style.display = 'none';
+                viewHasImage();
+
+                setLinkStatus('✔ Image loaded and ready to save.', 'ok');
+            } catch (err) {
+                console.warn('Image link fetch failed:', err);
+                // Fallback: still show a visual preview so the user sees the image,
+                // but tell them it must be downloaded manually (CORS / host blocked).
+                const previewImg = new Image();
+                previewImg.onload = () => {
+                    productImage.src = url;
+                    productImage.style.display = 'block';
+                    imageWrapper.style.display = 'flex';
+                    cameraBox.classList.remove('visible');
+                    capturedPhoto.style.display = 'none';
+                    imagePlaceholder.classList.remove('visible');
+
+                    // Do NOT set replace_image yet — upload will fail without base64
+                    setLinkStatus('Preview only — this host blocks cross-origin download. Download the image manually and upload it.', 'error');
+                };
+                previewImg.onerror = () => {
+                    setLinkStatus('Failed to load image. ' + (err.message || ''), 'error');
+                };
+                previewImg.src = url;
+            } finally {
+                loadImageLinkBtn.disabled = false;
+            }
+        }
+
+        if (loadImageLinkBtn) {
+            loadImageLinkBtn.addEventListener('click', function () {
+                loadImageFromLink((imageLinkInput.value || '').trim());
+            });
+        }
+
+        if (imageLinkInput) {
+            // Auto-load when user pastes a URL
+            imageLinkInput.addEventListener('paste', function () {
+                setTimeout(() => {
+                    const v = (imageLinkInput.value || '').trim();
+                    if (v && looksLikeImageUrl(v)) loadImageFromLink(v);
+                }, 30);
+            });
+            // Enter key also loads
+            imageLinkInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    loadImageFromLink((imageLinkInput.value || '').trim());
+                }
+            });
+        }
+
+        // ============================================================
         // ✅ GOOGLE SEARCH BUTTON
         // ============================================================
         const searchGoogleBtn = document.getElementById('searchGoogleBtn');
@@ -742,7 +926,6 @@ if (!empty($product['product_image'])) {
 
                 const url = 'https://www.google.com/search?q=' + encodeURIComponent(name);
 
-                // 1) Prefer the dedicated native method
                 if (window.AndroidBiometric && typeof window.AndroidBiometric.openGoogleSearch === 'function') {
                     try {
                         window.AndroidBiometric.openGoogleSearch(name);
@@ -752,7 +935,6 @@ if (!empty($product['product_image'])) {
                     }
                 }
 
-                // 2) Fall back to the generic openInBrowser bridge
                 if (window.AndroidBiometric && typeof window.AndroidBiometric.openInBrowser === 'function') {
                     try {
                         window.AndroidBiometric.openInBrowser(url);
@@ -762,7 +944,6 @@ if (!empty($product['product_image'])) {
                     }
                 }
 
-                // 3) Plain browser (desktop / debugging)
                 window.open(url, '_blank');
             });
         }
@@ -894,9 +1075,6 @@ if (!empty($product['product_image'])) {
             fileInput.click();
         });
 
-        // ============================================================
-        // ✅ SHARED HELPER — apply an image file to the preview
-        // ============================================================
         function applyImageFile(file) {
             if (!file) return;
 
@@ -940,7 +1118,7 @@ if (!empty($product['product_image'])) {
         });
 
         // ============================================================
-        // ✅ DRAG & DROP IMAGE
+        // DRAG & DROP
         // ============================================================
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
             document.body.addEventListener(evt, function (e) {
@@ -996,7 +1174,7 @@ if (!empty($product['product_image'])) {
         });
 
         // ============================================================
-        // ✅ PASTE IMAGE FROM CLIPBOARD
+        // PASTE IMAGE
         // ============================================================
         document.addEventListener('paste', function (e) {
             const items = e.clipboardData && e.clipboardData.items;
@@ -1028,6 +1206,9 @@ if (!empty($product['product_image'])) {
             capturedPhoto.style.display = 'none';
             capturedPhoto.src = '';
             cameraBox.classList.remove('visible');
+
+            if (imageLinkInput) imageLinkInput.value = '';
+            setLinkStatus('', '');
 
             viewNoImage();
         });
@@ -1094,7 +1275,7 @@ if (!empty($product['product_image'])) {
         });
 
         // ============================================================
-        // SUCCESS MODAL — loader → check → redirect
+        // SUCCESS MODAL
         // ============================================================
         function showSuccessLoaderThenCheck(redirectUrl, doneTitle, doneMessage) {
             successCard.classList.remove('done');
@@ -1123,6 +1304,13 @@ if (!empty($product['product_image'])) {
         // ON PAGE LOAD
         // ============================================================
         window.addEventListener('load', () => {
+            // Re-check app detection in case the flag was injected after script parse
+            if (typeof window.__SOFIA_APP_VERSION__ !== 'undefined'
+                && window.__SOFIA_APP_VERSION__ !== null
+                && imageLinkBlock) {
+                imageLinkBlock.style.display = 'block';
+            }
+
             if (originalImageExists) viewHasImage();
             else viewNoImage();
         });

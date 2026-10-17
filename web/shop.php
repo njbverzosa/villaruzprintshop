@@ -332,18 +332,9 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             z-index: 6;
             font-size: 13px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            transition: background 0.2s, color 0.2s;
         }
 
-        .menu-toggle-btn:hover,
-        .menu-toggle-btn.active {
-            background: #3b82f6;
-            color: #ffffff;
-        }
 
-        .menu-toggle-btn i {
-            pointer-events: none;
-        }
 
         /* ✅ White dropdown box */
         .card-dropdown {
