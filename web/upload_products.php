@@ -931,7 +931,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
         if (productNameInput) {
             productNameInput.addEventListener('input', refreshSearchButton);
-            // Initial state
             refreshSearchButton();
         }
 
@@ -1084,7 +1083,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             imageLinkInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    e.stopPropagation(); // don't bubble to global Enter-to-save
+                    e.stopPropagation();
                     var v = (imageLinkInput.value || '').trim();
                     if (v) loadImageFromLink(v);
                 }
@@ -1232,7 +1231,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 updateActiveOption(opts);
             } else if (e.key === 'Enter') {
                 e.preventDefault();
-                e.stopPropagation(); // prevent global Enter-to-save while picking a unit
+                e.stopPropagation();
                 if (activeOptionIndex >= 0 && currentMatches[activeOptionIndex]) {
                     var c = currentMatches[activeOptionIndex];
                     selectUnit(c.value, c.label);
@@ -1705,7 +1704,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             if (tag === 'textarea') return;
             if (el.isContentEditable) return;
             if (el.id === 'image_link') return;
-            if (el.id === 'unitSearch') return; // handled by unit dropdown
+            if (el.id === 'unitSearch') return;
             if (tag === 'select') return;
             if (tag === 'button') return;
 
@@ -1751,6 +1750,154 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         // ============================================================
         window.addEventListener('load', function () {
             viewNoImage();
+        });
+
+        // ============================================================
+        // ✅ AUTO-PASTE ON APP RESUME
+        //    Reads the clipboard via the native Android bridge
+        //    (falls back to navigator.clipboard on desktop).
+        // ============================================================
+        async function tryAutoPasteFromClipboard() {
+            // Don't override an image the user already picked/captured
+            if (base64Input.value) return;
+
+            // ---------- Path 1: native Android bridge ----------
+            if (window.AndroidClipboard) {
+                try {
+                    // 1a) Image first
+                    var clipDataUrl = window.AndroidClipboard.getClipboardImageDataUrl();
+                    if (clipDataUrl && clipDataUrl.indexOf('data:image/') === 0) {
+                        var normalized = await normalizeImageDataUrl(clipDataUrl);
+                        if (normalized) {
+                            base64Input.value = normalized;
+                            useDefaultImageInput.value = '0';
+
+                            capturedPhoto.src = normalized;
+                            capturedPhoto.style.display = 'block';
+                            video.style.display = 'none';
+                            cameraBox.classList.add('visible');
+
+                            imageWrapper.style.display = 'none';
+                            viewHasImage();
+
+                            showAutoPasteToast('Image pasted from clipboard');
+                            return;
+                        }
+                    }
+
+                    // 1b) Text URL second
+                    var clipText = (window.AndroidClipboard.getClipboardText() || '').trim();
+                    if (clipText && looksLikeImageUrl(clipText)) {
+                        if (imageLinkInput) imageLinkInput.value = clipText;
+                        await loadImageFromLink(clipText);
+                        showAutoPasteToast('Image link pasted from clipboard');
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('AndroidClipboard bridge failed:', e);
+                }
+            }
+
+            // ---------- Path 2: Web Clipboard API (browsers) ----------
+            if (navigator.clipboard && typeof navigator.clipboard.read === 'function') {
+                try {
+                    var items = await navigator.clipboard.read();
+                    for (var i = 0; i < items.length; i++) {
+                        var types = items[i].types || [];
+
+                        // Image?
+                        for (var j = 0; j < types.length; j++) {
+                            if (types[j].indexOf('image/') === 0) {
+                                var blob = await items[i].getType(types[j]);
+                                var blobDataUrl = await blobToDataUrl(blob);
+                                var norm2 = await normalizeImageDataUrl(blobDataUrl);
+                                if (norm2) {
+                                    base64Input.value = norm2;
+                                    useDefaultImageInput.value = '0';
+                                    capturedPhoto.src = norm2;
+                                    capturedPhoto.style.display = 'block';
+                                    video.style.display = 'none';
+                                    cameraBox.classList.add('visible');
+                                    imageWrapper.style.display = 'none';
+                                    viewHasImage();
+                                    showAutoPasteToast('Image pasted from clipboard');
+                                    return;
+                                }
+                            }
+                        }
+
+                        // URL text?
+                        if (types.indexOf('text/plain') !== -1) {
+                            var tb = await items[i].getType('text/plain');
+                            var t = (await tb.text() || '').trim();
+                            if (t && looksLikeImageUrl(t)) {
+                                if (imageLinkInput) imageLinkInput.value = t;
+                                await loadImageFromLink(t);
+                                showAutoPasteToast('Image link pasted from clipboard');
+                                return;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Silent — most browsers need a user gesture to allow clipboard reads
+                }
+            }
+        }
+
+        // Force any image data URL to JPEG (so the backend always accepts it)
+        function normalizeImageDataUrl(dataUrl) {
+            return new Promise(function (resolve) {
+                try {
+                    var img = new Image();
+                    img.onload = function () {
+                        try {
+                            var canvas = document.createElement('canvas');
+                            canvas.width = img.naturalWidth || img.width;
+                            canvas.height = img.naturalHeight || img.height;
+                            var ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0);
+                            resolve(canvas.toDataURL('image/jpeg', 0.9));
+                        } catch (e) { resolve(null); }
+                    };
+                    img.onerror = function () { resolve(null); };
+                    img.src = dataUrl;
+                } catch (e) { resolve(null); }
+            });
+        }
+
+        function blobToDataUrl(blob) {
+            return new Promise(function (resolve, reject) {
+                var r = new FileReader();
+                r.onload = function () { resolve(r.result); };
+                r.onerror = reject;
+                r.readAsDataURL(blob);
+            });
+        }
+
+        function showAutoPasteToast(msg) {
+            var t = document.createElement('div');
+            t.textContent = msg;
+            t.style.cssText =
+                'position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:10px;' +
+                'background:#10b981;color:#fff;font-weight:600;font-size:14px;z-index:99999;' +
+                'box-shadow:0 6px 20px rgba(0,0,0,0.2);transition:opacity 0.3s;';
+            document.body.appendChild(t);
+            setTimeout(function () {
+                t.style.opacity = '0';
+                setTimeout(function () { t.remove(); }, 300);
+            }, 2500);
+        }
+
+        // ---- Bridge for MainActivity.onResume() ----
+        window.onAppResume = function () {
+            tryAutoPasteFromClipboard();
+        };
+
+        // ---- Also try once on page load (mostly a no-op in browsers) ----
+        window.addEventListener('load', function () {
+            setTimeout(tryAutoPasteFromClipboard, 300);
         });
     </script>
 </body>
