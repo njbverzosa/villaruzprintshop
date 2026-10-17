@@ -207,8 +207,12 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         /* ============================================================
-           ✅ Image Link input (auto-load)
+           ✅ Image Link input (auto-load) — auto-hides when an image is present
            ============================================================ */
+        .image-link-section.hidden {
+            display: none;
+        }
+
         .image-link-row {
             display: flex;
             gap: 8px;
@@ -778,13 +782,17 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             </div>
 
             <!-- ============================================================
-                 ✅ Image Link input (auto-load)
+                 ✅ Image Link input — wrapped in a section that
+                 auto-hides when an image is present, and reappears
+                 only when the trash button is clicked.
                  ============================================================ -->
-            <label for="image_link" style="margin-top: 12px;">Image Link</label>
-            <div class="image-link-row">
-                <input type="url" id="image_link"
-                    placeholder="Paste image URL here — it loads automatically"
-                    autocomplete="off" spellcheck="false">
+            <div id="imageLinkSection" class="image-link-section">
+                <label for="image_link" style="margin-top: 12px;">Image Link</label>
+                <div class="image-link-row">
+                    <input type="url" id="image_link"
+                        placeholder="Paste image URL here — it loads automatically"
+                        autocomplete="off" spellcheck="false">
+                </div>
             </div>
         </div>
 
@@ -914,6 +922,19 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         var isSaving = false;
 
         // ============================================================
+        // ✅ Image Link visibility — hidden once an image exists
+        // ============================================================
+        var imageLinkSection = document.getElementById('imageLinkSection');
+
+        function showImageLinkSection() {
+            if (imageLinkSection) imageLinkSection.classList.remove('hidden');
+        }
+
+        function hideImageLinkSection() {
+            if (imageLinkSection) imageLinkSection.classList.add('hidden');
+        }
+
+        // ============================================================
         // ✅ GOOGLE SEARCH BUTTON — shows only when Product Name has text
         // ============================================================
         var productNameInput = document.getElementById('product_name');
@@ -990,13 +1011,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         // ✅ IMAGE LINK INPUT
         // ============================================================
         var imageLinkInput = document.getElementById('image_link');
-        var imageLinkStatus = document.getElementById('imageLinkStatus');
-
-        function setLinkStatus(msg, type) {
-            if (!imageLinkStatus) return;
-            imageLinkStatus.className = 'image-link-status ' + (type || '');
-            imageLinkStatus.textContent = msg || '';
-        }
 
         function looksLikeImageUrl(u) {
             if (!u) return false;
@@ -1006,16 +1020,8 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         async function loadImageFromLink(url) {
-            if (!url) {
-                setLinkStatus('Please paste an image URL first.', 'error');
-                return;
-            }
-            if (!looksLikeImageUrl(url)) {
-                setLinkStatus('That does not look like an image URL.', 'error');
-                return;
-            }
-
-            setLinkStatus('Loading image…', 'loading');
+            if (!url) { return; }
+            if (!looksLikeImageUrl(url)) { return; }
 
             try {
                 var res = await fetch(url, { mode: 'cors', credentials: 'omit' });
@@ -1047,13 +1053,10 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 imageWrapper.style.display = 'none';
                 viewHasImage();
 
-                setLinkStatus('✔ Image loaded and ready to save.', 'ok');
-
-                setTimeout(function () {
-                    setLinkStatus('', '');
-                }, 600);
+                // ✅ Hide the Image Link section now that an image is present
+                hideImageLinkSection();
             } catch (err) {
-                console.warn('Image link fetch failed:', err);
+                // Fallback: preview only (CORS-blocked host)
                 var previewImg = new Image();
                 previewImg.onload = function () {
                     productImage.src = url;
@@ -1063,10 +1066,9 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                     capturedPhoto.style.display = 'none';
                     imagePlaceholder.classList.remove('visible');
 
-                    setLinkStatus('Preview only — this host blocks cross-origin download. Download the image manually and upload it.', 'error');
-                };
-                previewImg.onerror = function () {
-                    setLinkStatus('Failed to load image. ' + (err.message || ''), 'error');
+                    // The preview is only visual; no base64 was saved, so we
+                    // keep the Image Link section visible for the user to try
+                    // another URL.
                 };
                 previewImg.src = url;
             }
@@ -1440,6 +1442,9 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             cameraBox.classList.add('visible');
 
             viewHasImage();
+
+            // ✅ Image captured — hide the Image Link section
+            hideImageLinkSection();
         });
 
         // ============================================================
@@ -1474,6 +1479,9 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
                 imageWrapper.style.display = 'none';
                 viewHasImage();
+
+                // ✅ Image applied — hide the Image Link section
+                hideImageLinkSection();
             };
             reader.readAsDataURL(file);
         }
@@ -1592,7 +1600,9 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             cameraBox.classList.remove('visible');
 
             if (imageLinkInput) imageLinkInput.value = '';
-            setLinkStatus('', '');
+
+            // ✅ Trash clicked — bring the Image Link section back
+            showImageLinkSection();
 
             viewNoImage();
         });
@@ -1750,21 +1760,23 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         // ============================================================
         window.addEventListener('load', function () {
             viewNoImage();
+            // Add Product page has no existing image → show the Image Link section
+            if (!base64Input.value) {
+                showImageLinkSection();
+            } else {
+                hideImageLinkSection();
+            }
         });
 
         // ============================================================
         // ✅ AUTO-PASTE ON APP RESUME
-        //    Reads the clipboard via the native Android bridge
-        //    (falls back to navigator.clipboard on desktop).
         // ============================================================
         async function tryAutoPasteFromClipboard() {
-            // Don't override an image the user already picked/captured
             if (base64Input.value) return;
 
             // ---------- Path 1: native Android bridge ----------
             if (window.AndroidClipboard) {
                 try {
-                    // 1a) Image first
                     var clipDataUrl = window.AndroidClipboard.getClipboardImageDataUrl();
                     if (clipDataUrl && clipDataUrl.indexOf('data:image/') === 0) {
                         var normalized = await normalizeImageDataUrl(clipDataUrl);
@@ -1780,12 +1792,14 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                             imageWrapper.style.display = 'none';
                             viewHasImage();
 
+                            // ✅ Hide Image Link section after auto-pasting an image
+                            hideImageLinkSection();
+
                             showAutoPasteToast('Image pasted from clipboard');
                             return;
                         }
                     }
 
-                    // 1b) Text URL second
                     var clipText = (window.AndroidClipboard.getClipboardText() || '').trim();
                     if (clipText && looksLikeImageUrl(clipText)) {
                         if (imageLinkInput) imageLinkInput.value = clipText;
@@ -1798,14 +1812,13 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 }
             }
 
-            // ---------- Path 2: Web Clipboard API (browsers) ----------
+            // ---------- Path 2: Web Clipboard API ----------
             if (navigator.clipboard && typeof navigator.clipboard.read === 'function') {
                 try {
                     var items = await navigator.clipboard.read();
                     for (var i = 0; i < items.length; i++) {
                         var types = items[i].types || [];
 
-                        // Image?
                         for (var j = 0; j < types.length; j++) {
                             if (types[j].indexOf('image/') === 0) {
                                 var blob = await items[i].getType(types[j]);
@@ -1820,13 +1833,13 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                                     cameraBox.classList.add('visible');
                                     imageWrapper.style.display = 'none';
                                     viewHasImage();
+                                    hideImageLinkSection();
                                     showAutoPasteToast('Image pasted from clipboard');
                                     return;
                                 }
                             }
                         }
 
-                        // URL text?
                         if (types.indexOf('text/plain') !== -1) {
                             var tb = await items[i].getType('text/plain');
                             var t = (await tb.text() || '').trim();
@@ -1839,12 +1852,11 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                         }
                     }
                 } catch (e) {
-                    // Silent — most browsers need a user gesture to allow clipboard reads
+                    // Silent
                 }
             }
         }
 
-        // Force any image data URL to JPEG (so the backend always accepts it)
         function normalizeImageDataUrl(dataUrl) {
             return new Promise(function (resolve) {
                 try {
@@ -1895,7 +1907,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             tryAutoPasteFromClipboard();
         };
 
-        // ---- Also try once on page load (mostly a no-op in browsers) ----
         window.addEventListener('load', function () {
             setTimeout(tryAutoPasteFromClipboard, 300);
         });
