@@ -110,10 +110,29 @@ if ($action === 'update_product') {
     $sellingPrice = floatval($_POST['selling_price'] ?? 0);
     $description  = isset($_POST['description']) ? trim($_POST['description']) : '';
 
+    // ==============================================
+    // ✅ 4a. READ + SANITIZE CATEGORY GROUP
+    // ==============================================
+    $categoryGroup = trim($_POST['category_group'] ?? '');
+
+    // If user picked "Add new category…" in the dropdown,
+    // prefer the typed-in name (new_category_group).
+    if ($categoryGroup === '__new__') {
+        $categoryGroup = trim($_POST['new_category_group'] ?? '');
+    }
+
+    // Cap length to match column (VARCHAR(50))
+    if (mb_strlen($categoryGroup) > 50) {
+        $categoryGroup = mb_substr($categoryGroup, 0, 50);
+    }
+
+    // Normalize empty string → NULL so the DB doesn't store ""
+    $categoryGroupDb = ($categoryGroup === '') ? null : $categoryGroup;
+
     $replaceImage = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
 
     // ==============================================
-    // 4a. SANITIZE + VALIDATE PRODUCT NAME
+    // 4b. SANITIZE + VALIDATE PRODUCT NAME
     // ==============================================
     $productName = preg_replace('/\.(jpeg|jpg|png|webp|gif|bmp|heic|heif|avif|tiff|tif|svg)$/i', '', $productName);
     $productName = preg_replace('/\s+/', ' ', $productName);
@@ -133,7 +152,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 4b. FETCH OLD PRODUCT (scoped by acc_number for Investor)
+    // 4c. FETCH OLD PRODUCT (scoped by acc_number for Investor)
     // ==============================================
     if ($scopeByAccNum) {
         $oldStmt = $pdo->prepare("
@@ -158,7 +177,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 4c. MORE VALIDATION
+    // 4d. MORE VALIDATION
     // ==============================================
     if ($sellingPrice <= 0) {
         echo json_encode(['success' => false, 'message' => 'Selling price must be greater than 0']);
@@ -170,7 +189,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 4d. RESOLVE THE UPLOAD DIRECTORY
+    // 4e. RESOLVE THE UPLOAD DIRECTORY
     // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
@@ -194,7 +213,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 4e. HANDLE NEW IMAGE
+    // 4f. HANDLE NEW IMAGE
     //     ✅ Filename = <product_name>.<ext>   ← NO acc_number prefix
     // ==============================================
     $imagePath        = $oldProduct['product_image'];
@@ -327,7 +346,7 @@ if ($action === 'update_product') {
     }
 
     // ==============================================
-    // 4f. PERFORM THE UPDATE
+    // 4g. PERFORM THE UPDATE  (now includes category_group)
     // ==============================================
     try {
         date_default_timezone_set('Asia/Manila');
@@ -345,7 +364,8 @@ if ($action === 'update_product') {
                     selling_price  = :selling_price,
                     description    = :description,
                     product_image  = :product_image,
-                    last_restocked = :last_restocked
+                    last_restocked = :last_restocked,
+                    category_group = :category_group
                 WHERE id = :id AND acc_number = :acc_number
             ");
 
@@ -357,6 +377,7 @@ if ($action === 'update_product') {
                 ':description'    => $description,
                 ':product_image'  => $imagePath,
                 ':last_restocked' => $formattedDate,
+                ':category_group' => $categoryGroupDb,
                 ':id'             => $productId,
                 ':acc_number'     => $accNumber
             ]);
@@ -370,7 +391,8 @@ if ($action === 'update_product') {
                     selling_price  = :selling_price,
                     description    = :description,
                     product_image  = :product_image,
-                    last_restocked = :last_restocked
+                    last_restocked = :last_restocked,
+                    category_group = :category_group
                 WHERE id = :id
             ");
 
@@ -382,6 +404,7 @@ if ($action === 'update_product') {
                 ':description'    => $description,
                 ':product_image'  => $imagePath,
                 ':last_restocked' => $formattedDate,
+                ':category_group' => $categoryGroupDb,
                 ':id'             => $productId
             ]);
         }
@@ -405,6 +428,11 @@ if ($action === 'update_product') {
             if ($oldProduct['unit'] != $unit)                  $changes[] = "Unit: '{$oldProduct['unit']}' → '{$unit}'";
             if ($oldProduct['qty_on_hand'] != $quantity)       $changes[] = "Quantity: {$oldProduct['qty_on_hand']} → {$quantity}";
             if ($oldProduct['selling_price'] != $sellingPrice) $changes[] = "Price: ₱{$oldProduct['selling_price']} → ₱{$sellingPrice}";
+            if (($oldProduct['category_group'] ?? null) != $categoryGroupDb) {
+                $oldCat = $oldProduct['category_group'] ?? 'N/A';
+                $newCat = $categoryGroupDb ?? 'N/A';
+                $changes[] = "Category: '{$oldCat}' → '{$newCat}'";
+            }
             if ($imagePath !== $oldProduct['product_image'])   $changes[] = "Image updated";
             if ($imagePath === null && !empty($oldProduct['product_image'])) $changes[] = "Image removed (no replacement)";
 
@@ -433,17 +461,18 @@ if ($action === 'update_product') {
             }
 
             echo json_encode([
-                'success'       => true,
-                'message'       => 'Product updated successfully',
-                'product_id'    => $productId,
-                'product_image' => $imagePath,
-                'table'         => $targetTable,
-                'role'          => $userRole,
-                'acc_number'    => $scopeByAccNum ? $accNumber : null,
-                'folder'        => $uploadFolder,
-                'upload_dir'    => $uploadDir,
-                'last_updated'  => $formattedDate,
-                'redirect'      => $redirectUrl
+                'success'        => true,
+                'message'        => 'Product updated successfully',
+                'product_id'     => $productId,
+                'product_image'  => $imagePath,
+                'category_group' => $categoryGroupDb,
+                'table'          => $targetTable,
+                'role'           => $userRole,
+                'acc_number'     => $scopeByAccNum ? $accNumber : null,
+                'folder'         => $uploadFolder,
+                'upload_dir'     => $uploadDir,
+                'last_updated'   => $formattedDate,
+                'redirect'       => $redirectUrl
             ]);
         } else {
             $pdo->rollBack();
