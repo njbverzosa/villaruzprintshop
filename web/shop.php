@@ -1836,18 +1836,10 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
         }
 
-        // ✅ Auto-clear the category filter when the user types in the search box
+        // ✅ Search — debounced, does NOT touch the category filter
         let searchTimeout;
         if (searchInput) {
             searchInput.addEventListener('input', function () {
-                const typed = searchInput.value.trim();
-
-                // If the user starts typing and a category is selected → reset it instantly
-                if (typed !== '' && categoryFilter && categoryFilter.value !== '') {
-                    categoryFilter.value = '';
-                    applyFilters(); // update the UI now (hide badge, re-show cards)
-                }
-
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(applyFilters, 300);
             });
