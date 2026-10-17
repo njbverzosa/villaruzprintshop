@@ -13,7 +13,6 @@ ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 session_start();
 require_once __DIR__ . '/DB_Conn/config.php';
-include __DIR__ . '/app_version.php';
 
 // ==============================================
 // ✅ DETECT PLATFORM
