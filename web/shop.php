@@ -1427,9 +1427,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
                     <!-- ✅ Row 2: Category Filter dropdown (under search bar) -->
                     <div class="category-filter-row">
-                        <label for="categoryFilter" class="category-filter-label">
-                            <i class="fas fa-filter"></i> Filter by Category:
-                        </label>
                         <select id="categoryFilter" class="category-select">
                             <option value="">All Categories</option>
                             <?php foreach ($allCategories as $cat): ?>
@@ -1839,9 +1836,18 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
         }
 
+        // ✅ Auto-clear the category filter when the user types in the search box
         let searchTimeout;
         if (searchInput) {
             searchInput.addEventListener('input', function () {
+                const typed = searchInput.value.trim();
+
+                // If the user starts typing and a category is selected → reset it instantly
+                if (typed !== '' && categoryFilter && categoryFilter.value !== '') {
+                    categoryFilter.value = '';
+                    applyFilters(); // update the UI now (hide badge, re-show cards)
+                }
+
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(applyFilters, 300);
             });
@@ -1850,6 +1856,8 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         if (clearSearchBtn) {
             clearSearchBtn.addEventListener('click', () => {
                 searchInput.value = '';
+                // ✅ Also clear the category when the user clears the search
+                if (categoryFilter) categoryFilter.value = '';
                 applyFilters();
                 searchInput.focus();
             });
