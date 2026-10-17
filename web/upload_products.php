@@ -786,10 +786,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                     placeholder="Paste image URL here — it loads automatically"
                     autocomplete="off" spellcheck="false">
             </div>
-            <div class="image-link-status" id="imageLinkStatus"></div>
-            <div class="image-link-hint">
-                Paste a direct image URL (ending in .jpg, .png, .webp…). The image will load and preview automatically.
-            </div>
         </div>
 
         <!-- ============================================================

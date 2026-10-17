@@ -690,11 +690,6 @@ $currentCategory = $product['category_group'] ?? '';
                     <input type="url" id="image_link" placeholder="Paste image URL here — it loads automatically"
                         autocomplete="off" spellcheck="false">
                 </div>
-                <div class="image-link-status" id="imageLinkStatus"></div>
-                <div class="image-link-hint">
-                    Paste a direct image URL (ending in .jpg, .png, .webp…). The image will load and preview
-                    automatically.
-                </div>
             </div>
 
             <!-- Product Name + Google Search button -->
