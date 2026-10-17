@@ -77,7 +77,6 @@ $catStmt = $pdo->query("
 ");
 $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
-// The current value of this product (for pre-selection)
 $currentCategory = $product['category_group'] ?? '';
 ?>
 <!DOCTYPE html>
@@ -232,59 +231,11 @@ $currentCategory = $product['category_group'] ?? '';
         .image-link-status.ok      { color: #10b981; display: block; }
         .image-link-status.error   { color: #ef4444; display: block; }
 
-        /* ✅ Small toggle to re-open the image-link input without clicking trash */
-        .toggle-image-link-btn {
-            background: none;
-            border: none;
-            color: #3b82f6;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            padding: 0;
-            margin-bottom: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            transition: color 0.2s;
-        }
-
-        .toggle-image-link-btn:hover {
-            color: #1d4ed8;
-            text-decoration: underline;
-        }
-
-        .toggle-image-link-btn i {
-            font-size: 11px;
-        }
-
         .image-stage {
             position: relative;
             width: 260px;
             max-width: 100%;
             margin: 0 auto 12px auto;
-            transition: box-shadow 0.2s ease;
-        }
-
-        .image-stage.dragover {
-            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.35);
-            border-radius: 12px;
-        }
-
-        .image-stage.dragover::after {
-            content: "📸 Drop image here";
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-            font-weight: bold;
-            color: #0ea5e9;
-            background: rgba(239, 246, 255, 0.9);
-            z-index: 10;
-            pointer-events: none;
-            border-radius: 10px;
         }
 
         .product-image-wrapper {
@@ -453,19 +404,6 @@ $currentCategory = $product['category_group'] ?? '';
             font-family: inherit;
         }
 
-        .btn-upload {
-            background: #0ea5e9;
-            width: 100%;
-            padding: 12px;
-            font-size: 15px;
-            margin-bottom: 8px;
-            display: none;
-        }
-
-        .btn-upload:hover {
-            background: #0284c7;
-        }
-
         .btn-submit {
             background: #333;
             width: 100%;
@@ -493,7 +431,7 @@ $currentCategory = $product['category_group'] ?? '';
         }
 
         /* ============================================================
-           ✅ SUCCESS MODAL — loader → check
+           ✅ SUCCESS MODAL
            ============================================================ */
         .success-overlay {
             position: fixed;
@@ -663,9 +601,7 @@ $currentCategory = $product['category_group'] ?? '';
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
             <input type="hidden" name="replace_image" id="replace_image" value="0">
 
-            <!-- ============================================================
-                 ✅ CATEGORY GROUP — editable
-                 ============================================================ -->
+            <!-- CATEGORY GROUP -->
             <label for="category_group">Category Group</label>
             <select name="category_group" id="category_group">
                 <option value="">— None —</option>
@@ -683,13 +619,13 @@ $currentCategory = $product['category_group'] ?? '';
                 <option value="__new__">+ Add new category…</option>
             </select>
 
-            <!-- ✅ Hidden new-category input (shown only when "+ Add new" is picked) -->
             <div id="newCategoryWrap" style="display:none;">
                 <label for="new_category_group">New Category Name</label>
                 <input type="text" id="new_category_group" name="new_category_group"
                     placeholder="e.g. Printer Accessories">
             </div>
 
+            <!-- Hidden file input (kept for backend compatibility — not triggered by any UI now) -->
             <input type="file" id="productImageFile" accept="image/jpeg,image/jpg,image/png,image/webp">
 
             <div class="image-stage" id="imageStage">
@@ -704,7 +640,7 @@ $currentCategory = $product['category_group'] ?? '';
 
                 <div class="image-placeholder" id="imagePlaceholder">
                     <i class="fas fa-image"></i>
-                    <span>No image — drag & drop or paste</span>
+                    <span>No image — use the camera or paste a link</span>
                 </div>
 
                 <div class="camera-box" id="cameraBox">
@@ -713,14 +649,10 @@ $currentCategory = $product['category_group'] ?? '';
                 </div>
             </div>
 
-            <button type="button" class="btn-upload" id="uploadBtn">
-                Upload Photo
-            </button>
-
             <div class="divider"></div>
 
             <!-- ============================================================
-                 ✅ Image Link input — auto-load, no button, hidden when image exists
+                 ✅ Image Link input — auto-load, hidden when an image exists
                  ============================================================ -->
             <div id="imageLinkBlock">
                 <label for="image_link">Image Link</label>
@@ -735,13 +667,7 @@ $currentCategory = $product['category_group'] ?? '';
                 </div>
             </div>
 
-            <!-- ✅ Small toggle to re-open the image-link input without clicking trash -->
-            <button type="button" class="toggle-image-link-btn" id="toggleImageLinkBtn">
-                <i class="fas fa-link"></i>
-                <span id="toggleImageLinkText">Show image link</span>
-            </button>
-
-            <!-- ✅ Product Name + Google Search button -->
+            <!-- Product Name + Google Search button -->
             <label for="product_name">Product Name</label>
             <div class="name-search-row">
                 <input type="text" id="product_name" name="product_name"
@@ -802,17 +728,14 @@ $currentCategory = $product['category_group'] ?? '';
         const capturedPhoto = document.getElementById('capturedPhoto');
         const captureBtn = document.getElementById('captureBtn');
         const retakeBtn = document.getElementById('retakeBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
         const cancelUploadBtn = document.getElementById('cancelUploadBtn');
         const cameraBox = document.getElementById('cameraBox');
         const imageWrapper = document.getElementById('imageWrapper');
         const imagePlaceholder = document.getElementById('imagePlaceholder');
         const productImage = document.getElementById('productImage');
-        const fileInput = document.getElementById('productImageFile');
         const base64Input = document.getElementById('product_image_base64');
         const replaceImageInput = document.getElementById('replace_image');
         const saveBtn = document.getElementById('saveBtn');
-        const imageStage = document.getElementById('imageStage');
 
         const successOverlay = document.getElementById('successOverlay');
         const successCard = document.getElementById('successCard');
@@ -823,7 +746,6 @@ $currentCategory = $product['category_group'] ?? '';
         const originalImageExists = <?php echo $imageUrl ? 'true' : 'false'; ?>;
 
         let stream = null;
-        let cameraActive = false;
 
         // ============================================================
         // ✅ CATEGORY GROUP — show/hide "new category" input
@@ -850,8 +772,6 @@ $currentCategory = $product['category_group'] ?? '';
         const imageLinkBlock = document.getElementById('imageLinkBlock');
         const imageLinkInput = document.getElementById('image_link');
         const imageLinkStatus = document.getElementById('imageLinkStatus');
-        const toggleImageLinkBtn = document.getElementById('toggleImageLinkBtn');
-        const toggleImageLinkText = document.getElementById('toggleImageLinkText');
 
         function setLinkStatus(msg, type) {
             if (!imageLinkStatus) return;
@@ -861,31 +781,10 @@ $currentCategory = $product['category_group'] ?? '';
 
         function showImageLinkBlock() {
             if (imageLinkBlock) imageLinkBlock.style.display = 'block';
-            if (toggleImageLinkText) toggleImageLinkText.textContent = 'Hide image link';
-            if (toggleImageLinkBtn) toggleImageLinkBtn.classList.add('active');
         }
 
         function hideImageLinkBlock() {
             if (imageLinkBlock) imageLinkBlock.style.display = 'none';
-            if (toggleImageLinkText) toggleImageLinkText.textContent = 'Show image link';
-            if (toggleImageLinkBtn) toggleImageLinkBtn.classList.remove('active');
-        }
-
-        function toggleImageLinkBlock() {
-            if (!imageLinkBlock) return;
-            if (imageLinkBlock.style.display === 'none') {
-                showImageLinkBlock();
-                if (imageLinkInput) imageLinkInput.focus();
-            } else {
-                hideImageLinkBlock();
-            }
-        }
-
-        if (toggleImageLinkBtn) {
-            toggleImageLinkBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                toggleImageLinkBlock();
-            });
         }
 
         // Basic URL sanity check
@@ -896,7 +795,6 @@ $currentCategory = $product['category_group'] ?? '';
                 || /(images?|photos?|cdn|imgur|unsplash|cloudinary|googleusercontent)/i.test(u);
         }
 
-        // Download the URL, convert to data URL, and populate the preview.
         async function loadImageFromLink(url) {
             if (!url) {
                 setLinkStatus('Please paste an image URL first.', 'error');
@@ -930,7 +828,6 @@ $currentCategory = $product['category_group'] ?? '';
 
                 base64Input.value = dataUrl;
                 replaceImageInput.value = '1';
-                fileInput.value = '';
 
                 capturedPhoto.src = dataUrl;
                 capturedPhoto.style.display = 'block';
@@ -1040,9 +937,6 @@ $currentCategory = $product['category_group'] ?? '';
         function showFloatingCapture() { captureBtn.classList.add('visible'); }
         function hideFloatingCapture() { captureBtn.classList.remove('visible'); }
 
-        function showUploadButton() { uploadBtn.style.display = 'block'; }
-        function hideUploadButton() { uploadBtn.style.display = 'none'; }
-
         function showPlaceholder() { imagePlaceholder.classList.add('visible'); }
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
@@ -1052,7 +946,6 @@ $currentCategory = $product['category_group'] ?? '';
         function viewHasImage() {
             hideFloatingCamera();
             hideFloatingCapture();
-            hideUploadButton();
             showCancelButton();
             hidePlaceholder();
         }
@@ -1061,7 +954,6 @@ $currentCategory = $product['category_group'] ?? '';
             hideCancelButton();
             showFloatingCamera();
             hideFloatingCapture();
-            showUploadButton();
             showPlaceholder();
             showImageLinkBlock();
         }
@@ -1070,7 +962,6 @@ $currentCategory = $product['category_group'] ?? '';
             hideCancelButton();
             hideFloatingCamera();
             showFloatingCapture();
-            hideUploadButton();
             hidePlaceholder();
         }
 
@@ -1101,7 +992,6 @@ $currentCategory = $product['category_group'] ?? '';
                 imageWrapper.style.display = 'none';
 
                 viewCameraActive();
-                cameraActive = true;
             } catch (err) {
                 console.error('Camera error:', err);
                 alert('Camera not available: ' + (err.message || err.name || 'Unknown error'));
@@ -1114,13 +1004,11 @@ $currentCategory = $product['category_group'] ?? '';
                 stream.getTracks().forEach(t => t.stop());
                 stream = null;
             }
-            cameraActive = false;
             cameraBox.classList.remove('visible');
         }
 
         retakeBtn.addEventListener('click', () => {
             base64Input.value = '';
-            fileInput.value = '';
             replaceImageInput.value = '1';
             startCamera();
         });
@@ -1152,137 +1040,10 @@ $currentCategory = $product['category_group'] ?? '';
         });
 
         // ============================================================
-        // UPLOAD PHOTO
-        // ============================================================
-        uploadBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        function applyImageFile(file) {
-            if (!file) return;
-
-            const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowed.includes(file.type)) {
-                alert('Please use a JPG, PNG, or WebP image.');
-                return;
-            }
-
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Image is too large. Max 5MB.');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const dataUrl = e.target.result;
-
-                base64Input.value = dataUrl;
-                replaceImageInput.value = '1';
-                fileInput.value = '';
-
-                capturedPhoto.src = dataUrl;
-                capturedPhoto.style.display = 'block';
-                video.style.display = 'none';
-                cameraBox.classList.add('visible');
-
-                imageWrapper.style.display = 'none';
-                viewHasImage();
-
-                hideImageLinkBlock();
-            };
-            reader.onerror = () => {
-                alert('Failed to read the image file. Please try another.');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        fileInput.addEventListener('change', function () {
-            const file = this.files[0];
-            if (!file) return;
-            applyImageFile(file);
-        });
-
-        // ============================================================
-        // DRAG & DROP
-        // ============================================================
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
-            document.body.addEventListener(evt, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(function (evt) {
-            imageStage.addEventListener(evt, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                imageStage.classList.add('dragover');
-            }, false);
-        });
-
-        ['dragleave', 'drop'].forEach(function (evt) {
-            imageStage.addEventListener(evt, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (evt === 'dragleave' && imageStage.contains(e.relatedTarget)) return;
-                imageStage.classList.remove('dragover');
-            }, false);
-        });
-
-        imageStage.addEventListener('drop', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            imageStage.classList.remove('dragover');
-
-            const dt = e.dataTransfer;
-            if (!dt) return;
-
-            let file = null;
-
-            if (dt.files && dt.files.length > 0) {
-                file = dt.files[0];
-            } else if (dt.items && dt.items.length > 0) {
-                for (let i = 0; i < dt.items.length; i++) {
-                    if (dt.items[i].kind === 'file') {
-                        file = dt.items[i].getAsFile();
-                        break;
-                    }
-                }
-            }
-
-            if (!file) {
-                alert('No image file detected in drop.');
-                return;
-            }
-
-            applyImageFile(file);
-        });
-
-        // ============================================================
-        // PASTE IMAGE
-        // ============================================================
-        document.addEventListener('paste', function (e) {
-            const items = e.clipboardData && e.clipboardData.items;
-            if (!items) return;
-
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    const file = items[i].getAsFile();
-                    if (!file) continue;
-
-                    applyImageFile(file);
-                    e.preventDefault();
-                    break;
-                }
-            }
-        });
-
-        // ============================================================
         // TRASH BUTTON
         // ============================================================
         cancelUploadBtn.addEventListener('click', () => {
             base64Input.value = '';
-            fileInput.value = '';
             replaceImageInput.value = '2';
 
             productImage.src = '';
@@ -1296,7 +1057,6 @@ $currentCategory = $product['category_group'] ?? '';
             setLinkStatus('', '');
 
             showImageLinkBlock();
-
             viewNoImage();
         });
 
@@ -1310,11 +1070,10 @@ $currentCategory = $product['category_group'] ?? '';
             const isDeleting = replaceImageInput.value === '2';
 
             if (!hasNewImage && !originalImageExists && !isDeleting) {
-                alert('Please capture, upload, drag-drop, paste, or keep the current product image.');
+                alert('Please capture a photo or paste an image link first.');
                 return;
             }
 
-            // ✅ If "Add new category" is chosen, require a name and promote it
             if (categorySelect && categorySelect.value === '__new__') {
                 const newName = (newCategoryInput.value || '').trim();
                 if (!newName) {
@@ -1324,7 +1083,6 @@ $currentCategory = $product['category_group'] ?? '';
                 }
                 categorySelect.value = newName;
 
-                // Add it as a selected option so the value sticks
                 const opt = document.createElement('option');
                 opt.value = newName;
                 opt.textContent = newName;
@@ -1338,7 +1096,7 @@ $currentCategory = $product['category_group'] ?? '';
             saveBtn.textContent = 'Saving...';
 
             const formData = new FormData(e.target);
-            formData.delete('new_category_group'); // helper field — server only needs category_group
+            formData.delete('new_category_group');
 
             try {
                 const res = await fetch('../API/update_product.php', {
