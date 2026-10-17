@@ -9,6 +9,8 @@ require_once __DIR__ . '/bots.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Villaruz Print Shop & General Merchandise | Modern Print & Retail</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3766494953280597"
+     crossorigin="anonymous"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
