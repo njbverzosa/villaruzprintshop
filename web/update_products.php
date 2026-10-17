@@ -179,7 +179,7 @@ if (!empty($product['product_image'])) {
         }
 
         /* ============================================================
-           ✅ Image Link input
+           ✅ Image Link input (auto-load, no button)
            ============================================================ */
         .image-link-row {
             display: flex;
@@ -191,37 +191,6 @@ if (!empty($product['product_image'])) {
         .image-link-row input[type="url"] {
             flex: 1;
             margin-bottom: 0;
-        }
-
-        .btn-load-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 0 14px;
-            background: #10b981;
-            color: #ffffff;
-            border: none;
-            border-radius: 5px;
-            font-size: 13px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        .btn-load-link:hover {
-            background: #059669;
-        }
-
-        .btn-load-link:active {
-            transform: scale(0.97);
-        }
-
-        .btn-load-link:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
         }
 
         .image-link-hint {
@@ -243,6 +212,32 @@ if (!empty($product['product_image'])) {
         .image-link-status.loading { color: #0ea5e9; display: block; }
         .image-link-status.ok      { color: #10b981; display: block; }
         .image-link-status.error   { color: #ef4444; display: block; }
+
+        /* ✅ Small toggle to re-open the image-link input without clicking trash */
+        .toggle-image-link-btn {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 0;
+            margin-bottom: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s;
+        }
+
+        .toggle-image-link-btn:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        .toggle-image-link-btn i {
+            font-size: 11px;
+        }
 
         .image-stage {
             position: relative;
@@ -679,22 +674,26 @@ if (!empty($product['product_image'])) {
             <div class="divider"></div>
 
             <!-- ============================================================
-                 ✅ Image Link input — ALWAYS VISIBLE (web + app)
+                 ✅ Image Link input — auto-load, no button, hidden when image exists
                  ============================================================ -->
             <div id="imageLinkBlock">
                 <label for="image_link">Image Link</label>
                 <div class="image-link-row">
                     <input type="url" id="image_link"
+                        placeholder="Paste image URL here — it loads automatically"
                         autocomplete="off" spellcheck="false">
-                    <button type="button" class="btn-load-link" id="loadImageLinkBtn">
-                        Load
-                    </button>
                 </div>
                 <div class="image-link-status" id="imageLinkStatus"></div>
                 <div class="image-link-hint">
-                    Paste a direct image URL (ending in .jpg, .png, .webp…). It will be previewed and saved when you click <strong>Save Changes</strong>.
+                    Paste a direct image URL (ending in .jpg, .png, .webp…). The image will load and preview automatically.
                 </div>
             </div>
+
+            <!-- ✅ Small toggle to re-open the image-link input without clicking trash -->
+            <button type="button" class="toggle-image-link-btn" id="toggleImageLinkBtn">
+                <i class="fas fa-link"></i>
+                <span id="toggleImageLinkText">Show image link</span>
+            </button>
 
             <!-- ✅ Product Name + Google Search button -->
             <label for="product_name">Product Name</label>
@@ -781,17 +780,47 @@ if (!empty($product['product_image'])) {
         let cameraActive = false;
 
         // ============================================================
-        // ✅ IMAGE LINK INPUT (always visible — web + app)
+        // ✅ IMAGE LINK INPUT (auto-load, no button)
         // ============================================================
         const imageLinkBlock = document.getElementById('imageLinkBlock');
         const imageLinkInput = document.getElementById('image_link');
-        const loadImageLinkBtn = document.getElementById('loadImageLinkBtn');
         const imageLinkStatus = document.getElementById('imageLinkStatus');
+        const toggleImageLinkBtn = document.getElementById('toggleImageLinkBtn');
+        const toggleImageLinkText = document.getElementById('toggleImageLinkText');
 
         function setLinkStatus(msg, type) {
             if (!imageLinkStatus) return;
             imageLinkStatus.className = 'image-link-status ' + (type || '');
             imageLinkStatus.textContent = msg || '';
+        }
+
+        function showImageLinkBlock() {
+            if (imageLinkBlock) imageLinkBlock.style.display = 'block';
+            if (toggleImageLinkText) toggleImageLinkText.textContent = 'Hide image link';
+            if (toggleImageLinkBtn) toggleImageLinkBtn.classList.add('active');
+        }
+
+        function hideImageLinkBlock() {
+            if (imageLinkBlock) imageLinkBlock.style.display = 'none';
+            if (toggleImageLinkText) toggleImageLinkText.textContent = 'Show image link';
+            if (toggleImageLinkBtn) toggleImageLinkBtn.classList.remove('active');
+        }
+
+        function toggleImageLinkBlock() {
+            if (!imageLinkBlock) return;
+            if (imageLinkBlock.style.display === 'none') {
+                showImageLinkBlock();
+                if (imageLinkInput) imageLinkInput.focus();
+            } else {
+                hideImageLinkBlock();
+            }
+        }
+
+        if (toggleImageLinkBtn) {
+            toggleImageLinkBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                toggleImageLinkBlock();
+            });
         }
 
         // Basic URL sanity check
@@ -815,7 +844,6 @@ if (!empty($product['product_image'])) {
             }
 
             setLinkStatus('Loading image…', 'loading');
-            loadImageLinkBtn.disabled = true;
 
             try {
                 // Try to fetch and convert to base64 (needed for the upload)
@@ -851,6 +879,12 @@ if (!empty($product['product_image'])) {
                 viewHasImage();
 
                 setLinkStatus('✔ Image loaded and ready to save.', 'ok');
+
+                // ✅ Hide the Image Link input once the image is loaded
+                setTimeout(function () {
+                    hideImageLinkBlock();
+                    setLinkStatus('', '');
+                }, 600);
             } catch (err) {
                 console.warn('Image link fetch failed:', err);
                 // Fallback: still show a visual preview so the user sees the image,
@@ -871,31 +905,32 @@ if (!empty($product['product_image'])) {
                     setLinkStatus('Failed to load image. ' + (err.message || ''), 'error');
                 };
                 previewImg.src = url;
-            } finally {
-                loadImageLinkBtn.disabled = false;
             }
         }
 
-        if (loadImageLinkBtn) {
-            loadImageLinkBtn.addEventListener('click', function () {
-                loadImageFromLink((imageLinkInput.value || '').trim());
-            });
-        }
-
+        // ✅ Auto-load triggers: paste, Enter, blur (all no-button)
         if (imageLinkInput) {
-            // Auto-load when user pastes a URL
+            // Paste
             imageLinkInput.addEventListener('paste', function () {
                 setTimeout(() => {
                     const v = (imageLinkInput.value || '').trim();
                     if (v && looksLikeImageUrl(v)) loadImageFromLink(v);
                 }, 30);
             });
-            // Enter key also loads
+
+            // Enter
             imageLinkInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    loadImageFromLink((imageLinkInput.value || '').trim());
+                    const v = (imageLinkInput.value || '').trim();
+                    if (v) loadImageFromLink(v);
                 }
+            });
+
+            // Blur — catches cases where the user types or drags text in
+            imageLinkInput.addEventListener('blur', function () {
+                const v = (imageLinkInput.value || '').trim();
+                if (v && looksLikeImageUrl(v)) loadImageFromLink(v);
             });
         }
 
@@ -974,6 +1009,9 @@ if (!empty($product['product_image'])) {
             hideFloatingCapture();
             showUploadButton();
             showPlaceholder();
+
+            // ✅ When there's no image, always show the Image Link input
+            showImageLinkBlock();
         }
 
         function viewCameraActive() {
@@ -1057,6 +1095,9 @@ if (!empty($product['product_image'])) {
             stopCamera();
             cameraBox.classList.add('visible');
             viewHasImage();
+
+            // ✅ Hide the Image Link input once a photo is captured
+            hideImageLinkBlock();
         });
 
         // ============================================================
@@ -1095,6 +1136,9 @@ if (!empty($product['product_image'])) {
 
                 imageWrapper.style.display = 'none';
                 viewHasImage();
+
+                // ✅ Hide the Image Link input once a file is applied
+                hideImageLinkBlock();
             };
             reader.onerror = () => {
                 alert('Failed to read the image file. Please try another.');
@@ -1201,6 +1245,9 @@ if (!empty($product['product_image'])) {
             if (imageLinkInput) imageLinkInput.value = '';
             setLinkStatus('', '');
 
+            // ✅ Show the Image Link input again (user can paste a new one)
+            showImageLinkBlock();
+
             viewNoImage();
         });
 
@@ -1295,8 +1342,15 @@ if (!empty($product['product_image'])) {
         // ON PAGE LOAD
         // ============================================================
         window.addEventListener('load', () => {
-            if (originalImageExists) viewHasImage();
-            else viewNoImage();
+            if (originalImageExists) {
+                viewHasImage();
+                // ✅ Hide the Image Link block when the product already has an image
+                hideImageLinkBlock();
+            } else {
+                viewNoImage();
+                // ✅ Show the Image Link block when the product has no image
+                showImageLinkBlock();
+            }
         });
     </script>
 </body>
