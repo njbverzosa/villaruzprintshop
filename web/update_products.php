@@ -179,7 +179,7 @@ if (!empty($product['product_image'])) {
         }
 
         /* ============================================================
-           ✅ APP-ONLY: Image Link input
+           ✅ Image Link input
            ============================================================ */
         .image-link-row {
             display: flex;
@@ -679,15 +679,15 @@ if (!empty($product['product_image'])) {
             <div class="divider"></div>
 
             <!-- ============================================================
-                 ✅ APP-ONLY: Image Link input (hidden on web by default)
+                 ✅ Image Link input — ALWAYS VISIBLE (web + app)
                  ============================================================ -->
-            <div id="imageLinkBlock" style="display:none;">
+            <div id="imageLinkBlock">
                 <label for="image_link">Image Link</label>
                 <div class="image-link-row">
                     <input type="url" id="image_link"
                         autocomplete="off" spellcheck="false">
                     <button type="button" class="btn-load-link" id="loadImageLinkBtn">
-                        UpLoad
+                        Load
                     </button>
                 </div>
                 <div class="image-link-status" id="imageLinkStatus"></div>
@@ -781,21 +781,12 @@ if (!empty($product['product_image'])) {
         let cameraActive = false;
 
         // ============================================================
-        // ✅ APP DETECTION + IMAGE LINK INPUT
+        // ✅ IMAGE LINK INPUT (always visible — web + app)
         // ============================================================
-        // window.__SOFIA_APP_VERSION__ is injected by MainActivity.onPageStarted()
-        // So it exists ONLY inside the Android app WebView.
-        const IS_APP = typeof window.__SOFIA_APP_VERSION__ !== 'undefined'
-                       && window.__SOFIA_APP_VERSION__ !== null;
-
         const imageLinkBlock = document.getElementById('imageLinkBlock');
         const imageLinkInput = document.getElementById('image_link');
         const loadImageLinkBtn = document.getElementById('loadImageLinkBtn');
         const imageLinkStatus = document.getElementById('imageLinkStatus');
-
-        if (IS_APP && imageLinkBlock) {
-            imageLinkBlock.style.display = 'block';
-        }
 
         function setLinkStatus(msg, type) {
             if (!imageLinkStatus) return;
@@ -1304,13 +1295,6 @@ if (!empty($product['product_image'])) {
         // ON PAGE LOAD
         // ============================================================
         window.addEventListener('load', () => {
-            // Re-check app detection in case the flag was injected after script parse
-            if (typeof window.__SOFIA_APP_VERSION__ !== 'undefined'
-                && window.__SOFIA_APP_VERSION__ !== null
-                && imageLinkBlock) {
-                imageLinkBlock.style.display = 'block';
-            }
-
             if (originalImageExists) viewHasImage();
             else viewNoImage();
         });
