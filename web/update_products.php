@@ -77,7 +77,11 @@ if (!empty($product['product_image'])) {
     <title>Update Product — <?php echo htmlspecialchars($product['product_name']); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: Arial, sans-serif;
@@ -95,7 +99,10 @@ if (!empty($product['product_image'])) {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        h2 { margin-bottom: 5px; color: #333; }
+        h2 {
+            margin-bottom: 5px;
+            color: #333;
+        }
 
         .product-number {
             font-size: 13px;
@@ -111,7 +118,9 @@ if (!empty($product['product_image'])) {
             font-size: 14px;
         }
 
-        input[type="text"], input[type="number"], textarea {
+        input[type="text"],
+        input[type="number"],
+        textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -120,7 +129,53 @@ if (!empty($product['product_image'])) {
             font-size: 14px;
         }
 
-        textarea { resize: vertical; min-height: 70px; }
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        /* ✅ Product name + search button row */
+        .name-search-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+            margin-bottom: 15px;
+        }
+
+        .name-search-row input[type="text"] {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-search-google {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0 14px;
+            background: #4285f4;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-search-google:hover {
+            background: #3367d6;
+        }
+
+        .btn-search-google:active {
+            transform: scale(0.97);
+        }
+
+        .btn-search-google i {
+            font-size: 13px;
+        }
 
         .image-stage {
             position: relative;
@@ -178,16 +233,21 @@ if (!empty($product['product_image'])) {
             display: none;
         }
 
-        .camera-box.visible { display: block; }
+        .camera-box.visible {
+            display: block;
+        }
 
-        .camera-box video, .camera-box img {
+        .camera-box video,
+        .camera-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        #capturedPhoto { display: none; }
+        #capturedPhoto {
+            display: none;
+        }
 
         .image-placeholder {
             display: none;
@@ -204,8 +264,14 @@ if (!empty($product['product_image'])) {
             font-size: 13px;
         }
 
-        .image-placeholder.visible { display: flex; }
-        .image-placeholder i { font-size: 36px; color: #cbd5e1; }
+        .image-placeholder.visible {
+            display: flex;
+        }
+
+        .image-placeholder i {
+            font-size: 36px;
+            color: #cbd5e1;
+        }
 
         .cancel-x-btn {
             position: absolute;
@@ -230,9 +296,19 @@ if (!empty($product['product_image'])) {
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        .cancel-x-btn.visible { display: inline-flex; }
-        .cancel-x-btn:hover { background: #ef4444; color: #ffffff; }
-        .cancel-x-btn i { font-size: 13px; pointer-events: none; }
+        .cancel-x-btn.visible {
+            display: inline-flex;
+        }
+
+        .cancel-x-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .cancel-x-btn i {
+            font-size: 13px;
+            pointer-events: none;
+        }
 
         .btn-floating {
             position: fixed;
@@ -253,9 +329,17 @@ if (!empty($product['product_image'])) {
             font-family: inherit;
         }
 
-        .btn-floating.visible { display: inline-flex; }
-        .btn-floating:active { transform: translateX(-50%) scale(0.96); }
-        .btn-floating i { pointer-events: none; }
+        .btn-floating.visible {
+            display: inline-flex;
+        }
+
+        .btn-floating:active {
+            transform: translateX(-50%) scale(0.96);
+        }
+
+        .btn-floating i {
+            pointer-events: none;
+        }
 
         .btn-floating-camera {
             background: blue;
@@ -297,7 +381,9 @@ if (!empty($product['product_image'])) {
             display: none;
         }
 
-        .btn-upload:hover { background: #0284c7; }
+        .btn-upload:hover {
+            background: #0284c7;
+        }
 
         .btn-submit {
             background: #333;
@@ -312,11 +398,18 @@ if (!empty($product['product_image'])) {
             cursor: not-allowed;
         }
 
-        button:hover { opacity: 0.9; }
+        button:hover {
+            opacity: 0.9;
+        }
 
-        .divider { border-top: 1px solid #eee; margin: 10px 0 20px 0; }
+        .divider {
+            border-top: 1px solid #eee;
+            margin: 10px 0 20px 0;
+        }
 
-        #productImageFile { display: none; }
+        #productImageFile {
+            display: none;
+        }
 
         /* ============================================================
            ✅ SUCCESS MODAL — loader → check
@@ -382,7 +475,11 @@ if (!empty($product['product_image'])) {
             transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .success-check svg { width: 100%; height: 100%; display: block; }
+        .success-check svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
 
         .success-check circle {
             fill: none;
@@ -402,12 +499,33 @@ if (!empty($product['product_image'])) {
             stroke-dashoffset: 48;
         }
 
-        .success-card.loading .success-spinner { opacity: 1; transform: scale(1); }
-        .success-card.loading .success-check { opacity: 0; transform: scale(0.8); }
-        .success-card.done .success-spinner { opacity: 0; transform: scale(0.6); }
-        .success-card.done .success-check { opacity: 1; transform: scale(1); }
-        .success-card.done .success-check circle { animation: drawCircle 0.5s ease-out forwards; }
-        .success-card.done .success-check path { animation: drawCheck 0.35s 0.4s ease-out forwards; }
+        .success-card.loading .success-spinner {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .success-card.loading .success-check {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .success-card.done .success-spinner {
+            opacity: 0;
+            transform: scale(0.6);
+        }
+
+        .success-card.done .success-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .success-card.done .success-check circle {
+            animation: drawCircle 0.5s ease-out forwards;
+        }
+
+        .success-card.done .success-check path {
+            animation: drawCheck 0.35s 0.4s ease-out forwards;
+        }
 
         .success-title {
             font-size: 20px;
@@ -432,25 +550,62 @@ if (!empty($product['product_image'])) {
             transition: opacity 0.35s ease;
         }
 
-        .success-card.done .success-redirect-hint { opacity: 1; }
+        .success-card.done .success-redirect-hint {
+            opacity: 1;
+        }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes drawCircle { to { stroke-dashoffset: 0; } }
-        @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes drawCircle {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes drawCheck {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <h2>Update Product</h2>
-        <div class="product-number">Product #: <?php echo htmlspecialchars($product['product_number']); ?></div>
+        <div class="product-number">Product #: <?php echo htmlspecialchars($product['product_number']); ?> - <?php echo htmlspecialchars($product['category_group']); ?></div>
 
         <form id="productForm" enctype="multipart/form-data">
             <input type="hidden" name="action" value="update_product">
             <input type="hidden" name="product_id" value="<?php echo (int) $product['id']; ?>">
-            <input type="hidden" name="product_number" value="<?php echo htmlspecialchars($product['product_number']); ?>">
+            <input type="hidden" name="product_number"
+                value="<?php echo htmlspecialchars($product['product_number']); ?>">
             <input type="hidden" name="csrf_token" id="csrf_token"
                 value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
             <input type="hidden" name="product_image_base64" id="product_image_base64" value="">
@@ -464,10 +619,8 @@ if (!empty($product['product_image'])) {
                 </button>
 
                 <div class="product-image-wrapper" id="imageWrapper">
-                    <img src="<?php echo $imageUrl; ?>"
-                        alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                        id="productImage"
-                        style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
+                    <img src="<?php echo $imageUrl; ?>" alt="<?php echo htmlspecialchars($product['product_name']); ?>"
+                        id="productImage" style="<?php echo $imageUrl ? '' : 'display:none;'; ?>">
                 </div>
 
                 <div class="image-placeholder" id="imagePlaceholder">
@@ -487,9 +640,17 @@ if (!empty($product['product_image'])) {
 
             <div class="divider"></div>
 
+            <!-- ✅ Product Name + Google Search button -->
             <label for="product_name">Product Name</label>
-            <input type="text" id="product_name" name="product_name"
-                value="<?php echo htmlspecialchars($product['product_name']); ?>" required>
+            <div class="name-search-row">
+                <input type="text" id="product_name" name="product_name"
+                    value="<?php echo htmlspecialchars($product['product_name']); ?>" required>
+                <button type="button" class="btn-search-google" id="searchGoogleBtn"
+                    title="Search this product on Google">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </button>
+            </div>
 
             <label for="unit">Unit</label>
             <input type="text" id="unit" name="unit" placeholder="pcs, kg, box..."
@@ -504,7 +665,8 @@ if (!empty($product['product_image'])) {
                 value="<?php echo number_format($product['selling_price'], 2, '.', ''); ?>" required>
 
             <label for="description">Product Description</label>
-            <textarea id="description" name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
+            <textarea id="description"
+                name="description"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
 
             <button type="submit" class="btn-submit" id="saveBtn">Save Changes</button>
         </form>
@@ -552,8 +714,8 @@ if (!empty($product['product_image'])) {
         const imageStage = document.getElementById('imageStage');
 
         const successOverlay = document.getElementById('successOverlay');
-        const successCard    = document.getElementById('successCard');
-        const successTitle   = document.getElementById('successTitle');
+        const successCard = document.getElementById('successCard');
+        const successTitle = document.getElementById('successTitle');
         const successMessage = document.getElementById('successMessage');
 
         const originalImageSrc = '<?php echo $imageUrl; ?>';
@@ -561,6 +723,49 @@ if (!empty($product['product_image'])) {
 
         let stream = null;
         let cameraActive = false;
+
+        // ============================================================
+        // ✅ GOOGLE SEARCH BUTTON
+        // ============================================================
+        const searchGoogleBtn = document.getElementById('searchGoogleBtn');
+
+        if (searchGoogleBtn) {
+            searchGoogleBtn.addEventListener('click', function () {
+                const nameInput = document.getElementById('product_name');
+                const name = (nameInput.value || '').trim();
+
+                if (!name) {
+                    alert('Please enter a product name first.');
+                    nameInput.focus();
+                    return;
+                }
+
+                const url = 'https://www.google.com/search?q=' + encodeURIComponent(name);
+
+                // 1) Prefer the dedicated native method
+                if (window.AndroidBiometric && typeof window.AndroidBiometric.openGoogleSearch === 'function') {
+                    try {
+                        window.AndroidBiometric.openGoogleSearch(name);
+                        return;
+                    } catch (e) {
+                        console.warn('openGoogleSearch bridge failed:', e);
+                    }
+                }
+
+                // 2) Fall back to the generic openInBrowser bridge
+                if (window.AndroidBiometric && typeof window.AndroidBiometric.openInBrowser === 'function') {
+                    try {
+                        window.AndroidBiometric.openInBrowser(url);
+                        return;
+                    } catch (e) {
+                        console.warn('openInBrowser bridge failed:', e);
+                    }
+                }
+
+                // 3) Plain browser (desktop / debugging)
+                window.open(url, '_blank');
+            });
+        }
 
         // ============================================================
         // SHOW / HIDE helpers

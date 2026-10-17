@@ -44,6 +44,15 @@ date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
 $defaultImageUrl = '../Products/no-image.jpg';
+
+// ✅ Fetch distinct category groups for the dropdown
+$catStmt = $pdo->query("
+    SELECT DISTINCT category_group
+    FROM merchandise_inventory
+    WHERE category_group IS NOT NULL AND category_group <> ''
+    ORDER BY category_group ASC
+");
+$allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -132,7 +141,7 @@ $defaultImageUrl = '../Products/no-image.jpg';
             font-size: 14px;
         }
 
-         select {
+        select {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -147,6 +156,103 @@ $defaultImageUrl = '../Products/no-image.jpg';
         textarea {
             resize: vertical;
             min-height: 70px;
+        }
+
+        /* ============================================================
+           ✅ SEARCHABLE UNIT DROPDOWN (no ✕ button)
+           ============================================================ */
+        .unit-search-wrap {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .unit-search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+            cursor: text;
+        }
+
+        .unit-search-input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        }
+
+        .unit-options {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 500;
+            display: none;
+        }
+
+        .unit-options.open {
+            display: block;
+        }
+
+        .unit-option {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .unit-option:last-child {
+            border-bottom: none;
+        }
+
+        .unit-option:hover,
+        .unit-option.active {
+            background: #eff6ff;
+            color: #0ea5e9;
+        }
+
+        .unit-option.selected {
+            background: #e0f2fe;
+            font-weight: 600;
+        }
+
+        .unit-option .unit-code {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .unit-option.no-match {
+            cursor: default;
+            color: #94a3b8;
+            justify-content: center;
+            font-style: italic;
+        }
+
+        .unit-option.no-match:hover {
+            background: #fff;
+            color: #94a3b8;
+        }
+
+        .unit-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: -10px;
+            margin-bottom: 12px;
         }
 
         .image-stage {
@@ -677,62 +783,41 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 <input type="file" id="productImageFile" name="product_image"
                     accept="image/jpeg,image/jpg,image/png,image/webp">
 
+                <!-- ✅ CATEGORY GROUP — above Product Name -->
+                <label for="category_group">Category Group</label>
+                <select name="category_group" id="category_group">
+                    <option value="">— None —</option>
+                    <?php foreach ($allCategoryGroups as $cg): ?>
+                        <option value="<?php echo htmlspecialchars($cg); ?>">
+                            <?php echo htmlspecialchars($cg); ?>
+                        </option>
+                    <?php endforeach; ?>
+                    <option value="__new__">+ Add new category…</option>
+                </select>
+
+                <div id="newCategoryWrap" style="display:none;">
+                    <label for="new_category_group">New Category Name</label>
+                    <input type="text" id="new_category_group" name="new_category_group"
+                        placeholder="e.g. Printer Accessories">
+                </div>
+
                 <label for="product_name">Product Name</label>
                 <input type="text" id="product_name" name="product_name" required>
 
-                <label for="unit">Unit</label>
-                <select name="unit" id="unit">
-                    <option value="pcs">Pcs</option>
-                    <option value="piece">Piece</option>
-                    <option value="pieces">Pieces</option>
-                    <option value="unit">Unit</option>
-                    <option value="set">Set</option>
-                    <option value="pair">Pair</option>
-                    <option value="dozen">Dozen</option>
-                    <option value="box">Box</option>
-                    <option value="carton">Carton</option>
-                    <option value="case">Case</option>
-                    <option value="crate">Crate</option>
-                    <option value="pack">Pack</option>
-                    <option value="packet">Packet</option>
-                    <option value="sachet">Sachet</option>
-                    <option value="pouch">Pouch</option>
-                    <option value="bag">Bag</option>
-                    <option value="sack">Sack</option>
-                    <option value="bundle">Bundle</option>
-                    <option value="ream">Ream</option>
-                    <option value="roll">Roll</option>
-                    <option value="rolls">Rolls</option>
-                    <option value="pad">Pad</option>
-                    <option value="pads">Pads</option>
-                    <option value="sheet">Sheet</option>
-                    <option value="sheets">Sheets</option>
-                    <option value="bottle">Bottle</option>
-                    <option value="can">Can</option>
-                    <option value="tin">Tin</option>
-                    <option value="jar">Jar</option>
-                    <option value="tube">Tube</option>
-                    <option value="sachet">Sachet</option>
-                    <option value="drum">Drum</option>
-                    <option value="barrel">Barrel</option>
-                    <option value="gallon">Gallon</option>
-                    <option value="liter">Liter</option>
-                    <option value="ml">Milliliter (mL)</option>
-                    <option value="gram">Gram (g)</option>
-                    <option value="kg">Kilogram (kg)</option>
-                    <option value="ton">Ton</option>
-                    <option value="lb">Pound (lb)</option>
-                    <option value="oz">Ounce (oz)</option>
-                    <option value="meter">Meter (m)</option>
-                    <option value="cm">Centimeter (cm)</option>
-                    <option value="ft">Foot (ft)</option>
-                    <option value="in">Inch (in)</option>
-                    <option value="yard">Yard</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                    <option value="month">Month</option>
-                    <option value="session">Session</option>
-                </select>
+                <!-- ============================================================
+                     ✅ SEARCHABLE UNIT DROPDOWN (no ✕ button)
+                     ============================================================ -->
+                <label for="unitSearch">Unit</label>
+                <div class="unit-search-wrap">
+                    <input type="text" id="unitSearch" class="unit-search-input"
+                        placeholder="Type to search unit (e.g. B → Bottle, Box…)"
+                        autocomplete="off" spellcheck="false">
+                    <div class="unit-options" id="unitOptions"></div>
+                </div>
+
+                <!-- ✅ Hidden input that actually submits the value -->
+                <input type="hidden" name="unit" id="unit" value="pcs">
+
                 <label for="quantity">Product Quantity</label>
                 <input type="number" id="quantity" name="quantity" min="0" required>
 
@@ -806,6 +891,203 @@ $defaultImageUrl = '../Products/no-image.jpg';
 
         var stream = null;
         var cameraActive = false;
+
+        // ============================================================
+        // ✅ CATEGORY GROUP — show/hide "new category" input
+        // ============================================================
+        var categorySelect = document.getElementById('category_group');
+        var newCategoryWrap = document.getElementById('newCategoryWrap');
+        var newCategoryInput = document.getElementById('new_category_group');
+
+        if (categorySelect) {
+            categorySelect.addEventListener('change', function () {
+                if (this.value === '__new__') {
+                    newCategoryWrap.style.display = 'block';
+                    newCategoryInput.focus();
+                } else {
+                    newCategoryWrap.style.display = 'none';
+                    newCategoryInput.value = '';
+                }
+            });
+        }
+
+        // ============================================================
+        // ✅ SEARCHABLE UNIT DROPDOWN — startsWith match, no ✕
+        // ============================================================
+        var UNIT_OPTIONS = [
+            { value: 'pcs', label: 'Pcs' },
+            { value: 'piece', label: 'Piece' },
+            { value: 'pieces', label: 'Pieces' },
+            { value: 'unit', label: 'Unit' },
+            { value: 'set', label: 'Set' },
+            { value: 'pair', label: 'Pair' },
+            { value: 'dozen', label: 'Dozen' },
+            { value: 'box', label: 'Box' },
+            { value: 'carton', label: 'Carton' },
+            { value: 'case', label: 'Case' },
+            { value: 'crate', label: 'Crate' },
+            { value: 'pack', label: 'Pack' },
+            { value: 'packet', label: 'Packet' },
+            { value: 'sachet', label: 'Sachet' },
+            { value: 'pouch', label: 'Pouch' },
+            { value: 'bag', label: 'Bag' },
+            { value: 'sack', label: 'Sack' },
+            { value: 'bundle', label: 'Bundle' },
+            { value: 'ream', label: 'Ream' },
+            { value: 'roll', label: 'Roll' },
+            { value: 'rolls', label: 'Rolls' },
+            { value: 'pad', label: 'Pad' },
+            { value: 'pads', label: 'Pads' },
+            { value: 'sheet', label: 'Sheet' },
+            { value: 'sheets', label: 'Sheets' },
+            { value: 'bottle', label: 'Bottle' },
+            { value: 'can', label: 'Can' },
+            { value: 'tin', label: 'Tin' },
+            { value: 'jar', label: 'Jar' },
+            { value: 'tube', label: 'Tube' },
+            { value: 'drum', label: 'Drum' },
+            { value: 'barrel', label: 'Barrel' },
+            { value: 'gallon', label: 'Gallon' },
+            { value: 'liter', label: 'Liter' },
+            { value: 'ml', label: 'Milliliter (mL)' },
+            { value: 'gram', label: 'Gram (g)' },
+            { value: 'kg', label: 'Kilogram (kg)' },
+            { value: 'ton', label: 'Ton' },
+            { value: 'lb', label: 'Pound (lb)' },
+            { value: 'oz', label: 'Ounce (oz)' },
+            { value: 'meter', label: 'Meter (m)' },
+            { value: 'cm', label: 'Centimeter (cm)' },
+            { value: 'ft', label: 'Foot (ft)' },
+            { value: 'in', label: 'Inch (in)' },
+            { value: 'yard', label: 'Yard' },
+            { value: 'hour', label: 'Hour' },
+            { value: 'day', label: 'Day' },
+            { value: 'month', label: 'Month' },
+            { value: 'session', label: 'Session' }
+        ];
+
+        var unitSearchInput = document.getElementById('unitSearch');
+        var unitOptionsBox  = document.getElementById('unitOptions');
+        var unitHidden      = document.getElementById('unit');
+
+        var activeOptionIndex = -1;
+        var currentMatches    = [];
+
+        // Default selection
+        unitHidden.value       = 'pcs';
+        unitSearchInput.value  = 'Pcs';
+
+        function renderUnitOptions(filterText) {
+            var term = (filterText || '').trim().toLowerCase();
+
+            // ✅ startsWith matching
+            currentMatches = UNIT_OPTIONS.filter(function (opt) {
+                if (term === '') return true;
+                return opt.label.toLowerCase().indexOf(term) === 0 ||
+                       opt.value.toLowerCase().indexOf(term) === 0;
+            });
+
+            if (currentMatches.length === 0) {
+                unitOptionsBox.innerHTML = '<div class="unit-option no-match">No matching unit</div>';
+                activeOptionIndex = -1;
+                return;
+            }
+
+            var html = '';
+            for (var j = 0; j < currentMatches.length; j++) {
+                var o = currentMatches[j];
+                var selectedClass = (o.value === unitHidden.value) ? ' selected' : '';
+                var activeClass   = (j === activeOptionIndex) ? ' active' : '';
+                html += '<div class="unit-option' + selectedClass + activeClass + '"'
+                      + ' data-value="' + o.value + '" data-label="' + o.label + '">'
+                      + '<span class="unit-label">' + o.label + '</span>'
+                      + '<span class="unit-code">' + o.value + '</span>'
+                      + '</div>';
+            }
+            unitOptionsBox.innerHTML = html;
+        }
+
+        function openUnitOptions() {
+            activeOptionIndex = -1;
+            renderUnitOptions(unitSearchInput.value);
+            unitOptionsBox.classList.add('open');
+        }
+
+        function closeUnitOptions() {
+            unitOptionsBox.classList.remove('open');
+            activeOptionIndex = -1;
+        }
+
+        function selectUnit(value, label) {
+            unitHidden.value      = value;
+            unitSearchInput.value = label;
+            closeUnitOptions();
+        }
+
+        // Open on focus / click
+        unitSearchInput.addEventListener('focus', openUnitOptions);
+        unitSearchInput.addEventListener('click', function () {
+            if (!unitOptionsBox.classList.contains('open')) openUnitOptions();
+        });
+
+        // Filter on typing — startsWith
+        unitSearchInput.addEventListener('input', function () {
+            activeOptionIndex = -1;
+            renderUnitOptions(unitSearchInput.value);
+            unitOptionsBox.classList.add('open');
+        });
+
+        // Keyboard navigation
+        unitSearchInput.addEventListener('keydown', function (e) {
+            var opts = unitOptionsBox.querySelectorAll('.unit-option:not(.no-match)');
+            if (!opts.length) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeOptionIndex = (activeOptionIndex + 1) % opts.length;
+                updateActiveOption(opts);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeOptionIndex = (activeOptionIndex - 1 + opts.length) % opts.length;
+                updateActiveOption(opts);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeOptionIndex >= 0 && currentMatches[activeOptionIndex]) {
+                    var c = currentMatches[activeOptionIndex];
+                    selectUnit(c.value, c.label);
+                } else if (currentMatches.length === 1) {
+                    selectUnit(currentMatches[0].value, currentMatches[0].label);
+                }
+            } else if (e.key === 'Escape') {
+                closeUnitOptions();
+                unitSearchInput.blur();
+            }
+        });
+
+        function updateActiveOption(opts) {
+            for (var i = 0; i < opts.length; i++) {
+                opts[i].classList.toggle('active', i === activeOptionIndex);
+            }
+            if (opts[activeOptionIndex]) {
+                opts[activeOptionIndex].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        // ✅ Click on option — plain click, stopPropagation so outside-close doesn't fire
+        unitOptionsBox.addEventListener('click', function (e) {
+            var target = e.target.closest('.unit-option');
+            if (!target || target.classList.contains('no-match')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            selectUnit(target.getAttribute('data-value'), target.getAttribute('data-label'));
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.unit-search-wrap')) {
+                closeUnitOptions();
+            }
+        });
 
         // ============================================================
         // SHOW / HIDE helpers
@@ -1072,7 +1354,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
         // ============================================================
         // ✅ DRAG & DROP IMAGE
         // ============================================================
-        // Prevent browser from opening the file when dropped outside the stage
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
             document.body.addEventListener(evt, function (e) {
                 e.preventDefault();
@@ -1080,7 +1361,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             }, false);
         });
 
-        // Highlight when dragging over the image stage
         ['dragenter', 'dragover'].forEach(function (evt) {
             imageStage.addEventListener(evt, function (e) {
                 e.preventDefault();
@@ -1089,7 +1369,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             }, false);
         });
 
-        // Remove highlight on leave / drop
         ['dragleave', 'drop'].forEach(function (evt) {
             imageStage.addEventListener(evt, function (e) {
                 e.preventDefault();
@@ -1099,7 +1378,6 @@ $defaultImageUrl = '../Products/no-image.jpg';
             }, false);
         });
 
-        // Handle drop
         imageStage.addEventListener('drop', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1189,6 +1467,11 @@ $defaultImageUrl = '../Products/no-image.jpg';
         document.getElementById('productForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            // ✅ Ensure the unit hidden input has a value (fallback to Pcs)
+            if (!unitHidden.value) {
+                unitHidden.value = 'pcs';
+            }
+
             var isDefault = useDefaultImageInput.value === '1';
 
             if (!base64Input.value && !isDefault) {
@@ -1196,11 +1479,29 @@ $defaultImageUrl = '../Products/no-image.jpg';
                 return;
             }
 
+            // ✅ If "Add new category" is chosen, require a name and send it as category_group
+            if (categorySelect && categorySelect.value === '__new__') {
+                var newName = (newCategoryInput.value || '').trim();
+                if (!newName) {
+                    alert('Please enter a name for the new category.');
+                    newCategoryInput.focus();
+                    return;
+                }
+                categorySelect.value = newName;
+                var opt = document.createElement('option');
+                opt.value = newName;
+                opt.textContent = newName;
+                opt.selected = true;
+                categorySelect.appendChild(opt);
+                newCategoryWrap.style.display = 'none';
+            }
+
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
 
             var formData = new FormData(e.target);
             formData.delete('product_image');
+            formData.delete('new_category_group');
 
             try {
                 var res = await fetch('../API/add_product.php', {

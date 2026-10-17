@@ -107,6 +107,21 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
+    // 3b. READ + SANITIZE CATEGORY GROUP
+    // ==============================================
+    $categoryGroup = trim($_POST['category_group'] ?? '');
+
+    if ($categoryGroup === '__new__') {
+        $categoryGroup = trim($_POST['new_category_group'] ?? '');
+    }
+
+    if (mb_strlen($categoryGroup) > 50) {
+        $categoryGroup = mb_substr($categoryGroup, 0, 50);
+    }
+
+    $categoryGroupDb = ($categoryGroup === '') ? null : $categoryGroup;
+
+    // ==============================================
     // 4. READ + SANITIZE PRODUCT NAME
     // ==============================================
     $rawName     = $_POST['product_name'] ?? '';
@@ -153,22 +168,46 @@ if ($action === 'add_product') {
     }
 
     // ==============================================
-    // 6. HANDLE PRODUCT IMAGE
-    //    ✅ Filename = <product_name>.png   ← NO acc_number prefix
-    //    ✅ Overwrites existing file (same name replaces old)
+    // 6. HANDLE PRODUCT IMAGE  →  ALWAYS SAVED AS .jpg
     // ==============================================
     $imagePath = null;
 
     $allowedExtensions = ['jpeg', 'jpg', 'png'];
     $allowedMime       = ['image/jpeg', 'image/jpg', 'image/png'];
-    $finalExt          = 'png';
+    $finalExt          = 'jpg';   // ✅ always .jpg now
 
-    // ✅ Filename is EXACTLY the product name
+    // ✅ Final filename = <product_name>.jpg
     $fileName = $productName . '.' . $finalExt;
     $destPath = $uploadDir . $fileName;
 
-    // ✅ Case: use default image
     $useDefaultImage = isset($_POST['use_default_image']) && $_POST['use_default_image'] === '1';
+
+    /**
+     * Convert raw image bytes to a real JPEG file at $destPath.
+     * Returns true on success, false on failure.
+     */
+    function saveBytesAsJpeg($bytes, $destPath)
+    {
+        // Preferred path: GD re-encodes to true JPEG
+        if (function_exists('imagecreatefromstring') && function_exists('imagejpeg')) {
+            $img = @imagecreatefromstring($bytes);
+            if ($img !== false) {
+                // Flatten transparency onto white (JPEG has no alpha)
+                $w = imagesx($img);
+                $h = imagesy($img);
+                $canvas = imagecreatetruecolor($w, $h);
+                $white  = imagecolorallocate($canvas, 255, 255, 255);
+                imagefill($canvas, 0, 0, $white);
+                imagecopy($canvas, $img, 0, 0, 0, 0, $w, $h);
+                $ok = @imagejpeg($canvas, $destPath, 90);
+                imagedestroy($canvas);
+                imagedestroy($img);
+                return (bool)$ok;
+            }
+        }
+        // Fallback: no GD available — write bytes as-is
+        return (file_put_contents($destPath, $bytes) !== false);
+    }
 
     if ($useDefaultImage) {
         $imagePath = 'no-image.jpg';
@@ -197,9 +236,23 @@ if ($action === 'add_product') {
             exit;
         }
 
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            echo json_encode(['success' => false, 'message' => 'Failed to save uploaded image.']);
-            exit;
+        // If GD is available → convert & save as .jpg
+        if (function_exists('imagecreatefromstring') && function_exists('imagejpeg')) {
+            $bytes = @file_get_contents($file['tmp_name']);
+            if ($bytes === false) {
+                echo json_encode(['success' => false, 'message' => 'Could not read uploaded image.']);
+                exit;
+            }
+            if (!saveBytesAsJpeg($bytes, $destPath)) {
+                echo json_encode(['success' => false, 'message' => 'Failed to save uploaded image as JPG.']);
+                exit;
+            }
+        } else {
+            // Fallback: no GD → just move it. Rename to .jpg anyway so the DB/UI stay consistent.
+            if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+                echo json_encode(['success' => false, 'message' => 'Failed to save uploaded image.']);
+                exit;
+            }
         }
 
         $imagePath = $fileName;
@@ -214,7 +267,9 @@ if ($action === 'add_product') {
         }
 
         $type = strtolower($m[1]);
-        if (!in_array($type, $allowedExtensions, true)) {
+        // accept jpeg/jpg/png (camera is usually jpeg)
+        $okTypes = ['jpeg', 'jpg', 'png'];
+        if (!in_array($type, $okTypes, true)) {
             echo json_encode(['success' => false, 'message' => 'Only JPEG, JPG, or PNG camera images allowed.']);
             exit;
         }
@@ -232,8 +287,8 @@ if ($action === 'add_product') {
             exit;
         }
 
-        if (file_put_contents($destPath, $data) === false) {
-            echo json_encode(['success' => false, 'message' => 'Failed to save camera image.']);
+        if (!saveBytesAsJpeg($data, $destPath)) {
+            echo json_encode(['success' => false, 'message' => 'Failed to save camera image as JPG.']);
             exit;
         }
 
@@ -247,7 +302,6 @@ if ($action === 'add_product') {
 
     // ==============================================
     // 7. CHECK DUPLICATE PRODUCT NAME
-    //    ✅ Scoped per investor (or global for admin)
     // ==============================================
     if ($insertAccNumber) {
         $checkStmt = $pdo->prepare("
@@ -298,9 +352,9 @@ if ($action === 'add_product') {
         if ($insertAccNumber) {
             $stmt = $pdo->prepare("
                 INSERT INTO {$targetTable}
-                    (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked, acc_number)
+                    (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked, acc_number, category_group)
                 VALUES
-                    (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked, :acc_number)
+                    (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked, :acc_number, :category_group)
             ");
 
             $result = $stmt->execute([
@@ -312,14 +366,15 @@ if ($action === 'add_product') {
                 ':description'    => $description,
                 ':product_image'  => $imagePath,
                 ':last_restocked' => $last_restocked,
-                ':acc_number'     => $accNumber
+                ':acc_number'     => $accNumber,
+                ':category_group' => $categoryGroupDb
             ]);
         } else {
             $stmt = $pdo->prepare("
                 INSERT INTO {$targetTable}
-                    (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked)
+                    (product_number, product_name, unit, qty_on_hand, selling_price, description, product_image, last_restocked, category_group)
                 VALUES
-                    (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked)
+                    (:product_number, :product_name, :unit, :qty_on_hand, :selling_price, :description, :product_image, :last_restocked, :category_group)
             ");
 
             $result = $stmt->execute([
@@ -330,14 +385,15 @@ if ($action === 'add_product') {
                 ':selling_price'  => $sellingPrice,
                 ':description'    => $description,
                 ':product_image'  => $imagePath,
-                ':last_restocked' => $last_restocked
+                ':last_restocked' => $last_restocked,
+                ':category_group' => $categoryGroupDb
             ]);
         }
 
         if ($result) {
             $productId = $pdo->lastInsertId();
 
-            $logDetails = "Added new product to {$targetTable}: {$productName} | Product #: {$productNumber} | Unit: {$unit} | Quantity: {$quantity} | Price: ₱{$sellingPrice} | Image: " . ($imagePath ?: 'None') . " | Description: " . ($description ?: 'N/A');
+            $logDetails = "Added new product to {$targetTable}: {$productName} | Product #: {$productNumber} | Unit: {$unit} | Quantity: {$quantity} | Price: ₱{$sellingPrice} | Category: " . ($categoryGroupDb ?: 'N/A') . " | Image: " . ($imagePath ?: 'None') . " | Description: " . ($description ?: 'N/A');
 
             if ($insertAccNumber) {
                 $logDetails .= " | Investor: {$accNumber}";
@@ -355,6 +411,7 @@ if ($action === 'add_product') {
                 'product_number' => $productNumber,
                 'product_name'   => $productName,
                 'product_image'  => $imagePath,
+                'category_group' => $categoryGroupDb,
                 'table'          => $targetTable,
                 'role'           => $userRole,
                 'acc_number'     => $insertAccNumber ? $accNumber : null,

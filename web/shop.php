@@ -40,6 +40,15 @@ $user = $userData;
 $stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
+
+// ✅ Fetch distinct categories for the filter dropdown (from category_group)
+$catStmt = $pdo->query("
+    SELECT DISTINCT category_group
+    FROM merchandise_inventory
+    WHERE category_group IS NOT NULL AND category_group <> ''
+    ORDER BY category_group ASC
+");
+$allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -304,33 +313,8 @@ $allProducts = $stmt->fetchAll();
             display: block;
         }
 
-
-        /* Update (edit) button — top-LEFT corner of the IMAGE */
-        .edit-btn {
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.95);
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-            z-index: 5;
-            font-size: 13px;
-        }
-
-
-        .edit-btn i {
-            pointer-events: none;
-        }
-
-        /* Trash button — top-RIGHT corner of the IMAGE */
-        .delete-btn {
+        /* ========== ✅ 3-DOT MENU (image corner) ========== */
+        .menu-toggle-btn {
             position: absolute;
             top: -5px;
             right: -5px;
@@ -339,17 +323,85 @@ $allProducts = $stmt->fetchAll();
             justify-content: center;
             width: 30px;
             height: 30px;
+            padding: 0;
+            border: none;
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.95);
-            color: black;
-            text-decoration: none;
+            color: #0f172a;
             cursor: pointer;
-            z-index: 5;
+            z-index: 6;
             font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            transition: background 0.2s, color 0.2s;
         }
 
+        .menu-toggle-btn:hover,
+        .menu-toggle-btn.active {
+            background: #3b82f6;
+            color: #ffffff;
+        }
 
-        .delete-btn i {
+        .menu-toggle-btn i {
+            pointer-events: none;
+        }
+
+        /* ✅ White dropdown box */
+        .card-dropdown {
+            position: absolute;
+            top: 30px;
+            right: 0;
+            min-width: 130px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            padding: 6px;
+            display: none;
+            z-index: 20;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .card-dropdown.show {
+            display: flex;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 5px;
+            color: #1e293b;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: #f1f5f9;
+        }
+
+        .dropdown-edit:hover {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .dropdown-delete:hover {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .dropdown-item i {
+            width: 14px;
+            text-align: center;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .dropdown-item span {
             pointer-events: none;
         }
 
@@ -373,9 +425,16 @@ $allProducts = $stmt->fetchAll();
         /* ========== SEARCH & ADD PRODUCT ========== */
         .shop-controls {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 12px;
             padding: 15px 25px;
+        }
+
+        /* Row 1: search + clear + add */
+        .shop-controls-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             flex-wrap: nowrap;
         }
 
@@ -463,6 +522,104 @@ $allProducts = $stmt->fetchAll();
 
         .add-product-btn i {
             font-size: 14px;
+        }
+
+        /* ========== ✅ CATEGORY FILTER (Row 2, under search bar) ========== */
+        .category-filter-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .category-filter-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .category-filter-label i {
+            color: #8b5cf6;
+            font-size: 13px;
+        }
+
+        .category-select {
+            flex: 1;
+            min-width: 180px;
+            max-width: 320px;
+            padding: 10px 40px 10px 15px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #0f172a;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
+        }
+
+        .category-select:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .category-select:hover {
+            border-color: #cbd5e1;
+            background-color: #ffffff;
+        }
+
+        .category-badge {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b5cf6;
+            background: #f5f3ff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .category-badge.hidden {
+            display: none;
+        }
+
+        .category-clear-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .category-clear-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .category-clear-btn.hidden {
+            display: none;
         }
 
         /* ========== PRODUCTS GRID ========== */
@@ -606,6 +763,35 @@ $allProducts = $stmt->fetchAll();
         .card-desc-btn:hover {
             background: #7c3aed;
             transform: scale(0.97);
+        }
+
+        /* ✅ No results message */
+        .no-results {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .no-results i {
+            font-size: 48px;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+
+        .no-results h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .no-results p {
+            font-size: 13px;
+        }
+
+        .no-results.show {
+            display: block;
         }
 
         /* ========== MODALS ========== */
@@ -804,6 +990,124 @@ $allProducts = $stmt->fetchAll();
             box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
         }
 
+        /* ========== ✅ DELETE CONFIRMATION MODAL ========== */
+        .confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 2500;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .confirm-modal.show {
+            display: flex;
+            animation: fadeInConfirm 0.2s ease-out;
+        }
+
+        .confirm-card {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 380px;
+            padding: 32px 26px 26px 26px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            animation: popInConfirm 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .confirm-icon {
+            width: 68px;
+            height: 68px;
+            margin: 0 auto 18px auto;
+            border-radius: 50%;
+            background: #fee2e2;
+            color: #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .confirm-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .confirm-message {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            margin-bottom: 22px;
+            word-break: break-word;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .confirm-actions button {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-cancel-confirm {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-cancel-confirm:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-danger-confirm {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-danger-confirm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45);
+        }
+
+        .btn-danger-confirm:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes fadeInConfirm {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popInConfirm {
+            from { opacity: 0; transform: scale(0.92) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
         /* ========== TOAST ========== */
         .toast-notification {
             position: fixed;
@@ -911,7 +1215,10 @@ $allProducts = $stmt->fetchAll();
             .shop-controls {
                 padding: 12px 15px;
                 gap: 8px;
-                flex-wrap: nowrap;
+            }
+
+            .shop-controls-row {
+                gap: 8px;
             }
 
             .search-wrapper {
@@ -939,6 +1246,20 @@ $allProducts = $stmt->fetchAll();
             }
 
             .add-product-btn i {
+                font-size: 12px;
+            }
+
+            .category-filter-row {
+                gap: 8px;
+            }
+
+            .category-select {
+                font-size: 13px;
+                padding: 8px 36px 8px 14px;
+                min-width: 140px;
+            }
+
+            .category-filter-label {
                 font-size: 12px;
             }
 
@@ -979,7 +1300,10 @@ $allProducts = $stmt->fetchAll();
             .shop-controls {
                 padding: 10px 12px;
                 gap: 6px;
-                flex-wrap: nowrap;
+            }
+
+            .shop-controls-row {
+                gap: 6px;
             }
 
             .search-input input {
@@ -1011,12 +1335,30 @@ $allProducts = $stmt->fetchAll();
             .add-product-btn i {
                 font-size: 11px;
             }
+
+            .category-filter-row {
+                gap: 6px;
+            }
+
+            .category-filter-label {
+                font-size: 11px;
+            }
+
+            .category-select {
+                font-size: 12px;
+                padding: 7px 32px 7px 12px;
+                min-width: 120px;
+            }
         }
 
         @media (max-width: 380px) {
             .shop-controls {
                 gap: 4px;
                 padding: 8px 10px;
+            }
+
+            .shop-controls-row {
+                gap: 4px;
             }
 
             .search-wrapper {
@@ -1074,45 +1416,77 @@ $allProducts = $stmt->fetchAll();
 
             <div class="merchandise-section">
                 <div class="shop-controls">
-                    <div class="search-wrapper">
-                        <div class="search-input">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="liveSearchInput" placeholder="Search by product name..."
-                                autocomplete="off">
+                    <!-- ✅ Row 1: Search + Clear + Add New -->
+                    <div class="shop-controls-row">
+                        <div class="search-wrapper">
+                            <div class="search-input">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="liveSearchInput" placeholder="Search by product name..."
+                                    autocomplete="off">
+                            </div>
+                            <button class="clear-search-btn" id="clearSearchBtn">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
                         </div>
-                        <button class="clear-search-btn" id="clearSearchBtn">
-                            <i class="fas fa-times"></i> Clear
+                        <a href="upload_products.php" class="add-product-btn" id="addProductBtn"
+                            style="text-decoration: none;">
+                            <i class="fas fa-plus-circle"></i> Add New
+                        </a>
+                    </div>
+
+                    <!-- ✅ Row 2: Category Filter dropdown (under search bar) -->
+                    <div class="category-filter-row">
+                        <label for="categoryFilter" class="category-filter-label">
+                            <i class="fas fa-filter"></i> Filter by Category:
+                        </label>
+                        <select id="categoryFilter" class="category-select">
+                            <option value="">All Categories</option>
+                            <?php foreach ($allCategories as $cat): ?>
+                                <option value="<?php echo htmlspecialchars($cat); ?>">
+                                    <?php echo htmlspecialchars($cat); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="category-badge hidden" id="categoryBadge"></span>
+                        <button type="button" class="category-clear-btn hidden" id="clearCategoryBtn">
+                            <i class="fas fa-times"></i> Clear filter
                         </button>
                     </div>
-                    <a href="upload_products.php" class="add-product-btn" id="addProductBtn"
-                        style="text-decoration: none;">
-                        <i class="fas fa-plus-circle"></i> Add New
-                    </a>
-
                 </div>
 
                 <div class="products-grid" id="productsGrid">
                     <?php foreach ($allProducts as $product): ?>
                         <div class="product-card" data-id="<?php echo $product['id']; ?>"
                             data-name="<?php echo strtolower(htmlspecialchars($product['product_name'])); ?>"
-                            data-fullname="<?php echo htmlspecialchars($product['product_name']); ?>">
+                            data-fullname="<?php echo htmlspecialchars($product['product_name']); ?>"
+                            data-category="<?php echo htmlspecialchars($product['category_group'] ?? ''); ?>">
                             <div class="product-image-wrapper">
-                                <img src="https://villaruz-print-shop-and-general-merchandise.shop/Products/<?php echo htmlspecialchars($product['product_image']); ?>"
+                                <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
                                     class="product-image-clickable"
                                     onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
 
-                                <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
-                                    class="edit-btn" title="Update product">
-                                    <i class="fas fa-pen"></i>
-                                </a>
+                                <!-- ✅ 3-dot menu button -->
+                                <button type="button" class="menu-toggle-btn" title="Options" aria-label="Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
 
-                                <a href="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
-                                    class="delete-btn"
-                                    onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this product?');"
-                                    title="Delete product">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                                <!-- ✅ Dropdown with pen & trash -->
+                                <div class="card-dropdown" role="menu">
+                                    <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                        class="dropdown-item dropdown-edit" role="menuitem">
+                                        <i class="fas fa-pen"></i>
+                                        <span>Edit</span>
+                                    </a>
+                                    <a href="#"
+                                        class="dropdown-item dropdown-delete"
+                                        data-delete-url="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
+                                        data-delete-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                                        role="menuitem">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Delete</span>
+                                    </a>
+                                </div>
                             </div>
 
                             <div class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></div>
@@ -1156,6 +1530,13 @@ $allProducts = $stmt->fetchAll();
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+
+                <!-- ✅ No results message -->
+                <div class="no-results" id="noResults">
+                    <i class="fas fa-box-open"></i>
+                    <h3>No products found</h3>
+                    <p id="noResultsText">Try a different search term or category.</p>
                 </div>
             </div>
         </main>
@@ -1213,6 +1594,29 @@ $allProducts = $stmt->fetchAll();
             <button class="close-desc-btn" style="margin-top: 12px;" onclick="closeImageModal()">
                 <i class="fas fa-times"></i> Close
             </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         ✅ DELETE CONFIRMATION MODAL
+         ============================================================ -->
+    <div class="confirm-modal" id="deleteConfirmModal">
+        <div class="confirm-card">
+            <div class="confirm-icon">
+                <i class="fas fa-trash"></i>
+            </div>
+            <div class="confirm-title">Delete this product?</div>
+            <div class="confirm-message" id="deleteConfirmMessage">
+                This action cannot be undone.
+            </div>
+            <div class="confirm-actions">
+                <button type="button" class="btn-cancel-confirm" id="cancelDeleteBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-danger-confirm" id="confirmDeleteBtn">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1381,32 +1785,229 @@ $allProducts = $stmt->fetchAll();
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const productsGrid = document.getElementById('productsGrid');
 
-        function filterProducts() {
+        // ========== ✅ CATEGORY FILTER ELEMENTS ==========
+        const categoryFilter = document.getElementById('categoryFilter');
+        const categoryBadge = document.getElementById('categoryBadge');
+        const clearCategoryBtn = document.getElementById('clearCategoryBtn');
+        const noResults = document.getElementById('noResults');
+        const noResultsText = document.getElementById('noResultsText');
+
+        // ========== ✅ COMBINED FILTER (search + category) ==========
+        function applyFilters() {
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const selectedCategory = categoryFilter ? categoryFilter.value.trim() : '';
+
+            if (categoryBadge) {
+                if (selectedCategory) {
+                    categoryBadge.textContent = 'Showing: ' + selectedCategory;
+                    categoryBadge.classList.remove('hidden');
+                } else {
+                    categoryBadge.classList.add('hidden');
+                }
+            }
+            if (clearCategoryBtn) {
+                clearCategoryBtn.classList.toggle('hidden', !selectedCategory);
+            }
+
             const cards = productsGrid.querySelectorAll('.product-card');
+            let visibleCount = 0;
 
             cards.forEach(card => {
-                const productName = card.getAttribute('data-fullname') || '';
-                const match = searchTerm === '' || productName.toLowerCase().includes(searchTerm);
-                card.style.display = match ? '' : 'none';
+                const productName = (card.getAttribute('data-fullname') || '').toLowerCase();
+                const productCategory = (card.getAttribute('data-category') || '').trim();
+
+                const matchesSearch = searchTerm === '' || productName.includes(searchTerm);
+                const matchesCategory = selectedCategory === '' || productCategory === selectedCategory;
+                const isMatch = matchesSearch && matchesCategory;
+
+                card.style.display = isMatch ? '' : 'none';
+                if (isMatch) visibleCount++;
             });
+
+            if (noResults) {
+                if (visibleCount === 0 && cards.length > 0) {
+                    noResults.classList.add('show');
+                    if (noResultsText) {
+                        if (searchTerm && selectedCategory) {
+                            noResultsText.textContent = `No products match "${searchInput.value}" in "${selectedCategory}".`;
+                        } else if (selectedCategory) {
+                            noResultsText.textContent = `No products in category "${selectedCategory}".`;
+                        } else if (searchTerm) {
+                            noResultsText.textContent = `No products match "${searchInput.value}".`;
+                        } else {
+                            noResultsText.textContent = 'Try a different search term or category.';
+                        }
+                    }
+                } else {
+                    noResults.classList.remove('show');
+                }
+            }
+
+            if (categoryBadge && selectedCategory) {
+                categoryBadge.textContent = `${selectedCategory} (${visibleCount})`;
+            }
         }
 
         let searchTimeout;
         if (searchInput) {
             searchInput.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(filterProducts, 300);
+                searchTimeout = setTimeout(applyFilters, 300);
             });
         }
 
         if (clearSearchBtn) {
             clearSearchBtn.addEventListener('click', () => {
                 searchInput.value = '';
-                filterProducts();
+                applyFilters();
                 searchInput.focus();
             });
         }
+
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', applyFilters);
+        }
+
+        if (clearCategoryBtn) {
+            clearCategoryBtn.addEventListener('click', () => {
+                categoryFilter.value = '';
+                applyFilters();
+            });
+        }
+
+        // ========== ✅ DELETE CONFIRMATION MODAL ==========
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        let pendingDeleteUrl = null;
+
+        function openDeleteConfirm(url, productName) {
+            pendingDeleteUrl = url;
+            deleteConfirmMessage.innerHTML =
+                'You are about to delete <strong>' + escapeHtml(productName) + '</strong>.<br>This action cannot be undone.';
+            deleteConfirmModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteConfirm() {
+            deleteConfirmModal.classList.remove('show');
+            document.body.style.overflow = '';
+            pendingDeleteUrl = null;
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        }
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        if (cancelDeleteBtn) {
+            cancelDeleteBtn.addEventListener('click', closeDeleteConfirm);
+        }
+
+        if (deleteConfirmModal) {
+            deleteConfirmModal.addEventListener('click', function (e) {
+                if (e.target === deleteConfirmModal) closeDeleteConfirm();
+            });
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && deleteConfirmModal.classList.contains('show')) {
+                closeDeleteConfirm();
+            }
+        });
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function () {
+                if (!pendingDeleteUrl) return;
+                confirmDeleteBtn.disabled = true;
+                confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                // Small delay so the button state is visible, then redirect
+                setTimeout(function () {
+                    window.location.href = pendingDeleteUrl;
+                }, 150);
+            });
+        }
+
+        // ========== ✅ 3-DOT CARD MENU ==========
+        (function () {
+            document.querySelectorAll('.menu-toggle-btn').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    var card = btn.closest('.product-card');
+                    var dropdown = card.querySelector('.card-dropdown');
+                    var isOpen = dropdown.classList.contains('show');
+
+                    document.querySelectorAll('.card-dropdown.show').forEach(function (d) {
+                        d.classList.remove('show');
+                    });
+                    document.querySelectorAll('.menu-toggle-btn.active').forEach(function (b) {
+                        b.classList.remove('active');
+                    });
+
+                    if (!isOpen) {
+                        dropdown.classList.add('show');
+                        btn.classList.add('active');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.card-dropdown').forEach(function (dd) {
+                dd.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            });
+
+            document.addEventListener('click', function () {
+                document.querySelectorAll('.card-dropdown.show').forEach(function (d) {
+                    d.classList.remove('show');
+                });
+                document.querySelectorAll('.menu-toggle-btn.active').forEach(function (b) {
+                    b.classList.remove('active');
+                });
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.card-dropdown.show').forEach(function (d) {
+                        d.classList.remove('show');
+                    });
+                    document.querySelectorAll('.menu-toggle-btn.active').forEach(function (b) {
+                        b.classList.remove('active');
+                    });
+                }
+            });
+        })();
+
+        // ========== ✅ HOOK UP DELETE LINKS → MODAL ==========
+        document.querySelectorAll('.dropdown-delete').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                var url = link.getAttribute('data-delete-url');
+                var name = link.getAttribute('data-delete-name') || 'this product';
+
+                // Close the dropdown first
+                document.querySelectorAll('.card-dropdown.show').forEach(function (d) {
+                    d.classList.remove('show');
+                });
+                document.querySelectorAll('.menu-toggle-btn.active').forEach(function (b) {
+                    b.classList.remove('active');
+                });
+
+                openDeleteConfirm(url, name);
+            });
+        });
 
         // ========== ADD TO CART ==========
         async function addToCart(productId, productName, price, unit, quantity) {
@@ -1504,7 +2105,8 @@ $allProducts = $stmt->fetchAll();
             });
         });
 
-        filterProducts();
+        // Initial render
+        applyFilters();
     </script>
 </body>
 
