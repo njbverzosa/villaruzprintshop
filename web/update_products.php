@@ -684,10 +684,10 @@ if (!empty($product['product_image'])) {
             <div id="imageLinkBlock" style="display:none;">
                 <label for="image_link">Image Link</label>
                 <div class="image-link-row">
-                    <input type="url" id="image_link" placeholder="https://example.com/photo.jpg"
+                    <input type="url" id="image_link"
                         autocomplete="off" spellcheck="false">
                     <button type="button" class="btn-load-link" id="loadImageLinkBtn">
-                        <i class="fas fa-download"></i> Load
+                        UpLoad
                     </button>
                 </div>
                 <div class="image-link-status" id="imageLinkStatus"></div>
