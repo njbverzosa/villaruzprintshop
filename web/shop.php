@@ -37,7 +37,9 @@ if (!$userData) {
 
 $user = $userData;
 
-$stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
+// $stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
+$stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY product_image = 'no-image.jpg' DESC");
+
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
 
