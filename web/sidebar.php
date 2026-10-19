@@ -322,6 +322,22 @@
         color: #6366f1;
     }
 
+    /* ===== TOOLS — ID PHOTO CAMERA (Emerald) ===== */
+    .nav-dropdown-item.active_tools_idphoto {
+        background: #eff6ff;
+        color: #059669;
+        border-left: 3px solid #10b981;
+    }
+
+    .nav-dropdown-item.active_tools_idphoto:hover {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .nav-dropdown-item.active_tools_idphoto i {
+        color: #10b981;
+    }
+
     /* ===== DROPDOWN MENU CONTAINER ===== */
     .nav-dropdown-menu {
         display: none;
@@ -383,6 +399,9 @@
 
     // DB Manager dropdown becomes active when either child is the current page
     $dbManagerActive = in_array($currentPage, ['database_manager.php']);
+
+    // ✅ TOOLS dropdown — active when its child page is open
+    $toolsActive = in_array($currentPage, ['id_photo.php']);
     ?>
 
     <!-- ========== SHOP + CART ========== -->
@@ -458,6 +477,23 @@
         </div>
     <?php endif; ?>
 
+    <!-- ========== ✅ TOOLS DROPDOWN (ID Photo Camera) ========== -->
+    <div class="nav-dropdown">
+        <div class="nav-dropdown-toggle" onclick="toggleDropdown('toolsDropdown')">
+            <i class="fas fa-tools"></i>
+            <span>Tools</span>
+            <i class="fas fa-chevron-down dropdown-arrow <?php echo $toolsActive ? 'rotated' : ''; ?>"
+                id="toolsArrow"></i>
+        </div>
+        <div class="nav-dropdown-menu <?php echo $toolsActive ? 'show' : ''; ?>" id="toolsDropdown">
+            <a href="id_photo.php"
+                class="nav-dropdown-item <?php echo $currentPage == 'id_photo.php' ? 'active_tools_idphoto' : ''; ?>">
+                <i class="fas fa-camera"></i>
+                <span>ID Photo Camera</span>
+            </a>
+        </div>
+    </div>
+
     <!-- ========== SYSTEM MANAGER / DB MANAGER DROPDOWN (authorize_access == 0 only) ========== -->
     <?php if ($authorizeAccess == 0): ?>
         <div class="nav-dropdown">
@@ -528,7 +564,8 @@
             sourceDropdown: 'sourceArrow',
             ordersDropdown: 'ordersArrow',
             customersDropdown: 'customersArrow',
-            dbManagerDropdown: 'dbManagerArrow'
+            dbManagerDropdown: 'dbManagerArrow',
+            toolsDropdown: 'toolsArrow'   // ✅ added
         };
 
         const arrowId = arrowMap[id];
