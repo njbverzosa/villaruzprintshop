@@ -67,7 +67,7 @@ if ($discountPercentDisplay === '' || $discountPercentDisplay === '.') {
 }
 
 // FIXED QR CODE URL - always points to the APK download
-$qrCodeUrl = "https://villaruz-print-shop-and-general-merchandise.shop/APK/sofia.apk";
+$qrCodeUrl = "https://villaruz-print-shop-and-general-merchandise.shop/APK/customer_app.apk";
 
 // Generate QR code image using QR Server API
 $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($qrCodeUrl);

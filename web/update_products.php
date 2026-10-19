@@ -50,8 +50,34 @@ if (empty($productNumber)) {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT * FROM merchandise_inventory WHERE product_number = ? LIMIT 1");
-$stmt->execute([$productNumber]);
+// ============================================================
+// ✅ RESOLVE TARGET TABLE BY ROLE (needed so prev/next work for
+//    both Admin and Investor without changing the rest of the page)
+// ============================================================
+$targetTable   = 'merchandise_inventory';
+$uploadFolder  = 'Products';
+$scopeByAccNum = false;
+
+if ($userRole === 'Investor') {
+    $targetTable   = 'investors_inventory';
+    $uploadFolder  = 'Inv_Products';
+    $scopeByAccNum = true;
+} elseif ($userRole !== 'Admin') {
+    session_destroy();
+    header('Location: ../admins-portal.php');
+    exit;
+}
+
+// ============================================================
+// ✅ FETCH CURRENT PRODUCT (scoped for Investor)
+// ============================================================
+if ($scopeByAccNum) {
+    $stmt = $pdo->prepare("SELECT * FROM {$targetTable} WHERE product_number = ? AND acc_number = ? LIMIT 1");
+    $stmt->execute([$productNumber, $accNumber]);
+} else {
+    $stmt = $pdo->prepare("SELECT * FROM {$targetTable} WHERE product_number = ? LIMIT 1");
+    $stmt->execute([$productNumber]);
+}
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
@@ -59,19 +85,43 @@ if (!$product) {
     exit;
 }
 
+// ============================================================
+// ✅ PREV / NEXT PRODUCT NUMBERS (alphabetical by product_number)
+// ============================================================
+$prevNumber = null;
+$nextNumber = null;
+
+if ($scopeByAccNum) {
+    $prevStmt = $pdo->prepare("SELECT product_number FROM {$targetTable} WHERE product_number < ? AND acc_number = ? ORDER BY product_number DESC LIMIT 1");
+    $prevStmt->execute([$productNumber, $accNumber]);
+    $prevNumber = $prevStmt->fetchColumn() ?: null;
+
+    $nextStmt = $pdo->prepare("SELECT product_number FROM {$targetTable} WHERE product_number > ? AND acc_number = ? ORDER BY product_number ASC LIMIT 1");
+    $nextStmt->execute([$productNumber, $accNumber]);
+    $nextNumber = $nextStmt->fetchColumn() ?: null;
+} else {
+    $prevStmt = $pdo->prepare("SELECT product_number FROM {$targetTable} WHERE product_number < ? ORDER BY product_number DESC LIMIT 1");
+    $prevStmt->execute([$productNumber]);
+    $prevNumber = $prevStmt->fetchColumn() ?: null;
+
+    $nextStmt = $pdo->prepare("SELECT product_number FROM {$targetTable} WHERE product_number > ? ORDER BY product_number ASC LIMIT 1");
+    $nextStmt->execute([$productNumber]);
+    $nextNumber = $nextStmt->fetchColumn() ?: null;
+}
+
 $imageUrl = '';
 $imageExists = false;
 
 if (!empty($product['product_image'])) {
-    $imageUrl = '../Products/' . htmlspecialchars($product['product_image']);
-    $absoluteImagePath = dirname(__DIR__) . '/Products/' . $product['product_image'];
+    $imageUrl = '../' . $uploadFolder . '/' . htmlspecialchars($product['product_image']);
+    $absoluteImagePath = dirname(__DIR__) . '/' . $uploadFolder . '/' . $product['product_image'];
     $imageExists = file_exists($absoluteImagePath);
 }
 
 // ✅ Fetch distinct category groups for the dropdown
 $catStmt = $pdo->query("
     SELECT DISTINCT category_group
-    FROM merchandise_inventory
+    FROM {$targetTable}
     WHERE category_group IS NOT NULL AND category_group <> ''
     ORDER BY category_group ASC
 ");
@@ -108,6 +158,80 @@ $currentCategory = $product['category_group'] ?? '';
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ============================================================
+           ✅ TOP BAR — [◀] [product #] [▶] [✕]
+           ============================================================ */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .nav-bar-left,
+        .nav-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #334155;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .nav-btn.disabled,
+        .nav-btn[disabled] {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .nav-btn-close {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        .nav-btn-close:hover {
+            background: #ef4444;
+            color: #ffffff;
+            border-color: #ef4444;
+        }
+
+        .nav-product-number {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            padding: 6px 10px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            white-space: nowrap;
         }
 
         h2 {
@@ -196,9 +320,6 @@ $currentCategory = $product['category_group'] ?? '';
             font-size: 13px;
         }
 
-        /* ============================================================
-           ✅ Image Link input (auto-load, no button)
-           ============================================================ */
         .image-link-row {
             display: flex;
             gap: 8px;
@@ -617,6 +738,46 @@ $currentCategory = $product['category_group'] ?? '';
 
 <body>
     <div class="container">
+
+        <!-- ============================================================
+             ✅ TOP BAR — [◀] [PRDxxxxx] [▶] [✕ close → shop]
+             ============================================================ -->
+        <div class="nav-bar">
+            <div class="nav-bar-left">
+                <?php if ($prevNumber): ?>
+                    <a class="nav-btn" id="prevBtn"
+                       href="update_products?product_number=<?php echo urlencode($prevNumber); ?>"
+                       title="Previous product (<?php echo htmlspecialchars($prevNumber); ?>)">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                <?php else: ?>
+                    <span class="nav-btn disabled" title="No previous product">
+                        <i class="fas fa-chevron-left"></i>
+                    </span>
+                <?php endif; ?>
+
+                <span class="nav-product-number"><?php echo htmlspecialchars($product['product_number']); ?></span>
+            </div>
+
+            <div class="nav-bar-right">
+                <?php if ($nextNumber): ?>
+                    <a class="nav-btn" id="nextBtn"
+                       href="update_products?product_number=<?php echo urlencode($nextNumber); ?>"
+                       title="Next product (<?php echo htmlspecialchars($nextNumber); ?>)">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                <?php else: ?>
+                    <span class="nav-btn disabled" title="No next product">
+                        <i class="fas fa-chevron-right"></i>
+                    </span>
+                <?php endif; ?>
+
+                <a class="nav-btn nav-btn-close" id="closeBtn" href="shop.php" title="Close and return to Shop">
+                    <i class="fas fa-xmark"></i>
+                </a>
+            </div>
+        </div>
+
         <h2>Update Product</h2>
         <div class="product-number">Product #: <?php echo htmlspecialchars($product['product_number']); ?> -
             <?php echo htmlspecialchars($product['category_group']); ?>
@@ -681,9 +842,6 @@ $currentCategory = $product['category_group'] ?? '';
 
             <div class="divider"></div>
 
-            <!-- ============================================================
-                 ✅ Image Link input — auto-load, hidden when an image exists
-                 ============================================================ -->
             <div id="imageLinkBlock">
                 <label for="image_link">Image Link</label>
                 <div class="image-link-row">
@@ -772,6 +930,9 @@ $currentCategory = $product['category_group'] ?? '';
 
         const originalImageSrc = '<?php echo $imageUrl; ?>';
         const originalImageExists = <?php echo $imageUrl ? 'true' : 'false'; ?>;
+
+        // ✅ The next product number (empty string if none) — used after a successful save
+        const nextProductNumber = '<?php echo $nextNumber ? htmlspecialchars($nextNumber, ENT_QUOTES) : ''; ?>';
 
         let stream = null;
         let isSaving = false;
@@ -1256,11 +1417,27 @@ $currentCategory = $product['category_group'] ?? '';
                 }
 
                 if (data.success) {
-                    showSuccessLoaderThenCheck(
-                        data.redirect,
-                        'Update Successful!',
-                        'Your product changes have been saved.'
-                    );
+                    // ========================================================
+                    // ✅ AFTER SUCCESS → go to NEXT product, else stay on
+                    //    this product (no more redirect to shop.php)
+                    // ========================================================
+                    let afterSaveUrl;
+                    let doneTitle;
+                    let doneMessage;
+
+                    if (nextProductNumber) {
+                        afterSaveUrl = 'update_products?product_number=' + encodeURIComponent(nextProductNumber);
+                        doneTitle    = 'Update Successful!';
+                        doneMessage  = 'Moving to the next product…';
+                    } else {
+                        // Last product — stay on the same page so the user
+                        // can keep editing or hit the ✕ close button.
+                        afterSaveUrl = null;
+                        doneTitle    = 'Update Successful!';
+                        doneMessage  = 'This was the last product. You can close this page.';
+                    }
+
+                    showSuccessLoaderThenCheck(afterSaveUrl, doneTitle, doneMessage);
                 } else {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Save Changes';
@@ -1326,6 +1503,12 @@ $currentCategory = $product['category_group'] ?? '';
                 setTimeout(function () {
                     if (redirectUrl) {
                         window.location.href = redirectUrl;
+                    } else {
+                        // ✅ No next product → close the overlay and stay here
+                        successOverlay.classList.remove('visible');
+                        isSaving = false;
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Save Changes';
                     }
                 }, 1200);
             }, 1000);
@@ -1346,8 +1529,6 @@ $currentCategory = $product['category_group'] ?? '';
 
         // ============================================================
         // ✅ AUTO-PASTE ON APP RESUME
-        //    Reads the clipboard via the native Android bridge
-        //    (falls back to navigator.clipboard on desktop).
         // ============================================================
         async function tryAutoPasteFromClipboard() {
             // Don't override an image the user already picked/captured

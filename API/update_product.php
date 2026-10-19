@@ -40,7 +40,6 @@ $uploadFolder  = '';
 $scopeByAccNum = false;
 
 if ($userRole === 'Admin') {
-    // ✅ Admin → merchandise_inventory + Products folder
     $stmt = $pdo->prepare("SELECT f_name FROM admins WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -53,13 +52,11 @@ if ($userRole === 'Admin') {
     $scopeByAccNum = false;
 
 } elseif ($userRole === 'Investor') {
-    // ✅ Investor → investors_inventory + Inv_Products folder
     $stmt = $pdo->prepare("SELECT f_name, acc_number FROM investors WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userName  = $user['f_name'];
-        // ✅ Refresh acc_number directly from DB
         $accNumber = $user['acc_number'];
     }
     $targetTable   = 'investors_inventory';
@@ -68,7 +65,6 @@ if ($userRole === 'Admin') {
     $scopeByAccNum = true;
 
 } else {
-    // ❌ Any other role is not allowed to update products
     echo json_encode(['success' => false, 'message' => 'Unauthorized role: ' . $userRole]);
     exit;
 }
@@ -110,30 +106,19 @@ if ($action === 'update_product') {
     $sellingPrice = floatval($_POST['selling_price'] ?? 0);
     $description  = isset($_POST['description']) ? trim($_POST['description']) : '';
 
-    // ==============================================
-    // ✅ 4a. READ + SANITIZE CATEGORY GROUP
-    // ==============================================
+    // 4a. READ + SANITIZE CATEGORY GROUP
     $categoryGroup = trim($_POST['category_group'] ?? '');
-
-    // If user picked "Add new category…" in the dropdown,
-    // prefer the typed-in name (new_category_group).
     if ($categoryGroup === '__new__') {
         $categoryGroup = trim($_POST['new_category_group'] ?? '');
     }
-
-    // Cap length to match column (VARCHAR(50))
     if (mb_strlen($categoryGroup) > 50) {
         $categoryGroup = mb_substr($categoryGroup, 0, 50);
     }
-
-    // Normalize empty string → NULL so the DB doesn't store ""
     $categoryGroupDb = ($categoryGroup === '') ? null : $categoryGroup;
 
     $replaceImage = isset($_POST['replace_image']) && $_POST['replace_image'] === '1';
 
-    // ==============================================
     // 4b. SANITIZE + VALIDATE PRODUCT NAME
-    // ==============================================
     $productName = preg_replace('/\.(jpeg|jpg|png|webp|gif|bmp|heic|heif|avif|tiff|tif|svg)$/i', '', $productName);
     $productName = preg_replace('/\s+/', ' ', $productName);
     $productName = trim($productName);
@@ -151,23 +136,14 @@ if ($action === 'update_product') {
         exit;
     }
 
-    // ==============================================
     // 4c. FETCH OLD PRODUCT (scoped by acc_number for Investor)
-    // ==============================================
     if ($scopeByAccNum) {
-        $oldStmt = $pdo->prepare("
-            SELECT * FROM {$targetTable} 
-            WHERE id = :id AND acc_number = :acc_number
-        ");
-        $oldStmt->execute([
-            ':id'         => $productId,
-            ':acc_number' => $accNumber
-        ]);
+        $oldStmt = $pdo->prepare("SELECT * FROM {$targetTable} WHERE id = :id AND acc_number = :acc_number");
+        $oldStmt->execute([':id' => $productId, ':acc_number' => $accNumber]);
     } else {
         $oldStmt = $pdo->prepare("SELECT * FROM {$targetTable} WHERE id = :id");
         $oldStmt->execute([':id' => $productId]);
     }
-
     $oldProduct = $oldStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$oldProduct) {
@@ -176,9 +152,7 @@ if ($action === 'update_product') {
         exit;
     }
 
-    // ==============================================
     // 4d. MORE VALIDATION
-    // ==============================================
     if ($sellingPrice <= 0) {
         echo json_encode(['success' => false, 'message' => 'Selling price must be greater than 0']);
         exit;
@@ -188,9 +162,7 @@ if ($action === 'update_product') {
         exit;
     }
 
-    // ==============================================
     // 4e. RESOLVE THE UPLOAD DIRECTORY
-    // ==============================================
     $projectRoot = dirname(__DIR__);
     $uploadDir   = $projectRoot . '/' . $uploadFolder . '/';
 
@@ -203,7 +175,6 @@ if ($action === 'update_product') {
             exit;
         }
     }
-
     if (!is_writable($uploadDir)) {
         echo json_encode([
             'success' => false,
@@ -212,10 +183,7 @@ if ($action === 'update_product') {
         exit;
     }
 
-    // ==============================================
     // 4f. HANDLE NEW IMAGE
-    //     ✅ Filename = <product_name>.<ext>   ← NO acc_number prefix
-    // ==============================================
     $imagePath        = $oldProduct['product_image'];
     $newFileWritten   = null;
     $oldImageToDelete = null;
@@ -228,67 +196,49 @@ if ($action === 'update_product') {
         'image/tiff', 'image/svg+xml'
     ];
 
-    // ---- Case A: base64 camera image ----
     if (!empty($_POST['product_image_base64'])) {
-
         $dataUri = $_POST['product_image_base64'];
-
         if (!preg_match('/^data:image\/([\w\+\-\.]+);base64,/', $dataUri, $m)) {
             echo json_encode(['success' => false, 'message' => 'Invalid camera image format.']);
             exit;
         }
-
         $type = strtolower($m[1]);
-
         if ($type === 'jpeg')     $type = 'jpg';
         if ($type === 'svg+xml')  $type = 'svg';
         if ($type === 'x-ms-bmp') $type = 'bmp';
-
         if ($type === 'svg') {
             echo json_encode(['success' => false, 'message' => 'SVG images are not allowed.']);
             exit;
         }
-
         $data = substr($dataUri, strpos($dataUri, ',') + 1);
         $data = base64_decode($data, true);
-
         if ($data === false) {
             echo json_encode(['success' => false, 'message' => 'Could not decode camera image.']);
             exit;
         }
-
         if (strlen($data) > 5 * 1024 * 1024) {
             echo json_encode(['success' => false, 'message' => 'Camera image too large. Max 5MB.']);
             exit;
         }
-
-        // ✅ Filename = just the product name
         $ext      = $type;
         $fileName = $productName . '.' . $ext;
         $destPath = $uploadDir . $fileName;
-
         if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== $fileName) {
             $oldImageToDelete = $oldProduct['product_image'];
         }
-
         if (file_put_contents($destPath, $data) === false) {
             echo json_encode(['success' => false, 'message' => 'Failed to save camera image.']);
             exit;
         }
-
         $imagePath      = $fileName;
         $newFileWritten = $fileName;
     }
-    // ---- Case B: standard file upload ----
     elseif (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
-
         $file = $_FILES['product_image'];
-
         if ($file['size'] > 5 * 1024 * 1024) {
             echo json_encode(['success' => false, 'message' => 'Image too large. Max 5MB.']);
             exit;
         }
-
         $sourceExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($sourceExt, $allowedSourceExt, true)) {
             echo json_encode([
@@ -297,11 +247,9 @@ if ($action === 'update_product') {
             ]);
             exit;
         }
-
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
-
         if (!in_array($mime, $allowedSourceMime, true)) {
             echo json_encode([
                 'success' => false,
@@ -309,45 +257,34 @@ if ($action === 'update_product') {
             ]);
             exit;
         }
-
-        // ✅ Filename = just the product name
         $ext      = $sourceExt;
         $fileName = $productName . '.' . $ext;
         $destPath = $uploadDir . $fileName;
-
         if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== $fileName) {
             $oldImageToDelete = $oldProduct['product_image'];
         }
-
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
             echo json_encode(['success' => false, 'message' => 'Failed to save uploaded image.']);
             exit;
         }
-
         $imagePath      = $fileName;
         $newFileWritten = $fileName;
     }
-    // ---- Case C: use default image (no-image.jpg) ----
     elseif (isset($_POST['use_default_image']) && $_POST['use_default_image'] === '1') {
         $imagePath = 'no-image.jpg';
-
         if (!empty($oldProduct['product_image']) && $oldProduct['product_image'] !== 'no-image.jpg') {
             $oldImageToDelete = $oldProduct['product_image'];
         }
     }
-    // ---- Case D: Retake clicked but no new capture → remove image ----
     elseif ($replaceImage) {
         $imagePath        = null;
         $oldImageToDelete = !empty($oldProduct['product_image']) ? $oldProduct['product_image'] : null;
     }
-    // ---- Case E: no image change → keep existing ----
     else {
         $imagePath = $oldProduct['product_image'];
     }
 
-    // ==============================================
-    // 4g. PERFORM THE UPDATE  (now includes category_group)
-    // ==============================================
+    // 4g. PERFORM THE UPDATE
     try {
         date_default_timezone_set('Asia/Manila');
         $formattedDate = date('j F Y g:i A');
@@ -355,7 +292,6 @@ if ($action === 'update_product') {
         $pdo->beginTransaction();
 
         if ($scopeByAccNum) {
-            // ✅ Investor: WHERE id = ? AND acc_number = ?
             $stmt = $pdo->prepare("
                 UPDATE {$targetTable}
                 SET product_name   = :product_name,
@@ -368,7 +304,6 @@ if ($action === 'update_product') {
                     category_group = :category_group
                 WHERE id = :id AND acc_number = :acc_number
             ");
-
             $result = $stmt->execute([
                 ':product_name'   => $productName,
                 ':unit'           => $unit,
@@ -382,7 +317,6 @@ if ($action === 'update_product') {
                 ':acc_number'     => $accNumber
             ]);
         } else {
-            // ✅ Admin: original UPDATE
             $stmt = $pdo->prepare("
                 UPDATE {$targetTable}
                 SET product_name   = :product_name,
@@ -395,7 +329,6 @@ if ($action === 'update_product') {
                     category_group = :category_group
                 WHERE id = :id
             ");
-
             $result = $stmt->execute([
                 ':product_name'   => $productName,
                 ':unit'           => $unit,
@@ -409,7 +342,6 @@ if ($action === 'update_product') {
             ]);
         }
 
-        // ✅ Double-check: if scoped, ensure a row was actually affected
         if ($result && $scopeByAccNum && $stmt->rowCount() === 0) {
             $pdo->rollBack();
             if ($newFileWritten && $newFileWritten !== $oldProduct['product_image']) {
@@ -422,7 +354,6 @@ if ($action === 'update_product') {
         }
 
         if ($result) {
-            // ---- Build change log ----
             $changes = [];
             if ($oldProduct['product_name'] != $productName)   $changes[] = "Name: '{$oldProduct['product_name']}' → '{$productName}'";
             if ($oldProduct['unit'] != $unit)                  $changes[] = "Unit: '{$oldProduct['unit']}' → '{$unit}'";
@@ -437,8 +368,6 @@ if ($action === 'update_product') {
             if ($imagePath === null && !empty($oldProduct['product_image'])) $changes[] = "Image removed (no replacement)";
 
             $logDetails = "Updated product in {$targetTable}: {$oldProduct['product_name']} (ID: {$productId}) | Changes: " . (empty($changes) ? "No changes" : implode(", ", $changes));
-
-            // ✅ Include acc_number in log for Investor
             if ($scopeByAccNum) {
                 $logDetails .= " | Investor: {$accNumber}";
             }
@@ -452,7 +381,6 @@ if ($action === 'update_product') {
 
             $pdo->commit();
 
-            // ✅ POST-COMMIT: delete the OLD image file
             if ($oldImageToDelete !== null && $oldImageToDelete !== 'no-image.jpg') {
                 $oldPath = $uploadDir . $oldImageToDelete;
                 if (file_exists($oldPath)) {
@@ -476,25 +404,21 @@ if ($action === 'update_product') {
             ]);
         } else {
             $pdo->rollBack();
-
             if ($newFileWritten && $newFileWritten !== $oldProduct['product_image']) {
                 if (file_exists($uploadDir . $newFileWritten)) {
                     @unlink($uploadDir . $newFileWritten);
                 }
             }
-
             echo json_encode(['success' => false, 'message' => 'Failed to update product']);
         }
 
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-
         if ($newFileWritten && $newFileWritten !== $oldProduct['product_image']) {
             if (file_exists($uploadDir . $newFileWritten)) {
                 @unlink($uploadDir . $newFileWritten);
             }
         }
-
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
     exit;
