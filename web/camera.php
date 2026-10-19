@@ -1,6 +1,5 @@
 <?php
 //web/camera.php
-
 session_start();
 
 require_once __DIR__ . '/../DB_Conn/config.php';
@@ -36,7 +35,6 @@ if (!$userData) {
 }
 
 $user = $userData;
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -204,12 +202,12 @@ $user = $userData;
     const downloadBtn    = document.getElementById('downloadBtn');
     const retakeBtn      = document.getElementById('retakeBtn');
 
-    let currentSize  = '2x2';
-    let currentRatio = 1.0;
+    let currentSize    = '2x2';
+    let currentRatio   = 1.0;
     let currentDataUrl = '';
     let pendingCallbackId = '';
 
-    // Pick size
+    // -------- Pick size --------
     sizeGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.size-btn');
         if (!btn) return;
@@ -217,9 +215,15 @@ $user = $userData;
         btn.classList.add('active');
         currentSize  = btn.dataset.size;
         currentRatio = parseFloat(btn.dataset.ratio);
+
+        // Live-update the native guide rectangle if the camera is already open
+        if (window.AndroidNativeCamera
+            && typeof window.AndroidNativeCamera.setGuideRatio === 'function') {
+            try { window.AndroidNativeCamera.setGuideRatio(currentRatio); } catch (e) {}
+        }
     });
 
-    // Open the native camera
+    // -------- Open native camera --------
     openCameraBtn.addEventListener('click', () => {
         if (!window.AndroidNativeCamera) {
             alert('Native camera bridge not found. Open inside the Sofia app.');
@@ -234,20 +238,21 @@ $user = $userData;
     // ====================================================
     // Native bridge callbacks
     // ====================================================
-    function onNativeCameraResult(payload) {
-        // payload = "callbackId||dataUrl"
-        const sep = payload.indexOf('||');
-        if (sep < 0) return;
 
-        const callbackId = payload.substring(0, sep);
-        const dataUrl    = payload.substring(sep + 2);
-
+    // Fired first — small payload — safe
+    function onNativeCameraResultReady(callbackId) {
         if (callbackId !== pendingCallbackId) return;
+        // Image comes in the next call; nothing to do here.
+    }
 
+    // Fired second — the actual image data URL
+    function onNativeCameraImage(dataUrl) {
         spinner.classList.remove('visible');
+        if (!dataUrl) return;
+
         currentDataUrl = dataUrl;
 
-        // Crop to the chosen aspect ratio using Canvas
+        // Crop to the selected aspect ratio
         cropToRatio(dataUrl, currentRatio, (cropped) => {
             currentDataUrl = cropped;
             previewImg.src = cropped;
@@ -265,7 +270,7 @@ $user = $userData;
     }
 
     // ====================================================
-    // Crop the transparent PNG to the chosen aspect ratio
+    // Crop the transparent PNG to the chosen ratio
     // ====================================================
     function cropToRatio(dataUrl, ratio, cb) {
         const img = new Image();
@@ -273,7 +278,6 @@ $user = $userData;
             const w = img.width;
             const h = img.height;
 
-            // Target crop box centered on the image
             let cw, ch;
             if (w / h > ratio) {
                 ch = h;
@@ -312,7 +316,6 @@ $user = $userData;
                 ? 'Saved to your gallery: Pictures/SofiaIDPhoto'
                 : 'Could not save the image.');
         } else {
-            // Web fallback
             const a = document.createElement('a');
             a.download = fileName;
             a.href = currentDataUrl;
