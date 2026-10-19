@@ -762,6 +762,9 @@ $currentCategory = $product['category_group'] ?? '';
         const replaceImageInput = document.getElementById('replace_image');
         const saveBtn = document.getElementById('saveBtn');
 
+        // ✅ Declared once here — used by both the visibility helpers and the click handler below
+        const searchGoogleBtn = document.getElementById('searchGoogleBtn');
+
         const successOverlay = document.getElementById('successOverlay');
         const successCard = document.getElementById('successCard');
         const successTitle = document.getElementById('successTitle');
@@ -996,10 +999,8 @@ $currentCategory = $product['category_group'] ?? '';
         });
 
         // ============================================================
-        // ✅ GOOGLE SEARCH BUTTON
+        // ✅ GOOGLE SEARCH BUTTON (handler only — element was declared at top)
         // ============================================================
-        const searchGoogleBtn = document.getElementById('searchGoogleBtn');
-
         if (searchGoogleBtn) {
             searchGoogleBtn.addEventListener('click', function () {
                 const nameInput = document.getElementById('product_name');
@@ -1051,6 +1052,17 @@ $currentCategory = $product['category_group'] ?? '';
         function hidePlaceholder() { imagePlaceholder.classList.remove('visible'); }
 
         // ============================================================
+        // ✅ SEARCH BUTTON visibility — hidden while an image is applied
+        // ============================================================
+        function showSearchButton() {
+            if (searchGoogleBtn) searchGoogleBtn.style.display = '';
+        }
+
+        function hideSearchButton() {
+            if (searchGoogleBtn) searchGoogleBtn.style.display = 'none';
+        }
+
+        // ============================================================
         // VIEW STATES
         // ============================================================
         function viewHasImage() {
@@ -1058,6 +1070,7 @@ $currentCategory = $product['category_group'] ?? '';
             hideFloatingCapture();
             showCancelButton();
             hidePlaceholder();
+            hideSearchButton();   // ✅ image applied → hide Search
         }
 
         function viewNoImage() {
@@ -1066,6 +1079,7 @@ $currentCategory = $product['category_group'] ?? '';
             hideFloatingCapture();
             showPlaceholder();
             showImageLinkBlock();
+            showSearchButton();   // ✅ no image → show Search
         }
 
         function viewCameraActive() {
@@ -1073,6 +1087,7 @@ $currentCategory = $product['category_group'] ?? '';
             hideFloatingCamera();
             showFloatingCapture();
             hidePlaceholder();
+            hideSearchButton();   // ✅ camera in use → hide Search
         }
 
         // ============================================================
@@ -1167,7 +1182,7 @@ $currentCategory = $product['category_group'] ?? '';
             setLinkStatus('', '');
 
             showImageLinkBlock();
-            viewNoImage();
+            viewNoImage();   // ✅ brings back the Search button
         });
 
         // ============================================================

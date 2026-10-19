@@ -201,7 +201,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             font-size: 13px;
         }
 
-        /* ✅ Hidden by default; shown only when Product Name has content */
+        /* ✅ Hidden by default; shown only when no image is applied */
         .btn-search-google.hidden {
             display: none;
         }
@@ -935,15 +935,23 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         // ============================================================
-        // ✅ GOOGLE SEARCH BUTTON — shows only when Product Name has text
+        // ✅ GOOGLE SEARCH BUTTON
+        //    Rule: hidden while an image is applied; shown only when
+        //    there is no image AND the Product Name field has content.
         // ============================================================
         var productNameInput = document.getElementById('product_name');
         var searchGoogleBtn = document.getElementById('searchGoogleBtn');
 
+        // Tracks whether an image is currently applied to the preview.
+        var hasImage = false;
+
         function refreshSearchButton() {
-            if (!searchGoogleBtn || !productNameInput) return;
-            var v = (productNameInput.value || '').trim();
-            if (v.length > 0) {
+            if (!searchGoogleBtn) return;
+
+            var nameHasText = productNameInput && (productNameInput.value || '').trim().length > 0;
+
+            // Show only when: no image applied AND product name is non-empty.
+            if (!hasImage && nameHasText) {
                 searchGoogleBtn.classList.remove('hidden');
             } else {
                 searchGoogleBtn.classList.add('hidden');
@@ -952,7 +960,6 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
         if (productNameInput) {
             productNameInput.addEventListener('input', refreshSearchButton);
-            refreshSearchButton();
         }
 
         if (searchGoogleBtn) {
@@ -1305,19 +1312,23 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         // VIEW STATES
         // ============================================================
         function viewHasImage() {
+            hasImage = true;                // ← tracks state for Search button
             hideFloatingCamera();
             hideFloatingCapture();
             showCancelButton();
             hidePlaceholder();
             hideTorchButton();
+            refreshSearchButton();          // ← Search hides
         }
 
         function viewNoImage() {
+            hasImage = false;               // ← tracks state for Search button
             hideCancelButton();
             showFloatingCamera();
             hideFloatingCapture();
             showPlaceholder();
             hideTorchButton();
+            refreshSearchButton();          // ← Search shows (if name has text)
         }
 
         function viewCameraActive() {
@@ -1328,6 +1339,8 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             if (torchTrack) {
                 showTorchButton();
             }
+            // Keep `hasImage` as-is: a captured photo only becomes "applied"
+            // after the user taps the capture button, which calls viewHasImage().
         }
 
         // ============================================================
@@ -1604,7 +1617,7 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             // ✅ Trash clicked — bring the Image Link section back
             showImageLinkSection();
 
-            viewNoImage();
+            viewNoImage();   // ← also refreshes Search button (shows it if name has text)
         });
 
         // ============================================================
@@ -1760,6 +1773,8 @@ $allCategoryGroups = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         // ============================================================
         window.addEventListener('load', function () {
             viewNoImage();
+            refreshSearchButton();   // ← ensures Search starts hidden (name empty)
+
             // Add Product page has no existing image → show the Image Link section
             if (!base64Input.value) {
                 showImageLinkSection();
