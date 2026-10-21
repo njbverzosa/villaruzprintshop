@@ -75,6 +75,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             position: relative;
             overflow-x: hidden;
 
+            /* ✅ Static gradient background — no fixed attachment = smooth scroll */
             background-color: #eef2ff;
             background-image:
                 radial-gradient(at 8% 12%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
@@ -82,18 +83,20 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 radial-gradient(at 78% 88%, rgba(236, 72, 153, 0.14) 0px, transparent 55%),
                 radial-gradient(at 12% 92%, rgba(16, 185, 129, 0.14) 0px, transparent 55%),
                 linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
-            background-attachment: fixed;
         }
 
+        /* ✅ Static blurred blobs — no animation, no fixed positioning,
+              painted once on the GPU layer, never repaints on scroll. */
         body::before,
         body::after {
             content: "";
-            position: fixed;
+            position: absolute;
             border-radius: 50%;
             filter: blur(90px);
             z-index: 0;
             pointer-events: none;
             opacity: 0.55;
+            transform: translateZ(0);
         }
 
         body::before {
@@ -102,7 +105,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             top: -160px;
             left: -140px;
             background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
-            animation: floatBlob 18s ease-in-out infinite;
         }
 
         body::after {
@@ -111,18 +113,14 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             bottom: -200px;
             right: -180px;
             background: radial-gradient(circle, rgba(236, 72, 153, 0.32), transparent 70%);
-            animation: floatBlob 22s ease-in-out infinite reverse;
-        }
-
-        @keyframes floatBlob {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50%      { transform: translate(30px, -30px) scale(1.08); }
         }
 
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
 
         /* ========== SIDEBAR - LEFT SIDE ========== */
@@ -518,7 +516,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             transform: translateY(-50%);
             width: 28px;
             height: 28px;
-            display: none;                     /* hidden when empty */
+            display: none;
             align-items: center;
             justify-content: center;
             background: transparent;
@@ -1461,7 +1459,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                             <div class="product-image-wrapper">
                                 <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                    class="product-image-clickable">
+                                    class="product-image-clickable" loading="lazy" decoding="async">
 
                                 <button type="button" class="menu-toggle-btn" title="Options" aria-label="Options">
                                     <i class="fas fa-ellipsis-v"></i>
