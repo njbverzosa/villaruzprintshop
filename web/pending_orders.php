@@ -42,7 +42,6 @@ if (empty($selectedDeliveryNumber)) {
     exit;
 }
 
-// ✅ Order by order_id, then id
 $stmt = $pdo->prepare("
     SELECT * FROM order_status_history 
     WHERE delivery_number = ? 
@@ -110,8 +109,8 @@ if (empty($customerName) && !empty($orderItems)) {
 $monthYear = $deliveryInfo['delivery_m_y'] ?? '';
 $deliveryNumber = $deliveryInfo['delivery_number'] ?? $selectedDeliveryNumber;
 $currentStatus = $deliveryInfo['status'] ?? 'PENDING';
+$deliveryAddress = $deliveryInfo['delivery_address'] ?? '';
 
-// ✅ Prefer for_deliveries.total_amount if it's set, otherwise sum the rows
 $totalFromRows = 0;
 foreach ($orderItems as $item) {
     $totalFromRows += floatval($item['total_amount'] ?? 0);
@@ -121,7 +120,6 @@ $totalAmount = isset($deliveryInfo['total_amount']) && floatval($deliveryInfo['t
     ? floatval($deliveryInfo['total_amount'])
     : $totalFromRows;
 
-// ✅ Compute discount info: compare sum of rows vs stored total
 $subTotalFromRows = $totalFromRows;
 $discountAmount = 0;
 $discountPercent = 0;
@@ -131,7 +129,6 @@ if ($totalAmount > 0 && $subTotalFromRows > 0 && $totalAmount < $subTotalFromRow
     $discountPercent = ($discountAmount / $subTotalFromRows) * 100;
 }
 
-// ✅ Format discount percent without trailing ".00"
 $discountPercentDisplay = rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.');
 if ($discountPercentDisplay === '' || $discountPercentDisplay === '.') {
     $discountPercentDisplay = '0';
@@ -161,7 +158,6 @@ function formatDeliveryDate($date)
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Pending Orders | <?= htmlspecialchars($selectedDeliveryNumber) ?> | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -409,6 +405,14 @@ function formatDeliveryDate($date)
             overflow: hidden;
         }
 
+        /* ✅ Single scroll container: header + table slide together */
+        .orders-table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+
+        /* ✅ Header inside the scroll container, min-width matches table */
         .delivery-header {
             background: black;
             color: white;
@@ -417,20 +421,67 @@ function formatDeliveryDate($date)
             font-size: 14px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            align-items: flex-start;
+            flex-wrap: nowrap;
+            gap: 20px;
+            min-width: 780px;
+            box-sizing: border-box;
         }
 
-        .delivery-header .customer-info,
-        .delivery-header .delivery-date-info {
+        /* ✅ DISPLAY MODE — inline, single line */
+        .delivery-header .customer-info {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            gap: 15px;
+            align-items: center;
+            min-width: 0;
+        }
+
+        /* ✅ EDIT MODE — stack vertically so Address goes UNDER Ordered By */
+        body.edit-active .delivery-header .customer-info {
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .delivery-header .info-row {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .delivery-header .delivery-date-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
         .delivery-header i {
             margin-right: 5px;
+        }
+
+        /* ✅ EDIT INPUTS */
+        .edit-input {
+            background: white;
+            color: #1e293b;
+            padding: 4px 8px;
+            border: 2px solid #8b5cf6;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 100%;
+            max-width: 300px;
+            display: none;
+        }
+
+        .edit-input:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
         #deliveryDateInput {
@@ -440,44 +491,13 @@ function formatDeliveryDate($date)
             border: 2px solid #8b5cf6;
             border-radius: 6px;
             font-size: 13px;
+            display: none;
         }
 
         #deliveryDateInput:focus {
             outline: none;
             border-color: #7c3aed;
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-        }
-
-        @media (max-width: 480px) {
-            .delivery-header {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 10px 15px;
-                gap: 6px;
-            }
-
-            .delivery-header .customer-info,
-            .delivery-header .delivery-date-info {
-                font-size: 12px;
-                width: 100%;
-            }
-
-            .delivery-header .delivery-date-info {
-                flex-wrap: wrap;
-            }
-
-            .delivery-header i {
-                font-size: 12px;
-                width: 16px;
-                margin-right: 3px;
-            }
-        }
-
-        /* ✅ Horizontal scroll for mobile — no data wrapping */
-        .orders-table-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            width: 100%;
         }
 
         .orders-table {
@@ -506,7 +526,6 @@ function formatDeliveryDate($date)
             background: #f8fafc;
         }
 
-        /* ✅ Sub Total / Discount rows */
         .subtotal-row {
             background: #f8fafc;
             font-weight: 500;
@@ -584,6 +603,40 @@ function formatDeliveryDate($date)
         }
 
         @media (max-width: 480px) {
+            .delivery-header {
+                padding: 10px 15px;
+                gap: 12px;
+            }
+
+            .delivery-header .customer-info {
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: center;
+            }
+
+            /* ✅ On mobile edit mode still stacks address under Ordered By */
+            body.edit-active .delivery-header .customer-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .delivery-header .info-row {
+                font-size: 12px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .delivery-header i {
+                font-size: 12px;
+                width: 16px;
+                margin-right: 3px;
+            }
+
+            .edit-input {
+                max-width: 100%;
+            }
+
             .orders-table td.drag-handle {
                 width: 28px;
                 padding: 4px 4px !important;
@@ -624,6 +677,14 @@ function formatDeliveryDate($date)
 
         .receipt-btn i {
             font-size: 14px;
+        }
+
+        .receipt-btn.active-copy,
+        .receipt-btn.active-copy:hover {
+            background: transparent !important;
+            border-color: transparent !important;
+            color: #16a34a !important;
+            transform: none !important;
         }
 
         .status-wrapper {
@@ -822,9 +883,6 @@ function formatDeliveryDate($date)
             color: #64748b;
         }
 
-        /* ============================================================ */
-        /* TOTAL AMOUNT — SWAP BETWEEN SPAN & INPUT IN EDIT MODE         */
-        /* ============================================================ */
         #total-amount-display {
             font-weight: 700;
             display: inline-block;
@@ -1103,23 +1161,33 @@ function formatDeliveryDate($date)
             <?php else: ?>
                 <div class="orders-container">
                     <div class="delivery-group">
-                        <div class="delivery-header">
-                            <div class="customer-info">
-                                <i class="fas fa-user"></i> Ordered By: <?= htmlspecialchars($customerName) ?>
-                            </div>
-                            <div class="delivery-date-info" id="deliveryDateWrapper">
-                                <i class="fas fa-calendar"></i> Delivery Date:
-                                <span id="deliveryDateDisplay">
-                                    <?php
-                                    $formattedDate = formatDeliveryDate($deliveryInfo['delivery_date'] ?? '');
-                                    echo htmlspecialchars($formattedDate);
-                                    ?>
-                                </span>
-                                <input type="date" id="deliveryDateInput" style="display: none;"
-                                    value="<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>">
-                            </div>
-                        </div>
                         <div class="orders-table-container">
+                            <div class="delivery-header">
+                                <div class="customer-info">
+                                    <div class="info-row">
+                                        <span><i class="fas fa-user"></i> Ordered By:</span>
+                                        <span id="customerNameDisplay"><?= htmlspecialchars($customerName) ?></span>
+                                        <input type="text" id="customerNameInput" class="edit-input" value="<?= htmlspecialchars($customerName) ?>">
+                                    </div>
+                                    <div class="info-row" id="deliveryAddressWrapper" style="display: none;">
+                                        <span><i class="fas fa-map-marker-alt"></i> Delivery Address:</span>
+                                        <input type="text" id="deliveryAddressInput" class="edit-input" value="<?= htmlspecialchars($deliveryAddress) ?>">
+                                    </div>
+                                </div>
+                                <div class="delivery-date-info" id="deliveryDateWrapper">
+                                    <div class="info-row">
+                                        <span><i class="fas fa-calendar"></i> Delivery Date:</span>
+                                        <span id="deliveryDateDisplay">
+                                            <?php
+                                            $formattedDate = formatDeliveryDate($deliveryInfo['delivery_date'] ?? '');
+                                            echo htmlspecialchars($formattedDate);
+                                            ?>
+                                        </span>
+                                        <input type="date" id="deliveryDateInput"
+                                            value="<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>">
+                                    </div>
+                                </div>
+                            </div>
                             <table class="orders-table" id="orders-table">
                                 <tbody>
                                     <?php foreach ($orderItems as $index => $item): ?>
@@ -1144,7 +1212,6 @@ function formatDeliveryDate($date)
                                         </tr>
                                     <?php endforeach; ?>
 
-                                    <!-- ✅ SUB TOTAL ROW (shown only if a discount exists) -->
                                     <tr class="subtotal-row" id="subtotal-row"
                                         style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
                                         <td></td>
@@ -1159,7 +1226,6 @@ function formatDeliveryDate($date)
                                         <td></td>
                                     </tr>
 
-                                    <!-- ✅ DISCOUNT ROW (shown only if a discount exists) -->
                                     <tr class="subtotal-row discount-row" id="discount-row"
                                         style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
                                         <td></td>
@@ -1175,7 +1241,6 @@ function formatDeliveryDate($date)
                                         <td></td>
                                     </tr>
 
-                                    <!-- ✅ TOTAL ROW -->
                                     <tr class="total-row">
                                         <td></td>
                                         <td></td>
@@ -1198,14 +1263,11 @@ function formatDeliveryDate($date)
                             </table>
                         </div>
                         <div class="receipt-actions">
-                            <button class="receipt-btn delivery-receipt" onclick="copyReceiptLink('delivery')">
+                            <button class="receipt-btn delivery-receipt" id="delivery-receipt-btn" onclick="handleReceiptClick('delivery', this)">
                                 Delivery Receipt
                             </button>
-                            <button class="receipt-btn billing-receipt" onclick="copyReceiptLink('billing')">
+                            <button class="receipt-btn billing-receipt" id="billing-receipt-btn" onclick="handleReceiptClick('billing', this)">
                                 Billing Receipt
-                            </button>
-                            <button class="receipt-btn download-excel" id="download-excel-btn">
-                                Download Excel
                             </button>
                             <button class="receipt-btn edit-mode-btn" id="edit-mode-btn">
                                 Edit
@@ -1288,6 +1350,10 @@ function formatDeliveryDate($date)
         const monthYear = '<?= htmlspecialchars($monthYear) ?>';
         const encodedMonthYear = '<?= $encodedMonthYear ?>';
         const originalDeliveryDate = '<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>';
+        const originalDeliveryAddress = '<?= htmlspecialchars($deliveryAddress) ?>';
+        const originalCustomerName = '<?= htmlspecialchars($customerName) ?>';
+
+        const isInApp = typeof window.AndroidBiometric !== 'undefined';
 
         let isEditMode = false;
         let originalData = new Map();
@@ -1297,73 +1363,57 @@ function formatDeliveryDate($date)
         let currentGrandTotal = 0;
         let isManuallyAdjusted = false;
 
-        // ========== COPY RECEIPT LINK ==========
-        async function copyReceiptLink(type) {
+        // ========== HANDLE RECEIPT CLICK ==========
+        function handleReceiptClick(type, btnElement) {
             const baseUrl = 'https://villaruz-print-shop-and-general-merchandise.shop/';
             const receiptUrl = type === 'delivery'
                 ? baseUrl + 'delivery_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber)
                 : baseUrl + 'billing_receipt.php?delivery_number=' + encodeURIComponent(deliveryNumber);
 
-            const receiptLabel = type === 'delivery' ? 'Delivery Receipt' : 'Billing Receipt';
+            if (isInApp) {
+                copyToClipboard(receiptUrl, btnElement);
+            } else {
+                window.open(receiptUrl, '_blank');
+            }
+        }
+
+        async function copyToClipboard(text, btnElement) {
+            const originalText = btnElement.innerHTML;
 
             try {
-                await navigator.clipboard.writeText(receiptUrl);
-                showCopyLinkModal(receiptLabel, receiptUrl);
+                await navigator.clipboard.writeText(text);
+                
+                btnElement.innerHTML = 'Link Copied!';
+                btnElement.classList.add('active-copy');
+
+                setTimeout(() => {
+                    btnElement.innerHTML = originalText;
+                    btnElement.classList.remove('active-copy');
+                }, 2000);
+
             } catch (err) {
                 const tempInput = document.createElement('input');
-                tempInput.value = receiptUrl;
+                tempInput.value = text;
                 document.body.appendChild(tempInput);
                 tempInput.select();
                 tempInput.setSelectionRange(0, 99999);
                 try {
                     document.execCommand('copy');
-                    showCopyLinkModal(receiptLabel, receiptUrl);
+                    
+                    btnElement.innerHTML = 'Link Copied!';
+                    btnElement.classList.add('active-copy');
+
+                    setTimeout(() => {
+                        btnElement.innerHTML = originalText;
+                        btnElement.classList.remove('active-copy');
+                    }, 2000);
+
                 } catch (fallbackErr) {
-                    prompt('Copy this link manually:', receiptUrl);
+                    prompt('Copy this link manually:', text);
                 } finally {
                     document.body.removeChild(tempInput);
                 }
             }
-        }
-
-        // ========== MODAL: COPY LINK NOTIFICATION ==========
-        function showCopyLinkModal(label, url) {
-            const existingModal = document.querySelector('.system-modal-overlay');
-            if (existingModal) existingModal.remove();
-
-            const overlay = document.createElement('div');
-            overlay.className = 'system-modal-overlay';
-
-            overlay.innerHTML = `
-                <div class="system-modal">
-                    <div class="system-modal-header">
-                        <i class="fas fa-shop"></i>
-                        <span>✅ LINK COPIED</span>
-                    </div>
-                    <div class="system-modal-content">
-                        <div class="system-modal-message success">
-                            <i class="fas fa-check-circle"></i>
-                            <div class="message-text">
-                                <strong>${escapeHtml(label)}</strong> link has been copied:<br><br>
-                                <code style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-size:12px;word-break:break-all;display:block;">
-                                    ${escapeHtml(url)}
-                                </code>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="system-modal-footer">
-                        <button class="system-modal-btn primary" data-action="ok">OK</button>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(overlay);
-
-            overlay.querySelectorAll('.system-modal-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    overlay.remove();
-                });
-            });
         }
 
         // ========== MODAL: CONFIRMATION ==========
@@ -1419,7 +1469,7 @@ function formatDeliveryDate($date)
         }
 
         // ============================================================
-        // ✅ DRAG-AND-DROP — reloads page after saving
+        // ✅ DRAG-AND-DROP
         // ============================================================
         (function initDragAndDrop() {
             const tbody = document.querySelector('#orders-table tbody');
@@ -1529,50 +1579,6 @@ function formatDeliveryDate($date)
             }
         })();
 
-        // ========== EXCEL DOWNLOAD ==========
-        document.getElementById('download-excel-btn')?.addEventListener('click', function () {
-            const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)');
-            const excelData = [];
-
-            excelData.push(['#', 'Unit', 'Item Description', 'Quantity', 'Unit Cost', 'Total Cost']);
-
-            let rowNumber = 1;
-            rows.forEach(row => {
-                const cells = row.cells;
-                const unit = cells[4]?.innerText || '';
-                const itemDescription = cells[2]?.innerText || '';
-                const quantity = cells[3]?.innerText || '0';
-                let unitCost = cells[5]?.innerText || '0';
-                let totalCost = cells[6]?.innerText || '0';
-
-                unitCost = unitCost.replace('₱', '').replace(/,/g, '').trim();
-                totalCost = totalCost.replace('₱', '').replace(/,/g, '').trim();
-
-                excelData.push([rowNumber, unit, itemDescription, quantity, unitCost, totalCost]);
-                rowNumber++;
-            });
-
-            excelData.push([]);
-            excelData.push(['', '', '', '', 'TOTAL:', '']);
-
-            const totalInput = document.getElementById('total-amount-input');
-            const totalSpan = document.getElementById('total-amount-display');
-            let rawTotal = '0';
-            if (isEditMode && totalInput) {
-                rawTotal = totalInput.value || '0';
-            } else if (totalSpan) {
-                rawTotal = totalSpan.textContent.replace('₱', '').replace(/,/g, '').trim();
-            }
-            excelData.push(['', '', '', '', '', rawTotal]);
-
-            const ws = XLSX.utils.aoa_to_sheet(excelData);
-            ws['!cols'] = [{ wch: 5 }, { wch: 10 }, { wch: 35 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, `Order_${deliveryNumber}`);
-            XLSX.writeFile(wb, `Order_${deliveryNumber}.xlsx`);
-        });
-
         function redirectToPendingFolderWith() {
             if (monthYear) {
                 window.location.href = 'pending_folder_with.php?month=' + encodeURIComponent(monthYear);
@@ -1665,7 +1671,6 @@ function formatDeliveryDate($date)
             else document.body.classList.remove('edit-active');
         }
 
-        // ✅ Update the Sub Total / Discount rows based on current numbers
         function updateDiscountRows() {
             const subtotalRow = document.getElementById('subtotal-row');
             const discountRow = document.getElementById('discount-row');
@@ -1689,7 +1694,6 @@ function formatDeliveryDate($date)
                     minimumFractionDigits: 2, maximumFractionDigits: 2
                 });
 
-                // ✅ Strip trailing ".00" — 4.00 → 4, 4.50 → 4.5, 4.25 → 4.25
                 if (discountPercentEl) {
                     discountPercentEl.textContent = parseFloat(discountPct.toFixed(2)).toString();
                 }
@@ -1742,6 +1746,22 @@ function formatDeliveryDate($date)
             if (dateDisplay && dateInput) {
                 dateDisplay.style.display = 'none';
                 dateInput.style.display = 'inline-block';
+            }
+
+            const customerDisplay = document.getElementById('customerNameDisplay');
+            const customerInput = document.getElementById('customerNameInput');
+            if (customerDisplay && customerInput) {
+                customerDisplay.style.display = 'none';
+                customerInput.style.display = 'inline-block';
+            }
+
+            // ✅ SHOW ADDRESS ROW — it will render UNDER Ordered By because
+            //    body.edit-active flips .customer-info to column
+            const addressWrapper = document.getElementById('deliveryAddressWrapper');
+            const addressInput = document.getElementById('deliveryAddressInput');
+            if (addressWrapper && addressInput) {
+                addressWrapper.style.display = 'flex';
+                addressInput.style.display = 'inline-block';
             }
 
             const rows = document.querySelectorAll('#orders-table tbody tr:not(.total-row):not(.subtotal-row)');
@@ -1831,6 +1851,12 @@ function formatDeliveryDate($date)
             const dateInput = document.getElementById('deliveryDateInput');
             const updatedDeliveryDate = dateInput ? dateInput.value : '';
 
+            const addressInput = document.getElementById('deliveryAddressInput');
+            const updatedAddress = addressInput ? addressInput.value : '';
+
+            const customerInput = document.getElementById('customerNameInput');
+            const updatedCustomerName = customerInput ? customerInput.value : '';
+
             recalcBaseGrandTotalFromRows();
 
             rows.forEach((row, index) => {
@@ -1872,6 +1898,8 @@ function formatDeliveryDate($date)
             if (!isValid) return;
 
             const dateChanged = updatedDeliveryDate && updatedDeliveryDate !== originalDeliveryDate;
+            const addressChanged = updatedAddress && updatedAddress !== originalDeliveryAddress;
+            const customerChanged = updatedCustomerName && updatedCustomerName !== originalCustomerName;
 
             let hasChanges = false;
             for (const item of updatedItems) {
@@ -1888,23 +1916,25 @@ function formatDeliveryDate($date)
             const finalTotal = getTotalInputValue();
             if (Math.abs(finalTotal - baseGrandTotal) > 0.001) hasChanges = true;
 
-            if (!hasChanges && !dateChanged) {
+            if (!hasChanges && !dateChanged && !addressChanged && !customerChanged) {
                 window.location.reload();
                 return;
             }
 
             let confirmMessage = 'Are you sure you want to update the order?';
             if (dateChanged) confirmMessage += '<br><br>📅 Delivery Date will be changed to: ' + updatedDeliveryDate;
+            if (addressChanged) confirmMessage += '<br><br>📍 Delivery Address will be changed to: ' + updatedAddress;
+            if (customerChanged) confirmMessage += '<br><br>👤 Customer Name will be changed to: ' + updatedCustomerName;
             if (Math.abs(finalTotal - baseGrandTotal) > 0.001) {
                 confirmMessage += '<br><br>💰 Grand Total will be saved as: ' + formatPeso(finalTotal);
             }
 
             showConfirmModal('UPDATE ORDER ITEMS', confirmMessage, async () => {
-                await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, finalTotal);
+                await updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, finalTotal, updatedAddress, addressChanged, updatedCustomerName, customerChanged);
             });
         }
 
-        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, finalTotal) {
+        async function updateOrderItems(updatedItems, updatedDeliveryDate, dateChanged, finalTotal, updatedAddress, addressChanged, updatedCustomerName, customerChanged) {
             try {
                 const formData = new FormData();
                 formData.append('action', 'update_order_items');
@@ -1921,6 +1951,14 @@ function formatDeliveryDate($date)
 
                 if (dateChanged && updatedDeliveryDate) {
                     formData.append('delivery_date', updatedDeliveryDate);
+                }
+
+                if (addressChanged && updatedAddress) {
+                    formData.append('delivery_address', updatedAddress);
+                }
+
+                if (customerChanged && updatedCustomerName) {
+                    formData.append('customer_name', updatedCustomerName);
                 }
 
                 formData.append('grand_total', finalTotal.toFixed(2));
@@ -2081,7 +2119,6 @@ function formatDeliveryDate($date)
             baseGrandTotal = sum;
             currentGrandTotal = parseFloat(getTotalInputValue()) || 0;
 
-            // Sync discount rows with initial values
             updateDiscountRows();
         })();
 

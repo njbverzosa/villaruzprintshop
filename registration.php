@@ -2,7 +2,6 @@
 // register.php – Customer registration (desktop + mobile)
 
 require_once __DIR__ . '/DB_Conn/config.php';
-include __DIR__ . '/app_version.php';
 
 // ============================================================
 // 2. HELPER FUNCTIONS

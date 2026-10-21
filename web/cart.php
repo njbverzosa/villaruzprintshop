@@ -732,6 +732,10 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             cursor: pointer;
             margin-top: 10px;
             transition: 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
         }
 
         .checkout-btn:hover:not(:disabled) {
@@ -740,8 +744,9 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
         }
 
         .checkout-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.8;
             cursor: not-allowed;
+            transform: none !important;
         }
 
         .clear-cart-btn {
@@ -967,6 +972,22 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
         .delivery-address-note i {
             color: #3b82f6;
             margin-right: 4px;
+        }
+
+        /* ✅ SPINNER FOR BUTTON */
+        .btn-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: btn-spin 0.8s linear infinite;
+        }
+
+        @keyframes btn-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
@@ -1397,7 +1418,6 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 
             // ============================================================
             // ✅ UPPERCASE HELPER (Customer Name + Delivery Address)
-            //    Every letter becomes A-Z while typing.
             // ============================================================
             function toUpperCaseValue(str) {
                 if (!str) return str;
@@ -1622,7 +1642,7 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
 
             function updateCheckoutButtonText(isExistingOrder) {
                 const checkoutBtn = document.getElementById('checkoutBtn');
-                if (checkoutBtn) {
+                if (checkoutBtn && !checkoutBtn.disabled) {
                     if (isExistingOrder) {
                         checkoutBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Now';
                     } else {
@@ -1726,30 +1746,31 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
             }
 
             // ============================================================
-            // CHECKOUT
+            // CHECKOUT (UPDATED: Spinner + 5 Sec Delay, No Confirm)
             // ============================================================
             async function proceedToCheckout() {
-                const existingDeliveryNumber = existingDeliveryNumberInput ? existingDeliveryNumberInput.value.trim() :
-                    '';
+                const existingDeliveryNumber = existingDeliveryNumberInput ? existingDeliveryNumberInput.value.trim() : '';
 
+                // Prevent double clicks
+                if (checkoutBtn.disabled) return;
+
+                // ✅ 1. SET BUTTON TO SPINNER STATE
+                checkoutBtn.disabled = true;
+                checkoutBtn.innerHTML = '<span class="btn-spinner"></span> Processing...';
+
+                // ✅ 2. WAIT 5 SECONDS BEFORE EXECUTING
+                await new Promise(resolve => setTimeout(resolve, 5000));
+
+                // ✅ 3. EXECUTE THE FETCH REQUEST
                 if (existingOrderData && existingOrderData.exists) {
                     const status = (existingOrderData.status || '').toUpperCase();
-                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status ===
-                        'SHIPPED') {
-                        showToast('This order has already been ' + status.toLowerCase() +
-                            '. You cannot add items to it.', 'error');
+                    if (status === 'PAID' || status === 'COMPLETED' || status === 'DELIVERED' || status === 'SHIPPED') {
+                        showToast('This order has already been ' + status.toLowerCase() + '. You cannot add items to it.', 'error');
+                        checkoutBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Now';
+                        checkoutBtn.disabled = false;
                         return;
                     }
 
-                    const newTotal = parseFloat(existingOrderData.total_amount) + subtotalAmount;
-
-                    const confirmed = confirm(
-                        'Click OK to proceed!'
-                    );
-
-                    if (!confirmed) return;
-
-                    showLoading();
                     try {
                         const formData = new FormData();
                         formData.append('action', 'add_to_existing_delivery');
@@ -1763,55 +1784,46 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                         });
                         const data = await response.json();
 
-                        hideLoading();
-
                         if (data.success) {
-                            showToast(
-                                'Item(s) added!',
-                                'success'
-                            );
+                            showToast('Item(s) added!', 'success');
                             setTimeout(function () {
-                                window.location.href = 'pending_folder.php';
-                            }, 2000);
+                                // Redirect using API URL
+                                const redirectUrl = data.redirect_url || ('pending_orders.php?delivery_number=' + encodeURIComponent(data.delivery_number));
+                                window.location.href = redirectUrl;
+                            }, 1500);
                         } else {
                             showToast(data.message || 'Error adding items to order', 'error');
+                            checkoutBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Now';
+                            checkoutBtn.disabled = false;
                         }
                     } catch (err) {
                         console.error('Error:', err);
-                        hideLoading();
                         showToast('Network error. Please try again.', 'error');
+                        checkoutBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Now';
+                        checkoutBtn.disabled = false;
                     }
                     return;
                 }
 
+                // New Order Flow
                 const customerName = document.getElementById('customerName').value.trim();
                 let deliveryAddress = document.getElementById('deliveryAddress').value.trim();
                 const deliveryDate = deliveryDateInput ? deliveryDateInput.value : '';
 
                 if (!deliveryAddress) {
                     showToast('Please enter complete delivery address', 'error');
+                    checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Order';
+                    checkoutBtn.disabled = false;
                     return;
                 }
 
                 if (!deliveryDate) {
                     showToast('Please select delivery date', 'error');
+                    checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Order';
+                    checkoutBtn.disabled = false;
                     return;
                 }
 
-                const formattedDate = new Date(deliveryDate).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-
-                const confirmed = confirm(
-                    'Click OK to proceed!'
-                );
-
-                if (!confirmed) return;
-
-                showLoading();
                 try {
                     const formData = new FormData();
                     formData.append('action', 'checkout');
@@ -1830,23 +1842,23 @@ $cartTotalItems = intval($cartCountResult['total_items'] ?? 0);
                     });
                     const data = await response.json();
 
-                    hideLoading();
-
                     if (data.success) {
-                        showToast(
-                            'Order placed!',
-                            'success'
-                        );
+                        showToast('Order placed!', 'success');
                         setTimeout(function () {
-                            window.location.href = 'pending_folder.php';
-                        }, 2500);
+                            // Redirect using API URL
+                            const redirectUrl = data.redirect_url || ('pending_orders.php?delivery_number=' + encodeURIComponent(data.delivery_number));
+                            window.location.href = redirectUrl;
+                        }, 1500);
                     } else {
                         showToast(data.message || 'Error placing order', 'error');
+                        checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Order';
+                        checkoutBtn.disabled = false;
                     }
                 } catch (err) {
                     console.error('Error:', err);
-                    hideLoading();
                     showToast('Network error. Please try again.', 'error');
+                    checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Order';
+                    checkoutBtn.disabled = false;
                 }
             }
 

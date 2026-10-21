@@ -70,7 +70,7 @@ if (!empty($qrData)) {
         body {
             background: #e2e8f0;
             font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
-            padding: 2rem 1rem;
+            padding: 5rem 1rem 2rem 1rem; /* Added top padding to make room for fixed button */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -78,12 +78,15 @@ if (!empty($qrData)) {
             min-height: 100vh;
         }
 
+        /* ✅ CENTERED AND TOP FIXED BUTTON */
         .button-container {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 1000;
             display: flex;
+            justify-content: center;
             gap: 10px;
         }
         
@@ -435,6 +438,9 @@ if (!empty($qrData)) {
         }
 
         @media (max-width: 640px) {
+            body {
+                padding-top: 5rem; /* Ensure top spacing for the button on mobile */
+            }
             .bill-paper {
                 padding: 1rem;
             }
@@ -486,13 +492,6 @@ if (!empty($qrData)) {
             .info-grid {
                 flex-direction: column;
                 gap: 0.4rem;
-            }
-            .button-container {
-                position: static;
-                justify-content: center;
-                margin-bottom: 0.8rem;
-                display: flex;
-                gap: 8px;
             }
             .signature-block {
                 flex-direction: column;
