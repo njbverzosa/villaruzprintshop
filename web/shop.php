@@ -85,35 +85,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
         }
 
-        /* ✅ Static blurred blobs — no animation, no fixed positioning,
-              painted once on the GPU layer, never repaints on scroll. */
-        body::before,
-        body::after {
-            content: "";
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(90px);
-            z-index: 0;
-            pointer-events: none;
-            opacity: 0.55;
-            transform: translateZ(0);
-        }
-
-        body::before {
-            width: 480px;
-            height: 480px;
-            top: -160px;
-            left: -140px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
-        }
-
-        body::after {
-            width: 520px;
-            height: 520px;
-            bottom: -200px;
-            right: -180px;
-            background: radial-gradient(circle, rgba(236, 72, 153, 0.32), transparent 70%);
-        }
 
         .app-wrapper {
             flex: 1;
