@@ -156,53 +156,54 @@ $loginSuccess = false;
 $selectedAcc = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) {
+    // ✅ FIX: Catch CSRF error nicely instead of a white page
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        die('Invalid CSRF token');
-    }
+        $errors[] = 'Your session has expired or is invalid. Please refresh the page and try again.';
+    } else {
+        $selectedAcc = trim($_POST['acc_number'] ?? '');
+        $password = $_POST['password'] ?? '';
 
-    $selectedAcc = trim($_POST['acc_number'] ?? '');
-    $password = $_POST['password'] ?? '';
+        if (empty($selectedAcc))
+            $errors[] = 'Account Number cannot be empty.';
+        if (empty($password))
+            $errors[] = 'Password cannot be empty.';
 
-    if (empty($selectedAcc))
-        $errors[] = 'Account Number cannot be empty.';
-    if (empty($password))
-        $errors[] = 'Password cannot be empty.';
+        if (empty($errors)) {
+            $stmt = $pdo->prepare("
+                SELECT id, password, acc_number, phone_number, f_name,
+                       email, biometric_enrolled, biometric_id
+                FROM customers
+                WHERE acc_number = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$selectedAcc]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("
-            SELECT id, password, acc_number, phone_number, f_name,
-                   email, biometric_enrolled, biometric_id
-            FROM customers
-            WHERE acc_number = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$selectedAcc]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$user) {
+                $errors[] = 'This account is not registered as a Customer. Please check your Account Number or register a Customer account.';
+            } elseif (!password_verify($password, $user['password'])) {
+                $errors[] = 'Invalid password. Please try again.';
+            } else {
+                date_default_timezone_set('Asia/Manila');
 
-        if (!$user) {
-            $errors[] = 'This account is not registered as a Customer. Please check your Account Number or register a Customer account.';
-        } elseif (!password_verify($password, $user['password'])) {
-            $errors[] = 'Invalid password. Please try again.';
-        } else {
-            date_default_timezone_set('Asia/Manila');
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_role'] = 'Customer';
+                $_SESSION['acc_number'] = $user['acc_number'];
 
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_role'] = 'Customer';
-            $_SESSION['acc_number'] = $user['acc_number'];
+                setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
+                setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
+                setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
-            setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
-            setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
-            setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
+                updateLoginMeta($pdo, $user['id'], $loginType);
 
-            updateLoginMeta($pdo, $user['id'], $loginType);
+                $loginSuccess = true;
 
-            $loginSuccess = true;
+                $redirectUrl = getCustomerRedirect($isInApp, $isMobileBrowser, $user);
 
-            $redirectUrl = getCustomerRedirect($isInApp, $isMobileBrowser, $user);
-
-            header('Location: ' . $redirectUrl);
-            exit;
+                header('Location: ' . $redirectUrl);
+                exit;
+            }
         }
     }
 }
