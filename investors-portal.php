@@ -262,8 +262,7 @@ if (isset($_SESSION['exit_message'])) {
     <meta http-equiv="Expires" content="0">
     <title>Investor Login | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-    <!-- Google Fonts for Poppins -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -294,7 +293,6 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         /* ========== APP SHELL ========== */
-        /* Mobile defaults: full screen */
         .app-shell {
             flex: 1;
             display: flex;
@@ -318,7 +316,34 @@ if (isset($_SESSION['exit_message'])) {
             flex-direction: column;
             width: 100%;
             max-width: 420px;
-            margin: 0 auto; /* Center horizontally */
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* ✅ BACK ARROW */
+        .back-arrow {
+            position: absolute;
+            top: -6px;
+            left: 0;
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: color 0.2s ease, background 0.2s ease;
+            z-index: 2;
+        }
+
+        .back-arrow:hover {
+            color: #1e293b;
+            background: #f1f5f9;
+        }
+
+        .back-arrow i {
+            font-size: 18px;
         }
 
         /* ========== LOGO ========== */
@@ -330,7 +355,6 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .logo-stack .main-logo {
-            /* Increased mobile logo size */
             width: 130px;
             height: 130px;
             object-fit: contain;
@@ -625,7 +649,7 @@ if (isset($_SESSION['exit_message'])) {
             flex-shrink: 0;
         }
 
-        /* ========== REDESIGNED REGISTER LINK (Not a button) ========== */
+        /* ========== REGISTER LINK ========== */
         .register-footer {
             margin-top: 30px;
             padding-top: 24px;
@@ -771,14 +795,18 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             .logo-stack .main-logo {
-                /* Increased desktop logo size */
                 width: 170px;
                 height: 170px;
             }
-            
-            /* Slight adjustment for desktop form spacing */
+
             .form-group {
                 margin-bottom: 18px;
+            }
+
+            /* ✅ Nudge back arrow a bit more outward on desktop for balance */
+            .back-arrow {
+                top: -8px;
+                left: -4px;
             }
         }
     </style>
@@ -788,6 +816,11 @@ if (isset($_SESSION['exit_message'])) {
     <div class="app-shell">
         <div class="auth-container">
             <div class="auth-card">
+
+                <!-- ✅ BACK ARROW — goes to role.php -->
+                <a href="role.php" class="back-arrow" title="Back to role selection" aria-label="Back to role selection">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
 
                 <!-- Logo -->
                 <div class="logo">
@@ -859,7 +892,6 @@ if (isset($_SESSION['exit_message'])) {
                         </div>
                     </form>
 
-                    <!-- ✅ REDESIGNED AS TEXT LINK -->
                     <div class="register-footer">
                         Don't have an account? <a href="join.php">Register here</a>
                     </div>

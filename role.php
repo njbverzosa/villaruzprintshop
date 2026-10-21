@@ -105,30 +105,18 @@
             gap: 25px;
         }
 
+        /* ✅ No hover/active transform or shadow */
         .option-card {
             display: flex;
             align-items: center;
-            /* ✅ Bigger gap between card content, divider, and download button */
-            gap: 20px;
-            padding: 18px 22px;
+            gap: 14px;
+            padding: 18px 18px;
             background: #f8fafc;
             border: 1.5px solid #e2e8f0;
             border-radius: 16px;
             color: #1e293b;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
-        .option-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.12);
-            border-color: #93c5fd;
-        }
-
-        .option-card:active {
-            transform: translateY(0);
-        }
-
-        /* ✅ The clickable "go to page" region inside a card */
         .option-card-main {
             display: flex;
             align-items: center;
@@ -174,7 +162,6 @@
         }
 
         /* ========== VERTICAL DIVIDER ========== */
-        /* ✅ Side gaps come from the card's `gap: 20px` plus this margin */
         .option-divider {
             width: 1px;
             align-self: stretch;
@@ -184,37 +171,47 @@
                     #cbd5e1 80%,
                     transparent 100%);
             flex-shrink: 0;
-            margin: 0 8px;
+            margin: 0 4px;
         }
 
-        /* ========== DOWNLOAD BUTTON ========== */
-        .option-links {
+        /* ========== ACTION BUTTONS (Continue Login / Download App) ========== */
+        .option-actions {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
             flex-shrink: 0;
         }
 
-        .option-links a {
+        /* ✅ No hover/active transform, shadow, or color shift */
+        .action-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: #3b82f6;
-            text-decoration: none;
-            padding: 8px;
-            line-height: 1;
+            gap: 6px;
+            padding: 8px 12px;
             border-radius: 10px;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-
-        .option-links a:hover {
-            background: #eff6ff;
-            color: #2563eb;
-        }
-
-        .option-links a i {
-            font-size: 28px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            border: 1px solid transparent;
             line-height: 1;
+        }
+
+        .action-btn i {
+            font-size: 12px;
+        }
+
+        .action-login {
+            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .action-download {
+            background: #ffffff;
+            color: #3b82f6;
+            border-color: #bfdbfe;
         }
 
         /* ========== DESKTOP VIEW ========== */
@@ -255,8 +252,8 @@
             }
 
             .option-card {
-                padding: 14px 16px;
-                gap: 14px;
+                padding: 14px 14px;
+                gap: 10px;
             }
 
             .option-icon {
@@ -273,13 +270,13 @@
                 font-size: 12px;
             }
 
-            .option-links a i {
-                font-size: 24px;
+            .action-btn {
+                padding: 7px 10px;
+                font-size: 11px;
             }
 
-            /* ✅ keep visible gap on small phones */
-            .option-divider {
-                margin: 0 4px;
+            .action-btn i {
+                font-size: 11px;
             }
         }
 
@@ -317,9 +314,8 @@
 
                 <div class="options-list">
 
-                    <!-- ✅ ADMIN — card has two separate click zones -->
+                    <!-- ✅ ADMIN -->
                     <div class="option-card">
-                        <!-- Click the icon/text area → go to admins-portal.php -->
                         <a href="admins-portal.php" class="option-card-main">
                             <div class="option-icon">
                                 <i class="fas fa-user-tie"></i>
@@ -330,20 +326,20 @@
                             </div>
                         </a>
 
-                        <!-- ✅ Vertical divider -->
                         <div class="option-divider" aria-hidden="true"></div>
 
-                        <!-- Click download icon → download APK (does NOT navigate) -->
-                        <div class="option-links">
+                        <div class="option-actions">
+                            <a href="admins-portal.php" class="action-btn action-login">
+                                <i class="fas fa-right-to-bracket"></i> Continue Login
+                            </a>
                             <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/admin_app.apk"
-                                download title="Download App"
-                                onclick="event.stopPropagation();">
-                                <i class="fas fa-download"></i>
+                                download class="action-btn action-download">
+                                <i class="fas fa-download"></i> Download App
                             </a>
                         </div>
                     </div>
 
-                    <!-- ✅ INVESTORS — download icon -->
+                    <!-- ✅ INVESTORS -->
                     <div class="option-card">
                         <div class="option-card-main">
                             <div class="option-icon">
@@ -351,23 +347,24 @@
                             </div>
                             <div class="option-text">
                                 <div class="option-title">Investors</div>
-                                <div class="option-desc">Download the app and register to view investments and reports
-                                </div>
+                                <div class="option-desc">Download the app and register to view investments and reports</div>
                             </div>
                         </div>
 
-                        <!-- ✅ Vertical divider -->
                         <div class="option-divider" aria-hidden="true"></div>
 
-                        <div class="option-links">
+                        <div class="option-actions">
+                            <a href="investors-portal.php" class="action-btn action-login">
+                                <i class="fas fa-right-to-bracket"></i> Continue Login
+                            </a>
                             <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/investor_app.apk"
-                                download title="Download App">
-                                <i class="fas fa-download"></i>
+                                download class="action-btn action-download">
+                                <i class="fas fa-download"></i> Download App
                             </a>
                         </div>
                     </div>
 
-                    <!-- ✅ CUSTOMERS — download icon -->
+                    <!-- ✅ CUSTOMERS -->
                     <div class="option-card">
                         <div class="option-card-main">
                             <div class="option-icon">
@@ -379,13 +376,15 @@
                             </div>
                         </div>
 
-                        <!-- ✅ Vertical divider -->
                         <div class="option-divider" aria-hidden="true"></div>
 
-                        <div class="option-links">
+                        <div class="option-actions">
+                            <a href="customers-portal.php" class="action-btn action-login">
+                                <i class="fas fa-right-to-bracket"></i> Continue Login
+                            </a>
                             <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/customer_app.apk"
-                                download title="Download App">
-                                <i class="fas fa-download"></i>
+                                download class="action-btn action-download">
+                                <i class="fas fa-download"></i> Download App
                             </a>
                         </div>
                     </div>
