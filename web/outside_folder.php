@@ -93,18 +93,67 @@ foreach ($distinctMonths as $monthYear) {
         }
 
         body {
-            background: #f1f5f9;
             color: #1e293b;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+
+            /* ✅ Soft modern mesh gradient background */
+            background-color: #eef2ff;
+            background-image:
+                radial-gradient(at 8% 12%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
+                radial-gradient(at 92% 6%,  rgba(59, 130, 246, 0.20) 0px, transparent 55%),
+                radial-gradient(at 78% 88%, rgba(236, 72, 153, 0.14) 0px, transparent 55%),
+                radial-gradient(at 12% 92%, rgba(16, 185, 129, 0.14) 0px, transparent 55%),
+                linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
+            background-attachment: fixed;
+        }
+
+        /* ✅ Subtle floating blobs for depth */
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+
+        body::before {
+            width: 480px;
+            height: 480px;
+            top: -160px;
+            left: -140px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
+            animation: floatBlob 18s ease-in-out infinite;
+        }
+
+        body::after {
+            width: 520px;
+            height: 520px;
+            bottom: -200px;
+            right: -180px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.32), transparent 70%);
+            animation: floatBlob 22s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatBlob {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50%      { transform: translate(30px, -30px) scale(1.08); }
         }
 
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
+
 
         /* ========== SIDEBAR - LEFT SIDE ========== */
         .sidebar-wrapper {

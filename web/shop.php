@@ -38,8 +38,6 @@ if (!$userData) {
 $user = $userData;
 
 $stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY STR_TO_DATE(last_restocked, '%d %M %Y %h:%i %p') DESC");
-// $stmt = $pdo->prepare("SELECT * FROM merchandise_inventory ORDER BY product_image = 'no-image.jpg' DESC");
-
 $stmt->execute();
 $allProducts = $stmt->fetchAll();
 
@@ -70,11 +68,55 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         body {
-            background: #f1f5f9;
             color: #1e293b;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+
+            background-color: #eef2ff;
+            background-image:
+                radial-gradient(at 8% 12%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
+                radial-gradient(at 92% 6%,  rgba(59, 130, 246, 0.20) 0px, transparent 55%),
+                radial-gradient(at 78% 88%, rgba(236, 72, 153, 0.14) 0px, transparent 55%),
+                radial-gradient(at 12% 92%, rgba(16, 185, 129, 0.14) 0px, transparent 55%),
+                linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
+            background-attachment: fixed;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+
+        body::before {
+            width: 480px;
+            height: 480px;
+            top: -160px;
+            left: -140px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
+            animation: floatBlob 18s ease-in-out infinite;
+        }
+
+        body::after {
+            width: 520px;
+            height: 520px;
+            bottom: -200px;
+            right: -180px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.32), transparent 70%);
+            animation: floatBlob 22s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatBlob {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50%      { transform: translate(30px, -30px) scale(1.08); }
         }
 
         .app-wrapper {
@@ -170,6 +212,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             margin-bottom: 10px;
             font-weight: bold;
         }
+
         /* ========== BURGER BUTTON (Mobile Only) ========== */
         .burger-btn {
             background: none;
@@ -336,8 +379,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-
-
         /* ✅ White dropdown box */
         .card-dropdown {
             position: absolute;
@@ -414,7 +455,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             white-space: nowrap;
         }
 
-
         /* ========== SEARCH & ADD PRODUCT ========== */
         .shop-controls {
             display: flex;
@@ -423,7 +463,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             padding: 15px 25px;
         }
 
-        /* Row 1: search + clear + add */
         .shop-controls-row {
             display: flex;
             align-items: center;
@@ -445,20 +484,21 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             min-width: 0;
         }
 
-        .search-input i {
+        .search-input i.fa-search {
             position: absolute;
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: #94a3b8;
+            pointer-events: none;
         }
 
         .search-input input {
             width: 100%;
-            padding: 10px 15px 10px 45px;
+            padding: 10px 45px 10px 45px;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 30px;
+            border-radius: 10px;
             font-size: 14px;
             transition: all 0.3s;
         }
@@ -470,30 +510,41 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
+        /* ✅ Clear button inside the search input (right end) */
         .clear-search-btn {
-            background: #e2e8f0;
-            border: none;
-            border-radius: 30px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 13px;
-            transition: all 0.3s;
-            white-space: nowrap;
-            display: flex;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            display: none;                     /* hidden when empty */
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0;
+            font-size: 13px;
         }
 
         .clear-search-btn:hover {
-            background: #cbd5e1;
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .clear-search-btn.show {
+            display: flex;
         }
 
         .add-product-btn {
             background: linear-gradient(145deg, #3b82f6, #6366f1);
             border: none;
             padding: 10px 24px;
-            border-radius: 30px;
+            border-radius: 10px;
             color: white;
             font-weight: 600;
             font-size: 13px;
@@ -517,7 +568,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             font-size: 14px;
         }
 
-        /* ========== ✅ CATEGORY FILTER (Row 2, under search bar) ========== */
+        /* ========== ✅ CATEGORY FILTER ========== */
         .category-filter-row {
             display: flex;
             align-items: center;
@@ -550,7 +601,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             color: #0f172a;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 30px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s;
             appearance: none;
@@ -597,14 +648,32 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
-
-
+        /* ============================================================
+           ✅ PRODUCT TITLE — ONE LINE ONLY, EXPAND ON CLICK (NO HOVER)
+           ============================================================ */
         .product-title {
             font-size: 15px;
             font-weight: 700;
             margin-bottom: 5px;
             color: #0f172a;
             line-height: 1.3;
+            width: 100%;
+            cursor: pointer;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
+            transition: all 0.2s ease;
+        }
+
+        .product-title.expanded {
+            -webkit-line-clamp: unset;
+            display: block;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
         }
 
         /* ✅ Price + Unit aligned in a grid row */
@@ -772,15 +841,8 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         @keyframes modalSlideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px) scale(0.95);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .desc-modal-header {
@@ -1057,7 +1119,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
         @keyframes popInConfirm {
             from { opacity: 0; transform: scale(0.92) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         /* ========== TOAST ========== */
@@ -1083,27 +1145,13 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
         }
 
         @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+            from { transform: translateX(0); opacity: 1; }
+            to   { transform: translateX(100%); opacity: 0; }
         }
 
         /* ========== LOADING OVERLAY ========== */
@@ -1142,13 +1190,8 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
         }
 
         /* ========== RESPONSIVE ========== */
@@ -1178,23 +1221,27 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
 
             .search-input input {
-                padding: 8px 12px 8px 35px;
+                padding: 8px 40px 8px 35px;
                 font-size: 13px;
+                border-radius: 5px;
             }
 
-            .search-input i {
+            .search-input i.fa-search {
                 left: 12px;
                 font-size: 13px;
             }
 
             .clear-search-btn {
-                padding: 8px 14px;
+                width: 24px;
+                height: 24px;
+                right: 6px;
                 font-size: 12px;
             }
 
             .add-product-btn {
                 padding: 8px 16px;
                 font-size: 12px;
+                border-radius: 5px;
             }
 
             .add-product-btn i {
@@ -1209,6 +1256,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 font-size: 13px;
                 padding: 8px 36px 8px 14px;
                 min-width: 140px;
+                border-radius: 5px;
             }
 
             .category-filter-label {
@@ -1259,29 +1307,29 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
 
             .search-input input {
-                padding: 8px 12px 8px 35px;
+                padding: 8px 38px 8px 35px;
                 font-size: 12px;
+                border-radius: 5px;
             }
 
-            .search-input i {
+            .search-input i.fa-search {
                 left: 12px;
                 font-size: 12px;
             }
 
             .clear-search-btn {
-                padding: 6px 10px;
+                width: 22px;
+                height: 22px;
+                right: 6px;
                 font-size: 11px;
-                gap: 4px;
-            }
-
-            .clear-search-btn i {
-                font-size: 11px;
+                border-radius: 4px;
             }
 
             .add-product-btn {
                 padding: 6px 12px;
                 font-size: 11px;
                 gap: 4px;
+                border-radius: 5px;
             }
 
             .add-product-btn i {
@@ -1300,6 +1348,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 font-size: 12px;
                 padding: 7px 32px 7px 12px;
                 min-width: 120px;
+                border-radius: 5px;
             }
         }
 
@@ -1317,14 +1366,10 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 gap: 4px;
             }
 
-            .clear-search-btn {
-                padding: 5px 8px;
-                font-size: 10px;
-            }
-
             .add-product-btn {
                 padding: 5px 10px;
                 font-size: 10px;
+                border-radius: 5px;
             }
 
             .add-product-btn i {
@@ -1332,13 +1377,22 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
 
             .search-input input {
-                padding: 6px 10px 6px 30px;
+                padding: 6px 34px 6px 30px;
+                font-size: 11px;
+                border-radius: 5px;
+            }
+
+            .search-input i.fa-search {
+                left: 10px;
                 font-size: 11px;
             }
 
-            .search-input i {
-                left: 10px;
-                font-size: 11px;
+            .clear-search-btn {
+                width: 20px;
+                height: 20px;
+                right: 5px;
+                font-size: 10px;
+                border-radius: 4px;
             }
         }
     </style>
@@ -1368,17 +1422,17 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
             <div class="merchandise-section">
                 <div class="shop-controls">
-                    <!-- ✅ Row 1: Search + Clear + Add New -->
                     <div class="shop-controls-row">
                         <div class="search-wrapper">
                             <div class="search-input">
                                 <i class="fas fa-search"></i>
                                 <input type="text" id="liveSearchInput" placeholder="Search by product name..."
                                     autocomplete="off">
+                                <button type="button" class="clear-search-btn" id="clearSearchBtn"
+                                    title="Clear search" aria-label="Clear search">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
-                            <button class="clear-search-btn" id="clearSearchBtn">
-                                <i class="fas fa-times"></i> Clear
-                            </button>
                         </div>
                         <a href="upload_products.php" class="add-product-btn" id="addProductBtn"
                             style="text-decoration: none;">
@@ -1386,7 +1440,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                         </a>
                     </div>
 
-                    <!-- ✅ Row 2: Category Filter dropdown only (no badge, no clear button) -->
                     <div class="category-filter-row">
                         <select id="categoryFilter" class="category-select">
                             <option value="">All Categories</option>
@@ -1408,15 +1461,12 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                             <div class="product-image-wrapper">
                                 <img src="../Products/<?php echo htmlspecialchars($product['product_image']); ?>"
                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                    class="product-image-clickable"
-                                    onclick="openImageModal('../Products/<?php echo htmlspecialchars($product['product_image']); ?>', '<?php echo htmlspecialchars($product['product_name']); ?>')">
+                                    class="product-image-clickable">
 
-                                <!-- ✅ 3-dot menu button -->
                                 <button type="button" class="menu-toggle-btn" title="Options" aria-label="Options">
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
 
-                                <!-- ✅ Dropdown with pen & trash -->
                                 <div class="card-dropdown" role="menu">
                                     <a href="update_products.php?product_number=<?php echo urlencode($product['product_number']); ?>"
                                         class="dropdown-item dropdown-edit" role="menuitem">
@@ -1466,18 +1516,10 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                                     <i class="fas fa-info-circle"></i>
                                 </button>
                             </div>
-                            <div class="last_restocked">
-                                <?php echo htmlspecialchars($product['last_restocked']); ?>
-                            </div>
-                            <!-- ✅ Business name — now PER PRODUCT (joined from investors) -->
-                            <div class="business-name">
-                               <?php echo htmlspecialchars($product['business_name'] ?? 'No Business Name'); ?>
-                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
 
-                <!-- ✅ No results message -->
                 <div class="no-results" id="noResults">
                     <i class="fas fa-box-open"></i>
                     <h3>No products found</h3>
@@ -1542,9 +1584,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         </div>
     </div>
 
-    <!-- ============================================================
-         ✅ DELETE CONFIRMATION MODAL
-         ============================================================ -->
     <div class="confirm-modal" id="deleteConfirmModal">
         <div class="confirm-card">
             <div class="confirm-icon">
@@ -1730,12 +1769,20 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const productsGrid = document.getElementById('productsGrid');
 
-        // ========== ✅ CATEGORY FILTER ELEMENT ==========
         const categoryFilter = document.getElementById('categoryFilter');
         const noResults = document.getElementById('noResults');
         const noResultsText = document.getElementById('noResultsText');
 
-        // ========== ✅ COMBINED FILTER (search + category) ==========
+        // ✅ Show / hide the in-input clear button based on text
+        function updateClearButtonVisibility() {
+            if (!clearSearchBtn || !searchInput) return;
+            if (searchInput.value.trim() !== '') {
+                clearSearchBtn.classList.add('show');
+            } else {
+                clearSearchBtn.classList.remove('show');
+            }
+        }
+
         function applyFilters() {
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const selectedCategory = categoryFilter ? categoryFilter.value.trim() : '';
@@ -1773,20 +1820,21 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                     noResults.classList.remove('show');
                 }
             }
+
+            updateClearButtonVisibility();
         }
 
-        // ✅ Search — debounced
-        //    If the user types while a category is selected → auto-clear the dropdown.
         let searchTimeout;
         if (searchInput) {
             searchInput.addEventListener('input', function () {
                 const typed = searchInput.value.trim();
 
-                // Auto-clear category when the user starts typing
                 if (typed !== '' && categoryFilter && categoryFilter.value !== '') {
                     categoryFilter.value = '';
-                    applyFilters(); // update UI immediately
+                    applyFilters();
                 }
+
+                updateClearButtonVisibility();
 
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(applyFilters, 300);
@@ -2031,6 +2079,14 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                     this.dataset.price,
                     this.dataset.description || ''
                 );
+            });
+        });
+
+        // ========== ✅ EXPAND / COLLAPSE PRODUCT TITLE ON CLICK ==========
+        document.querySelectorAll('.product-title').forEach(titleEl => {
+            titleEl.addEventListener('click', function (e) {
+                e.stopPropagation();
+                this.classList.toggle('expanded');
             });
         });
 

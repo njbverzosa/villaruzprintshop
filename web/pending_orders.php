@@ -167,12 +167,61 @@ function formatDeliveryDate($date)
         }
 
         body {
-            background: #f1f5f9;
             color: #1e293b;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+
+            /* ✅ Soft modern mesh gradient background */
+            background-color: #eef2ff;
+            background-image:
+                radial-gradient(at 8% 12%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
+                radial-gradient(at 92% 6%,  rgba(59, 130, 246, 0.20) 0px, transparent 55%),
+                radial-gradient(at 78% 88%, rgba(236, 72, 153, 0.14) 0px, transparent 55%),
+                radial-gradient(at 12% 92%, rgba(16, 185, 129, 0.14) 0px, transparent 55%),
+                linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
+            background-attachment: fixed;
         }
+
+        /* ✅ Subtle floating blobs for depth */
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+
+        body::before {
+            width: 480px;
+            height: 480px;
+            top: -160px;
+            left: -140px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
+            animation: floatBlob 18s ease-in-out infinite;
+        }
+
+        body::after {
+            width: 520px;
+            height: 520px;
+            bottom: -200px;
+            right: -180px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.32), transparent 70%);
+            animation: floatBlob 22s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatBlob {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50%      { transform: translate(30px, -30px) scale(1.08); }
+        }
+
+
+
 
         .app-wrapper {
             flex: 1;
@@ -405,14 +454,25 @@ function formatDeliveryDate($date)
             overflow: hidden;
         }
 
-        /* ✅ Single scroll container: header + table slide together */
+        /* ✅ Scroll container */
         .orders-table-container {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             width: 100%;
         }
 
-        /* ✅ Header inside the scroll container, min-width matches table */
+        /* ✅ Inner wrapper — width = widest child (table), never smaller than viewport.
+              inline-flex so it hugs content; max-content so it grows with the table.
+              This makes the header and table share EXACTLY the same width. */
+        .orders-scroll-inner {
+            display: inline-flex;
+            flex-direction: column;
+            min-width: 100%;
+            width: max-content;
+            vertical-align: top;
+        }
+
+        /* ✅ Header fills the wrapper exactly — same width as table */
         .delivery-header {
             background: black;
             color: white;
@@ -424,7 +484,7 @@ function formatDeliveryDate($date)
             align-items: flex-start;
             flex-wrap: nowrap;
             gap: 20px;
-            min-width: 780px;
+            width: 100%;
             box-sizing: border-box;
         }
 
@@ -500,6 +560,7 @@ function formatDeliveryDate($date)
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
+        /* ✅ Table fills wrapper; keeps min-width so it doesn't collapse on desktop */
         .orders-table {
             width: 100%;
             border-collapse: collapse;
@@ -550,12 +611,10 @@ function formatDeliveryDate($date)
         }
 
         .total-row {
-            background: #fefce8;
             font-weight: 600;
         }
 
         .total-row td {
-            border-top: 1px solid #e2e8f0;
             padding: 12px 15px;
         }
 
@@ -614,7 +673,6 @@ function formatDeliveryDate($date)
                 align-items: center;
             }
 
-            /* ✅ On mobile edit mode still stacks address under Ordered By */
             body.edit-active .delivery-header .customer-info {
                 flex-direction: column;
                 align-items: flex-start;
@@ -1162,105 +1220,107 @@ function formatDeliveryDate($date)
                 <div class="orders-container">
                     <div class="delivery-group">
                         <div class="orders-table-container">
-                            <div class="delivery-header">
-                                <div class="customer-info">
-                                    <div class="info-row">
-                                        <span><i class="fas fa-user"></i> Ordered By:</span>
-                                        <span id="customerNameDisplay"><?= htmlspecialchars($customerName) ?></span>
-                                        <input type="text" id="customerNameInput" class="edit-input" value="<?= htmlspecialchars($customerName) ?>">
+                            <div class="orders-scroll-inner">
+                                <div class="delivery-header">
+                                    <div class="customer-info">
+                                        <div class="info-row">
+                                            <span><i class="fas fa-user"></i> Ordered By:</span>
+                                            <span id="customerNameDisplay"><?= htmlspecialchars($customerName) ?></span>
+                                            <input type="text" id="customerNameInput" class="edit-input" value="<?= htmlspecialchars($customerName) ?>">
+                                        </div>
+                                        <div class="info-row" id="deliveryAddressWrapper" style="display: none;">
+                                            <span><i class="fas fa-map-marker-alt"></i> Delivery Address:</span>
+                                            <input type="text" id="deliveryAddressInput" class="edit-input" value="<?= htmlspecialchars($deliveryAddress) ?>">
+                                        </div>
                                     </div>
-                                    <div class="info-row" id="deliveryAddressWrapper" style="display: none;">
-                                        <span><i class="fas fa-map-marker-alt"></i> Delivery Address:</span>
-                                        <input type="text" id="deliveryAddressInput" class="edit-input" value="<?= htmlspecialchars($deliveryAddress) ?>">
-                                    </div>
-                                </div>
-                                <div class="delivery-date-info" id="deliveryDateWrapper">
-                                    <div class="info-row">
-                                        <span><i class="fas fa-calendar"></i> Delivery Date:</span>
-                                        <span id="deliveryDateDisplay">
-                                            <?php
-                                            $formattedDate = formatDeliveryDate($deliveryInfo['delivery_date'] ?? '');
-                                            echo htmlspecialchars($formattedDate);
-                                            ?>
-                                        </span>
-                                        <input type="date" id="deliveryDateInput"
-                                            value="<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>">
-                                    </div>
-                                </div>
-                            </div>
-                            <table class="orders-table" id="orders-table">
-                                <tbody>
-                                    <?php foreach ($orderItems as $index => $item): ?>
-                                        <tr data-id="<?= htmlspecialchars($item['id'] ?? $index) ?>"
-                                            data-product="<?= htmlspecialchars($item['product_name'] ?? '') ?>"
-                                            data-pieces="<?= htmlspecialchars($item['pieces'] ?? '0') ?>"
-                                            data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
-                                            data-selling-price="<?= floatval($item['selling_price']) ?>"
-                                            data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
-                                            <td class="order-id"><?= htmlspecialchars($item['order_id'] ?? '') ?></td>
-                                            <td class="drag-handle" title="Drag to reorder">
-                                                <i class="fas fa-grip-vertical"></i>
-                                            </td>
-                                            <td class="product-name"><?= htmlspecialchars($item['product_name'] ?? 'N/A') ?></td>
-                                            <td class="pieces"><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
-                                            <td class="unit"><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
-                                            <td class="selling_price">₱ <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?></td>
-                                            <td class="total-amount">₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?></td>
-                                            <td style="text-align: center;">
-                                                <button class="xampp-btn remove-btn" data-row-id="<?= $index ?>">Remove</button>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-
-                                    <tr class="subtotal-row" id="subtotal-row"
-                                        style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
-                                        <td></td>
-                                        <td></td>
-                                        <td colspan="3" style="text-align: right; font-weight: 600; color: #64748b;">
-                                            Sub Total:</td>
-                                        <td colspan="1" style="text-align: right; font-weight: 600; color: #64748b;">
-                                            ₱</td>
-                                        <td style="font-weight: 600; color: #64748b;" id="subtotal-value">
-                                            <?= number_format($subTotalFromRows, 2) ?>
-                                        </td>
-                                        <td></td>
-                                    </tr>
-
-                                    <tr class="subtotal-row discount-row" id="discount-row"
-                                        style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
-                                        <td></td>
-                                        <td></td>
-                                        <td colspan="3" style="text-align: right; font-weight: 600; color: #dc2626;">
-                                            Discount (<span id="discount-percent"><?= $discountPercentDisplay ?></span>%):
-                                        </td>
-                                        <td colspan="1" style="text-align: right; font-weight: 600; color: #dc2626;">
-                                            − ₱</td>
-                                        <td style="font-weight: 600; color: #dc2626;" id="discount-value">
-                                            <?= number_format($discountAmount, 2) ?>
-                                        </td>
-                                        <td></td>
-                                    </tr>
-
-                                    <tr class="total-row">
-                                        <td></td>
-                                        <td></td>
-                                        <td colspan="2" style="text-align: right; font-weight: 600;">Total Items: <span
-                                                id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
-                                        </td>
-                                        <td></td>
-                                        <td colspan="1" style="text-align: right; font-weight: 600;">TOTAL:</td>
-                                        <td style="font-weight: bold; min-width: 130px;">
-                                            <span id="total-amount-display">₱
-                                                <?= number_format($totalAmount, 2) ?>
+                                    <div class="delivery-date-info" id="deliveryDateWrapper">
+                                        <div class="info-row">
+                                            <span><i class="fas fa-calendar"></i> Delivery Date:</span>
+                                            <span id="deliveryDateDisplay">
+                                                <?php
+                                                $formattedDate = formatDeliveryDate($deliveryInfo['delivery_date'] ?? '');
+                                                echo htmlspecialchars($formattedDate);
+                                                ?>
                                             </span>
-                                            <input type="text" id="total-amount-input"
-                                                value="<?= number_format($totalAmount, 2, '.', '') ?>"
-                                                inputmode="decimal" autocomplete="off">
-                                        </td>
-                                        <td></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                            <input type="date" id="deliveryDateInput"
+                                                value="<?= htmlspecialchars($deliveryInfo['delivery_date'] ?? '') ?>">
+                                        </div>
+                                    </div>
+                                </div>
+                                <table class="orders-table" id="orders-table">
+                                    <tbody>
+                                        <?php foreach ($orderItems as $index => $item): ?>
+                                            <tr data-id="<?= htmlspecialchars($item['id'] ?? $index) ?>"
+                                                data-product="<?= htmlspecialchars($item['product_name'] ?? '') ?>"
+                                                data-pieces="<?= htmlspecialchars($item['pieces'] ?? '0') ?>"
+                                                data-unit="<?= htmlspecialchars($item['unit'] ?? 'N/A') ?>"
+                                                data-selling-price="<?= floatval($item['selling_price']) ?>"
+                                                data-total="<?= floatval($item['total_amount'] ?? 0) ?>">
+                                                <td class="order-id"><?= htmlspecialchars($item['order_id'] ?? '') ?></td>
+                                                <td class="drag-handle" title="Drag to reorder">
+                                                    <i class="fas fa-grip-vertical"></i>
+                                                </td>
+                                                <td class="product-name"><?= htmlspecialchars($item['product_name'] ?? 'N/A') ?></td>
+                                                <td class="pieces"><?= htmlspecialchars($item['pieces'] ?? '0') ?></td>
+                                                <td class="unit"><?= htmlspecialchars($item['unit'] ?? 'N/A') ?></td>
+                                                <td class="selling_price">₱ <?= htmlspecialchars($item['selling_price'] ?? 'N/A') ?></td>
+                                                <td class="total-amount">₱ <?= number_format(floatval($item['total_amount'] ?? 0), 2) ?></td>
+                                                <td style="text-align: center;">
+                                                    <button class="xampp-btn remove-btn" data-row-id="<?= $index ?>">Remove</button>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+
+                                        <tr class="subtotal-row" id="subtotal-row"
+                                            style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
+                                            <td></td>
+                                            <td></td>
+                                            <td colspan="3" style="text-align: right; font-weight: 600; color: #64748b;">
+                                                Sub Total:</td>
+                                            <td colspan="1" style="text-align: right; font-weight: 600; color: #64748b;">
+                                                ₱</td>
+                                            <td style="font-weight: 600; color: #64748b;" id="subtotal-value">
+                                                <?= number_format($subTotalFromRows, 2) ?>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+
+                                        <tr class="subtotal-row discount-row" id="discount-row"
+                                            style="<?= $discountAmount > 0.001 ? '' : 'display: none;' ?>">
+                                            <td></td>
+                                            <td></td>
+                                            <td colspan="3" style="text-align: right; font-weight: 600; color: #dc2626;">
+                                                Discount (<span id="discount-percent"><?= $discountPercentDisplay ?></span>%):
+                                            </td>
+                                            <td colspan="1" style="text-align: right; font-weight: 600; color: #dc2626;">
+                                                − ₱</td>
+                                            <td style="font-weight: 600; color: #dc2626;" id="discount-value">
+                                                <?= number_format($discountAmount, 2) ?>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+
+                                        <tr class="total-row">
+                                            <td></td>
+                                            <td></td>
+                                            <td colspan="2" style="text-align: right; font-weight: 600;">Total Items: <span
+                                                    id="totalItemsDisplay"><?php echo array_sum(array_column($orderItems, 'pieces')); ?></span>
+                                            </td>
+                                            <td></td>
+                                            <td colspan="1" style="text-align: right; font-weight: 600;">TOTAL:</td>
+                                            <td style="font-weight: bold; min-width: 130px;">
+                                                <span id="total-amount-display">₱
+                                                    <?= number_format($totalAmount, 2) ?>
+                                                </span>
+                                                <input type="text" id="total-amount-input"
+                                                    value="<?= number_format($totalAmount, 2, '.', '') ?>"
+                                                    inputmode="decimal" autocomplete="off">
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         <div class="receipt-actions">
                             <button class="receipt-btn delivery-receipt" id="delivery-receipt-btn" onclick="handleReceiptClick('delivery', this)">
@@ -1755,8 +1815,6 @@ function formatDeliveryDate($date)
                 customerInput.style.display = 'inline-block';
             }
 
-            // ✅ SHOW ADDRESS ROW — it will render UNDER Ordered By because
-            //    body.edit-active flips .customer-info to column
             const addressWrapper = document.getElementById('deliveryAddressWrapper');
             const addressInput = document.getElementById('deliveryAddressInput');
             if (addressWrapper && addressInput) {

@@ -56,8 +56,8 @@ if (!$userData) {
 $user = $userData;
 $authorizeAccess = $userData['authorize_access'] ?? 0;
 
-// ✅ Only show User/Pass column when authorize_access == 0
-$canViewUserPass = ($authorizeAccess == 0);
+// ✅ Show User/Pass column for authorize_access 0 and 2
+$canViewUserPass = in_array($authorizeAccess, [0, 2], true);
 
 // ==============================================
 // 5. SET TIMEZONE
@@ -66,16 +66,8 @@ date_default_timezone_set('Asia/Manila');
 $timezone = new DateTimeZone('Asia/Manila');
 
 // ==============================================
-// 6. FETCH ALL 3 DATASETS
+// 6. FETCH CUSTOMERS ONLY
 // ==============================================
-$stmt = $pdo->prepare("SELECT * FROM admins WHERE authorize_access IN (1, 2) ORDER BY id DESC");
-$stmt->execute();
-$admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$stmt = $pdo->prepare("SELECT * FROM investors ORDER BY id DESC");
-$stmt->execute();
-$investors = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 $stmt = $pdo->prepare("SELECT * FROM customers ORDER BY id DESC");
 $stmt->execute();
 $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -159,7 +151,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
-    <title>Registered Users | Villaruz Print Shop & General Merchandise</title>
+    <title>Registered Customers | Villaruz Print Shop & General Merchandise</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -170,20 +162,65 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         body {
-            background: #f1f5f9;
             color: #1e293b;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+
+            background-color: #eef2ff;
+            background-image:
+                radial-gradient(at 8% 12%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
+                radial-gradient(at 92% 6%,  rgba(59, 130, 246, 0.20) 0px, transparent 55%),
+                radial-gradient(at 78% 88%, rgba(236, 72, 153, 0.14) 0px, transparent 55%),
+                radial-gradient(at 12% 92%, rgba(16, 185, 129, 0.14) 0px, transparent 55%),
+                linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
+            background-attachment: fixed;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+
+        body::before {
+            width: 480px;
+            height: 480px;
+            top: -160px;
+            left: -140px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
+            animation: floatBlob 18s ease-in-out infinite;
+        }
+
+        body::after {
+            width: 520px;
+            height: 520px;
+            bottom: -200px;
+            right: -180px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.32), transparent 70%);
+            animation: floatBlob 22s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatBlob {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50%      { transform: translate(30px, -30px) scale(1.08); }
         }
 
         .app-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
 
-        /* ========== SIDEBAR ========== */
         .sidebar-wrapper {
             position: fixed;
             top: 0;
@@ -381,7 +418,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             overflow-y: auto;
         }
 
-        /* ========== SECTION / TABLE ========== */
         .merchandise-section {
             background: #ffffff;
             border-radius: 10px;
@@ -421,7 +457,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             background: #f8fafc;
         }
 
-        /* Status Indicators */
         .status-online {
             color: #10b981;
             font-size: 20px;
@@ -460,34 +495,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         @keyframes pulse-green {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.6;
-                transform: scale(1.2);
-            }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.6; transform: scale(1.2); }
         }
 
         @keyframes pulse-away {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.5;
-                transform: scale(1.1);
-            }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.5; transform: scale(1.1); }
         }
 
-        /* Email Status Dot */
         .email-status-dot {
             display: inline-block;
             width: 12px;
@@ -509,20 +525,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         @keyframes pulse-dot {
-
-            0%,
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-
-            50% {
-                transform: scale(1.3);
-                opacity: 0.7;
-            }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.3); opacity: 0.7; }
         }
 
-        /* Password Styles */
         .password-wrapper {
             display: inline-flex;
             align-items: center;
@@ -547,7 +553,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             letter-spacing: 2px;
         }
 
-        /* Copy Buttons */
         .copy-btn-phone {
             color: #3b82f6;
             font-size: 14px;
@@ -613,7 +618,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             color: #059669;
         }
 
-        /* Chat Icon */
         .chat-icon-wrapper {
             position: relative;
             display: inline-block;
@@ -663,18 +667,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
 
         @keyframes pulse-badge {
-
-            0%,
-            100% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.1);
-            }
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.1); }
         }
 
-        /* Toast */
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -688,45 +684,21 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .toast-success {
-            background: #10b981;
-        }
-
-        .toast-error {
-            background: #ef4444;
-        }
-
-        .toast-warning {
-            background: #f59e0b;
-        }
+        .toast-success { background: #10b981; }
+        .toast-error   { background: #ef4444; }
+        .toast-warning { background: #f59e0b; }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
         }
 
         @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+            from { transform: translateX(0); opacity: 1; }
+            to   { transform: translateX(100%); opacity: 0; }
         }
 
-        /* Image Thumbnails */
-        .landmark-thumb,
-        .permit-thumb {
+        .landmark-thumb {
             width: 60px;
             height: 60px;
             object-fit: cover;
@@ -736,8 +708,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             border: 1px solid #e2e8f0;
         }
 
-        .landmark-thumb:hover,
-        .permit-thumb:hover {
+        .landmark-thumb:hover {
             transform: scale(1.05);
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         }
@@ -748,7 +719,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             font-size: 12px;
         }
 
-        /* Modal */
         .landmark-modal {
             display: none;
             position: fixed;
@@ -922,8 +892,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 font-size: 10px;
             }
 
-            .landmark-thumb,
-            .permit-thumb {
+            .landmark-thumb {
                 width: 40px;
                 height: 40px;
             }
@@ -999,230 +968,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="welcome">
-                        <h4>Registered Users</h4>
+                        <h4>Registered Customers</h4>
                     </div>
                 </div>
             </div>
 
-            <!-- ============================================== -->
-            <!-- TABLE 1: ADMINS -->
-            <!-- ============================================== -->
-            <div class="merchandise-section">
-                <div style="overflow-x: auto;">
-                    <table class="inventory-table">
-                        <thead>
-                            <tr>
-                                <th>Full Name</th>
-                                <th>Status</th>
-                                <?php if ($canViewUserPass): ?>
-                                    <th>User / Pass</th>
-                                <?php endif; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($admins)): ?>
-                                <tr>
-                                    <td colspan="<?php echo $canViewUserPass ? '3' : '2'; ?>" style="padding: 40px;">No admins found</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($admins as $admin):
-                                    $onlineStatus = getOnlineStatus($admin['online_time'] ?? '');
-                                    ?>
-                                    <tr data-id="<?php echo $admin['id']; ?>" data-role="Admin">
-                                        <td><?php echo htmlspecialchars($admin['f_name'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <?php if ($onlineStatus['status'] === 'online'): ?>
-                                                <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
-                                                <span class="status-text online">Active</span>
-                                            <?php elseif ($onlineStatus['status'] === 'away'): ?>
-                                                <i class="fas fa-clock status-away"
-                                                    title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
-                                                <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
-                                            <?php else: ?>
-                                                <i class="fas fa-clock status-offline"
-                                                    title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
-                                                <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <?php if ($canViewUserPass): ?>
-                                            <td style="white-space: nowrap;">
-                                                <div class="password-wrapper">
-                                                    <span style="color: #475569; font-weight: 500;">
-                                                        <?php echo htmlspecialchars($admin['acc_number']); ?>
-                                                    </span>
-                                                    <span style="color: #94a3b8;">/</span>
-                                                    <span class="password-text" id="pass_admin_<?php echo $admin['id']; ?>"
-                                                        style="display: none;">
-                                                        <?php echo htmlspecialchars($admin['text_pass'] ?? ''); ?>
-                                                    </span>
-                                                    <span class="password-placeholder"
-                                                        id="placeholder_admin_<?php echo $admin['id']; ?>">
-                                                        ••••••••
-                                                    </span>
-                                                    <button class="copy-btn copy-btn-eye"
-                                                        onclick="togglePassword('admin_<?php echo $admin['id']; ?>')"
-                                                        title="Show/Hide password">
-                                                        <i class="fas fa-eye" id="eye_admin_<?php echo $admin['id']; ?>"></i>
-                                                    </button>
-                                                    <button class="copy-btn copy-btn-copy"
-                                                        onclick="copyPassword('<?php echo addslashes($admin['text_pass'] ?? ''); ?>')"
-                                                        title="Copy password">
-                                                        <i class="fas fa-copy"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        <?php endif; ?>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ============================================== -->
-            <!-- TABLE 2: INVESTORS -->
-            <!-- ============================================== -->
-            <div class="merchandise-section">
-                <div style="overflow-x: auto;">
-                    <table class="inventory-table">
-                        <thead>
-                            <tr>
-                                <th>Business Permit</th>
-                                <th>Full Name</th>
-                                <th>Status</th>
-                                <th>Chat</th>
-                                <th>Phone Number</th>
-                                <th>Email</th>
-                                <?php if ($canViewUserPass): ?>
-                                    <th>User / Pass</th>
-                                <?php endif; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($investors)): ?>
-                                <tr>
-                                    <td colspan="<?php echo $canViewUserPass ? '7' : '6'; ?>" style="padding: 40px;">No investors found</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($investors as $investor):
-                                    $onlineStatus = getOnlineStatus($investor['online_time'] ?? '');
-                                    $unreadCount = getUnreadCount($pdo, $investor['acc_number']);
-
-                                    // ✅ Email status check (assumes column 'active_email' exists; fallback = inactive)
-                                    $isEmailActive = isset($investor['active_email']) && $investor['active_email'] == 1;
-
-                                    $permitPhoto = normalizeImagePath($investor['business_permit'] ?? '');
-                                    $investorName = htmlspecialchars($investor['f_name'] ?? 'Investor');
-                                    ?>
-                                    <tr data-id="<?php echo $investor['id']; ?>" data-role="Investor">
-                                        <td>
-                                            <?php if ($permitPhoto !== ''): ?>
-                                                <img src="../Business_Docs/<?php echo htmlspecialchars($permitPhoto); ?>"
-                                                    alt="Business permit of <?php echo $investorName; ?>" class="permit-thumb"
-                                                    onclick="openPermitModal('../Business_Docs/<?php echo htmlspecialchars($permitPhoto); ?>', '<?php echo $investorName; ?>')"
-                                                    title="Click to zoom"
-                                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                                                <span class="no-photo" style="display:none;">No permit</span>
-                                            <?php else: ?>
-                                                <span class="no-photo">No permit</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($investor['f_name'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <?php if ($onlineStatus['status'] === 'online'): ?>
-                                                <i class="fas fa-circle status-online" title="Online - Recently Active"></i>
-                                                <span class="status-text online">Active</span>
-                                            <?php elseif ($onlineStatus['status'] === 'away'): ?>
-                                                <i class="fas fa-clock status-away"
-                                                    title="Away - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
-                                                <span class="status-text away"><?php echo $onlineStatus['time_diff']; ?></span>
-                                            <?php else: ?>
-                                                <i class="fas fa-clock status-offline"
-                                                    title="Offline - <?php echo $onlineStatus['time_diff']; ?> ago"></i>
-                                                <span class="status-text offline"><?php echo $onlineStatus['time_diff']; ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div class="chat-icon-wrapper">
-                                                <span class="chat-icon"
-                                                    onclick="window.location.href='chat_view.php?acc=<?php echo urlencode($investor['acc_number']); ?>'"
-                                                    data-acc="<?php echo htmlspecialchars($investor['acc_number']); ?>">
-                                                    <i class="fas fa-paper-plane"></i>
-                                                </span>
-                                                <?php if ($unreadCount > 0): ?>
-                                                    <span class="badge-unread" id="badge_investor_<?php echo $investor['id']; ?>">
-                                                        <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="badge-unread hidden"
-                                                        id="badge_investor_<?php echo $investor['id']; ?>"></span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <?php echo htmlspecialchars($investor['phone_number'] ?? 'N/A'); ?>
-                                            <?php if (!empty($investor['phone_number'])): ?>
-                                                <button class="copy-btn copy-btn-phone"
-                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($investor['phone_number']); ?>', 'Phone number')"
-                                                    title="Copy phone number">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php echo htmlspecialchars($investor['email'] ?? 'N/A'); ?>
-                                            <?php if (!empty($investor['email'])): ?>
-                                                <button class="copy-btn copy-btn-email"
-                                                    onclick="copyToClipboard('<?php echo htmlspecialchars($investor['email']); ?>', 'Email')"
-                                                    title="Copy email address">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                            <span
-                                                class="email-status-dot <?php echo $isEmailActive ? 'dot-active' : 'dot-inactive'; ?>"
-                                                title="<?php echo $isEmailActive ? 'Email Active' : 'Email Inactive'; ?>">
-                                            </span>
-                                        </td>
-                                        <?php if ($canViewUserPass): ?>
-                                            <td style="white-space: nowrap;">
-                                                <div class="password-wrapper">
-                                                    <span style="color: #475569; font-weight: 500;">
-                                                        <?php echo htmlspecialchars($investor['acc_number']); ?>
-                                                    </span>
-                                                    <span style="color: #94a3b8;">/</span>
-                                                    <span class="password-text" id="pass_investor_<?php echo $investor['id']; ?>"
-                                                        style="display: none;">
-                                                        <?php echo htmlspecialchars($investor['text_pass'] ?? ''); ?>
-                                                    </span>
-                                                    <span class="password-placeholder"
-                                                        id="placeholder_investor_<?php echo $investor['id']; ?>">
-                                                        ••••••••
-                                                    </span>
-                                                    <button class="copy-btn copy-btn-eye"
-                                                        onclick="togglePassword('investor_<?php echo $investor['id']; ?>')"
-                                                        title="Show/Hide password">
-                                                        <i class="fas fa-eye" id="eye_investor_<?php echo $investor['id']; ?>"></i>
-                                                    </button>
-                                                    <button class="copy-btn copy-btn-copy"
-                                                        onclick="copyPassword('<?php echo addslashes($investor['text_pass'] ?? ''); ?>')"
-                                                        title="Copy password">
-                                                        <i class="fas fa-copy"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        <?php endif; ?>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ============================================== -->
-            <!-- TABLE 3: CUSTOMERS -->
-            <!-- ============================================== -->
             <div class="merchandise-section">
                 <div style="overflow-x: auto;">
                     <table class="inventory-table">
@@ -1360,7 +1110,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         </main>
     </div>
 
-    <!-- Image Modal -->
     <div id="landmarkModal" class="landmark-modal">
         <button class="landmark-modal-close" onclick="closeLandmarkModal()">&times;</button>
         <div class="landmark-modal-content">
@@ -1377,7 +1126,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <?php include '../footer.php'; ?>
 
     <script>
-        // ========== SIDEBAR TOGGLE ==========
         const burgerBtn = document.getElementById('burgerBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const sidebarWrapper = document.getElementById('sidebarWrapper');
@@ -1440,7 +1188,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         });
 
-        // ========== HELPERS ==========
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?php echo $_SESSION['csrf_token']; ?>';
 
         function showToast(message, type = 'success') {
@@ -1516,7 +1263,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             });
         }
 
-        // ========== IMAGE MODAL ==========
         let currentZoom = 1;
         const zoomStep = 0.25;
         const maxZoom = 5;
@@ -1524,10 +1270,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
         function openLandmarkModal(imageSrc, name) {
             openImageModal(imageSrc, name + "'s Landmark Photo");
-        }
-
-        function openPermitModal(imageSrc, name) {
-            openImageModal(imageSrc, name + "'s Business Permit");
         }
 
         function openImageModal(imageSrc, captionText) {
@@ -1606,7 +1348,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             }
         });
 
-        console.log('📱 Sidebar loaded | 3 Tables: Admins | Investors | Customers');
+        console.log('📱 Sidebar loaded | Customers table only');
         console.log('🔐 Can view User/Pass: <?php echo $canViewUserPass ? "YES" : "NO"; ?>');
     </script>
 </body>
