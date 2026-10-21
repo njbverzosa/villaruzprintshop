@@ -548,7 +548,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="auth-card">
 
                 <div class="auth-logo">
-                    <img src="logo/ic_launcher.png" alt="Villaruz Print Shop Logo">
+                    <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Print Shop Logo">
                 </div>
 
                 <h2 class="auth-title">Forgot <span>Password?</span></h2>

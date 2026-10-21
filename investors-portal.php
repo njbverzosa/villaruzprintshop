@@ -261,6 +261,12 @@ if (isset($_SESSION['exit_message'])) {
     <meta http-equiv="Expires" content="0">
     <title>Investor Login | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Google Fonts for Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -270,8 +276,7 @@ if (isset($_SESSION['exit_message'])) {
             -webkit-tap-highlight-color: transparent;
         }
 
-        html,
-        body {
+        html, body {
             height: 100%;
             overflow-x: hidden;
         }
@@ -285,141 +290,58 @@ if (isset($_SESSION['exit_message'])) {
             flex-direction: column;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
-            position: relative;
         }
 
         /* ========== APP SHELL ========== */
+        /* Mobile defaults: full screen */
         .app-shell {
             flex: 1;
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
             background: #ffffff;
             min-height: 100dvh;
             position: relative;
-            overflow: hidden;
-            padding: 0;
-            z-index: 2;
         }
 
-        /* ✅ Light GIF — frame ng box sa tuktok (nudged up) */
-        .light-overlay {
-            display: block;
-            width: 100%;
-            height: auto;
-            object-fit: contain;
-            object-position: center top;
-            pointer-events: none;
-            flex-shrink: 0;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: 0;
-            vertical-align: top;
-            line-height: 0;
-            position: relative;
-            top: -45px;
-        }
-
-        /* ✅ Gift GIF — footer, katulad ng light */
-        .gift-footer {
-            display: block;
-            width: 100%;
-            height: auto;
-            object-fit: contain;
-            object-position: center bottom;
-            pointer-events: none;
-            flex-shrink: 0;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: 0;
-            vertical-align: bottom;
-            line-height: 0;
-            position: relative;
-            bottom: -20px;
-            margin-top: auto;
-        }
-
-        /* ========== CONTENT ========== */
         .auth-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 0 20px 0 20px;
-            min-height: 0;
-            margin: 0;
+            padding: 30px 20px;
+            width: 100%;
         }
 
         .auth-card {
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 30px;
-            width: 100%;
-            max-width: 450px;
-            margin: 16px auto 0 auto;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            flex: 1;
-            min-height: 0;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto; /* Center horizontally */
         }
 
-        /* ========== LOGO (nudged up) ========== */
+        /* ========== LOGO ========== */
         .logo {
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
-            margin-top: -85px;
-            margin-bottom: 8px;
-            gap: 6px;
-            position: relative;
-            overflow: visible;
-            z-index: 3;
-        }
-
-        .logo-stack {
-            position: relative;
-            width: 160px;
-            height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin-bottom: 28px;
         }
 
         .logo-stack .main-logo {
-            width: 96px;
-            height: 96px;
+            /* Increased mobile logo size */
+            width: 130px;
+            height: 130px;
             object-fit: contain;
             display: block;
-            border-radius: 24px;
         }
 
-        .logo-stack .hood-overlay {
-            position: absolute;
-            top: 12px;
-            right: -4px;
-            width: 100px;
-            height: 100px;
-            object-fit: contain;
-            display: block;
-            transform: rotate(20deg);
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        /* ========== PORTAL HEADER (nudged UP) ========== */
+        /* ========== PORTAL HEADER ========== */
         .portal-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-top: -30px;
-            margin-bottom: 6px;
-            padding-left: 2px;
+            margin-bottom: 8px;
         }
 
         .portal-header::before {
@@ -433,7 +355,6 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         h1 {
-            text-align: left;
             font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.01em;
@@ -446,31 +367,23 @@ if (isset($_SESSION['exit_message'])) {
             color: transparent;
         }
 
-        /* ✅ MORE space below the subtitle before the Account Number field */
         .portal-subtitle {
-            text-align: left;
             font-size: 13px;
             color: #64748b;
             margin-bottom: 32px;
             padding-left: 17px;
             font-weight: 400;
-            letter-spacing: 0.01em;
         }
 
         /* ========== FORM ========== */
         .form-group {
-            margin-bottom: 16px;
-        }
-
-        /* ✅ Extra room above the first field (Account Number) */
-        .form-group:first-of-type {
-            margin-top: 8px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 8px;
             font-weight: 600;
             color: #475569;
@@ -479,9 +392,10 @@ if (isset($_SESSION['exit_message'])) {
 
         .form-group label i {
             color: #3b82f6;
-            font-size: 13px;
+            font-size: 14px;
         }
 
+        .form-group select,
         .form-group input {
             width: 100%;
             height: 54px;
@@ -497,9 +411,17 @@ if (isset($_SESSION['exit_message'])) {
             -webkit-appearance: none;
             appearance: none;
             display: block;
-            line-height: normal;
         }
 
+        .form-group select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 18px;
+            padding-right: 44px;
+        }
+
+        .form-group select:focus,
         .form-group input:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
@@ -554,11 +476,10 @@ if (isset($_SESSION['exit_message'])) {
 
         /* ========== ACTION AREA ========== */
         .action-area {
-            margin-top: auto;
-            padding-top: 24px;
+            margin-top: 24px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 16px;
         }
 
         .btn-primary {
@@ -578,8 +499,6 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             gap: 8px;
             font-family: 'Poppins', sans-serif;
-            -webkit-appearance: none;
-            appearance: none;
             box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
         }
 
@@ -607,27 +526,19 @@ if (isset($_SESSION['exit_message'])) {
             border-top-color: #ffffff;
             border-radius: 50%;
             animation: btn-spin 0.8s linear infinite;
-            vertical-align: middle;
         }
 
         @keyframes btn-spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        /* ========== BIOMETRIC LABEL ========== */
+        /* ========== BIOMETRIC SECTION ========== */
         .biometric-label {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            margin-top: 14px;
-            margin-bottom: 4px;
             font-size: 12px;
             font-weight: 600;
             color: #94a3b8;
@@ -642,23 +553,17 @@ if (isset($_SESSION['exit_message'])) {
             content: "";
             flex: 1;
             height: 1px;
-            background: linear-gradient(to right,
-                    transparent 0%,
-                    #e2e8f0 40%,
-                    #e2e8f0 60%,
-                    transparent 100%);
+            background: linear-gradient(to right, transparent 0%, #e2e8f0 40%, #e2e8f0 60%, transparent 100%);
         }
 
-        /* ========== FINGERPRINT ========== */
         .fingerprint-row {
             display: flex;
             justify-content: center;
-            margin-top: 8px;
         }
 
         .btn-fingerprint {
-            width: 58px;
-            height: 58px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: #ffffff;
             border: 2px solid #e2e8f0;
@@ -669,12 +574,10 @@ if (isset($_SESSION['exit_message'])) {
             align-items: center;
             justify-content: center;
             padding: 0;
-            font-family: 'Poppins', sans-serif;
         }
 
         .btn-fingerprint i {
-            font-size: 26px;
-            color: #3b82f6;
+            font-size: 28px;
             transition: color 0.3s;
         }
 
@@ -683,10 +586,6 @@ if (isset($_SESSION['exit_message'])) {
             background: #eff6ff;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
-        }
-
-        .btn-fingerprint:hover i {
-            color: #2563eb;
         }
 
         .btn-fingerprint:disabled {
@@ -698,13 +597,12 @@ if (isset($_SESSION['exit_message'])) {
         /* ========== ALERTS ========== */
         .alert {
             padding: 14px 16px;
-            border-radius: 14px;
-            margin-bottom: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             font-size: 14px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: flex-start;
-            animation: slideDown 0.5s ease;
             line-height: 1.5;
         }
 
@@ -720,54 +618,36 @@ if (isset($_SESSION['exit_message'])) {
             border: 1px solid #93c5fd;
         }
 
-        .alert-success {
-            background: #f0fdf4;
-            color: #065f46;
-            border: 1px solid #bbf7d0;
-        }
-
         .alert i {
             font-size: 16px;
             margin-top: 2px;
             flex-shrink: 0;
         }
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ========== FOOTERS ========== */
-        .auth-footer {
+        /* ========== REDESIGNED REGISTER LINK (Not a button) ========== */
+        .register-footer {
+            margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
             text-align: center;
-            margin-top: 18px;
-            color: #64748b;
             font-size: 14px;
-            line-height: 1.5;
+            color: #64748b;
         }
 
-        .auth-footer a {
+        .register-footer a {
             color: #3b82f6;
             text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
+            font-weight: 700;
+            transition: 0.2s;
+            margin-left: 4px;
         }
 
-        .auth-footer a:hover {
+        .register-footer a:hover {
             color: #2563eb;
             text-decoration: underline;
         }
 
-        /* ==============================================
-           ✅ CUSTOM BIOMETRIC POPUP (no URL change)
-           ============================================== */
+        /* ========== CUSTOM BIOMETRIC POPUP ========== */
         .bio-popup-overlay {
             position: fixed;
             inset: 0;
@@ -779,11 +659,11 @@ if (isset($_SESSION['exit_message'])) {
             align-items: center;
             justify-content: center;
             padding: 24px;
-            animation: bioFadeIn 0.2s ease-out;
         }
 
         .bio-popup-overlay.visible {
             display: flex;
+            animation: bioFadeIn 0.2s ease-out;
         }
 
         .bio-popup {
@@ -798,7 +678,7 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .bio-popup-icon {
-            padding: 26px 24px 12px 24px;
+            padding: 26px 24px 12px;
             display: flex;
             justify-content: center;
         }
@@ -825,14 +705,14 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .bio-popup-message {
-            padding: 10px 26px 22px 26px;
+            padding: 10px 26px 22px;
             font-size: 14px;
             color: #475569;
             line-height: 1.55;
         }
 
         .bio-popup-actions {
-            padding: 0 20px 20px 20px;
+            padding: 0 20px 20px;
         }
 
         .bio-popup-btn {
@@ -846,7 +726,6 @@ if (isset($_SESSION['exit_message'])) {
             font-size: 15px;
             color: #ffffff;
             cursor: pointer;
-            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
             transition: 0.25s ease;
         }
 
@@ -855,436 +734,73 @@ if (isset($_SESSION['exit_message'])) {
             box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
         }
 
-        .bio-popup-btn:active {
-            transform: translateY(0);
-        }
-
-        @keyframes bioFadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-
+        @keyframes bioFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes bioPopIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         /* ==============================================
-           SNOW EFFECT ❄️ (auto — no button needed)
+           DESKTOP VIEW (Centered Card)
            ============================================== */
-        .snow-container {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 9998;
-            overflow: hidden;
-        }
-
-        .snowflake {
-            position: absolute;
-            top: -10px;
-            color: #60a5fa;
-            font-size: 1em;
-            font-family: Arial, sans-serif;
-            text-shadow: 0 0 6px rgba(255, 255, 255, 0.9),
-                0 0 12px rgba(96, 165, 250, 0.8),
-                0 0 20px rgba(59, 130, 246, 0.5);
-            user-select: none;
-            pointer-events: none;
-            animation-name: snowfall;
-            animation-timing-function: linear;
-            animation-iteration-count: infinite;
-            will-change: transform, opacity;
-        }
-
-        .snowflake::before {
-            content: "❄";
-        }
-
-        @keyframes snowfall {
-            0% {
-                transform: translateY(-10vh) translateX(0) rotate(0deg);
-                opacity: 0;
-            }
-
-            10% {
-                opacity: 1;
-            }
-
-            90% {
-                opacity: 1;
-            }
-
-            100% {
-                transform: translateY(110vh) translateX(40px) rotate(360deg);
-                opacity: 0;
-            }
-        }
-
-        .snowflake:nth-child(odd) {
-            animation-name: snowfall-sway;
-        }
-
-        @keyframes snowfall-sway {
-            0% {
-                transform: translateY(-10vh) translateX(0) rotate(0deg);
-                opacity: 0;
-            }
-
-            10% {
-                opacity: 1;
-            }
-
-            50% {
-                transform: translateY(50vh) translateX(-30px) rotate(180deg);
-            }
-
-            90% {
-                opacity: 1;
-            }
-
-            100% {
-                transform: translateY(110vh) translateX(30px) rotate(360deg);
-                opacity: 0;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .snowflake {
-                animation: none !important;
-                display: none;
-            }
-        }
-
-        /* ========== DESKTOP ========== */
-        @media (min-width: 600px) {
+        @media (min-width: 640px) {
             body {
                 background: #f1f5f9;
-                padding-top: 0;
-                padding-bottom: 0;
                 justify-content: center;
                 align-items: center;
             }
 
             .app-shell {
+                flex: none;
                 min-height: auto;
-                height: auto;
-                margin: 0 auto;
-                border-radius: 15px;
+                max-width: 440px;
+                border-radius: 16px;
                 box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
                 border: 1px solid #e2e8f0;
+                margin: 24px auto;
                 overflow: hidden;
             }
 
-            .light-overlay {
-                border-radius: 15px 15px 0 0;
-                top: -40px;
-            }
-
-            .gift-footer {
-                border-radius: 0 0 15px 15px;
-                bottom: -20px;
-            }
-
             .auth-container {
-                flex: none;
-                padding: 0 40px 0 40px;
-            }
-
-            .auth-card {
-                flex: none;
-                padding: 0;
-                border: none;
-                box-shadow: none;
-                max-width: 100%;
-                margin-top: 24px;
+                padding: 40px;
             }
 
             .logo {
-                margin-top: -95px;
-            }
-
-            /* ✅ nudged UP on desktop */
-            .portal-header {
-                margin-top: -35px;
-            }
-
-            h1 {
-                font-size: 28px;
-            }
-
-            .portal-header::before {
-                height: 38px;
-            }
-
-            /* ✅ more space on desktop too */
-            .portal-subtitle {
-                font-size: 14px;
-                margin-bottom: 36px;
-            }
-
-            .action-area {
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-        }
-
-        /* ========== SMALL PHONES ========== */
-        @media (max-width: 380px) {
-            .auth-container {
-                padding: 0 18px 0 18px;
-            }
-
-            .auth-card {
-                margin-top: 12px;
-            }
-
-            .logo {
-                margin-top: -75px;
-                margin-bottom: 6px;
-            }
-
-            .logo-stack {
-                width: 140px;
-                height: 140px;
+                margin-bottom: 32px;
             }
 
             .logo-stack .main-logo {
-                width: 80px;
-                height: 80px;
+                /* Increased desktop logo size */
+                width: 170px;
+                height: 170px;
             }
-
-            .logo-stack .hood-overlay {
-                width: 84px;
-                height: 84px;
-                top: 6px;
-                right: -4px;
-                transform: rotate(20deg);
-            }
-
-            /* ✅ nudged UP on small phones */
-            .portal-header {
-                margin-top: -25px;
-            }
-
-            h1 {
-                font-size: 20px;
-            }
-
-            .portal-header::before {
-                height: 30px;
-                width: 4px;
-            }
-
-            .portal-subtitle {
-                font-size: 12px;
-                padding-left: 16px;
-                margin-bottom: 26px;
-            }
-
-            .form-group input {
-                height: 50px;
-            }
-
-            .btn-primary {
-                height: 50px;
-            }
-        }
-
-        /* ========== SHORT SCREENS ========== */
-        @media (max-height: 700px) {
-            .auth-container {
-                padding: 0 24px 0 24px;
-            }
-
-            .auth-card {
-                margin-top: 12px;
-            }
-
-            .logo {
-                margin-top: -65px;
-                margin-bottom: 6px;
-            }
-
-            .logo-stack {
-                width: 130px;
-                height: 130px;
-            }
-
-            .logo-stack .main-logo {
-                width: 76px;
-                height: 76px;
-            }
-
-            .logo-stack .hood-overlay {
-                width: 78px;
-                height: 78px;
-                top: 4px;
-                right: -4px;
-                transform: rotate(20deg);
-            }
-
-            /* ✅ nudged UP on short screens */
-            .portal-header {
-                margin-top: -20px;
-            }
-
-            h1 {
-                font-size: 20px;
-            }
-
-            .portal-header::before {
-                height: 28px;
-            }
-
-            .portal-subtitle {
-                font-size: 12px;
-                margin-bottom: 20px;
-            }
-
+            
+            /* Slight adjustment for desktop form spacing */
             .form-group {
-                margin-bottom: 12px;
-            }
-
-            .form-group input {
-                height: 50px;
-            }
-
-            .btn-primary {
-                height: 50px;
-            }
-
-            .action-area {
-                padding-top: 16px;
-            }
-
-            .fingerprint-row {
-                margin-top: 8px;
-            }
-
-            .btn-fingerprint {
-                width: 52px;
-                height: 52px;
-            }
-
-            .btn-fingerprint i {
-                font-size: 22px;
-            }
-
-            .auth-footer {
-                margin-top: 12px;
-                font-size: 13px;
-            }
-
-            .biometric-label {
-                font-size: 11px;
-                margin-top: 10px;
-                margin-bottom: 2px;
-            }
-        }
-
-        /* ========== MOBILE FULL-SCREEN APP VIEW ========== */
-        @media (max-width: 640px) {
-            body {
-                background: #ffffff;
-            }
-
-            .auth-container {
-                padding: 0;
-                align-items: stretch;
-                justify-content: flex-start;
-                flex: 1;
-            }
-
-            .auth-card {
-                background: #ffffff;
-                border-radius: 0;
-                border: none;
-                box-shadow: none;
-                max-width: 100%;
-                width: 100%;
-                padding: 20px 22px 0 22px;
-                min-height: 100dvh;
-                display: flex;
-                flex-direction: column;
-                margin-top: 0;
-            }
-
-            .logo {
-                align-items: center;
-                text-align: center;
-                gap: 6px;
-                margin-top: -90px;
-                margin-bottom: 0;
-            }
-
-            /* ✅ nudged UP on mobile app view */
-            .portal-header {
-                margin-top: -15px;
-                margin-bottom: 6px;
-            }
-
-            h1 {
-                font-size: 22px;
-            }
-
-            /* ✅ generous space under subtitle on mobile too */
-            .portal-subtitle {
-                font-size: 13px;
-                margin-bottom: 28px;
-            }
-
-            .form-group {
-                margin-bottom: 22px;
-            }
-
-            .form-group input {
-                padding: 15px 16px;
-                font-size: 16px;
-                border-radius: 10px;
-                height: 54px;
-            }
-
-            .btn-primary {
-                padding: 16px;
-                font-size: 16px;
-                border-radius: 10px;
-                height: 54px;
+                margin-bottom: 18px;
             }
         }
     </style>
 </head>
 
 <body>
-    <!-- ❄️ Snow Effect Layer (auto — no button needed) -->
-    <div class="snow-container" id="snowContainer" aria-hidden="true"></div>
-
     <div class="app-shell">
-        <!-- ✅ Light GIF — frame ng box sa tuktok -->
-        <img src="logo/light.gif" alt="Light" class="light-overlay">
-
         <div class="auth-container">
             <div class="auth-card">
 
-                <!-- ✅ Logo with hood on RIGHT side, rotated -->
+                <!-- Logo -->
                 <div class="logo">
                     <div class="logo-stack">
-                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/ic_launcher.png"
+                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
                             alt="Villaruz Print Shop Logo" class="main-logo">
-                        <img src="logo/hood.jpg" alt="Hood" class="hood-overlay">
                     </div>
                 </div>
 
                 <div class="portal-header">
                     <h1>Login to your account</h1>
                 </div>
-                <br><br>
+                <p class="portal-subtitle">Sign in to access your investor dashboard</p>
+
                 <?php if (!empty($offlineMessage)): ?>
                     <div class="alert alert-info">
                         <i class="fas fa-sign-out-alt"></i>
@@ -1309,14 +825,14 @@ if (isset($_SESSION['exit_message'])) {
 
                         <div class="form-group">
                             <label><i class="fas fa-id-card"></i> Account Number</label>
-                            <input type="text" name="acc_number" id="acc_number" placeholder=""
+                            <input type="text" name="acc_number" id="acc_number" placeholder="Enter your account number"
                                 value="<?php echo htmlspecialchars($selectedAcc); ?>" autocomplete="username" required>
                         </div>
 
                         <div class="form-group">
                             <label><i class="fas fa-lock"></i> Password</label>
                             <div class="password-wrapper">
-                                <input type="password" name="password" id="password" placeholder=""
+                                <input type="password" name="password" id="password" placeholder="Enter your password"
                                     autocomplete="current-password" required>
                                 <i class="fas fa-eye-slash" id="togglePassword"></i>
                             </div>
@@ -1331,9 +847,7 @@ if (isset($_SESSION['exit_message'])) {
                             </button>
 
                             <?php if ($showFingerprint): ?>
-                                <!-- ✅ Biometric label -->
                                 <p class="biometric-label">Login using Biometric</p>
-
                                 <div class="fingerprint-row">
                                     <button type="button" class="btn-fingerprint" id="fingerprintBtn"
                                         onclick="triggerBiometric()" title="Login with fingerprint">
@@ -1342,17 +856,18 @@ if (isset($_SESSION['exit_message'])) {
                                 </div>
                             <?php endif; ?>
                         </div>
-
-                        <div class="auth-footer">
-                            Don't have an account? <a href="join.php">Register</a>
-                        </div>
                     </form>
+
+                    <!-- ✅ REDESIGNED AS TEXT LINK -->
+                    <div class="register-footer">
+                        Don't have an account? <a href="join.php">Register here</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ✅ Custom biometric popup (NO URL change, NO #hash) -->
+    <!-- ✅ Custom biometric popup -->
     <div class="bio-popup-overlay" id="bioPopup" role="dialog" aria-modal="true" aria-labelledby="bioPopupTitle">
         <div class="bio-popup">
             <div class="bio-popup-icon">
@@ -1375,7 +890,6 @@ if (isset($_SESSION['exit_message'])) {
         const userType = <?php echo json_encode($biometricUserType); ?>;
         const showFingerprint = <?php echo $showFingerprint ? 'true' : 'false'; ?>;
 
-        /* ✅ Custom popup helpers */
         function showBioPopup(title, message, iconClass) {
             document.getElementById('bioPopupTitle').textContent = title;
             document.getElementById('bioPopupMessage').textContent = message;
@@ -1388,12 +902,10 @@ if (isset($_SESSION['exit_message'])) {
             document.getElementById('bioPopup').classList.remove('visible');
         }
 
-        /* Close on overlay click (outside the popup card) */
         document.getElementById('bioPopup').addEventListener('click', function (e) {
             if (e.target === this) closeBioPopup();
         });
 
-        /* Close on Escape key */
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeBioPopup();
         });
@@ -1422,23 +934,14 @@ if (isset($_SESSION['exit_message'])) {
             btn.innerHTML = 'Login';
         }
 
-        /* ✅ Manual trigger — user MUST tap the fingerprint button */
         function triggerBiometric() {
             if (!isInApp) {
-                showBioPopup(
-                    'App required',
-                    'Fingerprint login is only available inside the Sofia app.',
-                    'fas fa-mobile-alt'
-                );
+                showBioPopup('App required', 'Fingerprint login is only available inside the Sofia app.', 'fas fa-mobile-alt');
                 return;
             }
 
             if (!hasBiometric || !userId) {
-                showBioPopup(
-                    'Fingerprint not enrolled',
-                    'No fingerprint enrolled. Please log in with password first and enroll your fingerprint.',
-                    'fas fa-fingerprint'
-                );
+                showBioPopup('Fingerprint not enrolled', 'No fingerprint enrolled. Please log in with password first and enroll your fingerprint.', 'fas fa-fingerprint');
                 return;
             }
 
@@ -1448,65 +951,10 @@ if (isset($_SESSION['exit_message'])) {
             if (window.AndroidBiometric && window.AndroidBiometric.authenticate) {
                 window.AndroidBiometric.authenticate('manual');
             } else {
-                showBioPopup(
-                    'Biometric unavailable',
-                    'Biometric bridge not available on this device.',
-                    'fas fa-exclamation-triangle'
-                );
+                showBioPopup('Biometric unavailable', 'Biometric bridge not available on this device.', 'fas fa-exclamation-triangle');
                 if (fpBtn) fpBtn.disabled = false;
             }
         }
-
-        /* ❄️ Snow Effect Generator — runs automatically, no button needed */
-        (function generateSnow() {
-            function startSnow() {
-                const container = document.getElementById('snowContainer');
-                if (!container) return;
-
-                if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                    return;
-                }
-
-                if (container.dataset.started === '1') return;
-                container.dataset.started = '1';
-
-                const SNOWFLAKE_COUNT = 60;
-
-                for (let i = 0; i < SNOWFLAKE_COUNT; i++) {
-                    const flake = document.createElement('div');
-                    flake.className = 'snowflake';
-
-                    flake.style.left = (Math.random() * 100) + '%';
-
-                    const size = Math.random() * 12 + 8;
-                    flake.style.fontSize = size + 'px';
-
-                    const duration = Math.random() * 6 + 5;
-                    flake.style.animationDuration = duration + 's';
-
-                    flake.style.animationDelay = (Math.random() * 5) + 's';
-
-                    flake.style.opacity = (Math.random() * 0.5 + 0.4).toFixed(2);
-
-                    container.appendChild(flake);
-                }
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', startSnow);
-            } else {
-                startSnow();
-            }
-        })();
-
-        document.addEventListener('DOMContentLoaded', function () {
-            /* ✅ REMOVED: update modal logic.
-               The page no longer inspects installed version, no longer shows
-               the update overlay, and no longer redirects to ?skip_update=1. */
-
-            /* ✅ Removed: auto biometric prompt on page load.
-               User must now tap the fingerprint button to trigger biometric. */
-        });
 
         (function () {
             var form = document.getElementById('loginForm');
@@ -1521,7 +969,6 @@ if (isset($_SESSION['exit_message'])) {
 
         function biometricSuccess(data) {
             const userId = <?php echo json_encode($biometricUserId); ?>;
-
             if (!userId) { resetLoginButton(); return; }
 
             var installedVersion = readInstalledVersion();
@@ -1533,15 +980,15 @@ if (isset($_SESSION['exit_message'])) {
                     + '&user_id=' + encodeURIComponent(userId)
                     + '&installed_version=' + encodeURIComponent(installedVersion)
             })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        setTimeout(() => window.location.href = data.redirect, 800);
-                    } else {
-                        resetLoginButton();
-                    }
-                })
-                .catch(() => resetLoginButton());
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    setTimeout(() => window.location.href = data.redirect, 800);
+                } else {
+                    resetLoginButton();
+                }
+            })
+            .catch(() => resetLoginButton());
         }
 
         function biometricFailed() {
