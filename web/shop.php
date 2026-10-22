@@ -49,6 +49,36 @@ $catStmt = $pdo->query("
     ORDER BY category_group ASC
 ");
 $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
+
+// ============================================
+// ✅ SYSTEM UPDATE NOTIFICATION (matched by acc_number)
+// ============================================
+$showUpdatePopup = false;
+$updateInfo = null;
+
+$currentAcc = trim((string) ($user['acc_number'] ?? ''));
+
+if ($currentAcc !== '') {
+    try {
+        // Added `desc` column (using backticks since desc is a MySQL keyword)
+        $updStmt = $pdo->prepare("
+            SELECT id, acc_number, title, `desc`
+            FROM system_update
+            WHERE acc_number = ? AND notif_shown = 0
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+        $updStmt->execute([$currentAcc]);
+        $updateInfo = $updStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($updateInfo) {
+            $showUpdatePopup = true;
+        }
+    } catch (PDOException $e) {
+        error_log("system_update fetch failed: " . $e->getMessage());
+        $showUpdatePopup = false;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -74,7 +104,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             display: flex;
             flex-direction: column;
         }
-
 
         .app-wrapper {
             flex: 1;
@@ -1191,6 +1220,118 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
             }
         }
 
+        /* ============================================================
+           ✅ UPDATE APP POPUP — MATCHING THE REFERENCE IMAGE
+           ============================================================ */
+        .update-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6); /* Darker background to match image */
+            z-index: 5000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.15s ease, visibility 0.15s ease;
+        }
+
+        .update-modal-overlay.show {
+            display: flex;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .update-modal {
+            background: #ffffff;
+            border-radius: 8px; /* Slightly sharper corners like the image */
+            width: 100%;
+            max-width: 380px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(10px) scale(0.98);
+            transition: transform 0.15s ease;
+            text-align: left;
+        }
+
+        .update-modal-overlay.show .update-modal {
+            transform: translateY(0) scale(1);
+        }
+
+        .update-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+
+        .update-modal-desc {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .update-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .update-btn {
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            border: none;
+            font-family: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 'Later' Button */
+        .update-btn-secondary {
+            background: transparent;
+            color: #64748b;
+        }
+
+        .update-btn-secondary:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* 'Update Now' Button */
+        .update-btn-primary {
+            background: #1a2a6c;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(26, 42, 108, 0.2);
+        }
+
+        .update-btn-primary:hover {
+            background: #0f1c4d;
+        }
+
+        @media (max-width: 380px) {
+            .update-modal { padding: 20px 18px 16px; }
+            .update-modal-title { font-size: 16px; }
+            .update-modal-desc { font-size: 13px; margin-bottom: 20px; }
+            .update-btn { padding: 8px 12px; font-size: 13px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .update-modal-overlay,
+            .update-modal {
+                transition: none !important;
+            }
+        }
+
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .main-content {
@@ -1607,6 +1748,33 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         </div>
     </div>
 
+    <!-- ✅ UPDATE APP POPUP — Simple Rectangle with Description -->
+    <?php if ($showUpdatePopup): ?>
+        <div class="update-modal-overlay" id="updateAppModal" role="dialog" aria-modal="true"
+            aria-labelledby="updateModalTitle">
+            <div class="update-modal">
+                <h3 class="update-modal-title" id="updateModalTitle">
+                    <?php echo htmlspecialchars($updateInfo['title'] ?: 'Update App'); ?>
+                </h3>
+                
+                <p class="update-modal-desc">
+                    <?php echo htmlspecialchars($updateInfo['desc'] ?: 'Please Update to better version.'); ?>
+                </p>
+
+                <div class="update-modal-actions">
+                    <button type="button" class="update-btn update-btn-secondary" id="laterBtn">
+                        Later
+                    </button>
+                    <!-- ✅ Added clear_update_later parameter to trigger native cookie clear -->
+                    <a href="https://villaruz-print-shop-and-general-merchandise.shop/APK/admin_app.apk?clear_update_later=1"
+                        class="update-btn update-btn-primary" id="updateNowBtn" target="_blank">
+                        Update Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <?php include '../footer.php'; ?>
 
     <script>
@@ -1769,7 +1937,6 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         const noResults = document.getElementById('noResults');
         const noResultsText = document.getElementById('noResultsText');
 
-        // ✅ Show / hide the in-input clear button based on text
         function updateClearButtonVisibility() {
             if (!clearSearchBtn || !searchInput) return;
             if (searchInput.value.trim() !== '') {
@@ -2085,6 +2252,80 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                 this.classList.toggle('expanded');
             });
         });
+
+        // ========== ✅ UPDATE APP POPUP (SESSION STORAGE) ==========
+        (function () {
+            const updateModal = document.getElementById('updateAppModal');
+            const updateNowBtn = document.getElementById('updateNowBtn');
+            const laterBtn = document.getElementById('laterBtn');
+
+            // Server only renders the modal if notif_shown = 0 in the DB
+            if (!updateModal) return;
+
+            // ✅ Use sessionStorage instead of cookies
+            // This survives page navigation but is destroyed when the app/browser closes
+            const sessionKey = "update_later_" + accNum;
+            const isSnoozed = sessionStorage.getItem(sessionKey) === '1';
+
+            if (!isSnoozed) {
+                setTimeout(function () {
+                    updateModal.classList.add('show');
+                    document.body.style.overflow = 'hidden';
+                }, 600);
+            }
+
+            function closeUpdateModal() {
+                updateModal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+
+            function markNotifSeen() {
+                const fd = new FormData();
+                fd.append('csrf_token', csrfToken);
+                fd.append('acc_number', accNum);
+
+                fetch('mark_update_seen.php', {
+                    method: 'POST',
+                    body: fd
+                }).catch(err => console.warn(err));
+            }
+
+            if (laterBtn) {
+                laterBtn.addEventListener('click', function () {
+                    // Save to sessionStorage
+                    sessionStorage.setItem(sessionKey, '1');
+                    
+                    markNotifSeen();
+                    closeUpdateModal();
+                });
+            }
+
+            if (updateNowBtn) {
+                updateNowBtn.addEventListener('click', function () {
+                    // Clear the session storage
+                    sessionStorage.removeItem(sessionKey);
+                    
+                    markNotifSeen();
+                    // Let the <a> tag proceed naturally (downloads APK)
+                });
+            }
+
+            updateModal.addEventListener('click', function (e) {
+                if (e.target === updateModal) {
+                    sessionStorage.setItem(sessionKey, '1');
+                    markNotifSeen();
+                    closeUpdateModal();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && updateModal.classList.contains('show')) {
+                    sessionStorage.setItem(sessionKey, '1');
+                    markNotifSeen();
+                    closeUpdateModal();
+                }
+            });
+        })();
 
         // Initial render
         applyFilters();
