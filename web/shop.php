@@ -2299,7 +2299,6 @@ if ($currentAcc !== '') {
             if (laterBtn) {
                 laterBtn.addEventListener('click', function () {
                     sessionStorage.setItem(sessionKey, '1');
-                    markNotifSeen();
                     closeUpdateModal();
                 });
             }
