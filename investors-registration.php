@@ -46,8 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Phone number format is invalid.';
     }
 
+    /* ✅ PIN validation — exactly 6 digits */
     if ($password === '') {
-        $errors[] = 'Password is required.';
+        $errors[] = 'PIN is required.';
+    } elseif (!preg_match('/^[0-9]{6}$/', $password)) {
+        $errors[] = 'PIN must be exactly 6 digits.';
     }
 
     /* 4. File upload validation */
@@ -136,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    /* 7. Insert into customers + hash password */
+    /* 7. Insert into customers + hash PIN */
     if (empty($errors)) {
         date_default_timezone_set('Asia/Manila');
         $registeredAt    = date('d F Y');
@@ -629,13 +632,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label for="password"><i class="fas fa-key"></i> Password</label>
+                <label for="password"><i class="fas fa-key"></i> 6-Digit PIN</label>
                 <div class="password-wrapper">
-                    <input type="password" name="password" id="password" placeholder="Create a password" minlength="5"
-                        required>
+                    <input type="tel" name="password" id="password" placeholder="Enter 6-digit PIN"
+                        maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+                        autocomplete="off" required>
                     <i class="fas fa-eye-slash toggle-eye" id="togglePassword"></i>
                 </div>
-                <div class="password-hint">Minimum 5 characters.</div>
+                <div class="password-hint">Exactly 6 digits (numbers only).</div>
             </div>
         </div>
 
@@ -653,7 +657,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 
     <script>
-        /* Password toggle */
+        /* PIN toggle — switch between masked and visible */
         const togglePassword = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('password');
         togglePassword.addEventListener('click', function () {
@@ -662,6 +666,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
+
+        /* ✅ Enforce numeric-only, 6-digit PIN */
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+            });
+        }
 
         /* File preview */
         const fileInput = document.getElementById('business_permit');
