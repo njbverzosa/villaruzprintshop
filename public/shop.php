@@ -1208,6 +1208,8 @@ if ($currentAcc !== '') {
                     </button>
                 </div>
             </div>
+            <!-- ✅ ADDED THIS DIV TO PREVENT JS CRASH -->
+            <div id="searchInfo" class="search-info"></div>
         </div>
 
         <div class="products-grid" id="productsGrid">
@@ -1488,10 +1490,12 @@ if ($currentAcc !== '') {
                 if (match) visibleCount++;
             });
 
-            if (searchTerm === '') {
-                searchInfo.innerHTML = `<i class="fas fa-info-circle"></i> Showing all ${visibleCount} products`;
-            } else {
-                searchInfo.innerHTML = `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
+            if (searchInfo) {
+                if (searchTerm === '') {
+                    searchInfo.innerHTML = `<i class="fas fa-info-circle"></i> Showing all ${visibleCount} products`;
+                } else {
+                    searchInfo.innerHTML = `<i class="fas fa-search"></i> Found ${visibleCount} product(s) matching "${escapeHtml(searchInput.value)}"`;
+                }
             }
         }
 
@@ -1707,7 +1711,7 @@ if ($currentAcc !== '') {
 
         updateCartBadge();
 
-               // ========== ✅ UPDATE APP POPUP (SESSION STORAGE) ==========
+        // ========== ✅ UPDATE APP POPUP (SESSION STORAGE) ==========
         (function () {
             const updateModal = document.getElementById('updateAppModal');
             const updateNowBtn = document.getElementById('updateNowBtn');
@@ -1739,7 +1743,8 @@ if ($currentAcc !== '') {
                 fd.append('acc_number', accNum);
 
                 try {
-                    const response = await fetch('../Customer_API/mark_update_seen.php', {
+                    // ✅ FIXED: It's in the same folder, not ../Customer_API/
+                    const response = await fetch('mark_update_seen.php', {
                         method: 'POST',
                         body: fd
                     });
