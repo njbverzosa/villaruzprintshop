@@ -893,7 +893,7 @@ if (isset($_SESSION['exit_message'])) {
                     </form>
 
                     <div class="register-footer">
-                        Don't have an account? <a href="join.php">Register here</a>
+                        Don't have an account? <a href="investors-registration.php">Register here</a>
                     </div>
                 </div>
             </div>
