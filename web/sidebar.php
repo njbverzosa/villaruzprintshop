@@ -699,7 +699,7 @@
 
 <div class="menu-header">
     <div class="logo">
-        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
+        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
             alt="Villaruz Print Shop Logo" loading="lazy" decoding="async">
     </div>
 
