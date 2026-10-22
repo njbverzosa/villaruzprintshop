@@ -907,9 +907,6 @@ if (isset($_SESSION['exit_message'])) {
                                     autocomplete="current-password" required>
                                 <i class="fas fa-eye-slash" id="togglePassword"></i>
                             </div>
-                            <div class="forgot-password-link">
-                                <a href="forgot_password.php">Forgot password?</a>
-                            </div>
                         </div>
 
                         <div class="action-area">

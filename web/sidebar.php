@@ -1,58 +1,30 @@
 <style>
     /* ============================================================
-       SIDEBAR — NAVY/BLUE GRADIENT BACKGROUND
+       SIDEBAR — STATIC GRADIENT (MOBILE-OPTIMIZED)
+       No backdrop-filter, no filter: blur(), no animations.
+       Painted once, scrolls on GPU without repaint.
        ============================================================ */
 
     .side-menu {
         position: relative;
         overflow: hidden;
-        background-color: #eef2ff;
+        background-color: #f4f6fb;
+        /* Layered static gradients — no animation, no blur filter */
         background-image:
-            radial-gradient(at 12% 8%,  rgba(26, 42, 108, 0.28) 0px, transparent 55%),
-            radial-gradient(at 92% 4%,  rgba(59, 111, 212, 0.26) 0px, transparent 55%),
-            radial-gradient(at 88% 42%, rgba(99, 102, 241, 0.20) 0px, transparent 55%),
-            radial-gradient(at 18% 72%, rgba(59, 130, 246, 0.18) 0px, transparent 55%),
-            radial-gradient(at 82% 94%, rgba(14, 165, 233, 0.20) 0px, transparent 55%),
-            radial-gradient(at 8% 100%, rgba(139, 92, 246, 0.20) 0px, transparent 55%),
+            radial-gradient(ellipse 420px 320px at 10% 4%,  rgba(26, 42, 108, 0.22), transparent 60%),
+            radial-gradient(ellipse 420px 320px at 92% 8%,  rgba(59, 111, 212, 0.20), transparent 60%),
+            radial-gradient(ellipse 500px 400px at 90% 45%, rgba(99, 102, 241, 0.14), transparent 60%),
+            radial-gradient(ellipse 420px 320px at 12% 78%, rgba(59, 130, 246, 0.12), transparent 60%),
+            radial-gradient(ellipse 500px 400px at 88% 100%, rgba(14, 165, 233, 0.14), transparent 60%),
             linear-gradient(160deg, #f4f6fb 0%, #eef2fb 40%, #eff6ff 70%, #f8fafc 100%);
-        background-attachment: local;
+        background-attachment: scroll; /* NOT fixed — avoids repaint on scroll */
+        background-size: cover;
+        background-repeat: no-repeat;
     }
 
-    .side-menu::before,
-    .side-menu::after {
-        content: "";
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(70px);
-        pointer-events: none;
-        z-index: 0;
-        opacity: 0.55;
-    }
+    /* No blurred pseudo-elements, no infinite animation — GPU-friendly */
 
-    .side-menu::before {
-        width: 260px;
-        height: 260px;
-        top: -90px;
-        left: -80px;
-        background: radial-gradient(circle, rgba(26, 42, 108, 0.55), transparent 70%);
-        animation: sidebarFloat 16s ease-in-out infinite;
-    }
-
-    .side-menu::after {
-        width: 300px;
-        height: 300px;
-        bottom: -120px;
-        right: -100px;
-        background: radial-gradient(circle, rgba(59, 111, 212, 0.45), transparent 70%);
-        animation: sidebarFloat 20s ease-in-out infinite reverse;
-    }
-
-    @keyframes sidebarFloat {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        50%      { transform: translate(20px, -20px) scale(1.08); }
-    }
-
-    /* ✅ Keep header + nav above the blobs */
+    /* ✅ Keep header + nav above the gradient */
     .menu-header,
     .menu-nav {
         position: relative;
@@ -76,13 +48,11 @@
         padding: 6px;
     }
 
-    /* ---------- User Header (glass) ---------- */
+    /* ---------- User Header (solid, not glassy) ---------- */
     .menu-header {
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.85);
-        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+        background: rgba(255, 255, 255, 0.94); /* solid-ish, no blur */
+        border-bottom: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
     }
 
     .user-name {
@@ -108,7 +78,7 @@
         flex-shrink: 0;
     }
 
-    /* ---------- Nav Container (no inner scroll) ---------- */
+    /* ---------- Nav Container ---------- */
     .menu-nav {
         padding: 16px 14px 24px;
         display: flex;
@@ -118,7 +88,7 @@
     }
 
     /* ============================================================
-       MAIN NAV ITEMS — glassy tiles on gradient
+       MAIN NAV ITEMS — solid backgrounds, no backdrop-filter
        ============================================================ */
     .menu-nav .nav-item {
         position: relative;
@@ -129,17 +99,19 @@
         border-radius: 12px;
         color: #334155;
         text-decoration: none;
-        transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        transition: background 0.15s ease, color 0.15s ease;
         cursor: pointer;
         overflow: hidden;
         border: 1px solid transparent;
+        /* GPU hint — cheap transform on tap */
+        -webkit-tap-highlight-color: transparent;
     }
 
     .menu-nav .nav-item i {
         width: 22px;
         font-size: 18px;
         color: #64748b;
-        transition: color 0.2s ease, transform 0.2s ease;
+        transition: color 0.15s ease;
         text-align: center;
         flex-shrink: 0;
     }
@@ -151,28 +123,21 @@
     }
 
     .menu-nav .nav-item:hover {
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.75);
         color: #0f172a;
-        border-color: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
     }
 
     .menu-nav .nav-item:hover i {
         color: #3b6fd4;
-        transform: scale(1.08);
     }
 
     .menu-nav .nav-item.active,
     .menu-nav .nav-item.shop {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(238, 242, 255, 0.92) 100%);
+        background: #ffffff;
         color: #1a2a6c;
         font-weight: 600;
-        border-color: rgba(255, 255, 255, 0.95);
-        box-shadow:
-            0 6px 18px rgba(26, 42, 108, 0.18),
-            0 1px 0 rgba(255, 255, 255, 0.9) inset;
+        border-color: #e2e8f0;
+        box-shadow: 0 2px 6px rgba(26, 42, 108, 0.10);
     }
 
     .menu-nav .nav-item.active::before,
@@ -192,12 +157,6 @@
         color: #1a2a6c;
     }
 
-    .menu-nav .nav-item.active:hover,
-    .menu-nav .nav-item.shop:hover {
-        background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
-        color: #0f1c4d;
-    }
-
     /* ============================================================
        DROPDOWN TOGGLES
        ============================================================ */
@@ -209,33 +168,29 @@
         border-radius: 12px;
         color: #334155;
         text-decoration: none;
-        transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        transition: background 0.15s ease, color 0.15s ease;
         cursor: pointer;
         user-select: none;
         border: 1px solid transparent;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .nav-dropdown-toggle:hover {
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.75);
         color: #0f172a;
-        border-color: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
     }
 
     .nav-dropdown-toggle i:first-child {
         width: 22px;
         font-size: 18px;
         color: #64748b;
-        transition: color 0.2s ease, transform 0.2s ease;
+        transition: color 0.15s ease;
         text-align: center;
         flex-shrink: 0;
     }
 
     .nav-dropdown-toggle:hover i:first-child {
         color: #3b6fd4;
-        transform: scale(1.08);
     }
 
     .nav-dropdown-toggle span {
@@ -249,7 +204,7 @@
         font-size: 11px !important;
         color: #94a3b8 !important;
         width: auto !important;
-        transition: transform 0.3s ease, color 0.2s ease;
+        transition: transform 0.2s ease, color 0.15s ease;
         padding: 4px;
         border-radius: 6px;
     }
@@ -259,13 +214,11 @@
     }
 
     .nav-dropdown-toggle.active-dropdown {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(238, 242, 255, 0.92) 100%);
+        background: #ffffff;
         color: #1a2a6c;
         font-weight: 600;
-        border-color: rgba(255, 255, 255, 0.95);
-        box-shadow:
-            0 6px 18px rgba(26, 42, 108, 0.18),
-            0 1px 0 rgba(255, 255, 255, 0.9) inset;
+        border-color: #e2e8f0;
+        box-shadow: 0 2px 6px rgba(26, 42, 108, 0.10);
     }
 
     .nav-dropdown-toggle.active-dropdown i:first-child {
@@ -277,7 +230,7 @@
     }
 
     /* ============================================================
-       DROPDOWN MENU CONTAINER — glass card
+       DROPDOWN MENU CONTAINER — solid bg, no blur
        ============================================================ */
     .nav-dropdown-menu {
         display: none;
@@ -285,12 +238,10 @@
         padding: 6px;
         border-left: none;
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.85);
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
-        animation: dropdownSlide 0.2s ease;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        animation: dropdownSlide 0.18s ease;
     }
 
     .nav-dropdown-menu.show {
@@ -310,7 +261,7 @@
     }
 
     /* ============================================================
-       DROPDOWN ITEMS (child items — hover REMOVED)
+       DROPDOWN ITEMS
        ============================================================ */
     .nav-dropdown-item {
         position: relative;
@@ -321,17 +272,18 @@
         border-radius: 10px;
         color: #475569;
         text-decoration: none;
-        transition: background 0.2s ease, color 0.2s ease;
+        transition: background 0.15s ease, color 0.15s ease;
         font-size: 13.5px;
         cursor: pointer;
         margin-bottom: 2px;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .nav-dropdown-item i {
         width: 18px;
         font-size: 13px;
         color: #64748b;
-        transition: color 0.2s ease;
+        transition: color 0.15s ease;
         text-align: center;
         flex-shrink: 0;
     }
@@ -345,229 +297,92 @@
     /* ============================================================
        CHILD ACTIVE STATES
        ============================================================ */
-
     .nav-dropdown-item.active {
         color: #1a2a6c;
         font-weight: 600;
     }
-
     .nav-dropdown-item.active::before {
         content: "";
         position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
+        left: 0; top: 18%; bottom: 18%;
         width: 5px;
         background: #3b6fd4;
         border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active i { color: #3b6fd4; }
 
-    .nav-dropdown-item.active i {
-        color: #3b6fd4;
-    }
-
-    .nav-dropdown-item.active_pending {
-        color: #b45309;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_pending { color: #b45309; font-weight: 600; }
     .nav-dropdown-item.active_pending::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #f59e0b;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #f59e0b; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_pending i { color: #f59e0b; }
 
-    .nav-dropdown-item.active_pending i {
-        color: #f59e0b;
-    }
-
-    .nav-dropdown-item.active_paid {
-        color: #047857;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_paid { color: #047857; font-weight: 600; }
     .nav-dropdown-item.active_paid::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #10b981;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #10b981; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_paid i { color: #10b981; }
 
-    .nav-dropdown-item.active_paid i {
-        color: #10b981;
-    }
-
-    .nav-dropdown-item.active_credit {
-        color: #b91c1c;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_credit { color: #b91c1c; font-weight: 600; }
     .nav-dropdown-item.active_credit::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #ef4444;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #ef4444; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_credit i { color: #ef4444; }
 
-    .nav-dropdown-item.active_credit i {
-        color: #ef4444;
-    }
-
-    .nav-dropdown-item.active_shop_po {
-        color: #1d4ed8;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_shop_po { color: #1d4ed8; font-weight: 600; }
     .nav-dropdown-item.active_shop_po::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #3b82f6;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #3b82f6; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_shop_po i { color: #3b82f6; }
 
-    .nav-dropdown-item.active_shop_po i {
-        color: #3b82f6;
-    }
-
-    .nav-dropdown-item.active_cart_po {
-        color: #b45309;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_cart_po { color: #b45309; font-weight: 600; }
     .nav-dropdown-item.active_cart_po::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #f59e0b;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #f59e0b; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_cart_po i { color: #f59e0b; }
 
-    .nav-dropdown-item.active_cart_po i {
-        color: #f59e0b;
-    }
-
-    .nav-dropdown-item.active_customers {
-        color: #0f766e;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_customers { color: #0f766e; font-weight: 600; }
     .nav-dropdown-item.active_customers::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #14b8a6;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #14b8a6; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_customers i { color: #14b8a6; }
 
-    .nav-dropdown-item.active_customers i {
-        color: #14b8a6;
-    }
-
-    .nav-dropdown-item.active_database {
-        color: #1d4ed8;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_database { color: #1d4ed8; font-weight: 600; }
     .nav-dropdown-item.active_database::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #3b82f6;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #3b82f6; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_database i { color: #3b82f6; }
 
-    .nav-dropdown-item.active_database i {
-        color: #3b82f6;
-    }
-
-    .nav-dropdown-item.active_download_images {
-        color: #6d28d9;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_download_images { color: #6d28d9; font-weight: 600; }
     .nav-dropdown-item.active_download_images::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #8b5cf6;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #8b5cf6; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_download_images i { color: #8b5cf6; }
 
-    .nav-dropdown-item.active_download_images i {
-        color: #8b5cf6;
-    }
-
-    .nav-dropdown-item.active_investors {
-        color: #be185d;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_investors { color: #be185d; font-weight: 600; }
     .nav-dropdown-item.active_investors::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #ec4899;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #ec4899; border-radius: 0 2px 2px 0;
     }
+    .nav-dropdown-item.active_investors i { color: #ec4899; }
 
-    .nav-dropdown-item.active_investors i {
-        color: #ec4899;
-    }
-
-    .nav-dropdown-item.active_products_source {
-        color: #1a2a6c;
-        font-weight: 600;
-    }
-
+    .nav-dropdown-item.active_products_source { color: #1a2a6c; font-weight: 600; }
     .nav-dropdown-item.active_products_source::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 18%;
-        bottom: 18%;
-        width: 4px;
-        background: #3b6fd4;
-        border-radius: 0 2px 2px 0;
+        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+        width: 4px; background: #3b6fd4; border-radius: 0 2px 2px 0;
     }
-
-    .nav-dropdown-item.active_products_source i {
-        color: #3b6fd4;
-    }
+    .nav-dropdown-item.active_products_source i { color: #3b6fd4; }
 
     /* ============================================================
-       CLOSE BUTTON (mobile) — glass
+       CLOSE BUTTON (mobile) — solid, no blur
        ============================================================ */
     .sidebar-close-btn {
         position: absolute;
@@ -578,22 +393,20 @@
         display: none;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.95);
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
         border-radius: 10px;
         color: #475569;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: background 0.15s ease, color 0.15s ease;
         z-index: 20;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+        -webkit-tap-highlight-color: transparent;
     }
 
     .sidebar-close-btn:hover {
-        background: #ffffff;
+        background: #f8fafc;
         color: #0f172a;
-        transform: translateX(-2px);
     }
 
     @media (max-width: 768px) {
@@ -610,7 +423,7 @@
         color: #94a3b8 !important;
         width: auto !important;
         margin-left: 2px;
-        transition: color 0.2s ease;
+        transition: color 0.15s ease;
     }
 
     .nav-dropdown-toggle.sm-unlocked .sm-lock-icon {
@@ -618,21 +431,19 @@
     }
 
     /* ============================================================
-       🔐 PIN MODAL — glass w/ gradient accents
+       🔐 PIN MODAL — solid overlay, no backdrop-filter
        ============================================================ */
     .pin-modal-overlay {
         position: fixed;
         inset: 0;
         background: rgba(15, 23, 42, 0.55);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
         z-index: 99999;
         display: flex;
         align-items: center;
         justify-content: center;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0.2s ease;
+        transition: opacity 0.18s ease, visibility 0.18s ease;
         padding: 20px;
     }
 
@@ -651,18 +462,8 @@
             0 4px 12px rgba(15, 23, 42, 0.1);
         overflow: hidden;
         transform: translateY(10px) scale(0.97);
-        transition: transform 0.25s ease;
+        transition: transform 0.22s ease;
         position: relative;
-    }
-
-    .pin-modal::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-            radial-gradient(at 0% 0%, rgba(26, 42, 108, 0.08), transparent 50%),
-            radial-gradient(at 100% 100%, rgba(59, 111, 212, 0.08), transparent 50%);
-        pointer-events: none;
     }
 
     .pin-modal-overlay.show .pin-modal {
@@ -727,7 +528,7 @@
         border: 2px solid #e2e8f0;
         border-radius: 12px;
         outline: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
         font-family: 'Poppins', monospace;
         box-sizing: border-box;
     }
@@ -748,14 +549,13 @@
         border-color: #ef4444;
         background: #fef2f2;
         box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
-        animation: pinShake 0.35s ease;
+        animation: pinShake 0.3s ease;
     }
 
     .pin-input.success {
         border-color: #10b981;
         background: #ecfdf5;
         box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
-        animation: pinSuccessPulse 0.35s ease;
     }
 
     @keyframes pinShake {
@@ -764,12 +564,6 @@
         40%      { transform: translateX(6px); }
         60%      { transform: translateX(-4px); }
         80%      { transform: translateX(4px); }
-    }
-
-    @keyframes pinSuccessPulse {
-        0%   { transform: scale(1); }
-        40%  { transform: scale(1.03); }
-        100% { transform: scale(1); }
     }
 
     .pin-toggle-visibility {
@@ -782,15 +576,15 @@
         font-size: 15px;
         padding: 6px;
         border-radius: 8px;
-        transition: color 0.2s ease, background 0.2s ease;
+        transition: color 0.15s ease;
         display: flex;
         align-items: center;
         justify-content: center;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .pin-toggle-visibility:hover {
         color: #1a2a6c;
-        background: #eef2fb;
     }
 
     .pin-error-message {
@@ -809,7 +603,6 @@
 
     .pin-error-message.show {
         display: flex;
-        animation: dropdownSlide 0.2s ease;
     }
 
     .pin-error-message i {
@@ -832,13 +625,14 @@
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: background 0.15s ease, box-shadow 0.15s ease;
         border: none;
         font-family: inherit;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .pin-btn-cancel {
@@ -860,18 +654,42 @@
 
     .pin-btn-confirm:hover {
         background: linear-gradient(135deg, #0f1c4d 0%, #2a4d9b 100%);
-        box-shadow: 0 6px 18px rgba(26, 42, 108, 0.45);
-        transform: translateY(-1px);
-    }
-
-    .pin-btn-confirm:active {
-        transform: translateY(0);
     }
 
     .pin-btn-confirm:disabled {
         opacity: 0.6;
         cursor: not-allowed;
-        transform: none;
+    }
+
+    /* ============================================================
+       MOBILE PERFORMANCE — disable animations on small screens
+       ============================================================ */
+    @media (max-width: 768px) {
+        /* Drop the only remaining animation on mobile */
+        .nav-dropdown-menu {
+            animation: none;
+        }
+        .pin-input.error {
+            animation: none;
+        }
+        /* Faster transitions */
+        .menu-nav .nav-item,
+        .nav-dropdown-toggle,
+        .nav-dropdown-item {
+            transition-duration: 0.1s;
+        }
+    }
+
+    /* ============================================================
+       REDUCED MOTION — respect system preference
+       ============================================================ */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation: none !important;
+            transition-duration: 0.01ms !important;
+        }
     }
 </style>
 
@@ -882,7 +700,7 @@
 <div class="menu-header">
     <div class="logo">
         <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
-            alt="Villaruz Print Shop Logo">
+            alt="Villaruz Print Shop Logo" loading="lazy" decoding="async">
     </div>
 
     <div class="user-name">
@@ -930,13 +748,11 @@
     }
     ?>
 
-    <!-- ========== SHOP ========== -->
     <a href="shop.php" class="nav-item <?php echo $currentPage == 'shop.php' ? 'active' : ''; ?>">
         <i class="fas fa-store"></i>
         <span>Shop</span>
     </a>
 
-    <!-- ========== CART (only if user has a row in cart table) ========== -->
     <?php if ($showCart): ?>
         <a href="cart.php" class="nav-item <?php echo $currentPage == 'cart.php' ? 'active' : ''; ?>">
             <i class="fas fa-shopping-cart"></i>
@@ -944,7 +760,6 @@
         </a>
     <?php endif; ?>
 
-    <!-- ========== ORDERS DROPDOWN ========== -->
     <div class="nav-dropdown">
         <div class="nav-dropdown-toggle <?php echo $ordersActive ? 'active-dropdown' : ''; ?>"
             onclick="toggleDropdown('ordersDropdown')">
@@ -972,7 +787,6 @@
         </div>
     </div>
 
-    <!-- ========== SOURCE DROPDOWN ========== -->
     <div class="nav-dropdown">
         <div class="nav-dropdown-toggle <?php echo $sourceActive ? 'active-dropdown' : ''; ?>"
             onclick="toggleDropdown('sourceDropdown')">
@@ -990,7 +804,6 @@
         </div>
     </div>
 
-    <!-- ========== SYSTEM USER DROPDOWN ========== -->
     <?php if (in_array($authorizeAccess, [0, 2], true)): ?>
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle <?php echo $customersActive ? 'active-dropdown' : ''; ?>"
@@ -1002,7 +815,6 @@
             </div>
 
             <div class="nav-dropdown-menu <?php echo $customersActive ? 'show' : ''; ?>" id="customersDropdown">
-
                 <a href="registered_investors.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'registered_investors.php' ? 'active_investors' : ''; ?>">
                     <i class="fas fa-user-tie"></i>
@@ -1014,12 +826,10 @@
                     <i class="fas fa-user"></i>
                     <span>Customers</span>
                 </a>
-
             </div>
         </div>
     <?php endif; ?>
 
-    <!-- ========== SYSTEM MANAGER / DB MANAGER DROPDOWN ========== -->
     <?php if ($authorizeAccess == 0): ?>
         <div class="nav-dropdown">
             <div class="nav-dropdown-toggle <?php echo $dbManagerActive ? 'active-dropdown' : ''; ?>" id="smToggle"
@@ -1031,7 +841,6 @@
                     id="dbManagerArrow"></i>
             </div>
             <div class="nav-dropdown-menu <?php echo $dbManagerActive ? 'show' : ''; ?>" id="dbManagerDropdown">
-
                 <a href="database_manager.php"
                     class="nav-dropdown-item <?php echo $currentPage == 'database_manager.php' ? 'active_database' : ''; ?>">
                     <i class="fas fa-table"></i>
@@ -1048,12 +857,10 @@
                     <i class="fas fa-file-export"></i>
                     <span>Download Database</span>
                 </a>
-
             </div>
         </div>
     <?php endif; ?>
 
-    <!-- ========== LOGOUT ========== -->
     <a href="closed.php" class="nav-item <?php echo $currentPage == 'closed.php' ? 'active' : ''; ?>">
         <i class="fas fa-sign-out-alt"></i>
         <span>Logout</span>
@@ -1143,9 +950,7 @@
 
     function relockSystemManager() {
         try { sessionStorage.removeItem(SM_UNLOCK_KEY); } catch (e) { }
-
         setUnlockedUI(false);
-
         if (dbManagerDropdown) dbManagerDropdown.classList.remove('show');
         if (dbManagerArrow) dbManagerArrow.classList.remove('rotated');
         if (smToggle) smToggle.classList.remove('active-dropdown');
@@ -1230,16 +1035,13 @@
             pinInput.classList.add('success');
 
             try { sessionStorage.setItem(SM_UNLOCK_KEY, '1'); } catch (e) { }
-
             setUnlockedUI(true);
 
             setTimeout(() => {
                 closePinModal();
-
                 if (dbManagerDropdown) dbManagerDropdown.classList.add('show');
                 if (dbManagerArrow) dbManagerArrow.classList.add('rotated');
                 if (smToggle) smToggle.classList.add('active-dropdown');
-
                 isSubmitting = false;
             }, 180);
         } else {
