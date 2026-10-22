@@ -494,6 +494,16 @@ if (isset($_SESSION['exit_message'])) {
             color: #3b82f6;
         }
 
+        /* ✅ Masked PIN field — looks like password, but is type="text" */
+        .pin-masked {
+            -webkit-text-security: disc;
+            text-security: disc;
+        }
+        .pin-masked.pin-visible {
+            -webkit-text-security: none;
+            text-security: none;
+        }
+
         .forgot-password-link {
             text-align: right;
             margin-top: 8px;
@@ -909,21 +919,23 @@ if (isset($_SESSION['exit_message'])) {
                 <?php endif; ?>
 
                 <div id="passwordSection">
-                    <form method="POST" action="" id="loginForm">
+                    <form method="POST" action="" id="loginForm" autocomplete="off">
                         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
                         <div class="form-group">
                             <label><i class="fas fa-id-card"></i> Account Number</label>
                             <input type="text" name="acc_number" id="acc_number" placeholder="Enter your account number"
-                                value="<?php echo htmlspecialchars($selectedAcc); ?>" autocomplete="username" required>
+                                value="<?php echo htmlspecialchars($selectedAcc); ?>"
+                                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
                         </div>
 
                         <div class="form-group">
                             <label><i class="fas fa-lock"></i> 6-Digit PIN</label>
                             <div class="password-wrapper">
-                                <input type="password" name="password" id="password" placeholder="Enter your 6-digit PIN"
-                                    maxlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="current-password"
-                                    required>
+                                <input type="text" name="password" id="password" placeholder="Enter your 6-digit PIN"
+                                    maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+                                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                                    class="pin-masked" required>
                                 <i class="fas fa-eye-slash" id="togglePassword"></i>
                             </div>
                             <div class="forgot-password-link">
@@ -1099,10 +1111,10 @@ if (isset($_SESSION['exit_message'])) {
 
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
-        if (togglePassword) {
+        if (togglePassword && password) {
             togglePassword.addEventListener('click', function () {
-                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                password.setAttribute('type', type);
+                // Toggle the CSS masking class instead of input type
+                password.classList.toggle('pin-visible');
                 this.classList.toggle('fa-eye');
                 this.classList.toggle('fa-eye-slash');
             });
