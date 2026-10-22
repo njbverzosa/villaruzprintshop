@@ -554,7 +554,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form class="reg-card" method="POST" enctype="multipart/form-data">
         <div class="reg-header">
-            <h1>Become a Customer Partner</h1>
+            <h1>Become a Investors Partner at Villaruz Print Shop</h1>
             <p>Register your business to start investing with us</p>
         </div>
 
