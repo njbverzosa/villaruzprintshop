@@ -923,8 +923,8 @@ if (isset($_SESSION['exit_message'])) {
                         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
                         <div class="form-group">
-                            <label><i class="fas fa-id-card"></i> Account Number</label>
-                            <input type="text" name="acc_number" id="acc_number" placeholder="Enter your account number"
+                            <label><i class="fas fa-id-card"></i> Last 4 phone numbers</label>
+                            <input type="text" name="acc_number" id="acc_number" placeholder="Enter your last 4 phone number"
                                 value="<?php echo htmlspecialchars($selectedAcc); ?>"
                                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
                         </div>
