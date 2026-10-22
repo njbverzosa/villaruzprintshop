@@ -1,6 +1,6 @@
 <?php
 // login.php – Investor-only login (desktop + mobile + in-app flows)
-// ✅ Two inputs: Account Number + Password
+// ✅ Two inputs: Account Number + 6-Digit PIN
 // ✅ Credentials verified against `investors` table only
 // ✅ Biometric gate fires only when biometric_enrolled = 0 for that acc_number
 // ✅ Records online_time + login_type ("web"/"app") on every login
@@ -195,7 +195,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
         if (empty($selectedAcc))
             $errors[] = 'Account Number cannot be empty.';
         if (empty($password))
-            $errors[] = 'Password cannot be empty.';
+            $errors[] = 'PIN cannot be empty.';
+        elseif (!preg_match('/^[0-9]{6}$/', $password))
+            $errors[] = 'PIN must be exactly 6 digits.';
 
         if (empty($errors)) {
             $stmt = $pdo->prepare("
@@ -211,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             if (!$user) {
                 $errors[] = 'This account is not registered as an Investor. Please check your Account Number or register an Investor account.';
             } elseif (!password_verify($password, $user['password'])) {
-                $errors[] = 'Invalid password. Please try again.';
+                $errors[] = 'Invalid PIN. Please try again.';
             } else {
                 date_default_timezone_set('Asia/Manila');
 
@@ -479,6 +481,16 @@ if (isset($_SESSION['exit_message'])) {
 
         .password-wrapper i:hover {
             color: #3b82f6;
+        }
+
+        /* ✅ Masked PIN field — looks like password, but is type="tel" */
+        .pin-masked {
+            -webkit-text-security: disc;
+            text-security: disc;
+        }
+        .pin-masked.pin-visible {
+            -webkit-text-security: none;
+            text-security: none;
         }
 
         .forgot-password-link {
@@ -854,24 +866,27 @@ if (isset($_SESSION['exit_message'])) {
                 <?php endif; ?>
 
                 <div id="passwordSection">
-                    <form method="POST" action="" id="loginForm">
+                    <form method="POST" action="" id="loginForm" autocomplete="off">
                         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
                         <div class="form-group">
                             <label><i class="fas fa-id-card"></i> Account Number</label>
                             <input type="text" name="acc_number" id="acc_number" placeholder="Enter your account number"
-                                value="<?php echo htmlspecialchars($selectedAcc); ?>" autocomplete="username" required>
+                                value="<?php echo htmlspecialchars($selectedAcc); ?>"
+                                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
                         </div>
 
                         <div class="form-group">
-                            <label><i class="fas fa-lock"></i> Password</label>
+                            <label><i class="fas fa-lock"></i> 6-Digit PIN</label>
                             <div class="password-wrapper">
-                                <input type="password" name="password" id="password" placeholder="Enter your password"
-                                    autocomplete="current-password" required>
+                                <input type="tel" name="password" id="password" placeholder="Enter your 6-digit PIN"
+                                    maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+                                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                                    class="pin-masked" required>
                                 <i class="fas fa-eye-slash" id="togglePassword"></i>
                             </div>
                             <div class="forgot-password-link">
-                                <a href="forgot_password.php">Forgot password?</a>
+                                <a href="forgot_password.php">Forgot PIN?</a>
                             </div>
                         </div>
 
@@ -908,7 +923,7 @@ if (isset($_SESSION['exit_message'])) {
             </div>
             <div class="bio-popup-title" id="bioPopupTitle">Fingerprint not available</div>
             <div class="bio-popup-message" id="bioPopupMessage">
-                No fingerprint enrolled. Please log in with password first and enroll your fingerprint.
+                No fingerprint enrolled. Please log in with PIN first and enroll your fingerprint.
             </div>
             <div class="bio-popup-actions">
                 <button type="button" class="bio-popup-btn" onclick="closeBioPopup()">Got it</button>
@@ -974,7 +989,7 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             if (!hasBiometric || !userId) {
-                showBioPopup('Fingerprint not enrolled', 'No fingerprint enrolled. Please log in with password first and enroll your fingerprint.', 'fas fa-fingerprint');
+                showBioPopup('Fingerprint not enrolled', 'No fingerprint enrolled. Please log in with PIN first and enroll your fingerprint.', 'fas fa-fingerprint');
                 return;
             }
 
@@ -1044,14 +1059,30 @@ if (isset($_SESSION['exit_message'])) {
 
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
-        if (togglePassword) {
+        if (togglePassword && password) {
             togglePassword.addEventListener('click', function () {
-                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                password.setAttribute('type', type);
+                // Toggle the CSS masking class instead of input type
+                password.classList.toggle('pin-visible');
                 this.classList.toggle('fa-eye');
                 this.classList.toggle('fa-eye-slash');
             });
         }
+
+        // ✅ Enforce numeric-only, 6-digit PIN
+        if (password) {
+            password.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+            });
+        }
+
+        // ✅ Auto-focus PIN field if account number is already filled
+        document.addEventListener('DOMContentLoaded', function () {
+            var acc = document.getElementById('acc_number');
+            var pin = document.getElementById('password');
+            if (acc && pin && acc.value.trim() !== '') {
+                pin.focus();
+            }
+        });
     </script>
 </body>
 
