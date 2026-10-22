@@ -59,6 +59,37 @@ function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
     return 'public/shop.php';
 }
 
+// ============================================================
+// ✅ COOKIE HELPERS — remember account number across visits
+// ============================================================
+const ACC_COOKIE_NAME = 'customer_acc_number';
+const ACC_COOKIE_TTL  = 86400 * 365; // 1 year
+
+function setAccNumberCookie(string $accNumber): void
+{
+    if ($accNumber === '') return;
+    setcookie(ACC_COOKIE_NAME, $accNumber, [
+        'expires'  => time() + ACC_COOKIE_TTL,
+        'path'     => '/',
+        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    $_COOKIE[ACC_COOKIE_NAME] = $accNumber;
+}
+
+function clearAccNumberCookie(): void
+{
+    setcookie(ACC_COOKIE_NAME, '', [
+        'expires'  => time() - 3600,
+        'path'     => '/',
+        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    unset($_COOKIE[ACC_COOKIE_NAME]);
+}
+
 $isLoggedIn = false;
 $redirectUrl = '';
 $userName = '';
@@ -143,6 +174,8 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
     setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
     setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
+    setAccNumberCookie((string) $user['acc_number']);
+
     updateLoginMeta($pdo, $user['id'], $loginType);
 
     $redirectUrl = getCustomerRedirect($isInApp, $isMobileBrowser, $user);
@@ -155,6 +188,10 @@ $errors = [];
 $loginSuccess = false;
 $selectedAcc = '';
 
+if (isset($_COOKIE[ACC_COOKIE_NAME]) && is_string($_COOKIE[ACC_COOKIE_NAME])) {
+    $selectedAcc = trim($_COOKIE[ACC_COOKIE_NAME]);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) {
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $errors[] = 'Your session has expired or is invalid. Please refresh the page and try again.';
@@ -165,7 +202,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
         if (empty($selectedAcc))
             $errors[] = 'Account Number cannot be empty.';
         if (empty($password))
-            $errors[] = 'Password cannot be empty.';
+            $errors[] = 'PIN cannot be empty.';
+        elseif (!preg_match('/^[0-9]{6}$/', $password))
+            $errors[] = 'PIN must be exactly 6 digits.';
 
         if (empty($errors)) {
             $stmt = $pdo->prepare("
@@ -179,9 +218,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$user) {
+                clearAccNumberCookie();
                 $errors[] = 'This account is not registered as a Customer. Please check your Account Number or register a Customer account.';
             } elseif (!password_verify($password, $user['password'])) {
-                $errors[] = 'Invalid password. Please try again.';
+                $errors[] = 'Invalid PIN. Please try again.';
             } else {
                 date_default_timezone_set('Asia/Manila');
 
@@ -193,6 +233,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                 setcookie('user_id', $user['id'], time() + (86400 * 365), "/");
                 setcookie('user_type', 'Customer', time() + (86400 * 365), "/");
                 setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
+
+                setAccNumberCookie((string) $user['acc_number']);
 
                 updateLoginMeta($pdo, $user['id'], $loginType);
 
@@ -325,10 +367,11 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         .logo-stack .main-logo {
-            width: 130px;
-            height: 130px;
+            width: 140px;
+            height: 140px;
             object-fit: contain;
             display: block;
+            border-radius: 28px;
         }
 
         /* ========== PORTAL HEADER ========== */
@@ -765,18 +808,62 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             .logo-stack .main-logo {
-                width: 170px;
-                height: 170px;
+                width: 180px;
+                height: 180px;
+                border-radius: 32px;
             }
 
             .form-group {
                 margin-bottom: 18px;
             }
 
-            /* ✅ Nudge back arrow a bit more outward on desktop for balance */
             .back-arrow {
                 top: -8px;
                 left: -4px;
+            }
+        }
+
+        /* ========== SMALL PHONES ========== */
+        @media (max-width: 380px) {
+            .logo {
+                margin-bottom: 20px;
+            }
+
+            .logo-stack .main-logo {
+                width: 120px;
+                height: 120px;
+                border-radius: 26px;
+            }
+        }
+
+        /* ========== SHORT SCREENS ========== */
+        @media (max-height: 700px) {
+            .logo {
+                margin-bottom: 20px;
+            }
+
+            .logo-stack .main-logo {
+                width: 110px;
+                height: 110px;
+                border-radius: 24px;
+            }
+        }
+
+        /* ========== MOBILE FULL-SCREEN APP VIEW ========== */
+        @media (max-width: 640px) {
+            .logo-stack .main-logo {
+                width: 130px;
+                height: 130px;
+                border-radius: 28px;
+            }
+        }
+
+        /* ========== MOBILE + SHORT SCREENS ========== */
+        @media (max-width: 640px) and (max-height: 700px) {
+            .logo-stack .main-logo {
+                width: 110px;
+                height: 110px;
+                border-radius: 24px;
             }
         }
     </style>
@@ -787,12 +874,10 @@ if (isset($_SESSION['exit_message'])) {
         <div class="auth-container">
             <div class="auth-card">
 
-                <!-- ✅ BACK ARROW — goes to role.php -->
                 <a href="role.php" class="back-arrow" title="Back to role selection" aria-label="Back to role selection">
                     <i class="fas fa-arrow-left"></i>
                 </a>
 
-                <!-- Logo -->
                 <div class="logo">
                     <div class="logo-stack">
                         <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
@@ -834,14 +919,15 @@ if (isset($_SESSION['exit_message'])) {
                         </div>
 
                         <div class="form-group">
-                            <label><i class="fas fa-lock"></i> Password</label>
+                            <label><i class="fas fa-lock"></i> 6-Digit PIN</label>
                             <div class="password-wrapper">
-                                <input type="password" name="password" id="password" placeholder="Enter your password"
-                                    autocomplete="current-password" required>
+                                <input type="password" name="password" id="password" placeholder="Enter your 6-digit PIN"
+                                    maxlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="current-password"
+                                    required>
                                 <i class="fas fa-eye-slash" id="togglePassword"></i>
                             </div>
                             <div class="forgot-password-link">
-                                <a href="forgot_password.php">Forgot password?</a>
+                                <a href="forgot_password.php">Forgot PIN?</a>
                             </div>
                         </div>
 
@@ -863,14 +949,13 @@ if (isset($_SESSION['exit_message'])) {
                     </form>
 
                     <div class="register-footer">
-                        Don't have an account? <a href="registration.php">Register here</a>
+                        Don't have an account? <a href="customers-registration.php">Register here</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ✅ Custom biometric popup -->
     <div class="bio-popup-overlay" id="bioPopup" role="dialog" aria-modal="true" aria-labelledby="bioPopupTitle">
         <div class="bio-popup">
             <div class="bio-popup-icon">
@@ -878,7 +963,7 @@ if (isset($_SESSION['exit_message'])) {
             </div>
             <div class="bio-popup-title" id="bioPopupTitle">Fingerprint not available</div>
             <div class="bio-popup-message" id="bioPopupMessage">
-                No fingerprint enrolled. Please log in with password first and enroll your fingerprint.
+                No fingerprint enrolled. Please log in with PIN first and enroll your fingerprint.
             </div>
             <div class="bio-popup-actions">
                 <button type="button" class="bio-popup-btn" onclick="closeBioPopup()">Got it</button>
@@ -944,7 +1029,7 @@ if (isset($_SESSION['exit_message'])) {
             }
 
             if (!hasBiometric || !userId) {
-                showBioPopup('Fingerprint not enrolled', 'No fingerprint enrolled. Please log in with password first and enroll your fingerprint.', 'fas fa-fingerprint');
+                showBioPopup('Fingerprint not enrolled', 'No fingerprint enrolled. Please log in with PIN first and enroll your fingerprint.', 'fas fa-fingerprint');
                 return;
             }
 
@@ -1022,6 +1107,20 @@ if (isset($_SESSION['exit_message'])) {
                 this.classList.toggle('fa-eye-slash');
             });
         }
+
+        if (password) {
+            password.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var acc = document.getElementById('acc_number');
+            var pin = document.getElementById('password');
+            if (acc && pin && acc.value.trim() !== '') {
+                pin.focus();
+            }
+        });
     </script>
 </body>
 
