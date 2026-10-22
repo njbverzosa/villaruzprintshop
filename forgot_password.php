@@ -272,8 +272,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Forgot Password - Villaruz Print Shop</title>
+    <title>Forgot Password | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -290,51 +296,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         body {
-            background: #ffffff;
+            background: #f1f5f9;
             color: #1e293b;
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
-            flex-direction: column;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .app-shell {
+        /* ============================================
+           LEFT BRAND PANEL (desktop only)
+           ============================================ */
+        .brand-panel {
+            display: none;
+        }
+
+        /* ============================================
+           RIGHT FORM PANEL
+           ============================================ */
+        .form-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
             background: #ffffff;
+            min-height: 100dvh;
+            position: relative;
         }
 
         .auth-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            padding: 10px 24px 40px 24px;
-        }
-
-        .auth-card {
+            padding: 24px 24px 40px 24px;
             width: 100%;
         }
 
+        .auth-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* ========== LOGO (borderless — no radius, no bg, no padding) ========== */
         .auth-logo {
             display: flex;
             justify-content: center;
+            align-items: center;
             margin-top: 10px;
             margin-bottom: 24px;
         }
 
         .auth-logo img {
-            width: 100px;
-            height: 100px;
+            width: 210px;
+            height: 210px;
             object-fit: contain;
+            display: block;
         }
 
+        /* ========== TITLE ========== */
         .auth-title {
             font-size: 28px;
             font-weight: 800;
@@ -345,7 +369,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .auth-title span {
-            background: linear-gradient(145deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -360,6 +384,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 0 10px;
         }
 
+        /* ========== FORM ========== */
         .form-group {
             margin-bottom: 20px;
         }
@@ -367,7 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 8px;
             font-weight: 600;
             color: #475569;
@@ -375,22 +400,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .form-group label i {
-            color: #3b82f6;
-            font-size: 13px;
+            color: #1a2a6c;
+            font-size: 14px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 16px 18px;
+            height: 54px;
+            padding: 0 18px;
             background: #f8fafc;
             border: 1.5px solid #e2e8f0;
-            border-radius: 14px;
+            border-radius: 10px;
             color: #1e293b;
             font-size: 16px;
             outline: none;
             transition: 0.25s ease;
+            font-family: 'Poppins', sans-serif;
             -webkit-appearance: none;
             appearance: none;
+            display: block;
         }
 
         .form-group input::placeholder {
@@ -398,17 +426,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .form-group input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #1a2a6c;
+            box-shadow: 0 0 0 4px rgba(26, 42, 108, 0.1);
             background: #ffffff;
         }
 
+        /* ========== BUTTON ========== */
         .btn-primary {
             width: 100%;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            height: 54px;
+            background: linear-gradient(145deg, #1a2a6c, #3b6fd4);
             border: none;
-            padding: 16px;
-            border-radius: 40px;
+            padding: 0 16px;
+            border-radius: 10px;
             font-weight: 700;
             font-size: 16px;
             color: white;
@@ -419,21 +449,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             justify-content: center;
             gap: 8px;
+            font-family: 'Poppins', sans-serif;
             -webkit-appearance: none;
             appearance: none;
-            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 6px 18px rgba(26, 42, 108, 0.25);
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 8px 22px rgba(26, 42, 108, 0.35);
         }
 
-        .btn-primary:active {
+        .btn-primary:active:not(:disabled) {
             transform: translateY(0);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 4px 12px rgba(26, 42, 108, 0.25);
         }
 
+        /* ========== FOOTER ========== */
         .auth-footer {
             text-align: center;
             margin-top: 28px;
@@ -443,25 +475,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .auth-footer a {
-            color: #3b82f6;
+            color: #1a2a6c;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
             transition: color 0.2s;
+            margin-left: 4px;
         }
 
         .auth-footer a:hover {
-            color: #2563eb;
+            color: #3b6fd4;
             text-decoration: underline;
         }
 
+        /* ========== ALERTS ========== */
         .alert {
             padding: 14px 16px;
-            border-radius: 14px;
+            border-radius: 12px;
             margin-bottom: 20px;
             font-size: 14px;
             line-height: 1.5;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: flex-start;
         }
 
@@ -483,42 +517,207 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #bbf7d0;
         }
 
-        @media (min-width: 600px) {
+        .alert-info {
+            background: #eef2fb;
+            color: #1a2a6c;
+            border: 1px solid #c7d4f0;
+        }
+
+        /* ============================================
+           DESKTOP — SPLIT SCREEN
+           ============================================ */
+        @media (min-width: 900px) {
             body {
-                background: #f1f5f9;
-                padding-top: 0;
-                padding-bottom: 0;
+                background: #f4f6fb;
+                padding: 0;
+                min-height: 100vh;
             }
 
-            .app-shell {
+            .brand-panel {
+                display: flex;
+                flex: 1;
+                background: linear-gradient(135deg, #1a2a6c 0%, #2a4d9b 60%, #3b6fd4 100%);
+                color: #fff;
+                flex-direction: column;
+                justify-content: center;
+                padding: 60px;
+                position: relative;
+                overflow: hidden;
+                min-height: 100vh;
+            }
+
+            .brand-panel::before,
+            .brand-panel::after {
+                content: "";
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.06);
+            }
+
+            .brand-panel::before {
+                width: 400px;
+                height: 400px;
+                top: -120px;
+                right: -120px;
+            }
+
+            .brand-panel::after {
+                width: 300px;
+                height: 300px;
+                bottom: -100px;
+                left: -80px;
+            }
+
+            .brand-logo {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 48px;
+                z-index: 1;
+            }
+
+            /* ✅ Brand logo — borderless, 210px */
+            .brand-logo-img {
+                width: 210px;
+                height: 210px;
+                object-fit: contain;
+            }
+
+            .brand-logo-text {
+                font-size: 18px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                line-height: 1.3;
+            }
+
+            .brand-panel h1 {
+                font-size: 40px;
+                line-height: 1.2;
+                margin-bottom: 16px;
+                z-index: 1;
+                background: none;
+                -webkit-text-fill-color: #fff;
+                color: #fff;
+                font-weight: 800;
+            }
+
+            .brand-panel p {
+                font-size: 17px;
+                opacity: 0.85;
+                max-width: 380px;
+                line-height: 1.6;
+                z-index: 1;
+            }
+
+            .brand-panel .motto {
+                margin-top: 48px;
+                font-style: italic;
+                font-size: 15px;
+                opacity: 0.85;
+                border-left: 3px solid #f5b301;
+                padding-left: 16px;
+                z-index: 1;
+            }
+
+            .form-panel {
+                flex: 1;
+                background: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                min-height: 100vh;
+            }
+
+            .auth-container {
+                padding: 0;
+                width: 100%;
+                max-width: 420px;
+            }
+
+            .auth-card {
+                margin: 0;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .auth-logo {
+                display: none;
+            }
+
+            /* logo lives in brand panel on desktop */
+
+            .auth-title {
+                text-align: left;
+                font-size: 30px;
+                margin-bottom: 6px;
+            }
+
+            .auth-sub {
+                text-align: left;
+                padding: 0;
+                margin-bottom: 32px;
+            }
+        }
+
+        /* Tablet tweak (between mobile and desktop) */
+        @media (min-width: 640px) and (max-width: 899px) {
+            body {
+                background: #f1f5f9;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .form-panel {
+                flex: none;
                 min-height: auto;
-                margin: 40px auto;
-                border-radius: 24px;
+                max-width: 440px;
+                border-radius: 16px;
                 box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
                 border: 1px solid #e2e8f0;
+                margin: 24px auto;
                 overflow: hidden;
             }
 
             .auth-container {
-                padding: 10px 40px 50px 40px;
+                padding: 40px;
+            }
+
+            .auth-logo {
+                margin-bottom: 24px;
+            }
+
+            .auth-logo img {
+                width: 210px;
+                height: 210px;
             }
         }
 
+        /* ========== SMALL PHONES ========== */
         @media (max-width: 380px) {
             .auth-title {
                 font-size: 24px;
             }
 
             .auth-container {
-                padding: 8px 18px 30px 18px;
+                padding: 20px 18px 30px 18px;
             }
 
             .auth-logo img {
-                width: 84px;
-                height: 84px;
+                width: 160px;
+                height: 160px;
+            }
+
+            .form-group input {
+                height: 50px;
+            }
+
+            .btn-primary {
+                height: 50px;
             }
         }
 
+        /* ========== SHORT SCREENS ========== */
         @media (max-height: 700px) {
             .auth-logo {
                 margin-top: 0;
@@ -526,8 +725,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             .auth-logo img {
-                width: 80px;
-                height: 80px;
+                width: 160px;
+                height: 160px;
             }
 
             .auth-sub {
@@ -535,24 +734,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             .auth-container {
-                padding: 8px 24px 24px 24px;
+                padding: 20px 24px 24px 24px;
+            }
+
+            .form-group input {
+                height: 50px;
+            }
+
+            .btn-primary {
+                height: 50px;
+            }
+        }
+
+        /* ========== MOBILE + SHORT SCREENS ========== */
+        @media (max-width: 640px) and (max-height: 700px) {
+            .auth-logo img {
+                width: 160px;
+                height: 160px;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="app-shell">
 
+    <!-- LEFT: Brand panel (desktop only) -->
+    <section class="brand-panel">
+        <div class="brand-logo">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
+                alt="Villaruz Logo" class="brand-logo-img">
+            <div class="brand-logo-text">VILLARUZ PRINT SHOP<br>&amp; GENERAL MERCHANDISE</div>
+        </div>
+        <h1>Reset your password.</h1>
+        <p>Enter your registered email and we'll send you a 6-digit OTP code to reset your password safely.</p>
+        <div class="motto">"Precision in every print, care in every order."</div>
+    </section>
+
+    <!-- RIGHT: Form panel -->
+    <section class="form-panel">
         <div class="auth-container">
             <div class="auth-card">
 
+                <!-- Logo (mobile only — hidden on desktop) -->
                 <div class="auth-logo">
-                    <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Print Shop Logo">
+                    <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
+                        alt="Villaruz Print Shop Logo">
                 </div>
 
                 <h2 class="auth-title">Forgot <span>Password?</span></h2>
-                <br><br><br>
+                <p class="auth-sub">Enter your email address to receive a reset code</p>
+
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-error">
                         <i class="fas fa-exclamation-circle"></i>
@@ -586,10 +817,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                 </form>
 
+                <div class="auth-footer">
+                    Remember your password? <a href="customers-portal.php">Back to Login</a>
+                </div>
+
             </div>
         </div>
+    </section>
 
-    </div>
 </body>
 
 </html>

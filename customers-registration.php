@@ -214,7 +214,7 @@ if (isset($_SESSION['success'])) {
             position: relative;
         }
 
-        /* ========== LOGO ========== */
+        /* ========== LOGO (borderless — no radius, no bg, no padding) ========== */
         .logo {
             display: flex;
             justify-content: center;
@@ -222,12 +222,12 @@ if (isset($_SESSION['success'])) {
             margin-bottom: 20px;
         }
 
+        /* ✅ 210px logo */
         .logo img {
-            width: 130px;
-            height: 130px;
+            width: 210px;
+            height: 210px;
             object-fit: contain;
             display: block;
-            border-radius: 28px;
         }
 
         /* ========== PORTAL HEADER ========== */
@@ -381,7 +381,6 @@ if (isset($_SESSION['success'])) {
             color: #3b6fd4;
             text-decoration: underline;
         }
-
 
         /* ========== ACTION AREA ========== */
         .action-area {
@@ -615,13 +614,11 @@ if (isset($_SESSION['success'])) {
                 z-index: 1;
             }
 
+            /* ✅ Brand logo — borderless, 210px */
             .brand-logo-img {
-                width: 56px;
-                height: 56px;
-                border-radius: 12px;
-                object-fit: cover;
-                background: #f5b301;
-                padding: 4px;
+                width: 210px;
+                height: 210px;
+                object-fit: contain;
             }
 
             .brand-logo-text {
@@ -686,8 +683,6 @@ if (isset($_SESSION['success'])) {
                 display: none;
             }
 
-            /* logo lives in brand panel on desktop */
-
             .portal-header {
                 margin-top: 8px;
             }
@@ -732,10 +727,10 @@ if (isset($_SESSION['success'])) {
                 margin-bottom: 24px;
             }
 
+            /* ✅ Tablet logo — 210px */
             .logo img {
-                width: 160px;
-                height: 160px;
-                border-radius: 32px;
+                width: 210px;
+                height: 210px;
             }
         }
 
@@ -749,10 +744,10 @@ if (isset($_SESSION['success'])) {
                 margin-bottom: 16px;
             }
 
+            /* ✅ Small phones — 160px */
             .logo img {
-                width: 115px;
-                height: 115px;
-                border-radius: 26px;
+                width: 160px;
+                height: 160px;
             }
 
             h1 {
@@ -782,10 +777,10 @@ if (isset($_SESSION['success'])) {
                 margin-bottom: 14px;
             }
 
+            /* ✅ Short screens — 160px */
             .logo img {
-                width: 100px;
-                height: 100px;
-                border-radius: 22px;
+                width: 160px;
+                height: 160px;
             }
 
             h1 {
@@ -816,10 +811,10 @@ if (isset($_SESSION['success'])) {
                 padding: 20px 22px 24px 22px;
             }
 
+            /* ✅ Mobile + short screens — 160px */
             .logo img {
-                width: 100px;
-                height: 100px;
-                border-radius: 22px;
+                width: 160px;
+                height: 160px;
             }
         }
     </style>
@@ -830,8 +825,8 @@ if (isset($_SESSION['success'])) {
     <!-- LEFT: Brand panel (desktop only) -->
     <section class="brand-panel">
         <div class="brand-logo">
-            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Logo"
-                class="brand-logo-img">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
+                 alt="Villaruz Logo" class="brand-logo-img">
             <div class="brand-logo-text">VILLARUZ PRINT SHOP<br>&amp; GENERAL MERCHANDISE</div>
         </div>
         <h1>Create your account.</h1>
@@ -847,7 +842,7 @@ if (isset($_SESSION['success'])) {
                 <!-- Logo (mobile only — hidden on desktop) -->
                 <div class="logo">
                     <div class="logo-stack">
-                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
+                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
                             alt="Villaruz Print Shop Logo" class="main-logo">
                     </div>
                 </div>
@@ -918,7 +913,7 @@ if (isset($_SESSION['success'])) {
                 </form>
 
                 <div class="register-footer">
-                    Already have an account? <a href="customers-portal.php">Login here</a>
+                    Already have an account? <a href="customers-portal.php">Click here</a>
                 </div>
             </div>
         </div>

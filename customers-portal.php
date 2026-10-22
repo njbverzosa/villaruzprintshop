@@ -25,7 +25,7 @@ $showFingerprint = $isMobileBrowser || $isInApp;
 
 $loginType = $isInApp ? 'app' : 'web';
 
-$biometricPage = 'public/biometric.php';
+$biometricPage = 'public/shop.php';
 
 function updateLoginMeta($pdo, $userId, $loginType)
 {
@@ -55,7 +55,7 @@ function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
     if ($isInApp)
         return 'public/shop.php';
     if ($isMobileBrowser)
-        return 'public/download_app.php';
+        return 'public/shop.php';
     return 'public/shop.php';
 }
 
@@ -63,15 +63,16 @@ function getCustomerRedirect($isInApp, $isMobileBrowser, $user)
 // ✅ COOKIE HELPERS — remember account number across visits
 // ============================================================
 const ACC_COOKIE_NAME = 'customer_acc_number';
-const ACC_COOKIE_TTL  = 86400 * 365; // 1 year
+const ACC_COOKIE_TTL = 86400 * 365; // 1 year
 
 function setAccNumberCookie(string $accNumber): void
 {
-    if ($accNumber === '') return;
+    if ($accNumber === '')
+        return;
     setcookie(ACC_COOKIE_NAME, $accNumber, [
-        'expires'  => time() + ACC_COOKIE_TTL,
-        'path'     => '/',
-        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'expires' => time() + ACC_COOKIE_TTL,
+        'path' => '/',
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -81,9 +82,9 @@ function setAccNumberCookie(string $accNumber): void
 function clearAccNumberCookie(): void
 {
     setcookie(ACC_COOKIE_NAME, '', [
-        'expires'  => time() - 3600,
-        'path'     => '/',
-        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'expires' => time() - 3600,
+        'path' => '/',
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -277,7 +278,8 @@ if (isset($_SESSION['exit_message'])) {
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <style>
         * {
@@ -288,7 +290,8 @@ if (isset($_SESSION['exit_message'])) {
             -webkit-tap-highlight-color: transparent;
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             overflow-x: hidden;
         }
@@ -341,9 +344,11 @@ if (isset($_SESSION['exit_message'])) {
             align-items: center;
             margin-bottom: 28px;
         }
+
+        /* ✅ Mobile logo — 270px */
         .logo-stack .main-logo {
-            width: 130px;
-            height: 130px;
+            width: 270px;
+            height: 270px;
             object-fit: contain;
             display: block;
         }
@@ -354,6 +359,7 @@ if (isset($_SESSION['exit_message'])) {
             gap: 12px;
             margin-bottom: 8px;
         }
+
         .portal-header::before {
             content: "";
             width: 5px;
@@ -363,6 +369,7 @@ if (isset($_SESSION['exit_message'])) {
             flex-shrink: 0;
             box-shadow: 0 4px 12px rgba(26, 42, 108, 0.35);
         }
+
         h1 {
             font-size: 24px;
             font-weight: 700;
@@ -375,6 +382,7 @@ if (isset($_SESSION['exit_message'])) {
             -webkit-text-fill-color: transparent;
             color: transparent;
         }
+
         .portal-subtitle {
             font-size: 13px;
             color: #64748b;
@@ -383,7 +391,10 @@ if (isset($_SESSION['exit_message'])) {
             font-weight: 400;
         }
 
-        .form-group { margin-bottom: 20px; }
+        .form-group {
+            margin-bottom: 20px;
+        }
+
         .form-group label {
             display: flex;
             align-items: center;
@@ -393,7 +404,11 @@ if (isset($_SESSION['exit_message'])) {
             color: #475569;
             font-size: 14px;
         }
-        .form-group label i { color: #1a2a6c; font-size: 14px; }
+
+        .form-group label i {
+            color: #1a2a6c;
+            font-size: 14px;
+        }
 
         .form-group select,
         .form-group input {
@@ -412,23 +427,29 @@ if (isset($_SESSION['exit_message'])) {
             appearance: none;
             display: block;
         }
+
         .form-group select:focus,
         .form-group input:focus {
             border-color: #1a2a6c;
             box-shadow: 0 0 0 4px rgba(26, 42, 108, 0.1);
             background: #ffffff;
         }
-        .form-group input::placeholder { color: #94a3b8; }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
+        }
 
         .password-wrapper {
             position: relative;
             display: flex;
             align-items: center;
         }
+
         .password-wrapper input {
             flex: 1;
             padding-right: 48px;
         }
+
         .password-wrapper i {
             position: absolute;
             right: 16px;
@@ -437,12 +458,16 @@ if (isset($_SESSION['exit_message'])) {
             transition: color 0.3s;
             font-size: 18px;
         }
-        .password-wrapper i:hover { color: #1a2a6c; }
+
+        .password-wrapper i:hover {
+            color: #1a2a6c;
+        }
 
         .pin-masked {
             -webkit-text-security: disc;
             text-security: disc;
         }
+
         .pin-masked.pin-visible {
             -webkit-text-security: none;
             text-security: none;
@@ -453,12 +478,14 @@ if (isset($_SESSION['exit_message'])) {
             margin-top: 8px;
             font-size: 13px;
         }
+
         .forgot-password-link a {
             color: #1a2a6c;
             text-decoration: none;
             font-weight: 500;
             transition: 0.3s;
         }
+
         .forgot-password-link a:hover {
             color: #3b6fd4;
             text-decoration: underline;
@@ -470,6 +497,7 @@ if (isset($_SESSION['exit_message'])) {
             flex-direction: column;
             gap: 16px;
         }
+
         .btn-primary {
             width: 100%;
             height: 54px;
@@ -489,19 +517,23 @@ if (isset($_SESSION['exit_message'])) {
             font-family: 'Poppins', sans-serif;
             box-shadow: 0 6px 18px rgba(26, 42, 108, 0.25);
         }
+
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 22px rgba(26, 42, 108, 0.35);
         }
+
         .btn-primary:active:not(:disabled) {
             transform: translateY(0);
             box-shadow: 0 4px 12px rgba(26, 42, 108, 0.25);
         }
+
         .btn-primary:disabled {
             opacity: 1;
             cursor: not-allowed;
             transform: none !important;
         }
+
         .btn-spinner {
             display: inline-block;
             width: 18px;
@@ -511,9 +543,15 @@ if (isset($_SESSION['exit_message'])) {
             border-radius: 50%;
             animation: btn-spin 0.8s linear infinite;
         }
+
         @keyframes btn-spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .biometric-label {
@@ -529,6 +567,7 @@ if (isset($_SESSION['exit_message'])) {
             text-align: center;
             white-space: nowrap;
         }
+
         .biometric-label::before,
         .biometric-label::after {
             content: "";
@@ -536,7 +575,12 @@ if (isset($_SESSION['exit_message'])) {
             height: 1px;
             background: linear-gradient(to right, transparent 0%, #e2e8f0 40%, #e2e8f0 60%, transparent 100%);
         }
-        .fingerprint-row { display: flex; justify-content: center; }
+
+        .fingerprint-row {
+            display: flex;
+            justify-content: center;
+        }
+
         .btn-fingerprint {
             width: 60px;
             height: 60px;
@@ -551,13 +595,19 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             padding: 0;
         }
-        .btn-fingerprint i { font-size: 28px; transition: color 0.3s; }
+
+        .btn-fingerprint i {
+            font-size: 28px;
+            transition: color 0.3s;
+        }
+
         .btn-fingerprint:hover {
             border-color: #1a2a6c;
             background: #eef2fb;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(26, 42, 108, 0.25);
         }
+
         .btn-fingerprint:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -574,17 +624,24 @@ if (isset($_SESSION['exit_message'])) {
             align-items: flex-start;
             line-height: 1.5;
         }
+
         .alert-error {
             background: #fef2f2;
             color: #dc2626;
             border: 1px solid #fecaca;
         }
+
         .alert-info {
             background: #eef2fb;
             color: #1a2a6c;
             border: 1px solid #c7d4f0;
         }
-        .alert i { font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+
+        .alert i {
+            font-size: 16px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
 
         .register-footer {
             margin-top: 30px;
@@ -594,6 +651,7 @@ if (isset($_SESSION['exit_message'])) {
             font-size: 14px;
             color: #64748b;
         }
+
         .register-footer a {
             color: #1a2a6c;
             text-decoration: none;
@@ -601,6 +659,7 @@ if (isset($_SESSION['exit_message'])) {
             transition: 0.2s;
             margin-left: 4px;
         }
+
         .register-footer a:hover {
             color: #3b6fd4;
             text-decoration: underline;
@@ -618,7 +677,12 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             padding: 24px;
         }
-        .bio-popup-overlay.visible { display: flex; animation: bioFadeIn 0.2s ease-out; }
+
+        .bio-popup-overlay.visible {
+            display: flex;
+            animation: bioFadeIn 0.2s ease-out;
+        }
+
         .bio-popup {
             background: #ffffff;
             border-radius: 18px;
@@ -629,7 +693,13 @@ if (isset($_SESSION['exit_message'])) {
             text-align: center;
             animation: bioPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .bio-popup-icon { padding: 26px 24px 12px; display: flex; justify-content: center; }
+
+        .bio-popup-icon {
+            padding: 26px 24px 12px;
+            display: flex;
+            justify-content: center;
+        }
+
         .bio-popup-icon i {
             display: inline-flex;
             align-items: center;
@@ -642,6 +712,7 @@ if (isset($_SESSION['exit_message'])) {
             color: #1a2a6c;
             box-shadow: 0 8px 20px rgba(26, 42, 108, 0.2);
         }
+
         .bio-popup-title {
             padding: 0 24px;
             font-size: 18px;
@@ -649,13 +720,18 @@ if (isset($_SESSION['exit_message'])) {
             color: #0f172a;
             line-height: 1.3;
         }
+
         .bio-popup-message {
             padding: 10px 26px 22px;
             font-size: 14px;
             color: #475569;
             line-height: 1.55;
         }
-        .bio-popup-actions { padding: 0 20px 20px; }
+
+        .bio-popup-actions {
+            padding: 0 20px 20px;
+        }
+
         .bio-popup-btn {
             width: 100%;
             height: 48px;
@@ -669,14 +745,32 @@ if (isset($_SESSION['exit_message'])) {
             cursor: pointer;
             transition: 0.25s ease;
         }
+
         .bio-popup-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 22px rgba(26, 42, 108, 0.35);
         }
-        @keyframes bioFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @keyframes bioFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
         @keyframes bioPopIn {
-            from { opacity: 0; transform: scale(0.9) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         @media (min-width: 900px) {
@@ -706,8 +800,20 @@ if (isset($_SESSION['exit_message'])) {
                 border-radius: 50%;
                 background: rgba(255, 255, 255, 0.06);
             }
-            .brand-panel::before { width: 400px; height: 400px; top: -120px; right: -120px; }
-            .brand-panel::after  { width: 300px; height: 300px; bottom: -100px; left: -80px; }
+
+            .brand-panel::before {
+                width: 400px;
+                height: 400px;
+                top: -120px;
+                right: -120px;
+            }
+
+            .brand-panel::after {
+                width: 300px;
+                height: 300px;
+                bottom: -100px;
+                left: -80px;
+            }
 
             .brand-logo {
                 display: flex;
@@ -716,12 +822,14 @@ if (isset($_SESSION['exit_message'])) {
                 margin-bottom: 48px;
                 z-index: 1;
             }
-            /* ✅ Brand logo — no radius, no bg, no padding */
+
+            /* ✅ Brand logo — borderless, 270px */
             .brand-logo-img {
-                width: 56px;
-                height: 56px;
+                width: 270px;
+                height: 270px;
                 object-fit: contain;
             }
+
             .brand-logo-text {
                 font-size: 18px;
                 font-weight: 700;
@@ -739,6 +847,7 @@ if (isset($_SESSION['exit_message'])) {
                 color: #fff;
                 font-weight: 800;
             }
+
             .brand-panel p {
                 font-size: 17px;
                 opacity: 0.85;
@@ -746,6 +855,7 @@ if (isset($_SESSION['exit_message'])) {
                 line-height: 1.6;
                 z-index: 1;
             }
+
             .brand-panel .motto {
                 margin-top: 48px;
                 font-style: italic;
@@ -778,11 +888,21 @@ if (isset($_SESSION['exit_message'])) {
                 max-width: 100%;
             }
 
-            .logo { display: none; }
+            .logo {
+                display: none;
+            }
 
-            .portal-header { margin-top: 8px; }
-            h1 { font-size: 28px; }
-            .portal-subtitle { margin-bottom: 36px; }
+            .portal-header {
+                margin-top: 8px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .portal-subtitle {
+                margin-bottom: 36px;
+            }
         }
 
         @media (min-width: 640px) and (max-width: 899px) {
@@ -791,6 +911,7 @@ if (isset($_SESSION['exit_message'])) {
                 justify-content: center;
                 align-items: center;
             }
+
             .form-panel {
                 flex: none;
                 min-height: auto;
@@ -801,32 +922,59 @@ if (isset($_SESSION['exit_message'])) {
                 margin: 24px auto;
                 overflow: hidden;
             }
-            .auth-container { padding: 40px; }
-            .logo { margin-bottom: 32px; }
-            .logo-stack .main-logo { width: 180px; height: 180px; }
+
+            .auth-container {
+                padding: 40px;
+            }
+
+            .logo {
+                margin-bottom: 32px;
+            }
+
+            /* ✅ Tablet logo — 240px */
+            .logo-stack .main-logo {
+                width: 240px;
+                height: 240px;
+            }
         }
 
         @media (max-width: 380px) {
-            .logo { margin-bottom: 20px; }
-            .logo-stack .main-logo { width: 120px; height: 120px; }
+            .logo {
+                margin-bottom: 20px;
+            }
+
+            /* ✅ Small phones — 200px */
+            .logo-stack .main-logo {
+                width: 200px;
+                height: 200px;
+            }
         }
 
         @media (max-height: 700px) {
-            .logo { margin-bottom: 20px; }
-            .logo-stack .main-logo { width: 110px; height: 110px; }
+            .logo {
+                margin-bottom: 20px;
+            }
+
+            /* ✅ Short screens — 200px */
+            .logo-stack .main-logo {
+                width: 200px;
+                height: 200px;
+            }
         }
 
         @media (max-width: 640px) {
+            /* ✅ Mobile full-screen — 270px */
             .logo-stack .main-logo {
-                width: 130px;
-                height: 130px;
+                width: 210px;
+                height: 210px;
             }
         }
 
         @media (max-width: 640px) and (max-height: 700px) {
+            /* ✅ Mobile + short screens — 200px */
             .logo-stack .main-logo {
-                width: 110px;
-                height: 110px;
+                width: 200px;
+                height: 200px;
             }
         }
     </style>
@@ -836,8 +984,8 @@ if (isset($_SESSION['exit_message'])) {
 
     <section class="brand-panel">
         <div class="brand-logo">
-            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
-                 alt="Villaruz Logo" class="brand-logo-img">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
+                alt="Villaruz Logo" class="brand-logo-img">
             <div class="brand-logo-text">VILLARUZ PRINT SHOP<br>&amp; GENERAL MERCHANDISE</div>
         </div>
         <h1>Welcome back!</h1>
@@ -851,7 +999,7 @@ if (isset($_SESSION['exit_message'])) {
 
                 <div class="logo">
                     <div class="logo-stack">
-                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
+                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
                             alt="Villaruz Print Shop Logo" class="main-logo">
                     </div>
                 </div>
@@ -885,19 +1033,20 @@ if (isset($_SESSION['exit_message'])) {
 
                         <div class="form-group">
                             <label><i class="fas fa-id-card"></i> Last 4 phone numbers</label>
-                            <input type="tel" name="acc_number" id="acc_number" placeholder="Enter your last 4 phone number"
-                                value="<?php echo htmlspecialchars($selectedAcc); ?>"
-                                maxlength="4" inputmode="numeric" pattern="[0-9]{4}"
-                                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
+                            <input type="tel" name="acc_number" id="acc_number"
+                                placeholder="Enter your last 4 phone number"
+                                value="<?php echo htmlspecialchars($selectedAcc); ?>" maxlength="4" inputmode="numeric"
+                                pattern="[0-9]{4}" autocomplete="off" autocorrect="off" autocapitalize="off"
+                                spellcheck="false" required>
                         </div>
 
                         <div class="form-group">
                             <label><i class="fas fa-lock"></i> 6-Digit PIN</label>
                             <div class="password-wrapper">
                                 <input type="tel" name="password" id="password" placeholder="Enter your 6-digit PIN"
-                                    maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
-                                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                                    class="pin-masked" required>
+                                    maxlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off"
+                                    autocorrect="off" autocapitalize="off" spellcheck="false" class="pin-masked"
+                                    required>
                                 <i class="fas fa-eye-slash" id="togglePassword"></i>
                             </div>
                             <div class="forgot-password-link">
@@ -923,7 +1072,7 @@ if (isset($_SESSION['exit_message'])) {
                     </form>
 
                     <div class="register-footer">
-                        Don't have an account? <a href="customers-registration.php">Login here</a>
+                        Don't have an account? <a href="customers-registration.php">Click here</a>
                     </div>
                 </div>
             </div>
@@ -1040,15 +1189,15 @@ if (isset($_SESSION['exit_message'])) {
                     + '&user_id=' + encodeURIComponent(userId)
                     + '&installed_version=' + encodeURIComponent(installedVersion)
             })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    setTimeout(() => window.location.href = data.redirect, 800);
-                } else {
-                    resetLoginButton();
-                }
-            })
-            .catch(() => resetLoginButton());
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        setTimeout(() => window.location.href = data.redirect, 800);
+                    } else {
+                        resetLoginButton();
+                    }
+                })
+                .catch(() => resetLoginButton());
         }
 
         function biometricFailed() {
@@ -1099,4 +1248,5 @@ if (isset($_SESSION['exit_message'])) {
         });
     </script>
 </body>
+
 </html>

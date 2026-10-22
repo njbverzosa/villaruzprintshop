@@ -350,8 +350,8 @@ if (isset($_SESSION['exit_message'])) {
             margin-bottom: 28px;
         }
         .logo-stack .main-logo {
-            width: 130px;
-            height: 130px;
+            width: 210px;
+            height: 210px;
             object-fit: contain;
             display: block;
         }
@@ -711,10 +711,10 @@ if (isset($_SESSION['exit_message'])) {
                 margin-bottom: 48px;
                 z-index: 1;
             }
-            /* ✅ Brand logo — borderless */
+            /* ✅ Brand logo — borderless, 210px */
             .brand-logo-img {
-                width: 56px;
-                height: 56px;
+                width: 210px;
+                height: 210px;
                 object-fit: contain;
             }
             .brand-logo-text {
@@ -799,7 +799,37 @@ if (isset($_SESSION['exit_message'])) {
             }
             .auth-container { padding: 40px; }
             .logo { margin-bottom: 32px; }
-            .logo-stack .main-logo { width: 170px; height: 170px; }
+            /* ✅ Tablet logo — 210px */
+            .logo-stack .main-logo { width: 210px; height: 210px; }
+        }
+
+        /* ========== SMALL PHONES ========== */
+        @media (max-width: 380px) {
+            .logo { margin-bottom: 20px; }
+            /* ✅ Small phones — 160px */
+            .logo-stack .main-logo { width: 160px; height: 160px; }
+            h1 { font-size: 21px; }
+            .portal-subtitle { font-size: 12px; }
+            .form-group input { height: 50px; }
+            .btn-primary { height: 50px; }
+        }
+
+        /* ========== SHORT SCREENS ========== */
+        @media (max-height: 700px) {
+            .logo { margin-bottom: 20px; }
+            /* ✅ Short screens — 160px */
+            .logo-stack .main-logo { width: 160px; height: 160px; }
+            h1 { font-size: 21px; }
+            .portal-subtitle { font-size: 12px; margin-bottom: 20px; }
+            .form-group { margin-bottom: 14px; }
+            .form-group input { height: 50px; }
+            .btn-primary { height: 50px; }
+        }
+
+        /* ========== MOBILE + SHORT SCREENS ========== */
+        @media (max-width: 640px) and (max-height: 700px) {
+            /* ✅ Mobile + short screens — 160px */
+            .logo-stack .main-logo { width: 160px; height: 160px; }
         }
     </style>
 </head>
@@ -809,7 +839,7 @@ if (isset($_SESSION['exit_message'])) {
     <!-- LEFT: Brand panel (desktop only) -->
     <section class="brand-panel">
         <div class="brand-logo">
-            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
                  alt="Villaruz Logo" class="brand-logo-img">
             <div class="brand-logo-text">VILLARUZ PRINT SHOP<br>&amp; GENERAL MERCHANDISE</div>
         </div>
@@ -826,7 +856,7 @@ if (isset($_SESSION['exit_message'])) {
                 <!-- Logo (mobile only — hidden on desktop) -->
                 <div class="logo">
                     <div class="logo-stack">
-                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
+                        <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/Villaruz Print Shop Logo.png"
                             alt="Villaruz Print Shop Logo" class="main-logo">
                     </div>
                 </div>

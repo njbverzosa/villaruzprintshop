@@ -72,7 +72,7 @@ function getInvestorRedirect($isInApp, $isMobileBrowser, $user)
     if ($isInApp)
         return 'investors/investors_product.php';
     if ($isMobileBrowser)
-        return 'investors/download_app.php';
+        return 'investors/investors_product.php';
     return 'investors/investors_product.php';
 }
 
