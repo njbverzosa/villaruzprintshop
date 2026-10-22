@@ -924,15 +924,16 @@ if (isset($_SESSION['exit_message'])) {
 
                         <div class="form-group">
                             <label><i class="fas fa-id-card"></i> Last 4 phone numbers</label>
-                            <input type="text" name="acc_number" id="acc_number" placeholder="Enter your last 4 phone number"
+                            <input type="tel" name="acc_number" id="acc_number" placeholder="Enter your last 4 phone number"
                                 value="<?php echo htmlspecialchars($selectedAcc); ?>"
+                                maxlength="4" inputmode="numeric" pattern="[0-9]{4}"
                                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
                         </div>
 
                         <div class="form-group">
                             <label><i class="fas fa-lock"></i> 6-Digit PIN</label>
                             <div class="password-wrapper">
-                                <input type="text" name="password" id="password" placeholder="Enter your 6-digit PIN"
+                                <input type="tel" name="password" id="password" placeholder="Enter your 6-digit PIN"
                                     maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
                                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                                     class="pin-masked" required>
@@ -1123,6 +1124,14 @@ if (isset($_SESSION['exit_message'])) {
         if (password) {
             password.addEventListener('input', function () {
                 this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+            });
+        }
+
+        // ✅ Enforce numeric-only, max 4 digits on acc_number (last 4 phone)
+        const accNumber = document.getElementById('acc_number');
+        if (accNumber) {
+            accNumber.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
             });
         }
 
