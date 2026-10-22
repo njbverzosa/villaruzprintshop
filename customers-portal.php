@@ -91,6 +91,32 @@ function clearAccNumberCookie(): void
     unset($_COOKIE[ACC_COOKIE_NAME]);
 }
 
+// ============================================================
+// ✅ SYSTEM UPDATE INSERTION (Check if exists first)
+// ============================================================
+function ensureSystemUpdateExists($pdo, $accNumber)
+{
+    if (empty($accNumber)) return;
+
+    try {
+        // Check if a row already exists for this acc_number
+        $checkStmt = $pdo->prepare("SELECT id FROM system_update WHERE acc_number = ? LIMIT 1");
+        $checkStmt->execute([$accNumber]);
+        
+        if (!$checkStmt->fetch()) {
+            // If not exists, insert it with notif_shown = 1 by default
+            $insertStmt = $pdo->prepare("
+                INSERT INTO system_update (acc_number, title, `desc`, notif_shown)
+                VALUES (?, 'Update App', 'Please update to better version', 1)
+            ");
+            $insertStmt->execute([$accNumber]);
+            error_log("system_update inserted for acc_number: $accNumber");
+        }
+    } catch (PDOException $e) {
+        error_log("ensureSystemUpdateExists failed: " . $e->getMessage());
+    }
+}
+
 $isLoggedIn = false;
 $redirectUrl = '';
 $userName = '';
@@ -177,6 +203,9 @@ if (isset($_POST['biometric_login']) && $_POST['biometric_login'] === 'true') {
 
     setAccNumberCookie((string) $user['acc_number']);
 
+    // ✅ Insert into system_update if not exists
+    ensureSystemUpdateExists($pdo, $user['acc_number']);
+
     updateLoginMeta($pdo, $user['id'], $loginType);
 
     $redirectUrl = getCustomerRedirect($isInApp, $isMobileBrowser, $user);
@@ -236,6 +265,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['biometric_login'])) 
                 setcookie('biometric_enrolled', $user['biometric_enrolled'] ?? 0, time() + (86400 * 365), "/");
 
                 setAccNumberCookie((string) $user['acc_number']);
+
+                // ✅ Insert into system_update if not exists
+                ensureSystemUpdateExists($pdo, $user['acc_number']);
 
                 updateLoginMeta($pdo, $user['id'], $loginType);
 
