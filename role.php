@@ -8,8 +8,13 @@
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Select Role - Villaruz Print Shop</title>
+    <title>Select Role | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -19,60 +24,71 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        html,
-        body {
+        html, body {
             height: 100%;
             overflow-x: hidden;
         }
 
         body {
-            background: #ffffff;
+            background: #f1f5f9;
             color: #1e293b;
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
-            flex-direction: column;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* ========== APP CONTAINER ========== */
-        .app-shell {
+        /* ============================================
+           LEFT BRAND PANEL (desktop only)
+           ============================================ */
+        .brand-panel {
+            display: none;
+        }
+
+        /* ============================================
+           RIGHT FORM PANEL
+           ============================================ */
+        .form-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
             background: #ffffff;
+            min-height: 100dvh;
+            position: relative;
         }
 
-        /* ========== CONTENT ========== */
         .auth-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
             padding: 24px 24px 40px 24px;
+            width: 100%;
         }
 
         .auth-card {
             width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
         }
 
+        /* ========== LOGO (borderless — no radius, no bg, no padding) ========== */
         .auth-logo {
             display: flex;
             justify-content: center;
+            align-items: center;
             margin-top: 10px;
             margin-bottom: 24px;
         }
-
         .auth-logo img {
             width: 100px;
             height: 100px;
             object-fit: contain;
+            display: block;
         }
 
+        /* ========== HEADER ========== */
         .auth-title {
             font-size: 28px;
             font-weight: 800;
@@ -81,14 +97,12 @@
             color: #0f172a;
             line-height: 1.2;
         }
-
         .auth-title span {
-            background: linear-gradient(145deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-
         .auth-sub {
             text-align: center;
             color: #64748b;
@@ -105,7 +119,6 @@
             gap: 25px;
         }
 
-        /* ✅ No hover/active transform or shadow */
         .option-card {
             display: flex;
             align-items: center;
@@ -134,8 +147,8 @@
             width: 52px;
             height: 52px;
             border-radius: 14px;
-            background: linear-gradient(145deg, #dbeafe, #eff6ff);
-            color: #3b82f6;
+            background: linear-gradient(145deg, #e3eafa, #eef2fb);
+            color: #1a2a6c;
             font-size: 22px;
             flex-shrink: 0;
         }
@@ -174,7 +187,7 @@
             margin: 0 4px;
         }
 
-        /* ========== ACTION BUTTONS (Continue Login / Download App) ========== */
+        /* ========== ACTION BUTTONS ========== */
         .option-actions {
             display: flex;
             flex-direction: column;
@@ -182,7 +195,6 @@
             flex-shrink: 0;
         }
 
-        /* ✅ No hover/active transform, shadow, or color shift */
         .action-btn {
             display: inline-flex;
             align-items: center;
@@ -203,108 +215,197 @@
         }
 
         .action-login {
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            background: linear-gradient(145deg, #1a2a6c, #3b6fd4);
             color: #ffffff;
             border-color: transparent;
         }
 
         .action-download {
             background: #ffffff;
-            color: #3b82f6;
-            border-color: #bfdbfe;
+            color: #1a2a6c;
+            border-color: #c7d4f0;
         }
 
-        /* ========== DESKTOP VIEW ========== */
-        @media (min-width: 600px) {
+        /* ============================================
+           DESKTOP — SPLIT SCREEN
+           ============================================ */
+        @media (min-width: 900px) {
             body {
-                background: #f1f5f9;
-                padding-top: 0;
-                padding-bottom: 0;
+                background: #f4f6fb;
+                padding: 0;
+                min-height: 100vh;
             }
 
-            .app-shell {
-                min-height: auto;
-                margin: 40px auto;
-                border-radius: 5px;
-                box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
-                border: 1px solid #e2e8f0;
+            .brand-panel {
+                display: flex;
+                flex: 1;
+                background: linear-gradient(135deg, #1a2a6c 0%, #2a4d9b 60%, #3b6fd4 100%);
+                color: #fff;
+                flex-direction: column;
+                justify-content: center;
+                padding: 60px;
+                position: relative;
                 overflow: hidden;
+                min-height: 100vh;
+            }
+
+            .brand-panel::before,
+            .brand-panel::after {
+                content: "";
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.06);
+            }
+            .brand-panel::before { width: 400px; height: 400px; top: -120px; right: -120px; }
+            .brand-panel::after  { width: 300px; height: 300px; bottom: -100px; left: -80px; }
+
+            .brand-logo {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 48px;
+                z-index: 1;
+            }
+            /* ✅ Brand logo — borderless */
+            .brand-logo-img {
+                width: 56px;
+                height: 56px;
+                object-fit: contain;
+            }
+            .brand-logo-text {
+                font-size: 18px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                line-height: 1.3;
+            }
+
+            .brand-panel h1 {
+                font-size: 40px;
+                line-height: 1.2;
+                margin-bottom: 16px;
+                z-index: 1;
+                background: none;
+                -webkit-text-fill-color: #fff;
+                color: #fff;
+                font-weight: 800;
+            }
+            .brand-panel p {
+                font-size: 17px;
+                opacity: 0.85;
+                max-width: 380px;
+                line-height: 1.6;
+                z-index: 1;
+            }
+            .brand-panel .motto {
+                margin-top: 48px;
+                font-style: italic;
+                font-size: 15px;
+                opacity: 0.85;
+                border-left: 3px solid #f5b301;
+                padding-left: 16px;
+                z-index: 1;
+            }
+
+            .form-panel {
+                flex: 1;
+                background: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                min-height: 100vh;
             }
 
             .auth-container {
-                padding: 30px 40px 50px 40px;
+                padding: 0;
+                width: 100%;
+                max-width: 560px;
             }
+
+            .auth-card {
+                max-width: 100%;
+            }
+
+            .auth-logo { display: none; }
+
+            .auth-title {
+                font-size: 30px;
+                text-align: left;
+                margin-bottom: 6px;
+            }
+
+            .auth-sub {
+                text-align: left;
+                padding: 0;
+                margin-bottom: 32px;
+            }
+
+            .options-list {
+                gap: 18px;
+            }
+        }
+
+        /* Tablet tweak (between mobile and desktop) */
+        @media (min-width: 640px) and (max-width: 899px) {
+            body {
+                background: #f1f5f9;
+                justify-content: center;
+                align-items: center;
+            }
+            .form-panel {
+                flex: none;
+                min-height: auto;
+                max-width: 500px;
+                border-radius: 16px;
+                box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e2e8f0;
+                margin: 24px auto;
+                overflow: hidden;
+            }
+            .auth-container { padding: 40px; }
         }
 
         /* ========== SMALL PHONES ========== */
         @media (max-width: 380px) {
-            .auth-title {
-                font-size: 24px;
-            }
-
-            .auth-container {
-                padding: 20px 18px 30px 18px;
-            }
-
-            .auth-logo img {
-                width: 84px;
-                height: 84px;
-            }
-
-            .option-card {
-                padding: 14px 14px;
-                gap: 10px;
-            }
-
-            .option-icon {
-                width: 46px;
-                height: 46px;
-                font-size: 20px;
-            }
-
-            .option-title {
-                font-size: 15px;
-            }
-
-            .option-desc {
-                font-size: 12px;
-            }
-
-            .action-btn {
-                padding: 7px 10px;
-                font-size: 11px;
-            }
-
-            .action-btn i {
-                font-size: 11px;
-            }
+            .auth-title { font-size: 24px; }
+            .auth-container { padding: 20px 18px 30px 18px; }
+            .auth-logo img { width: 84px; height: 84px; }
+            .option-card { padding: 14px 14px; gap: 10px; }
+            .option-icon { width: 46px; height: 46px; font-size: 20px; }
+            .option-title { font-size: 15px; }
+            .option-desc { font-size: 12px; }
+            .action-btn { padding: 7px 10px; font-size: 11px; }
+            .action-btn i { font-size: 11px; }
         }
 
         /* ========== SHORT SCREENS ========== */
         @media (max-height: 700px) {
-            .auth-logo {
-                margin-top: 0;
-                margin-bottom: 16px;
-            }
-
-            .auth-logo img {
-                width: 80px;
-                height: 80px;
-            }
-
-            .auth-sub {
-                margin-bottom: 20px;
-            }
+            .auth-logo { margin-top: 0; margin-bottom: 16px; }
+            .auth-logo img { width: 80px; height: 80px; }
+            .auth-sub { margin-bottom: 20px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="app-shell">
 
+    <!-- LEFT: Brand panel (desktop only) -->
+    <section class="brand-panel">
+        <div class="brand-logo">
+            <img src="logo/ic_launcher.png" alt="Villaruz Logo" class="brand-logo-img">
+            <div class="brand-logo-text">VILLARUZ PRINT SHOP<br>&amp; GENERAL MERCHANDISE</div>
+        </div>
+        <h1>Welcome to Villaruz.</h1>
+        <p>Select your account type to continue — whether you manage the shop, invest in it, or shop as a customer.</p>
+        <div class="motto">"Precision in every print, care in every order."</div>
+    </section>
+
+    <!-- RIGHT: Role selection panel -->
+    <section class="form-panel">
         <div class="auth-container">
             <div class="auth-card">
 
+                <!-- Logo (mobile only — hidden on desktop) -->
                 <div class="auth-logo">
                     <img src="logo/ic_launcher.png" alt="Villaruz Print Shop Logo">
                 </div>
@@ -393,8 +494,8 @@
 
             </div>
         </div>
+    </section>
 
-    </div>
 </body>
 
 </html>

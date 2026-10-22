@@ -1,5 +1,5 @@
 <?php
-// register.php – Customer registration (desktop + mobile)
+// customers-registration.php – Customer registration (desktop + mobile)
 
 require_once __DIR__ . '/DB_Conn/config.php';
 
@@ -144,8 +144,14 @@ if (isset($_SESSION['success'])) {
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Register - Villaruz Print Shop</title>
+    <title>Register | Villaruz Print Shop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -167,74 +173,61 @@ if (isset($_SESSION['success'])) {
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
-            flex-direction: column;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* ========== APP SHELL ========== */
-        .app-shell {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            background: #ffffff;
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            border-radius: 10;
+        /* ============================================
+           LEFT BRAND PANEL (desktop only)
+           ============================================ */
+        .brand-panel {
+            display: none;
         }
 
-        /* ========== CONTENT ========== */
+        /* ============================================
+           RIGHT FORM PANEL
+           ============================================ */
+        .form-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            background: #ffffff;
+            min-height: 100dvh;
+            position: relative;
+        }
+
         .auth-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 50px 20px;
-            min-height: 0;
+            padding: 28px 22px 32px 22px;
+            width: 100%;
         }
 
         .auth-card {
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 30px;
-            width: 100%;
-            max-width: 450px;
-            margin: 0 auto;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            flex: 1;
-            min-height: 0;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            position: relative;
         }
 
-        /* ========== APP HEADER / LOGO ========== */
+        /* ========== LOGO ========== */
         .logo {
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: 16px;
-            gap: 10px;
+            margin-bottom: 20px;
         }
 
         .logo img {
-            width: 140px;
-            height: 140px;
+            width: 130px;
+            height: 130px;
             object-fit: contain;
             display: block;
             border-radius: 28px;
-        }
-
-        /* ✅ UNIFIED version badge */
-        .version-badge {
-            font-size: 12px;
-            font-weight: 600;
-            color: #64748b;
-            padding: 3px 12px;
-            letter-spacing: 0.02em;
         }
 
         /* ========== PORTAL HEADER ========== */
@@ -242,9 +235,7 @@ if (isset($_SESSION['success'])) {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-top: 6px;
-            margin-bottom: 6px;
-            padding-left: 2px;
+            margin-bottom: 8px;
         }
 
         .portal-header::before {
@@ -252,19 +243,18 @@ if (isset($_SESSION['success'])) {
             width: 5px;
             height: 34px;
             border-radius: 3px;
-            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 4px 12px rgba(26, 42, 108, 0.35);
         }
 
         h1 {
-            text-align: left;
             font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.01em;
             line-height: 1.2;
             margin: 0;
-            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -272,24 +262,22 @@ if (isset($_SESSION['success'])) {
         }
 
         .portal-subtitle {
-            text-align: left;
             font-size: 13px;
             color: #64748b;
-            margin-bottom: 24px;
+            margin-bottom: 26px;
             padding-left: 17px;
             font-weight: 400;
-            letter-spacing: 0.01em;
         }
 
         /* ========== FORM ========== */
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 8px;
             font-weight: 600;
             color: #475569;
@@ -297,11 +285,10 @@ if (isset($_SESSION['success'])) {
         }
 
         .form-group label i {
-            color: #3b82f6;
-            font-size: 13px;
+            color: #1a2a6c;
+            font-size: 14px;
         }
 
-        /* ✅ UNIFIED input border-radius: 10px */
         .form-group input {
             width: 100%;
             height: 54px;
@@ -321,8 +308,8 @@ if (isset($_SESSION['success'])) {
         }
 
         .form-group input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #1a2a6c;
+            box-shadow: 0 0 0 4px rgba(26, 42, 108, 0.1);
             background: #ffffff;
         }
 
@@ -351,7 +338,7 @@ if (isset($_SESSION['success'])) {
         }
 
         .password-wrapper i:hover {
-            color: #3b82f6;
+            color: #1a2a6c;
         }
 
         /* ========== HINTS ========== */
@@ -359,35 +346,55 @@ if (isset($_SESSION['success'])) {
         .password-hint {
             font-size: 12px;
             color: #64748b;
-            margin-top: 5px;
-            padding: 4px 12px;
+            margin-top: 6px;
+            padding: 5px 12px;
             background: #f8fafc;
             border-radius: 8px;
-            border-left: 3px solid #3b82f6;
+            border-left: 3px solid #1a2a6c;
             display: flex;
             align-items: center;
             gap: 6px;
+            line-height: 1.4;
         }
 
         .password-hint i {
-            color: #3b82f6;
+            color: #1a2a6c;
             margin-right: 0;
         }
 
-        /* ========== ACTION AREA ========== */
-        .action-area {
-            margin-top: auto;
+        .register-footer {
+            margin-top: 30px;
             padding-top: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .register-footer a {
+            color: #1a2a6c;
+            text-decoration: none;
+            font-weight: 700;
+            transition: 0.2s;
+            margin-left: 4px;
+        }
+        .register-footer a:hover {
+            color: #3b6fd4;
+            text-decoration: underline;
         }
 
-        /* ✅ UNIFIED button border-radius: 10px */
+
+        /* ========== ACTION AREA ========== */
+        .action-area {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
         .btn-primary {
             width: 100%;
             height: 54px;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            background: linear-gradient(145deg, #1a2a6c, #3b6fd4);
             border: none;
             padding: 0 16px;
             border-radius: 10px;
@@ -403,17 +410,17 @@ if (isset($_SESSION['success'])) {
             font-family: 'Poppins', sans-serif;
             -webkit-appearance: none;
             appearance: none;
-            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 6px 18px rgba(26, 42, 108, 0.25);
         }
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 8px 22px rgba(26, 42, 108, 0.35);
         }
 
         .btn-primary:active:not(:disabled) {
             transform: translateY(0);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 4px 12px rgba(26, 42, 108, 0.25);
         }
 
         .btn-primary:disabled {
@@ -448,9 +455,9 @@ if (isset($_SESSION['success'])) {
         }
 
         .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
+            background: #eef2fb;
+            color: #1a2a6c;
+            border: 1px solid #c7d4f0;
         }
 
         .alert i {
@@ -512,21 +519,22 @@ if (isset($_SESSION['success'])) {
         /* ========== FOOTERS ========== */
         .auth-footer-mobile {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 6px;
             color: #64748b;
             font-size: 14px;
             line-height: 1.5;
         }
 
         .auth-footer-mobile a {
-            color: #3b82f6;
+            color: #1a2a6c;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
             transition: color 0.2s;
+            margin-left: 4px;
         }
 
         .auth-footer-mobile a:hover {
-            color: #2563eb;
+            color: #3b6fd4;
             text-decoration: underline;
         }
 
@@ -542,125 +550,217 @@ if (isset($_SESSION['success'])) {
         }
 
         .auth-footer-bottom a {
-            color: #3b82f6;
+            color: #1a2a6c;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
             transition: color 0.2s;
+            margin-left: 4px;
         }
 
         .auth-footer-bottom a:hover {
-            color: #2563eb;
+            color: #3b6fd4;
             text-decoration: underline;
         }
 
-        /* ========== DESKTOP ========== */
-        @media (min-width: 600px) {
+        /* ============================================
+           DESKTOP — SPLIT SCREEN
+           ============================================ */
+        @media (min-width: 900px) {
             body {
-                background: #f1f5f9;
-                padding-top: 0;
-                padding-bottom: 0;
-                justify-content: center;
-                align-items: center;
+                background: #f4f6fb;
+                padding: 0;
+                min-height: 100vh;
             }
 
-            .app-shell {
-                min-height: auto;
-                height: auto;
-                margin: 0 auto;
-                border-radius: 10px;
-                box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
-                border: 1px solid #e2e8f0;
+            .brand-panel {
+                display: flex;
+                flex: 1;
+                background: linear-gradient(135deg, #1a2a6c 0%, #2a4d9b 60%, #3b6fd4 100%);
+                color: #fff;
+                flex-direction: column;
+                justify-content: center;
+                padding: 60px;
+                position: relative;
                 overflow: hidden;
+                min-height: 100vh;
+            }
+
+            .brand-panel::before,
+            .brand-panel::after {
+                content: "";
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.06);
+            }
+
+            .brand-panel::before {
+                width: 400px;
+                height: 400px;
+                top: -120px;
+                right: -120px;
+            }
+
+            .brand-panel::after {
+                width: 300px;
+                height: 300px;
+                bottom: -100px;
+                left: -80px;
+            }
+
+            .brand-logo {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 48px;
+                z-index: 1;
+            }
+
+            .brand-logo-img {
+                width: 56px;
+                height: 56px;
+                border-radius: 12px;
+                object-fit: cover;
+                background: #f5b301;
+                padding: 4px;
+            }
+
+            .brand-logo-text {
+                font-size: 18px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                line-height: 1.3;
+            }
+
+            .brand-panel h1 {
+                font-size: 40px;
+                line-height: 1.2;
+                margin-bottom: 16px;
+                z-index: 1;
+                background: none;
+                -webkit-text-fill-color: #fff;
+                color: #fff;
+                font-weight: 800;
+            }
+
+            .brand-panel p {
+                font-size: 17px;
+                opacity: 0.85;
+                max-width: 380px;
+                line-height: 1.6;
+                z-index: 1;
+            }
+
+            .brand-panel .motto {
+                margin-top: 48px;
+                font-style: italic;
+                font-size: 15px;
+                opacity: 0.85;
+                border-left: 3px solid #f5b301;
+                padding-left: 16px;
+                z-index: 1;
+            }
+
+            .form-panel {
+                flex: 1;
+                background: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                min-height: 100vh;
             }
 
             .auth-container {
-                flex: none;
-                padding: 40px 40px 20px 40px;
+                padding: 0;
+                width: 100%;
+                max-width: 420px;
             }
 
             .auth-card {
-                flex: none;
-                padding: 0;
-                border: none;
-                box-shadow: none;
+                margin: 0;
+                width: 100%;
                 max-width: 100%;
             }
 
+            .logo {
+                display: none;
+            }
+
+            /* logo lives in brand panel on desktop */
+
             .portal-header {
-                margin-top: 20px;
+                margin-top: 8px;
             }
 
             h1 {
                 font-size: 28px;
             }
 
-            .portal-header::before {
-                height: 38px;
-            }
-
             .portal-subtitle {
-                font-size: 14px;
-            }
-
-            .action-area {
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-
-            .logo {
-                margin-top: 0;
-            }
-
-            .logo img {
-                width: 180px;
-                height: 180px;
-                border-radius: 32px;
+                margin-bottom: 32px;
             }
 
             .auth-footer-mobile {
                 display: none;
             }
+        }
 
-            .auth-footer-bottom {
-                display: block;
-                border-top: 1px solid #f1f5f9;
-                padding: 16px 40px 24px 40px;
+        /* Tablet tweak (between mobile and desktop) */
+        @media (min-width: 640px) and (max-width: 899px) {
+            body {
+                background: #f1f5f9;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .form-panel {
+                flex: none;
+                min-height: auto;
+                max-width: 440px;
+                border-radius: 16px;
+                box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e2e8f0;
+                margin: 24px auto;
+                overflow: hidden;
+            }
+
+            .auth-container {
+                padding: 40px;
+            }
+
+            .logo {
+                margin-bottom: 24px;
+            }
+
+            .logo img {
+                width: 160px;
+                height: 160px;
+                border-radius: 32px;
             }
         }
 
         /* ========== SMALL PHONES ========== */
         @media (max-width: 380px) {
             .auth-container {
-                padding: 16px 18px 16px 18px;
+                padding: 22px 18px 26px 18px;
             }
 
             .logo {
-                margin-top: 8px;
-                margin-bottom: 12px;
+                margin-bottom: 16px;
             }
 
             .logo img {
-                width: 120px;
-                height: 120px;
+                width: 115px;
+                height: 115px;
                 border-radius: 26px;
             }
 
-            .portal-header {
-                margin-top: 20px;
-            }
-
             h1 {
-                font-size: 20px;
-            }
-
-            .portal-header::before {
-                height: 30px;
-                width: 4px;
+                font-size: 21px;
             }
 
             .portal-subtitle {
                 font-size: 12px;
-                padding-left: 16px;
             }
 
             .form-group input {
@@ -675,38 +775,30 @@ if (isset($_SESSION['success'])) {
         /* ========== SHORT SCREENS ========== */
         @media (max-height: 700px) {
             .auth-container {
-                padding: 16px 24px 16px 24px;
+                padding: 20px 22px 24px 22px;
             }
 
             .logo {
-                margin-top: 4px;
-                margin-bottom: 12px;
+                margin-bottom: 14px;
             }
 
             .logo img {
-                width: 110px;
-                height: 110px;
-                border-radius: 24px;
-            }
-
-            .portal-header {
-                margin-top: 14px;
+                width: 100px;
+                height: 100px;
+                border-radius: 22px;
             }
 
             h1 {
-                font-size: 20px;
-            }
-
-            .portal-header::before {
-                height: 28px;
+                font-size: 21px;
             }
 
             .portal-subtitle {
                 font-size: 12px;
+                margin-bottom: 20px;
             }
 
             .form-group {
-                margin-bottom: 12px;
+                margin-bottom: 14px;
             }
 
             .form-group input {
@@ -715,177 +807,44 @@ if (isset($_SESSION['success'])) {
 
             .btn-primary {
                 height: 50px;
-            }
-
-            .action-area {
-                padding-top: 16px;
-            }
-
-            .auth-footer-mobile {
-                margin-top: 12px;
-                font-size: 13px;
-            }
-        }
-
-        /* ========== MOBILE FULL-SCREEN APP VIEW ========== */
-        @media (max-width: 640px) {
-            body {
-                background: #ffffff;
-            }
-
-            .auth-container {
-                padding: 0;
-                align-items: stretch;
-                justify-content: flex-start;
-                flex: 1;
-            }
-
-            .auth-card {
-                background: #ffffff;
-                border-radius: 0;
-                border: none;
-                box-shadow: none;
-                max-width: 100%;
-                width: 100%;
-                padding: 28px 22px 32px 22px;
-                min-height: 100dvh;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .logo {
-                align-items: center;
-                text-align: center;
-                gap: 8px;
-                margin-top: 8px;
-                margin-bottom: 0;
-            }
-
-            .logo img {
-                width: 130px;
-                height: 130px;
-                border-radius: 28px;
-            }
-
-            .portal-header {
-                margin-top: 34px;
-                margin-bottom: 6px;
-            }
-
-            h1 {
-                font-size: 22px;
-            }
-
-            .portal-subtitle {
-                font-size: 13px;
-                margin-bottom: 4px;
-            }
-
-            .alert {
-                padding: 14px 16px;
-                border-radius: 12px;
-                font-size: 14px;
-                margin-top: 18px;
-                margin-bottom: 0;
-            }
-
-            #registrationForm {
-                display: flex;
-                flex-direction: column;
-                margin-top: 32px;
-                padding-top: 0;
-            }
-
-            .form-group {
-                margin-bottom: 22px;
-            }
-
-            .form-group:last-of-type {
-                margin-bottom: 26px;
-            }
-
-            .form-group label {
-                margin-bottom: 10px;
-            }
-
-            .form-group input {
-                padding: 15px 16px;
-                font-size: 16px;
-                border-radius: 10px;
-                height: 54px;
-            }
-
-            .btn-primary {
-                padding: 16px;
-                font-size: 16px;
-                border-radius: 10px;
-                height: 54px;
-            }
-
-            .auth-footer-mobile {
-                margin-top: 22px;
             }
         }
 
         /* ========== MOBILE + SHORT SCREENS ========== */
         @media (max-width: 640px) and (max-height: 700px) {
-            .auth-card {
+            .auth-container {
                 padding: 20px 22px 24px 22px;
             }
 
             .logo img {
-                width: 110px;
-                height: 110px;
-                border-radius: 24px;
-            }
-
-            .portal-header {
-                margin-top: 22px;
-            }
-
-            h1 {
-                font-size: 20px;
-            }
-
-            #registrationForm {
-                margin-top: 20px;
-            }
-
-            .form-group {
-                margin-bottom: 16px;
-            }
-
-            .form-group:last-of-type {
-                margin-bottom: 20px;
-            }
-
-            .form-group label {
-                margin-bottom: 8px;
-            }
-
-            .form-group input {
-                padding: 13px 16px;
-                height: 50px;
-            }
-
-            .btn-primary {
-                padding: 14px;
-                height: 50px;
-            }
-
-            .auth-footer-mobile {
-                margin-top: 16px;
+                width: 100px;
+                height: 100px;
+                border-radius: 22px;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="app-shell">
+
+    <!-- LEFT: Brand panel (desktop only) -->
+    <section class="brand-panel">
+        <div class="brand-logo">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg" alt="Villaruz Logo"
+                class="brand-logo-img">
+            <div class="brand-logo-text">VILLARUZ PRINT SHOP<br>&amp; GENERAL MERCHANDISE</div>
+        </div>
+        <h1>Create your account.</h1>
+        <p>Join thousands of happy customers — order prints, track deliveries, and manage your account in one place.</p>
+        <div class="motto">"Precision in every print, care in every order."</div>
+    </section>
+
+    <!-- RIGHT: Form panel -->
+    <section class="form-panel">
         <div class="auth-container">
             <div class="auth-card">
 
-                <!-- Logo -->
+                <!-- Logo (mobile only — hidden on desktop) -->
                 <div class="logo">
                     <div class="logo-stack">
                         <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
@@ -896,12 +855,16 @@ if (isset($_SESSION['success'])) {
                 <div class="portal-header">
                     <h1>Create your account</h1>
                 </div>
-                <br>
+                <p class="portal-subtitle">Register with your mobile number and a 6-digit PIN</p>
+
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-error">
-                        <?php foreach ($errors as $error): ?>
-                            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?><br>
-                        <?php endforeach; ?>
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            <?php foreach ($errors as $error): ?>
+                                <?php echo htmlspecialchars($error); ?><br>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 <?php endif; ?>
 
@@ -918,6 +881,7 @@ if (isset($_SESSION['success'])) {
                     <div class="form-group">
                         <label><i class="fas fa-phone"></i> Phone Number</label>
                         <input type="tel" name="phone_number" placeholder="Enter your phone number" maxlength="11"
+                            inputmode="numeric" pattern="[0-9]{11}"
                             value="<?php echo htmlspecialchars($formData['phone_number']); ?>" required>
                         <div class="phone-hint">
                             Enter 11-digit mobile number (e.g., 09123456789)
@@ -950,43 +914,48 @@ if (isset($_SESSION['success'])) {
                         <button type="submit" class="btn-primary" id="registerBtn">
                             <i class="fas fa-user-plus"></i> Register
                         </button>
-
-                        <div class="auth-footer-mobile">
-                            Already have an account? <a href="customers-portal.php">Login</a>
-                        </div>
                     </div>
                 </form>
 
+                <div class="register-footer">
+                    Already have an account? <a href="customers-portal.php">Login here</a>
+                </div>
             </div>
         </div>
+    </section>
 
-        <div class="auth-footer-bottom">
-            Already have an account? <a href="customers-portal.php">Login</a>
-        </div>
-    </div>
+    <!-- Desktop footer (hidden on mobile) -->
+    <div class="auth-footer-bottom" style="display:none;"></div>
 
     <script>
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
-        togglePassword.addEventListener('click', function () {
-            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-            password.setAttribute('type', type);
-            this.classList.toggle('fa-eye');
-            this.classList.toggle('fa-eye-slash');
-        });
+        if (togglePassword && password) {
+            togglePassword.addEventListener('click', function () {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+        }
 
         const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
         const confirmPassword = document.getElementById('confirm_password');
-        toggleConfirmPassword.addEventListener('click', function () {
-            const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-            confirmPassword.setAttribute('type', type);
-            this.classList.toggle('fa-eye');
-            this.classList.toggle('fa-eye-slash');
-        });
+        if (toggleConfirmPassword && confirmPassword) {
+            toggleConfirmPassword.addEventListener('click', function () {
+                const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                confirmPassword.setAttribute('type', type);
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+        }
 
-        document.querySelector('input[name="phone_number"]').addEventListener('input', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
-        });
+        const phoneInput = document.querySelector('input[name="phone_number"]');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+            });
+        }
 
         document.querySelectorAll('input[name="password"], input[name="confirm_password"]').forEach(function (input) {
             input.addEventListener('input', function () {
@@ -1002,10 +971,12 @@ if (isset($_SESSION['success'])) {
 
                 if (registerBtn) registerBtn.disabled = true;
 
-                alertMessage.textContent = 'Creating your account. Please wait...';
+                if (alertMessage) {
+                    alertMessage.textContent = 'Creating your account. Please wait...';
+                }
 
                 setTimeout(function () {
-                    alertElement.style.animation = 'fadeOut 0.2s ease forwards';
+                    if (alertElement) alertElement.style.animation = 'fadeOut 0.2s ease forwards';
                     setTimeout(function () {
                         window.location.href = 'customers-portal.php';
                     }, 500);

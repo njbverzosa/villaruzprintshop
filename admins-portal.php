@@ -279,7 +279,7 @@ if (isset($_SESSION['exit_message'])) {
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         * {
@@ -301,13 +301,21 @@ if (isset($_SESSION['exit_message'])) {
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
-            flex-direction: column;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* ========== APP SHELL ========== */
-        .app-shell {
+        /* ============================================
+           LEFT BRAND PANEL (desktop only)
+           ============================================ */
+        .brand-panel {
+            display: none;
+        }
+
+        /* ============================================
+           RIGHT FORM PANEL
+           ============================================ */
+        .form-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -334,40 +342,13 @@ if (isset($_SESSION['exit_message'])) {
             position: relative;
         }
 
-        /* ✅ BACK ARROW */
-        .back-arrow {
-            position: absolute;
-            top: -6px;
-            left: 0;
-            width: 40px;
-            height: 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: #475569;
-            text-decoration: none;
-            border-radius: 10px;
-            transition: color 0.2s ease, background 0.2s ease;
-            z-index: 2;
-        }
-
-        .back-arrow:hover {
-            color: #1e293b;
-            background: #f1f5f9;
-        }
-
-        .back-arrow i {
-            font-size: 18px;
-        }
-
-        /* ========== LOGO ========== */
+        /* ========== LOGO (borderless — no radius, no bg, no padding) ========== */
         .logo {
             display: flex;
             justify-content: center;
             align-items: center;
             margin-bottom: 28px;
         }
-
         .logo-stack .main-logo {
             width: 130px;
             height: 130px;
@@ -382,30 +363,27 @@ if (isset($_SESSION['exit_message'])) {
             gap: 12px;
             margin-bottom: 8px;
         }
-
         .portal-header::before {
             content: "";
             width: 5px;
             height: 34px;
             border-radius: 3px;
-            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 4px 12px rgba(26, 42, 108, 0.35);
         }
-
         h1 {
             font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.01em;
             line-height: 1.2;
             margin: 0;
-            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
             color: transparent;
         }
-
         .portal-subtitle {
             font-size: 13px;
             color: #64748b;
@@ -415,10 +393,7 @@ if (isset($_SESSION['exit_message'])) {
         }
 
         /* ========== FORM ========== */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
+        .form-group { margin-bottom: 20px; }
         .form-group label {
             display: flex;
             align-items: center;
@@ -428,11 +403,7 @@ if (isset($_SESSION['exit_message'])) {
             color: #475569;
             font-size: 14px;
         }
-
-        .form-group label i {
-            color: #3b82f6;
-            font-size: 14px;
-        }
+        .form-group label i { color: #1a2a6c; font-size: 14px; }
 
         .form-group select,
         .form-group input {
@@ -451,7 +422,6 @@ if (isset($_SESSION['exit_message'])) {
             appearance: none;
             display: block;
         }
-
         .form-group select {
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
@@ -459,29 +429,23 @@ if (isset($_SESSION['exit_message'])) {
             background-size: 18px;
             padding-right: 44px;
         }
-
         .form-group select:focus,
         .form-group input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #1a2a6c;
+            box-shadow: 0 0 0 4px rgba(26, 42, 108, 0.1);
             background: #ffffff;
         }
-
-        .form-group input::placeholder {
-            color: #94a3b8;
-        }
+        .form-group input::placeholder { color: #94a3b8; }
 
         .password-wrapper {
             position: relative;
             display: flex;
             align-items: center;
         }
-
         .password-wrapper input {
             flex: 1;
             padding-right: 48px;
         }
-
         .password-wrapper i {
             position: absolute;
             right: 16px;
@@ -490,26 +454,21 @@ if (isset($_SESSION['exit_message'])) {
             transition: color 0.3s;
             font-size: 18px;
         }
-
-        .password-wrapper i:hover {
-            color: #3b82f6;
-        }
+        .password-wrapper i:hover { color: #1a2a6c; }
 
         .forgot-password-link {
             text-align: right;
             margin-top: 8px;
             font-size: 13px;
         }
-
         .forgot-password-link a {
-            color: #3b82f6;
+            color: #1a2a6c;
             text-decoration: none;
             font-weight: 500;
             transition: 0.3s;
         }
-
         .forgot-password-link a:hover {
-            color: #1d4ed8;
+            color: #3b6fd4;
             text-decoration: underline;
         }
 
@@ -520,11 +479,10 @@ if (isset($_SESSION['exit_message'])) {
             flex-direction: column;
             gap: 16px;
         }
-
         .btn-primary {
             width: 100%;
             height: 54px;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            background: linear-gradient(145deg, #1a2a6c, #3b6fd4);
             border: none;
             padding: 0 16px;
             border-radius: 10px;
@@ -538,25 +496,21 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             gap: 8px;
             font-family: 'Poppins', sans-serif;
-            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 6px 18px rgba(26, 42, 108, 0.25);
         }
-
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 8px 22px rgba(26, 42, 108, 0.35);
         }
-
         .btn-primary:active:not(:disabled) {
             transform: translateY(0);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 4px 12px rgba(26, 42, 108, 0.25);
         }
-
         .btn-primary:disabled {
             opacity: 1;
             cursor: not-allowed;
             transform: none !important;
         }
-
         .btn-spinner {
             display: inline-block;
             width: 18px;
@@ -566,13 +520,12 @@ if (isset($_SESSION['exit_message'])) {
             border-radius: 50%;
             animation: btn-spin 0.8s linear infinite;
         }
-
         @keyframes btn-spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        /* ========== BIOMETRIC SECTION ========== */
+        /* ========== BIOMETRIC ========== */
         .biometric-label {
             display: flex;
             align-items: center;
@@ -586,7 +539,6 @@ if (isset($_SESSION['exit_message'])) {
             text-align: center;
             white-space: nowrap;
         }
-
         .biometric-label::before,
         .biometric-label::after {
             content: "";
@@ -594,19 +546,14 @@ if (isset($_SESSION['exit_message'])) {
             height: 1px;
             background: linear-gradient(to right, transparent 0%, #e2e8f0 40%, #e2e8f0 60%, transparent 100%);
         }
-
-        .fingerprint-row {
-            display: flex;
-            justify-content: center;
-        }
-
+        .fingerprint-row { display: flex; justify-content: center; }
         .btn-fingerprint {
             width: 60px;
             height: 60px;
             border-radius: 50%;
             background: #ffffff;
             border: 2px solid #e2e8f0;
-            color: #3b82f6;
+            color: #1a2a6c;
             cursor: pointer;
             transition: 0.25s;
             display: inline-flex;
@@ -614,19 +561,13 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             padding: 0;
         }
-
-        .btn-fingerprint i {
-            font-size: 28px;
-            transition: color 0.3s;
-        }
-
+        .btn-fingerprint i { font-size: 28px; transition: color 0.3s; }
         .btn-fingerprint:hover {
-            border-color: #3b82f6;
-            background: #eff6ff;
+            border-color: #1a2a6c;
+            background: #eef2fb;
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 6px 16px rgba(26, 42, 108, 0.25);
         }
-
         .btn-fingerprint:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -644,26 +585,19 @@ if (isset($_SESSION['exit_message'])) {
             align-items: flex-start;
             line-height: 1.5;
         }
-
         .alert-error {
             background: #fef2f2;
             color: #dc2626;
             border: 1px solid #fecaca;
         }
-
         .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
+            background: #eef2fb;
+            color: #1a2a6c;
+            border: 1px solid #c7d4f0;
         }
+        .alert i { font-size: 16px; margin-top: 2px; flex-shrink: 0; }
 
-        .alert i {
-            font-size: 16px;
-            margin-top: 2px;
-            flex-shrink: 0;
-        }
-
-        /* ========== CUSTOM BIOMETRIC POPUP ========== */
+        /* ========== BIOMETRIC POPUP ========== */
         .bio-popup-overlay {
             position: fixed;
             inset: 0;
@@ -676,12 +610,7 @@ if (isset($_SESSION['exit_message'])) {
             justify-content: center;
             padding: 24px;
         }
-
-        .bio-popup-overlay.visible {
-            display: flex;
-            animation: bioFadeIn 0.2s ease-out;
-        }
-
+        .bio-popup-overlay.visible { display: flex; animation: bioFadeIn 0.2s ease-out; }
         .bio-popup {
             background: #ffffff;
             border-radius: 18px;
@@ -692,13 +621,7 @@ if (isset($_SESSION['exit_message'])) {
             text-align: center;
             animation: bioPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
-        .bio-popup-icon {
-            padding: 26px 24px 12px;
-            display: flex;
-            justify-content: center;
-        }
-
+        .bio-popup-icon { padding: 26px 24px 12px; display: flex; justify-content: center; }
         .bio-popup-icon i {
             display: inline-flex;
             align-items: center;
@@ -707,11 +630,10 @@ if (isset($_SESSION['exit_message'])) {
             height: 72px;
             border-radius: 50%;
             font-size: 32px;
-            background: linear-gradient(145deg, #dbeafe, #eff6ff);
-            color: #3b82f6;
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+            background: linear-gradient(145deg, #e3eafa, #eef2fb);
+            color: #1a2a6c;
+            box-shadow: 0 8px 20px rgba(26, 42, 108, 0.2);
         }
-
         .bio-popup-title {
             padding: 0 24px;
             font-size: 18px;
@@ -719,22 +641,17 @@ if (isset($_SESSION['exit_message'])) {
             color: #0f172a;
             line-height: 1.3;
         }
-
         .bio-popup-message {
             padding: 10px 26px 22px;
             font-size: 14px;
             color: #475569;
             line-height: 1.55;
         }
-
-        .bio-popup-actions {
-            padding: 0 20px 20px;
-        }
-
+        .bio-popup-actions { padding: 0 20px 20px; }
         .bio-popup-btn {
             width: 100%;
             height: 48px;
-            background: linear-gradient(145deg, #3b82f6, #6366f1);
+            background: linear-gradient(145deg, #1a2a6c, #3b6fd4);
             border: none;
             border-radius: 10px;
             font-family: 'Poppins', sans-serif;
@@ -744,29 +661,133 @@ if (isset($_SESSION['exit_message'])) {
             cursor: pointer;
             transition: 0.25s ease;
         }
-
         .bio-popup-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 8px 22px rgba(26, 42, 108, 0.35);
         }
-
         @keyframes bioFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes bioPopIn {
             from { opacity: 0; transform: scale(0.9) translateY(10px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* ==============================================
-           DESKTOP VIEW (Centered Card)
-           ============================================== */
-        @media (min-width: 640px) {
+        /* ============================================
+           DESKTOP — SPLIT SCREEN
+           ============================================ */
+        @media (min-width: 900px) {
+            body {
+                background: #f4f6fb;
+                padding: 0;
+                min-height: 100vh;
+            }
+
+            .brand-panel {
+                display: flex;
+                flex: 1;
+                background: linear-gradient(135deg, #1a2a6c 0%, #2a4d9b 60%, #3b6fd4 100%);
+                color: #fff;
+                flex-direction: column;
+                justify-content: center;
+                padding: 60px;
+                position: relative;
+                overflow: hidden;
+                min-height: 100vh;
+            }
+
+            .brand-panel::before,
+            .brand-panel::after {
+                content: "";
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.06);
+            }
+            .brand-panel::before { width: 400px; height: 400px; top: -120px; right: -120px; }
+            .brand-panel::after  { width: 300px; height: 300px; bottom: -100px; left: -80px; }
+
+            .brand-logo {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 48px;
+                z-index: 1;
+            }
+            /* ✅ Brand logo — borderless */
+            .brand-logo-img {
+                width: 56px;
+                height: 56px;
+                object-fit: contain;
+            }
+            .brand-logo-text {
+                font-size: 18px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                line-height: 1.3;
+            }
+
+            .brand-panel h1 {
+                font-size: 40px;
+                line-height: 1.2;
+                margin-bottom: 16px;
+                z-index: 1;
+                background: none;
+                -webkit-text-fill-color: #fff;
+                color: #fff;
+                font-weight: 800;
+            }
+            .brand-panel p {
+                font-size: 17px;
+                opacity: 0.85;
+                max-width: 380px;
+                line-height: 1.6;
+                z-index: 1;
+            }
+            .brand-panel .motto {
+                margin-top: 48px;
+                font-style: italic;
+                font-size: 15px;
+                opacity: 0.85;
+                border-left: 3px solid #f5b301;
+                padding-left: 16px;
+                z-index: 1;
+            }
+
+            .form-panel {
+                flex: 1;
+                background: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                min-height: 100vh;
+            }
+
+            .auth-container {
+                padding: 0;
+                width: 100%;
+                max-width: 420px;
+            }
+
+            .auth-card {
+                margin: 0;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .logo { display: none; } /* logo lives in brand panel on desktop */
+
+            .portal-header { margin-top: 8px; }
+            h1 { font-size: 28px; }
+            .portal-subtitle { margin-bottom: 36px; }
+        }
+
+        /* Tablet tweak (between mobile and desktop) */
+        @media (min-width: 640px) and (max-width: 899px) {
             body {
                 background: #f1f5f9;
                 justify-content: center;
                 align-items: center;
             }
-
-            .app-shell {
+            .form-panel {
                 flex: none;
                 min-height: auto;
                 max-width: 440px;
@@ -776,44 +797,33 @@ if (isset($_SESSION['exit_message'])) {
                 margin: 24px auto;
                 overflow: hidden;
             }
-
-            .auth-container {
-                padding: 40px;
-            }
-
-            .logo {
-                margin-bottom: 32px;
-            }
-
-            .logo-stack .main-logo {
-                width: 170px;
-                height: 170px;
-            }
-
-            .form-group {
-                margin-bottom: 18px;
-            }
-
-            /* ✅ Nudge back arrow a bit more outward on desktop for balance */
-            .back-arrow {
-                top: -8px;
-                left: -4px;
-            }
+            .auth-container { padding: 40px; }
+            .logo { margin-bottom: 32px; }
+            .logo-stack .main-logo { width: 170px; height: 170px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="app-shell">
+
+    <!-- LEFT: Brand panel (desktop only) -->
+    <section class="brand-panel">
+        <div class="brand-logo">
+            <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
+                 alt="Villaruz Logo" class="brand-logo-img">
+            <div class="brand-logo-text">VILLARUZ PRINT SHOP<br>&amp; GENERAL MERCHANDISE</div>
+        </div>
+        <h1>Welcome back, Admin.</h1>
+        <p>Sign in to manage orders, inventory, and shop operations — all in one place.</p>
+        <div class="motto">"Precision in every print, care in every order."</div>
+    </section>
+
+    <!-- RIGHT: Form panel -->
+    <section class="form-panel">
         <div class="auth-container">
             <div class="auth-card">
 
-                <!-- ✅ BACK ARROW — goes to role.php -->
-                <a href="role.php" class="back-arrow" title="Back to role selection" aria-label="Back to role selection">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-
-                <!-- Logo -->
+                <!-- Logo (mobile only — hidden on desktop) -->
                 <div class="logo">
                     <div class="logo-stack">
                         <img src="https://villaruz-print-shop-and-general-merchandise.shop/logo/logo.jpeg"
@@ -891,7 +901,7 @@ if (isset($_SESSION['exit_message'])) {
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- ✅ Custom biometric popup -->
     <div class="bio-popup-overlay" id="bioPopup" role="dialog" aria-modal="true" aria-labelledby="bioPopupTitle">
@@ -965,12 +975,10 @@ if (isset($_SESSION['exit_message'])) {
                 showBioPopup('App required', 'Fingerprint login is only available inside the Sofia app.', 'fas fa-mobile-alt');
                 return;
             }
-
             if (!hasBiometric || !userId) {
                 showBioPopup('Fingerprint not enrolled', 'No fingerprint enrolled. Please log in with password first and enroll your fingerprint.', 'fas fa-fingerprint');
                 return;
             }
-
             var fpBtn = document.getElementById('fingerprintBtn');
             if (fpBtn) fpBtn.disabled = true;
 
@@ -1022,13 +1030,11 @@ if (isset($_SESSION['exit_message'])) {
             var fpBtn = document.getElementById('fingerprintBtn');
             if (fpBtn) fpBtn.disabled = false;
         }
-
         function biometricCancel() {
             resetLoginButton();
             var fpBtn = document.getElementById('fingerprintBtn');
             if (fpBtn) fpBtn.disabled = false;
         }
-
         function biometricError() {
             resetLoginButton();
             var fpBtn = document.getElementById('fingerprintBtn');
@@ -1047,5 +1053,4 @@ if (isset($_SESSION['exit_message'])) {
         }
     </script>
 </body>
-
 </html>
