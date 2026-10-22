@@ -3,8 +3,7 @@
        SIDEBAR — MODERN MIXED-GRADIENT BACKGROUND
        ============================================================ */
 
-    /* ✅ Sidebar shell — mesh gradient background (NO SCROLLER) */
-    .side-menu {
+    /* .side-menu {
         position: relative;
         overflow: hidden;
         background-color: #eef2ff;
@@ -19,7 +18,6 @@
         background-attachment: local;
     }
 
-    /* ✅ Soft floating blobs behind the content for depth */
     .side-menu::before,
     .side-menu::after {
         content: "";
@@ -59,7 +57,7 @@
         50% {
             transform: translate(20px, -20px) scale(1.08);
         }
-    }
+    } */
 
     /* ✅ Keep header + nav above the blobs */
     .menu-header,
