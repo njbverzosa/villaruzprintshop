@@ -2285,7 +2285,7 @@ if ($currentAcc !== '') {
                 fd.append('acc_number', accNum);
 
                 try {
-                    const response = await fetch('mark_update_seen.php', {
+                    const response = await fetch('../API/mark_update_seen.php', {
                         method: 'POST',
                         body: fd
                     });

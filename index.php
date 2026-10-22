@@ -844,6 +844,290 @@ require_once __DIR__ . '/bots.php';
                 padding: 28px 22px;
             }
         }
+    
+
+        /* ==============================================
+           CATCHY E-COMMERCE THEME + IMAGE BACKGROUND
+           Keep the page text readable over the background.
+           Place ecommerce-bg.png beside the page using this CSS.
+        ============================================== */
+        :root {
+            --bg-main: transparent;
+            --bg-soft: rgba(7, 20, 48, 0.82);
+            --bg-card: rgba(8, 24, 57, 0.82);
+            --ink-900: #FFFFFF;
+            --ink-800: #F4F8FF;
+            --ink-700: #E5F0FF;
+            --ink-600: #D1E4FF;
+            --ink-500: #B7CBE8;
+            --ink-400: #91AED6;
+            --ink-300: #D8E8FF;
+            --brand: #00C8FF;
+            --brand-dark: #007FB8;
+            --brand-light: rgba(0, 200, 255, 0.16);
+            --accent: #FFB000;
+            --accent-dark: #F07800;
+            --accent-soft: rgba(255, 176, 0, 0.16);
+            --border: rgba(145, 190, 255, 0.25);
+            --border-strong: rgba(145, 210, 255, 0.55);
+        }
+
+        html, body {
+            min-height: 100%;
+        }
+
+        body {
+            color: var(--ink-800);
+            background:
+                linear-gradient(115deg, rgba(2, 8, 29, 0.94) 0%,
+                    rgba(4, 18, 48, 0.82) 48%,
+                    rgba(3, 15, 39, 0.60) 100%),
+                url("ecommerce-bg.png") center center / cover fixed no-repeat;
+            background-color: #031027;
+        }
+
+        nav {
+            background: rgba(3, 12, 34, 0.86);
+            border-bottom: 1px solid rgba(74, 190, 255, 0.35);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+        }
+
+        .hero {
+            background: transparent;
+        }
+
+        .hero::before {
+            background: radial-gradient(circle, rgba(0, 200, 255, 0.15), transparent 70%);
+        }
+
+        .hero::after {
+            background: radial-gradient(circle, rgba(255, 176, 0, 0.10), transparent 70%);
+        }
+
+        .hero-eyebrow {
+            color: #DDF6FF;
+            background: rgba(4, 25, 58, 0.82);
+            border-color: rgba(91, 202, 255, 0.42);
+            box-shadow: 0 0 24px rgba(0, 200, 255, 0.10);
+        }
+
+        .hero-eyebrow i,
+        .section-tag,
+        .section-title span {
+            color: #FFC247;
+        }
+
+        .hero-title {
+            color: #FFFFFF;
+            text-shadow: 0 4px 24px rgba(0, 0, 0, 0.40);
+        }
+
+        .hero-title .gradient {
+            background: linear-gradient(110deg, #59E5FF 0%, #FFFFFF 48%, #FFC247 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .hero-desc {
+            color: #D5E5FF;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+        }
+
+        .btn-primary,
+        .btn-secondary,
+        .btn-download,
+        .btn-order,
+        .app-banner .btn-sm {
+            position: relative;
+            overflow: hidden;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            border: 1px solid transparent;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28),
+                        0 0 18px rgba(0, 200, 255, 0.12);
+        }
+
+        .btn-primary {
+            color: #031426;
+            background: linear-gradient(135deg, #63E8FF, #00B8F0);
+            border-color: rgba(181, 246, 255, 0.8);
+            box-shadow: 0 8px 26px rgba(0, 184, 240, 0.35);
+        }
+
+        .btn-primary:hover {
+            color: #FFFFFF;
+            background: linear-gradient(135deg, #00A9E8, #0755C9);
+            transform: translateY(-3px) scale(1.025);
+            box-shadow: 0 12px 32px rgba(0, 174, 255, 0.42);
+        }
+
+        .btn-secondary {
+            color: #FFFFFF;
+            background: rgba(5, 23, 54, 0.66);
+            border: 1px solid rgba(104, 218, 255, 0.72);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            color: #031426;
+            background: #FFFFFF;
+            border-color: #FFFFFF;
+            transform: translateY(-3px);
+        }
+
+        .btn-download,
+        .btn-order,
+        .app-banner .btn-sm {
+            color: #201300;
+            background: linear-gradient(135deg, #FFE27A, #FF9D00);
+            border-color: rgba(255, 236, 166, 0.9);
+            box-shadow: 0 8px 26px rgba(255, 157, 0, 0.30);
+        }
+
+        .btn-download:hover,
+        .btn-order:hover,
+        .app-banner .btn-sm:hover {
+            color: #FFFFFF;
+            background: linear-gradient(135deg, #FF8A00, #F04B00);
+            transform: translateY(-3px) scale(1.025);
+            box-shadow: 0 12px 32px rgba(255, 126, 0, 0.40);
+        }
+
+        .features,
+        .carousel-section,
+        .services {
+            background: rgba(3, 13, 36, 0.50);
+            border-color: rgba(113, 190, 255, 0.20);
+            backdrop-filter: blur(3px);
+        }
+
+        .section-title {
+            color: #FFFFFF;
+            text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45);
+        }
+
+        .section-sub {
+            color: #D0E2FF;
+        }
+
+        .feature-card,
+        .service-card {
+            color: #FFFFFF;
+            background: rgba(5, 22, 53, 0.84);
+            border-color: rgba(93, 188, 255, 0.28);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.20);
+            backdrop-filter: blur(12px);
+        }
+
+        .feature-card h3,
+        .service-info h3 {
+            color: #FFFFFF;
+        }
+
+        .feature-card p,
+        .service-info p {
+            color: #C9DBF6;
+        }
+
+        .feature-icon {
+            color: #7CEBFF;
+            background: rgba(0, 200, 255, 0.14);
+            border: 1px solid rgba(0, 200, 255, 0.30);
+        }
+
+        .feature-card:hover .feature-icon {
+            color: #04162B;
+            background: #63E8FF;
+        }
+
+        .service-img {
+            color: #74E9FF;
+            background: linear-gradient(135deg, rgba(0, 137, 220, 0.32), rgba(255, 176, 0, 0.20));
+        }
+
+        .carousel-container {
+            filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.24));
+        }
+
+        .carousel-slide {
+            color: #FFFFFF;
+            background: rgba(5, 22, 53, 0.90);
+            border-color: rgba(93, 188, 255, 0.30);
+            backdrop-filter: blur(14px);
+        }
+
+        .carousel-slide p.lead {
+            color: #FFFFFF;
+        }
+
+        .carousel-slide p.desc {
+            color: #C9DBF6;
+        }
+
+        .carousel-slide .badge {
+            color: #9CEFFF;
+            background: rgba(0, 200, 255, 0.15);
+            border: 1px solid rgba(0, 200, 255, 0.25);
+        }
+
+        .carousel-slide small {
+            color: #A9C2E5;
+        }
+
+        .carousel-btn {
+            color: #EAF8FF;
+            background: rgba(4, 22, 53, 0.94);
+            border-color: rgba(91, 202, 255, 0.45);
+        }
+
+        .carousel-btn:hover {
+            color: #031426;
+            background: #63E8FF;
+            border-color: #63E8FF;
+        }
+
+        .dot {
+            background: rgba(210, 232, 255, 0.48);
+        }
+
+        .dot.active {
+            background: #FFC247;
+        }
+
+        footer {
+            background: rgba(1, 7, 23, 0.94);
+            color: #D4E4FF;
+            border-top: 1px solid rgba(91, 202, 255, 0.22);
+        }
+
+        .footer-tagline,
+        .footer-links span,
+        .copyright {
+            color: #A9BEDD;
+        }
+
+        .footer-links span i {
+            color: #FFC247;
+        }
+
+        .app-banner {
+            background: linear-gradient(110deg, rgba(1, 10, 31, 0.96), rgba(0, 76, 125, 0.94));
+            border-top: 1px solid rgba(91, 202, 255, 0.25);
+            border-bottom: 1px solid rgba(91, 202, 255, 0.25);
+        }
+
+        .app-banner strong {
+            color: #FFC247;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                background-attachment: scroll;
+            }
+        }
+
     </style>
 </head>
 
