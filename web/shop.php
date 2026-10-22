@@ -2253,7 +2253,7 @@ if ($currentAcc !== '') {
             });
         });
 
-        // ========== ✅ UPDATE APP POPUP (SESSION STORAGE) ==========
+                // ========== ✅ UPDATE APP POPUP (SESSION STORAGE) ==========
         (function () {
             const updateModal = document.getElementById('updateAppModal');
             const updateNowBtn = document.getElementById('updateNowBtn');
@@ -2262,8 +2262,7 @@ if ($currentAcc !== '') {
             // Server only renders the modal if notif_shown = 0 in the DB
             if (!updateModal) return;
 
-            // ✅ Use sessionStorage instead of cookies
-            // This survives page navigation but is destroyed when the app/browser closes
+            // Use sessionStorage instead of cookies
             const sessionKey = "update_later_" + accNum;
             const isSnoozed = sessionStorage.getItem(sessionKey) === '1';
 
@@ -2279,34 +2278,49 @@ if ($currentAcc !== '') {
                 document.body.style.overflow = '';
             }
 
-            function markNotifSeen() {
+            // ✅ Changed to async so we can await the fetch before downloading
+            async function markNotifSeen() {
                 const fd = new FormData();
                 fd.append('csrf_token', csrfToken);
                 fd.append('acc_number', accNum);
 
-                fetch('mark_update_seen.php', {
-                    method: 'POST',
-                    body: fd
-                }).catch(err => console.warn(err));
+                try {
+                    const response = await fetch('mark_update_seen.php', {
+                        method: 'POST',
+                        body: fd
+                    });
+                    const result = await response.json();
+                    console.log('mark_update_seen result:', result);
+                } catch (err) {
+                    console.warn('mark_update_seen network error:', err);
+                }
             }
 
             if (laterBtn) {
                 laterBtn.addEventListener('click', function () {
-                    // Save to sessionStorage
                     sessionStorage.setItem(sessionKey, '1');
-                    
                     markNotifSeen();
                     closeUpdateModal();
                 });
             }
 
             if (updateNowBtn) {
-                updateNowBtn.addEventListener('click', function () {
-                    // Clear the session storage
+                // ✅ Changed to async and prevented default
+                updateNowBtn.addEventListener('click', async function (e) {
+                    e.preventDefault(); // Stop immediate download
+
+                    // 1. Clear the session storage
                     sessionStorage.removeItem(sessionKey);
-                    
-                    markNotifSeen();
-                    // Let the <a> tag proceed naturally (downloads APK)
+
+                    // 2. WAIT for the database to update to 1
+                    await markNotifSeen();
+
+                    // 3. Close the modal
+                    closeUpdateModal();
+
+                    // 4. Get the actual URL and trigger the download
+                    const downloadUrl = this.getAttribute('href');
+                    window.location.href = downloadUrl;
                 });
             }
 
