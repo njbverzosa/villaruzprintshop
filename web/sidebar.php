@@ -1,20 +1,20 @@
 <style>
     /* ============================================================
-       SIDEBAR — MODERN MIXED-GRADIENT BACKGROUND
+       SIDEBAR — NAVY/BLUE GRADIENT BACKGROUND
        ============================================================ */
 
-    /* .side-menu {
+    .side-menu {
         position: relative;
         overflow: hidden;
         background-color: #eef2ff;
         background-image:
-            radial-gradient(at 12% 8%, rgba(99, 102, 241, 0.35) 0px, transparent 55%),
-            radial-gradient(at 92% 4%, rgba(59, 130, 246, 0.30) 0px, transparent 55%),
-            radial-gradient(at 88% 42%, rgba(168, 85, 247, 0.26) 0px, transparent 55%),
-            radial-gradient(at 18% 72%, rgba(236, 72, 153, 0.22) 0px, transparent 55%),
-            radial-gradient(at 82% 94%, rgba(14, 165, 233, 0.24) 0px, transparent 55%),
-            radial-gradient(at 8% 100%, rgba(139, 92, 246, 0.24) 0px, transparent 55%),
-            linear-gradient(160deg, #f5f3ff 0%, #eef2ff 40%, #eff6ff 70%, #fdf2f8 100%);
+            radial-gradient(at 12% 8%,  rgba(26, 42, 108, 0.28) 0px, transparent 55%),
+            radial-gradient(at 92% 4%,  rgba(59, 111, 212, 0.26) 0px, transparent 55%),
+            radial-gradient(at 88% 42%, rgba(99, 102, 241, 0.20) 0px, transparent 55%),
+            radial-gradient(at 18% 72%, rgba(59, 130, 246, 0.18) 0px, transparent 55%),
+            radial-gradient(at 82% 94%, rgba(14, 165, 233, 0.20) 0px, transparent 55%),
+            radial-gradient(at 8% 100%, rgba(139, 92, 246, 0.20) 0px, transparent 55%),
+            linear-gradient(160deg, #f4f6fb 0%, #eef2fb 40%, #eff6ff 70%, #f8fafc 100%);
         background-attachment: local;
     }
 
@@ -26,7 +26,7 @@
         filter: blur(70px);
         pointer-events: none;
         z-index: 0;
-        opacity: 0.6;
+        opacity: 0.55;
     }
 
     .side-menu::before {
@@ -34,7 +34,7 @@
         height: 260px;
         top: -90px;
         left: -80px;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.65), transparent 70%);
+        background: radial-gradient(circle, rgba(26, 42, 108, 0.55), transparent 70%);
         animation: sidebarFloat 16s ease-in-out infinite;
     }
 
@@ -43,21 +43,14 @@
         height: 300px;
         bottom: -120px;
         right: -100px;
-        background: radial-gradient(circle, rgba(236, 72, 153, 0.45), transparent 70%);
+        background: radial-gradient(circle, rgba(59, 111, 212, 0.45), transparent 70%);
         animation: sidebarFloat 20s ease-in-out infinite reverse;
     }
 
     @keyframes sidebarFloat {
-
-        0%,
-        100% {
-            transform: translate(0, 0) scale(1);
-        }
-
-        50% {
-            transform: translate(20px, -20px) scale(1.08);
-        }
-    } */
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(20px, -20px) scale(1.08); }
+    }
 
     /* ✅ Keep header + nav above the blobs */
     .menu-header,
@@ -85,7 +78,7 @@
 
     /* ---------- User Header (glass) ---------- */
     .menu-header {
-        background: rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.65);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.85);
@@ -110,7 +103,7 @@
         font-family: "Font Awesome 6 Free";
         font-weight: 900;
         font-size: 13px;
-        color: #6366f1;
+        color: #3b6fd4;
         padding: 6px 7px;
         flex-shrink: 0;
     }
@@ -167,18 +160,18 @@
     }
 
     .menu-nav .nav-item:hover i {
-        color: #6366f1;
+        color: #3b6fd4;
         transform: scale(1.08);
     }
 
     .menu-nav .nav-item.active,
     .menu-nav .nav-item.shop {
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(238, 242, 255, 0.92) 100%);
-        color: #4338ca;
+        color: #1a2a6c;
         font-weight: 600;
         border-color: rgba(255, 255, 255, 0.95);
         box-shadow:
-            0 6px 18px rgba(99, 102, 241, 0.18),
+            0 6px 18px rgba(26, 42, 108, 0.18),
             0 1px 0 rgba(255, 255, 255, 0.9) inset;
     }
 
@@ -190,19 +183,19 @@
         top: 20%;
         bottom: 20%;
         width: 3px;
-        background: linear-gradient(180deg, #6366f1, #8b5cf6);
+        background: linear-gradient(180deg, #1a2a6c, #3b6fd4);
         border-radius: 0 3px 3px 0;
     }
 
     .menu-nav .nav-item.active i,
     .menu-nav .nav-item.shop i {
-        color: #4f46e5;
+        color: #1a2a6c;
     }
 
     .menu-nav .nav-item.active:hover,
     .menu-nav .nav-item.shop:hover {
         background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
-        color: #3730a3;
+        color: #0f1c4d;
     }
 
     /* ============================================================
@@ -241,7 +234,7 @@
     }
 
     .nav-dropdown-toggle:hover i:first-child {
-        color: #6366f1;
+        color: #3b6fd4;
         transform: scale(1.08);
     }
 
@@ -267,20 +260,20 @@
 
     .nav-dropdown-toggle.active-dropdown {
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(238, 242, 255, 0.92) 100%);
-        color: #4338ca;
+        color: #1a2a6c;
         font-weight: 600;
         border-color: rgba(255, 255, 255, 0.95);
         box-shadow:
-            0 6px 18px rgba(99, 102, 241, 0.18),
+            0 6px 18px rgba(26, 42, 108, 0.18),
             0 1px 0 rgba(255, 255, 255, 0.9) inset;
     }
 
     .nav-dropdown-toggle.active-dropdown i:first-child {
-        color: #4f46e5;
+        color: #1a2a6c;
     }
 
     .nav-dropdown-toggle.active-dropdown .dropdown-arrow {
-        color: #6366f1 !important;
+        color: #3b6fd4 !important;
     }
 
     /* ============================================================
@@ -292,10 +285,10 @@
         padding: 6px;
         border-left: none;
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.65);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.85);
         box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
         animation: dropdownSlide 0.2s ease;
     }
@@ -350,13 +343,11 @@
     }
 
     /* ============================================================
-       CHILD ACTIVE STATES — transparent bg, colored text,
-       4px left accent bar (matches Products Source style)
+       CHILD ACTIVE STATES
        ============================================================ */
 
-    /* ---------- Generic active (Indigo) ---------- */
     .nav-dropdown-item.active {
-        color: #4338ca;
+        color: #1a2a6c;
         font-weight: 600;
     }
 
@@ -367,15 +358,14 @@
         top: 18%;
         bottom: 18%;
         width: 5px;
-        background: #6366f1;
+        background: #3b6fd4;
         border-radius: 0 2px 2px 0;
     }
 
     .nav-dropdown-item.active i {
-        color: #6366f1;
+        color: #3b6fd4;
     }
 
-    /* ---------- PENDING (Amber) ---------- */
     .nav-dropdown-item.active_pending {
         color: #b45309;
         font-weight: 600;
@@ -396,7 +386,6 @@
         color: #f59e0b;
     }
 
-    /* ---------- PAID (Emerald) ---------- */
     .nav-dropdown-item.active_paid {
         color: #047857;
         font-weight: 600;
@@ -417,7 +406,6 @@
         color: #10b981;
     }
 
-    /* ---------- CREDIT (Rose) ---------- */
     .nav-dropdown-item.active_credit {
         color: #b91c1c;
         font-weight: 600;
@@ -438,7 +426,6 @@
         color: #ef4444;
     }
 
-    /* ---------- SHOP PO (Blue) ---------- */
     .nav-dropdown-item.active_shop_po {
         color: #1d4ed8;
         font-weight: 600;
@@ -459,7 +446,6 @@
         color: #3b82f6;
     }
 
-    /* ---------- CART PO (Amber) ---------- */
     .nav-dropdown-item.active_cart_po {
         color: #b45309;
         font-weight: 600;
@@ -480,7 +466,6 @@
         color: #f59e0b;
     }
 
-    /* ---------- CUSTOMERS (Teal) ---------- */
     .nav-dropdown-item.active_customers {
         color: #0f766e;
         font-weight: 600;
@@ -501,7 +486,6 @@
         color: #14b8a6;
     }
 
-    /* ---------- DATABASE (Blue) ---------- */
     .nav-dropdown-item.active_database {
         color: #1d4ed8;
         font-weight: 600;
@@ -522,7 +506,6 @@
         color: #3b82f6;
     }
 
-    /* ---------- DOWNLOAD IMAGES (Violet) ---------- */
     .nav-dropdown-item.active_download_images {
         color: #6d28d9;
         font-weight: 600;
@@ -543,7 +526,6 @@
         color: #8b5cf6;
     }
 
-    /* ---------- INVESTORS (Pink) ---------- */
     .nav-dropdown-item.active_investors {
         color: #be185d;
         font-weight: 600;
@@ -564,9 +546,8 @@
         color: #ec4899;
     }
 
-    /* ---------- PRODUCTS SOURCE (Indigo) ---------- */
     .nav-dropdown-item.active_products_source {
-        color: #4338ca;
+        color: #1a2a6c;
         font-weight: 600;
     }
 
@@ -577,12 +558,12 @@
         top: 18%;
         bottom: 18%;
         width: 4px;
-        background: #6366f1;
+        background: #3b6fd4;
         border-radius: 0 2px 2px 0;
     }
 
     .nav-dropdown-item.active_products_source i {
-        color: #6366f1;
+        color: #3b6fd4;
     }
 
     /* ============================================================
@@ -679,8 +660,8 @@
         position: absolute;
         inset: 0;
         background:
-            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08), transparent 50%),
-            radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.08), transparent 50%);
+            radial-gradient(at 0% 0%, rgba(26, 42, 108, 0.08), transparent 50%),
+            radial-gradient(at 100% 100%, rgba(59, 111, 212, 0.08), transparent 50%);
         pointer-events: none;
     }
 
@@ -702,11 +683,11 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
         border-radius: 50%;
         color: #ffffff;
         font-size: 22px;
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+        box-shadow: 0 8px 20px rgba(26, 42, 108, 0.35);
     }
 
     .pin-modal-title {
@@ -758,9 +739,9 @@
     }
 
     .pin-input:focus {
-        border-color: #6366f1;
+        border-color: #3b6fd4;
         background: #ffffff;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.14);
+        box-shadow: 0 0 0 4px rgba(59, 111, 212, 0.14);
     }
 
     .pin-input.error {
@@ -778,41 +759,17 @@
     }
 
     @keyframes pinShake {
-
-        0%,
-        100% {
-            transform: translateX(0);
-        }
-
-        20% {
-            transform: translateX(-6px);
-        }
-
-        40% {
-            transform: translateX(6px);
-        }
-
-        60% {
-            transform: translateX(-4px);
-        }
-
-        80% {
-            transform: translateX(4px);
-        }
+        0%, 100% { transform: translateX(0); }
+        20%      { transform: translateX(-6px); }
+        40%      { transform: translateX(6px); }
+        60%      { transform: translateX(-4px); }
+        80%      { transform: translateX(4px); }
     }
 
     @keyframes pinSuccessPulse {
-        0% {
-            transform: scale(1);
-        }
-
-        40% {
-            transform: scale(1.03);
-        }
-
-        100% {
-            transform: scale(1);
-        }
+        0%   { transform: scale(1); }
+        40%  { transform: scale(1.03); }
+        100% { transform: scale(1); }
     }
 
     .pin-toggle-visibility {
@@ -832,8 +789,8 @@
     }
 
     .pin-toggle-visibility:hover {
-        color: #6366f1;
-        background: #eef2ff;
+        color: #1a2a6c;
+        background: #eef2fb;
     }
 
     .pin-error-message {
@@ -896,14 +853,14 @@
     }
 
     .pin-btn-confirm {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        background: linear-gradient(135deg, #1a2a6c 0%, #3b6fd4 100%);
         color: #ffffff;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        box-shadow: 0 4px 12px rgba(26, 42, 108, 0.35);
     }
 
     .pin-btn-confirm:hover {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+        background: linear-gradient(135deg, #0f1c4d 0%, #2a4d9b 100%);
+        box-shadow: 0 6px 18px rgba(26, 42, 108, 0.45);
         transform: translateY(-1px);
     }
 
@@ -946,7 +903,6 @@
 
     $ordersActive = $pendingActive || $paidActive || $creditActive;
 
-    // ✅ System User covers both Investors and Customers pages
     $customersActive = in_array($currentPage, [
         'registered_investors.php',
         'registered_customers.php',
@@ -969,7 +925,7 @@
             $cartStmt->execute([$currentAccNumber]);
             $showCart = (bool) $cartStmt->fetchColumn();
         } catch (PDOException $e) {
-            $showCart = false; // fail safe → hide cart if query errors
+            $showCart = false;
         }
     }
     ?>
@@ -1045,7 +1001,6 @@
                     id="customersArrow"></i>
             </div>
 
-            <!-- ✅ ONE menu container holding both links -->
             <div class="nav-dropdown-menu <?php echo $customersActive ? 'show' : ''; ?>" id="customersDropdown">
 
                 <a href="registered_investors.php"
@@ -1145,9 +1100,6 @@
 </div>
 
 <script>
-    // ============================================================
-    // SYSTEM MANAGER PIN GATE — AUTO-SUBMIT ON CORRECT PIN
-    // ============================================================
     const SYSTEM_MANAGER_PIN = '0022';
     const SM_UNLOCK_KEY = 'sm_unlocked_session';
 
