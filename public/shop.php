@@ -1744,7 +1744,7 @@ if ($currentAcc !== '') {
 
                 try {
                     // ✅ FIXED: It's in the same folder, not ../Customer_API/
-                    const response = await fetch('mark_update_seen.php', {
+                    const response = await fetch('../Customer_API/mark_update_seen.php', {
                         method: 'POST',
                         body: fd
                     });
