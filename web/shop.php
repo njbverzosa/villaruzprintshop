@@ -68,21 +68,11 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         body {
+            background: #f1f5f9;
             color: #1e293b;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            position: relative;
-            overflow-x: hidden;
-
-            /* ✅ Static gradient background — no fixed attachment = smooth scroll */
-            background-color: #eef2ff;
-            background-image:
-                radial-gradient(at 8% 12%, rgba(139, 92, 246, 0.22) 0px, transparent 55%),
-                radial-gradient(at 92% 6%,  rgba(59, 130, 246, 0.20) 0px, transparent 55%),
-                radial-gradient(at 78% 88%, rgba(236, 72, 153, 0.14) 0px, transparent 55%),
-                radial-gradient(at 12% 92%, rgba(16, 185, 129, 0.14) 0px, transparent 55%),
-                linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
         }
 
 
@@ -810,8 +800,15 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         @keyframes modalSlideUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .desc-modal-header {
@@ -1082,13 +1079,25 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         @keyframes fadeInConfirm {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes popInConfirm {
-            from { opacity: 0; transform: scale(0.92) translateY(10px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.92) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         /* ========== TOAST ========== */
@@ -1114,13 +1123,27 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to   { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to   { transform: translateX(100%); opacity: 0; }
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
         }
 
         /* ========== LOADING OVERLAY ========== */
@@ -1159,8 +1182,13 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
         @keyframes spin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* ========== RESPONSIVE ========== */
@@ -1397,8 +1425,8 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                                 <i class="fas fa-search"></i>
                                 <input type="text" id="liveSearchInput" placeholder="Search by product name..."
                                     autocomplete="off">
-                                <button type="button" class="clear-search-btn" id="clearSearchBtn"
-                                    title="Clear search" aria-label="Clear search">
+                                <button type="button" class="clear-search-btn" id="clearSearchBtn" title="Clear search"
+                                    aria-label="Clear search">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -1442,8 +1470,7 @@ $allCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                                         <i class="fas fa-pen"></i>
                                         <span>Edit</span>
                                     </a>
-                                    <a href="#"
-                                        class="dropdown-item dropdown-delete"
+                                    <a href="#" class="dropdown-item dropdown-delete"
                                         data-delete-url="../API/delete_product.php?product_number=<?php echo urlencode($product['product_number']); ?>"
                                         data-delete-name="<?php echo htmlspecialchars($product['product_name']); ?>"
                                         role="menuitem">
