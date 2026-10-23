@@ -11,13 +11,14 @@
         background-color: #f4f6fb;
         /* Layered static gradients — no animation, no blur filter */
         background-image:
-            radial-gradient(ellipse 420px 320px at 10% 4%,  rgba(26, 42, 108, 0.22), transparent 60%),
-            radial-gradient(ellipse 420px 320px at 92% 8%,  rgba(59, 111, 212, 0.20), transparent 60%),
+            radial-gradient(ellipse 420px 320px at 10% 4%, rgba(26, 42, 108, 0.22), transparent 60%),
+            radial-gradient(ellipse 420px 320px at 92% 8%, rgba(59, 111, 212, 0.20), transparent 60%),
             radial-gradient(ellipse 500px 400px at 90% 45%, rgba(99, 102, 241, 0.14), transparent 60%),
             radial-gradient(ellipse 420px 320px at 12% 78%, rgba(59, 130, 246, 0.12), transparent 60%),
             radial-gradient(ellipse 500px 400px at 88% 100%, rgba(14, 165, 233, 0.14), transparent 60%),
             linear-gradient(160deg, #f4f6fb 0%, #eef2fb 40%, #eff6ff 70%, #f8fafc 100%);
-        background-attachment: scroll; /* NOT fixed — avoids repaint on scroll */
+        background-attachment: scroll;
+        /* NOT fixed — avoids repaint on scroll */
         background-size: cover;
         background-repeat: no-repeat;
     }
@@ -50,7 +51,8 @@
 
     /* ---------- User Header (solid, not glassy) ---------- */
     .menu-header {
-        background: rgba(255, 255, 255, 0.94); /* solid-ish, no blur */
+        background: rgba(255, 255, 255, 0.94);
+        /* solid-ish, no blur */
         border-bottom: 1px solid #e2e8f0;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
     }
@@ -301,85 +303,221 @@
         color: #1a2a6c;
         font-weight: 600;
     }
+
     .nav-dropdown-item.active::before {
         content: "";
         position: absolute;
-        left: 0; top: 18%; bottom: 18%;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
         width: 5px;
         background: #3b6fd4;
         border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active i { color: #3b6fd4; }
 
-    .nav-dropdown-item.active_pending { color: #b45309; font-weight: 600; }
+    .nav-dropdown-item.active i {
+        color: #3b6fd4;
+    }
+
+    .nav-dropdown-item.active_pending {
+        color: #b45309;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_pending::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #f59e0b; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #f59e0b;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_pending i { color: #f59e0b; }
 
-    .nav-dropdown-item.active_paid { color: #047857; font-weight: 600; }
+    .nav-dropdown-item.active_pending i {
+        color: #f59e0b;
+    }
+
+    .nav-dropdown-item.active_paid {
+        color: #047857;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_paid::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #10b981; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #10b981;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_paid i { color: #10b981; }
 
-    .nav-dropdown-item.active_credit { color: #b91c1c; font-weight: 600; }
+    .nav-dropdown-item.active_paid i {
+        color: #10b981;
+    }
+
+    .nav-dropdown-item.active_credit {
+        color: #b91c1c;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_credit::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #ef4444; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #ef4444;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_credit i { color: #ef4444; }
 
-    .nav-dropdown-item.active_shop_po { color: #1d4ed8; font-weight: 600; }
+    .nav-dropdown-item.active_credit i {
+        color: #ef4444;
+    }
+
+    .nav-dropdown-item.active_shop_po {
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_shop_po::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #3b82f6; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #3b82f6;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_shop_po i { color: #3b82f6; }
 
-    .nav-dropdown-item.active_cart_po { color: #b45309; font-weight: 600; }
+    .nav-dropdown-item.active_shop_po i {
+        color: #3b82f6;
+    }
+
+    .nav-dropdown-item.active_cart_po {
+        color: #b45309;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_cart_po::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #f59e0b; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #f59e0b;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_cart_po i { color: #f59e0b; }
 
-    .nav-dropdown-item.active_customers { color: #0f766e; font-weight: 600; }
+    .nav-dropdown-item.active_cart_po i {
+        color: #f59e0b;
+    }
+
+    .nav-dropdown-item.active_customers {
+        color: #0f766e;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_customers::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #14b8a6; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #14b8a6;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_customers i { color: #14b8a6; }
 
-    .nav-dropdown-item.active_database { color: #1d4ed8; font-weight: 600; }
+    .nav-dropdown-item.active_customers i {
+        color: #14b8a6;
+    }
+
+    .nav-dropdown-item.active_database {
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_database::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #3b82f6; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #3b82f6;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_database i { color: #3b82f6; }
 
-    .nav-dropdown-item.active_download_images { color: #6d28d9; font-weight: 600; }
+    .nav-dropdown-item.active_database i {
+        color: #3b82f6;
+    }
+
+    .nav-dropdown-item.active_download_images {
+        color: #6d28d9;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_download_images::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #8b5cf6; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #8b5cf6;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_download_images i { color: #8b5cf6; }
 
-    .nav-dropdown-item.active_investors { color: #be185d; font-weight: 600; }
+    .nav-dropdown-item.active_download_images i {
+        color: #8b5cf6;
+    }
+
+    .nav-dropdown-item.active_investors {
+        color: #be185d;
+        font-weight: 600;
+    }
+
     .nav-dropdown-item.active_investors::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #ec4899; border-radius: 0 2px 2px 0;
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #ec4899;
+        border-radius: 0 2px 2px 0;
     }
-    .nav-dropdown-item.active_investors i { color: #ec4899; }
 
-    .nav-dropdown-item.active_products_source { color: #1a2a6c; font-weight: 600; }
-    .nav-dropdown-item.active_products_source::before {
-        content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
-        width: 4px; background: #3b6fd4; border-radius: 0 2px 2px 0;
+    .nav-dropdown-item.active_investors i {
+        color: #ec4899;
     }
-    .nav-dropdown-item.active_products_source i { color: #3b6fd4; }
+
+    .nav-dropdown-item.active_products_source {
+        color: #1a2a6c;
+        font-weight: 600;
+    }
+
+    .nav-dropdown-item.active_products_source::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 18%;
+        bottom: 18%;
+        width: 4px;
+        background: #3b6fd4;
+        border-radius: 0 2px 2px 0;
+    }
+
+    .nav-dropdown-item.active_products_source i {
+        color: #3b6fd4;
+    }
 
     /* ============================================================
        CLOSE BUTTON (mobile) — solid, no blur
@@ -559,11 +697,27 @@
     }
 
     @keyframes pinShake {
-        0%, 100% { transform: translateX(0); }
-        20%      { transform: translateX(-6px); }
-        40%      { transform: translateX(6px); }
-        60%      { transform: translateX(-4px); }
-        80%      { transform: translateX(4px); }
+
+        0%,
+        100% {
+            transform: translateX(0);
+        }
+
+        20% {
+            transform: translateX(-6px);
+        }
+
+        40% {
+            transform: translateX(6px);
+        }
+
+        60% {
+            transform: translateX(-4px);
+        }
+
+        80% {
+            transform: translateX(4px);
+        }
     }
 
     .pin-toggle-visibility {
@@ -665,13 +819,16 @@
        MOBILE PERFORMANCE — disable animations on small screens
        ============================================================ */
     @media (max-width: 768px) {
+
         /* Drop the only remaining animation on mobile */
         .nav-dropdown-menu {
             animation: none;
         }
+
         .pin-input.error {
             animation: none;
         }
+
         /* Faster transitions */
         .menu-nav .nav-item,
         .nav-dropdown-toggle,
@@ -684,6 +841,7 @@
        REDUCED MOTION — respect system preference
        ============================================================ */
     @media (prefers-reduced-motion: reduce) {
+
         *,
         *::before,
         *::after {
@@ -731,21 +889,6 @@
     $smPages = ['database_manager.php', 'download_images.php'];
     $dbManagerActive = in_array($currentPage, $smPages);
 
-    // ==========================================
-    // ✅ CART VISIBILITY — checked against cart table
-    // ==========================================
-    $currentAccNumber = (string) ($user['acc_number'] ?? '');
-
-    $showCart = false;
-    if ($currentAccNumber !== '') {
-        try {
-            $cartStmt = $pdo->prepare("SELECT 1 FROM cart WHERE acc_number = ? LIMIT 1");
-            $cartStmt->execute([$currentAccNumber]);
-            $showCart = (bool) $cartStmt->fetchColumn();
-        } catch (PDOException $e) {
-            $showCart = false;
-        }
-    }
     ?>
 
     <a href="shop.php" class="nav-item <?php echo $currentPage == 'shop.php' ? 'active' : ''; ?>">
@@ -753,12 +896,10 @@
         <span>Shop</span>
     </a>
 
-    <?php if ($showCart): ?>
-        <a href="cart.php" class="nav-item <?php echo $currentPage == 'cart.php' ? 'active' : ''; ?>">
-            <i class="fas fa-shopping-cart"></i>
-            <span>Cart</span>
-        </a>
-    <?php endif; ?>
+    <a href="cart.php" class="nav-item <?php echo $currentPage == 'cart.php' ? 'active' : ''; ?>">
+        <i class="fas fa-shopping-cart"></i>
+        <span>Cart</span>
+    </a>
 
     <div class="nav-dropdown">
         <div class="nav-dropdown-toggle <?php echo $ordersActive ? 'active-dropdown' : ''; ?>"
