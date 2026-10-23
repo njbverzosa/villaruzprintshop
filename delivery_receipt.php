@@ -1017,6 +1017,13 @@ $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
                         <div class="tin-line">NON-VAT Reg. TIN: 257-630-627-00000</div>
                     </div>
                 </div>
+                <!-- <div class="brand-block">
+                    <div class="brand-text">
+                        <div class="name">VILLARUZ PRINTSHOP &</div>
+                        <div class="tagline">General Merchandise</div>
+                        <div class="tin-line">NON-VAT Reg. TIN: 257-630-627-00000</div>
+                    </div>
+                </div> -->
                 <div class="header-address">
                     New Public Market, Poblacion, Dasol,<br>
                     Pangasinan, Philippines (2411)
