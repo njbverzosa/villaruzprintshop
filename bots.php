@@ -95,39 +95,39 @@ function logAccess(string $name, string $type): void
     // ============================================
     // 3) SEND EMAIL
     // ============================================
-    try {
-        require_once __DIR__ . '/Mail/PHPMailerAutoload.php';
+//     try {
+//         require_once __DIR__ . '/Mail/PHPMailerAutoload.php';
 
-        $mail = new PHPMailer;
-        $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
-        $mail->Port = 587;
-        $mail->SMTPAuth = true;
-        $mail->SMTPSecure = 'tls';
-        $mail->Username = 'villaruzsofiaapp@gmail.com';
-        $mail->Password = 'pjip iqic xpdq xjqf';
-        $mail->setFrom('villaruzsofiaapp@gmail.com', 'Sofia Bots Alert');
-        $mail->addAddress('njbverzosa@gmail.com');
+//         $mail = new PHPMailer;
+//         $mail->isSMTP();
+//         $mail->Host = 'smtp.gmail.com';
+//         $mail->Port = 587;
+//         $mail->SMTPAuth = true;
+//         $mail->SMTPSecure = 'tls';
+//         $mail->Username = 'villaruzsofiaapp@gmail.com';
+//         $mail->Password = 'pjip iqic xpdq xjqf';
+//         $mail->setFrom('villaruzsofiaapp@gmail.com', 'Sofia Bots Alert');
+//         $mail->addAddress('njbverzosa@gmail.com');
 
-        $mail->isHTML(true);
-        $mail->Subject = "Sofia - {$type} Access: {$name}";
+//         $mail->isHTML(true);
+//         $mail->Subject = "Sofia - {$type} Access: {$name}";
 
-        // ✅ Render bot-access.php with $type and $name in scope
-        ob_start();
-        include __DIR__ . '/bot-access.php';
-        $mail->Body = ob_get_clean();
+//         // ✅ Render bot-access.php with $type and $name in scope
+//         ob_start();
+//         include __DIR__ . '/bot-access.php';
+//         $mail->Body = ob_get_clean();
 
-        $mail->AltBody = "A {$type} ({$name}) accessed "
-            . ($_SERVER['REQUEST_URI'] ?? '/')
-            . " from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+//         $mail->AltBody = "A {$type} ({$name}) accessed "
+//             . ($_SERVER['REQUEST_URI'] ?? '/')
+//             . " from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
 
-        if (!$mail->send()) {
-            throw new Exception('Mail could not be sent. ' . $mail->ErrorInfo);
-        }
-    } catch (Exception $e) {
-        error_log("Failed to send bot alert email: " . $e->getMessage());
-    }
-}
+//         if (!$mail->send()) {
+//             throw new Exception('Mail could not be sent. ' . $mail->ErrorInfo);
+//         }
+//     } catch (Exception $e) {
+//         error_log("Failed to send bot alert email: " . $e->getMessage());
+//     }
+// }
 
 // ================================================
 // AUTO-RUN ON INCLUDE
