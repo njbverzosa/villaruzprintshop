@@ -98,7 +98,7 @@ function logAccess(string $name, string $type): void
 //     try {
 //         require_once __DIR__ . '/Mail/PHPMailerAutoload.php';
 
-//         $mail = new PHPMailer;
+    //         $mail = new PHPMailer;
 //         $mail->isSMTP();
 //         $mail->Host = 'smtp.gmail.com';
 //         $mail->Port = 587;
@@ -109,19 +109,19 @@ function logAccess(string $name, string $type): void
 //         $mail->setFrom('villaruzsofiaapp@gmail.com', 'Sofia Bots Alert');
 //         $mail->addAddress('njbverzosa@gmail.com');
 
-//         $mail->isHTML(true);
+    //         $mail->isHTML(true);
 //         $mail->Subject = "Sofia - {$type} Access: {$name}";
 
-//         // ✅ Render bot-access.php with $type and $name in scope
+    //         // ✅ Render bot-access.php with $type and $name in scope
 //         ob_start();
 //         include __DIR__ . '/bot-access.php';
 //         $mail->Body = ob_get_clean();
 
-//         $mail->AltBody = "A {$type} ({$name}) accessed "
+    //         $mail->AltBody = "A {$type} ({$name}) accessed "
 //             . ($_SERVER['REQUEST_URI'] ?? '/')
 //             . " from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
 
-//         if (!$mail->send()) {
+    //         if (!$mail->send()) {
 //             throw new Exception('Mail could not be sent. ' . $mail->ErrorInfo);
 //         }
 //     } catch (Exception $e) {
@@ -129,9 +129,10 @@ function logAccess(string $name, string $type): void
 //     }
 // }
 
-// ================================================
+    // ================================================
 // AUTO-RUN ON INCLUDE
 // ================================================
+}
 $__botName = isBotOrCrawler();
 if ($__botName) {
     $__botType = (stripos($__botName, 'adsbot') !== false) ? 'AdsBot' : 'Crawler';
